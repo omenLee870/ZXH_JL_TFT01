@@ -1,0 +1,335 @@
+#ifndef __AUDIO_APP_DEF_H__
+#define __AUDIO_APP_DEF_H__
+
+/* #ifndef TCFG_AUDIO_DISABLE */
+// #define TCFG_AUDIO_DISABLE					DISABLE
+/* #endif */
+
+#ifndef TCFG_DEC_G729_ENABLE
+#define TCFG_DEC_G729_ENABLE                DISABLE
+#endif
+#ifndef TCFG_DEC_MP3_ENABLE
+#define TCFG_DEC_MP3_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_WMA_ENABLE
+#define TCFG_DEC_WMA_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_WAV_ENABLE
+#define TCFG_DEC_WAV_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_FLAC_ENABLE
+#define TCFG_DEC_FLAC_ENABLE				DISABLE
+#endif
+#ifndef TCFG_DEC_APE_ENABLE
+#define TCFG_DEC_APE_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_M4A_ENABLE
+#define TCFG_DEC_M4A_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_ALAC_ENABLE
+#define TCFG_DEC_ALAC_ENABLE				DISABLE
+#endif
+#ifndef TCFG_DEC_AMR_ENABLE
+#define TCFG_DEC_AMR_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_DTS_ENABLE
+#define TCFG_DEC_DTS_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_MIDI_ENABLE
+#define TCFG_DEC_MIDI_ENABLE                DISABLE
+#endif
+#ifndef TCFG_DEC_G726_ENABLE
+#define TCFG_DEC_G726_ENABLE                DISABLE
+#endif
+#ifndef TCFG_DEC_MTY_ENABLE
+#define TCFG_DEC_MTY_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_WTGV2_ENABLE
+#define TCFG_DEC_WTGV2_ENABLE				DISABLE
+#endif
+
+/* #ifndef TCFG_DEC_SBC_ENABLE */
+// #define TCFG_DEC_SBC_ENABLE					DISABLE
+/* #endif */
+#ifndef TCFG_DEC_PCM_ENABLE
+#define TCFG_DEC_PCM_ENABLE					DISABLE
+#endif
+#ifndef TCFG_DEC_CVSD_ENABLE
+#define TCFG_DEC_CVSD_ENABLE				DISABLE
+#endif
+
+#ifndef TCFG_DEC_LC3_ENABLE
+#define TCFG_DEC_LC3_ENABLE					DISABLE
+#endif
+
+#ifndef TCFG_DEC_OGG_VORBIS_ENABLE
+#define TCFG_DEC_OGG_VORBIS_ENABLE			DISABLE
+#endif
+#ifndef TCFG_DEC_OGG_OPUS_ENABLE
+#define TCFG_DEC_OGG_OPUS_ENABLE			DISABLE
+#endif
+
+#ifndef TCFG_DEC_AIFF_ENABLE
+#define TCFG_DEC_AIFF_ENABLE				DISABLE
+#endif
+
+#ifndef TCFG_DEC_ID3_V1_ENABLE
+#define TCFG_DEC_ID3_V1_ENABLE				DISABLE
+#endif
+#ifndef TCFG_DEC_ID3_V2_ENABLE
+#define TCFG_DEC_ID3_V2_ENABLE				DISABLE
+#endif
+#ifndef TCFG_DEC_DECRYPT_ENABLE
+#define TCFG_DEC_DECRYPT_ENABLE				DISABLE
+#endif
+#ifndef TCFG_DEC_DECRYPT_KEY
+#define TCFG_DEC_DECRYPT_KEY				(0x12345678)
+#endif
+
+#ifndef TCFG_SPEED_PITCH_ENABLE
+#define TCFG_SPEED_PITCH_ENABLE             DISABLE
+#endif
+
+
+#if (TCFG_DEC_MP3_ENABLE)
+#define DEC_EXT_MP3   						"MP1MP2MP3"
+#else
+#define DEC_EXT_MP3   						""
+#endif
+
+#if (TCFG_DEC_WMA_ENABLE)
+#define DEC_EXT_WMA       					"WMA"
+#else
+#define DEC_EXT_WMA       					""
+#endif
+
+#if ( TCFG_DEC_WAV_ENABLE || TCFG_DEC_DTS_ENABLE)
+#define DEC_EXT_WAV    						"WAVDTS"
+#else
+#define DEC_EXT_WAV    						""
+#endif
+
+#if (TCFG_DEC_FLAC_ENABLE)
+#define DEC_EXT_FLAC         				"FLA"
+#else
+#define DEC_EXT_FLAC         				""
+#endif
+
+#if (TCFG_DEC_APE_ENABLE)
+#define DEC_EXT_APE       					"APE"
+#else
+#define DEC_EXT_APE       					""
+#endif
+
+#if (TCFG_DEC_M4A_ENABLE)
+#define DEC_EXT_M4A           				"M4AAAC"
+#else
+#define DEC_EXT_M4A           				""
+#endif
+
+#if (TCFG_DEC_M4A_ENABLE || TCFG_DEC_ALAC_ENABLE)
+#define DEC_EXT_ALAC           				"MP4"
+#else
+#define DEC_EXT_ALAC           				""
+#endif
+
+#if (TCFG_DEC_AMR_ENABLE)
+#define DEC_EXT_AMR          				"AMR"
+#else
+#define DEC_EXT_AMR          				""
+#endif
+
+#if (TCFG_DEC_DECRYPT_ENABLE)
+#define DEC_EXT_DECRYPT          			"SMP"
+#else
+#define DEC_EXT_DECRYPT          			""
+#endif
+
+#if (TCFG_DEC_MIDI_ENABLE)
+#define DEC_EXT_MIDI               			"MID"
+#else
+#define DEC_EXT_MIDI               			""
+#endif
+
+#if (TCFG_DEC_OGG_VORBIS_ENABLE || TCFG_DEC_OGG_OPUS_ENABLE)
+#define DEC_EXT_OGG           				"OGG"
+#else
+#define DEC_EXT_OGG           				"OGG"
+#endif
+
+#if (TCFG_DEC_OGG_OPUS_ENABLE)
+#define DEC_EXT_OGG_OPUS           			"OPU"
+#else
+#define DEC_EXT_OGG_OPUS           			""
+#endif
+
+#if (TCFG_DEC_AIFF_ENABLE)
+#define DEC_EXT_AIFF	           			"AIF"
+#else
+#define DEC_EXT_AIFF	           			""
+#endif
+
+
+#define DEC_EXT_NAME						DEC_EXT_MP3 DEC_EXT_WMA DEC_EXT_WAV DEC_EXT_FLAC DEC_EXT_APE DEC_EXT_M4A DEC_EXT_ALAC DEC_EXT_AMR DEC_EXT_DECRYPT DEC_EXT_MIDI DEC_EXT_OGG DEC_EXT_OGG_OPUS DEC_EXT_AIFF
+
+
+#ifndef TCFG_ENC_OPUS_ENABLE
+#define TCFG_ENC_OPUS_ENABLE                DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_ENC_SPEEX_ENABLE
+#define TCFG_ENC_SPEEX_ENABLE               DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_ENC_LC3_ENABLE
+#define TCFG_ENC_LC3_ENABLE                 DISABLE_THIS_MOUDLE
+#endif
+
+
+#ifndef MIC_EFFECT_EQ_EN
+#define MIC_EFFECT_EQ_EN                   	DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef ANC_TRAIN_MODE
+#define ANC_TRAIN_MODE						ANC_FF_EN
+#endif
+#ifndef ANC_MULT_ORDER_ENABLE
+#define ANC_MULT_ORDER_ENABLE				DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_ANC_BOX_ENABLE
+#define TCFG_ANC_BOX_ENABLE                 DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_AUDIO_ANC_ACOUSTIC_DETECTOR_EN
+#define TCFG_AUDIO_ANC_ACOUSTIC_DETECTOR_EN	DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_AUDIO_ANC_EAR_ADAPTIVE_EN
+#define TCFG_AUDIO_ANC_EAR_ADAPTIVE_EN		DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_AUDIO_SPATIAL_EFFECT_ENABLE
+#define TCFG_AUDIO_SPATIAL_EFFECT_ENABLE	DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_AUDIO_DECODER_OCCUPY_TRACE
+#define TCFG_AUDIO_DECODER_OCCUPY_TRACE		DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_AUDIO_DEC_OUT_TASK
+#define TCFG_AUDIO_DEC_OUT_TASK				DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_MIXER_CYCLIC_TASK_EN
+#define TCFG_MIXER_CYCLIC_TASK_EN			DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef SUPPORT_CHAGE_AUDIO_CLK
+#define SUPPORT_CHAGE_AUDIO_CLK				DISABLE_THIS_MOUDLE
+#endif
+
+/* #ifndef VOL_TAB_CUSTOM_EN */
+// #define VOL_TAB_CUSTOM_EN					DISABLE_THIS_MOUDLE
+/* #endif */
+#ifndef SYS_DEFAULT_VOL
+#define SYS_DEFAULT_VOL 					DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef AUDIO_ENC_MPT_SELF_ENABLE
+#define AUDIO_ENC_MPT_SELF_ENABLE			DISABLE_THIS_MOUDLE
+#endif
+/* #ifndef AUDIO_VBASS_LINK_VOLUME */
+// #define AUDIO_VBASS_LINK_VOLUME				DISABLE_THIS_MOUDLE
+/* #endif */
+#ifndef AUDIO_OUTPUT_AUTOMUTE
+#define AUDIO_OUTPUT_AUTOMUTE				DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_AEC_SIMPLEX
+#define TCFG_AEC_SIMPLEX					DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_TONE2TWS_ENABLE
+#define TCFG_TONE2TWS_ENABLE				DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_DEC2TWS_ENABLE
+#define TCFG_DEC2TWS_ENABLE					DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_CALL_USE_DIGITAL_VOLUME
+#define TCFG_CALL_USE_DIGITAL_VOLUME		DISABLE_THIS_MOUDLE
+#endif
+
+
+#ifndef MUSIC_DEVICE_TONE_EN
+#define MUSIC_DEVICE_TONE_EN				DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_SOURCE_DEV0_NODE_ENABLE
+#define TCFG_SOURCE_DEV0_NODE_ENABLE		DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_SOURCE_DEV1_NODE_ENABLE
+#define TCFG_SOURCE_DEV1_NODE_ENABLE		DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_UART_NODE_ENABLE
+#define TCFG_UART_NODE_ENABLE		        DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_AUDIO_CVP_DMS_HYBRID_DNS_MODE
+#define TCFG_AUDIO_CVP_DMS_HYBRID_DNS_MODE	DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_AUDIO_CVP_DMS_AWN_DNS_MODE
+#define TCFG_AUDIO_CVP_DMS_AWN_DNS_MODE 	DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_AUDIO_CVP_3MIC_MODE
+#define TCFG_AUDIO_CVP_3MIC_MODE 	        DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_AI_TX_NODE_ENABLE
+#define TCFG_AI_TX_NODE_ENABLE   	        DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_INTERCOM_TX_NODE_ENABLE
+#define TCFG_INTERCOM_TX_NODE_ENABLE       DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_INTERCOM_RX_NODE_ENABLE
+#define TCFG_INTERCOM_RX_NODE_ENABLE       DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_SURROUND_DEMO_NODE_ENABLE
+#define TCFG_SURROUND_DEMO_NODE_ENABLE      DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_CHANNEL_SWAP_NODE_ENABLE
+#define TCFG_CHANNEL_SWAP_NODE_ENABLE       DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_SINK_DEV0_NODE_ENABLE
+#define TCFG_SINK_DEV0_NODE_ENABLE          DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_SINK_DEV1_NODE_ENABLE
+#define TCFG_SINK_DEV1_NODE_ENABLE          DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_DNS_NODE_ENABLE
+#define TCFG_DNS_NODE_ENABLE                DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_AGC_NODE_ENABLE
+#define TCFG_AGC_NODE_ENABLE                DISABLE_THIS_MOUDLE
+#endif
+
+/* #ifndef TCFG_EQ_ENABLE */
+// #define TCFG_EQ_ENABLE                      DISABLE_THIS_MOUDLE
+/* #endif */
+
+#ifndef AUDIO_SPK_EQ_STERO
+#define AUDIO_SPK_EQ_STERO                  DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_LRC_LYRICS_ENABLE
+#define TCFG_LRC_LYRICS_ENABLE 				DISABLE_THIS_MOUDLE //歌词显示
+#endif
+
+
+#endif  //end of __AUDIO_APP_DEF_H__

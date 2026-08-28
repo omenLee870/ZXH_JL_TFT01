@@ -1,0 +1,366 @@
+#ifdef SUPPORT_MS_EXTENSIONS
+#pragma bss_seg(".bt_key_msg_table.data.bss")
+#pragma data_seg(".bt_key_msg_table.data")
+#pragma const_seg(".bt_key_msg_table.text.const")
+#pragma code_seg(".bt_key_msg_table.text")
+#endif
+#include "key_driver.h"
+#include "app_main.h"
+#include "init.h"
+
+/*key映射表需根据key_action一一对应*/
+#if TCFG_APP_BT_EN
+
+#if TCFG_ADKEY_ENABLE
+#if (CONFIG_UI_STYLE != STYLE_JL_SOUNDBOX)
+const int key_bt_ad_num0_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_CHANGE_MODE,    APP_MSG_KEY_POWER_OFF,  APP_MSG_KEY_POWER_OFF_HOLD,
+    APP_MSG_KEY_POWER_OFF_RELEASE,  APP_MSG_MIC_EFFECT_ON_OFF, APP_MSG_VOCAL_REMOVE,
+};
+const int key_bt_ad_num1_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_PP,       APP_MSG_CALL_HANGUP,    APP_MSG_NULL,
+    APP_MSG_NULL,                APP_MSG_CALL_LAST_NO,          APP_MSG_TWS_START_REMOVE_PAIR,
+};
+const int key_bt_ad_num2_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_NEXT,     APP_MSG_VOL_UP,         APP_MSG_VOL_UP,
+    APP_MSG_NULL,                APP_MSG_OPEN_SIRI,          APP_MSG_CALL_SWITCH,
+};
+const int key_bt_ad_num3_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_PREV,     APP_MSG_VOL_DOWN,       APP_MSG_VOL_DOWN,
+    APP_MSG_NULL,           APP_MSG_CALL_THREE_WAY_ANSWER1,           APP_MSG_NULL,
+};
+const int key_bt_ad_num4_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_CALL_THREE_WAY_ANSWER2,           APP_MSG_NULL,
+};
+const int key_bt_ad_num5_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_SWITCH_SOUND_EFFECT,           APP_MSG_NULL,
+};
+const int key_bt_ad_num6_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_SWITCH_MIC_EFFECT,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_MIC_EFFECT_ON_OFF,           APP_MSG_NULL,
+};
+const int key_bt_ad_num7_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_VOCAL_REMOVE,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ad_num8_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MIC_VOL_UP,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ad_num9_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MIC_VOL_DOWN,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+#else  /*LCD按键*/
+const int key_bt_ad_num0_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_CHANGE_MODE,    APP_MSG_KEY_POWER_OFF,  APP_MSG_KEY_POWER_OFF_HOLD,
+    APP_MSG_NULL,                APP_MSG_NULL,                APP_MSG_NULL,
+};
+const int key_bt_ad_num1_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_LCD_OK,       APP_MSG_LCD_MENU,    APP_MSG_NULL,
+    APP_MSG_NULL,         APP_MSG_NULL,          APP_MSG_NULL,
+};
+const int key_bt_ad_num2_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_LCD_DOWN,       APP_MSG_LCD_VOL_DEC,    APP_MSG_LCD_VOL_DEC,
+    APP_MSG_NULL,           APP_MSG_NULL,          APP_MSG_NULL,
+};
+const int key_bt_ad_num3_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_LCD_UP,       APP_MSG_LCD_VOL_INC,    APP_MSG_LCD_VOL_INC,
+    APP_MSG_NULL,         APP_MSG_NULL,          APP_MSG_NULL,
+};
+const int key_bt_ad_num4_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,       APP_MSG_LCD_MODE,    APP_MSG_NULL,
+    APP_MSG_NULL,       APP_MSG_NULL,          APP_MSG_NULL,
+};
+const int key_bt_ad_num5_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ad_num6_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ad_num7_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ad_num8_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ad_num9_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+#endif
+#endif
+
+#if TCFG_IRKEY_ENABLE
+//短按                //长按                  //hold
+//长按抬起                   //双击                       //三击
+const int key_bt_ir_num0_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_KEY_POWER_OFF_INSTANTLY,       	APP_MSG_NULL,    	APP_MSG_NULL,
+    APP_MSG_NULL,           	 APP_MSG_NULL,     			APP_MSG_NULL,
+};
+const int key_bt_ir_num1_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_CHANGE_MODE,       APP_MSG_NULL,    APP_MSG_NULL,
+    APP_MSG_NULL,   APP_MSG_NULL,   APP_MSG_NULL,
+};
+const int key_bt_ir_num2_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_SYS_MUTE,     APP_MSG_NULL,         APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,      APP_MSG_NULL,
+};
+const int key_bt_ir_num3_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_PP,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_OPEN_SIRI,           APP_MSG_NULL,
+};
+const int key_bt_ir_num4_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_PREV,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num5_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_NEXT,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num6_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_CHANGE_EQ,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num7_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_VOL_DOWN,  APP_MSG_VOL_DOWN,       APP_MSG_VOL_DOWN,
+    APP_MSG_NULL,           APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num8_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_VOL_UP,     APP_MSG_VOL_UP,       APP_MSG_VOL_UP,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num9_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num10_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num11_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num12_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num13_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num14_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num15_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num16_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num17_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num18_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num19_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_ir_num20_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,     APP_MSG_NULL,       APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+#endif
+
+#if TCFG_IOKEY_ENABLE
+//短按                  //长按                  //hold
+//长按抬起                   //双击                       //三击
+const int key_bt_io_num0_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,    APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_NULL,    APP_MSG_CURRENT_BAT,  APP_MSG_NULL,
+    APP_MSG_NULL,    APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_NULL,    APP_MSG_NULL,  APP_MSG_POWER_OFF,
+    APP_MSG_NULL,    APP_MSG_START_PAIR, APP_MSG_DISCON_RESET_BT,
+};
+const int key_bt_io_num1_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_TAKE_PHOTO,    APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_NULL,    APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_NULL,    APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_RECORD_START,
+};
+
+const int key_bt_io_num2_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_NEXT,     APP_MSG_VOL_UP,         APP_MSG_VOL_UP,
+    APP_MSG_NULL,                APP_MSG_OPEN_SIRI,           APP_MSG_NULL,
+};
+const int key_bt_io_num3_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_PREV,     APP_MSG_VOL_DOWN,       APP_MSG_VOL_DOWN,
+    APP_MSG_NULL,           APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_io_num4_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_io_num5_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_io_num6_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_io_num7_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_io_num8_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+const int key_bt_io_num9_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+    APP_MSG_NULL,            APP_MSG_NULL,           APP_MSG_NULL,
+};
+#endif
+
+#if TCFG_LPTOUCH_ENABLE
+//ch0-ch7,目前只用到ch3,ch4,ch5
+const int key_bt_lptouch_num0_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,
+};
+
+const int key_bt_lptouch_num1_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,
+};
+
+const int key_bt_lptouch_num2_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,
+};
+
+const int key_bt_lptouch_num3_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_PP,  APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_NULL, APP_MSG_MUSIC_CTRL_NEXT,  APP_MSG_MUSIC_CTRL_PREV,
+    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_INCALL_REC,
+};
+
+const int key_bt_lptouch_num4_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_PP,  APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_NULL, APP_MSG_MUSIC_CTRL_NEXT,  APP_MSG_MUSIC_CTRL_PREV,
+    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_INCALL_REC,
+};
+
+const int key_bt_lptouch_num5_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_MUSIC_PP,  APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_NULL, APP_MSG_MUSIC_CTRL_NEXT,  APP_MSG_MUSIC_CTRL_PREV,
+    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_INCALL_REC,
+};
+
+const int key_bt_lptouch_num6_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,
+};
+
+const int key_bt_lptouch_num7_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,
+};
+
+/* 滑动手势消息表: 仅 KEY_ACTION_SWIPE 索引有效, 其余为 APP_MSG_NULL */
+const int key_bt_lptouch_swipe_forward_msg_table[KEY_ACTION_MAX] = {
+    [KEY_ACTION_SWIPE] = APP_MSG_VOL_UP,
+};
+
+const int key_bt_lptouch_swipe_backward_msg_table[KEY_ACTION_MAX] = {
+    [KEY_ACTION_SWIPE] = APP_MSG_VOL_DOWN,
+};
+/* 双指长按消息表: 依次触发的时长阈值 */
+const int key_bt_lptouch_two_finger_msg_table[KEY_ACTION_MAX] = {
+    [KEY_ACTION_HOLD_2SEC] = APP_MSG_NULL,
+    [KEY_ACTION_HOLD_3SEC] = APP_MSG_NULL,
+    [KEY_ACTION_HOLD_5SEC] = APP_MSG_NULL,
+};
+#endif
+
+
+
+
+const struct key_remap_table bt_mode_key_table[] = {
+#if TCFG_ADKEY_ENABLE
+    { .key_value = KEY_AD_NUM0, .remap_table = key_bt_ad_num0_msg_table },
+    { .key_value = KEY_AD_NUM1, .remap_table = key_bt_ad_num1_msg_table },
+    { .key_value = KEY_AD_NUM2, .remap_table = key_bt_ad_num2_msg_table },
+    { .key_value = KEY_AD_NUM3, .remap_table = key_bt_ad_num3_msg_table },
+    { .key_value = KEY_AD_NUM4, .remap_table = key_bt_ad_num4_msg_table },
+    { .key_value = KEY_AD_NUM5, .remap_table = key_bt_ad_num5_msg_table },
+    { .key_value = KEY_AD_NUM6, .remap_table = key_bt_ad_num6_msg_table },
+    { .key_value = KEY_AD_NUM7, .remap_table = key_bt_ad_num7_msg_table },
+    { .key_value = KEY_AD_NUM8, .remap_table = key_bt_ad_num8_msg_table },
+    { .key_value = KEY_AD_NUM9, .remap_table = key_bt_ad_num9_msg_table },
+#endif
+#if TCFG_IRKEY_ENABLE
+    { .key_value = KEY_IR_NUM0, .remap_table = key_bt_ir_num0_msg_table },
+    { .key_value = KEY_IR_NUM1, .remap_table = key_bt_ir_num1_msg_table },
+    { .key_value = KEY_IR_NUM2, .remap_table = key_bt_ir_num2_msg_table },
+    { .key_value = KEY_IR_NUM3, .remap_table = key_bt_ir_num3_msg_table },
+    { .key_value = KEY_IR_NUM4, .remap_table = key_bt_ir_num4_msg_table },
+    { .key_value = KEY_IR_NUM5, .remap_table = key_bt_ir_num5_msg_table },
+    { .key_value = KEY_IR_NUM6, .remap_table = key_bt_ir_num6_msg_table },
+    { .key_value = KEY_IR_NUM7, .remap_table = key_bt_ir_num7_msg_table },
+    { .key_value = KEY_IR_NUM8, .remap_table = key_bt_ir_num8_msg_table },
+    { .key_value = KEY_IR_NUM9, .remap_table = key_bt_ir_num9_msg_table },
+    { .key_value = KEY_IR_NUM10, .remap_table = key_bt_ir_num10_msg_table },
+    { .key_value = KEY_IR_NUM11, .remap_table = key_bt_ir_num11_msg_table },
+    { .key_value = KEY_IR_NUM12, .remap_table = key_bt_ir_num12_msg_table },
+    { .key_value = KEY_IR_NUM13, .remap_table = key_bt_ir_num13_msg_table },
+    { .key_value = KEY_IR_NUM14, .remap_table = key_bt_ir_num14_msg_table },
+    { .key_value = KEY_IR_NUM15, .remap_table = key_bt_ir_num15_msg_table },
+    { .key_value = KEY_IR_NUM16, .remap_table = key_bt_ir_num16_msg_table },
+    { .key_value = KEY_IR_NUM17, .remap_table = key_bt_ir_num17_msg_table },
+    { .key_value = KEY_IR_NUM18, .remap_table = key_bt_ir_num18_msg_table },
+    { .key_value = KEY_IR_NUM19, .remap_table = key_bt_ir_num19_msg_table },
+    { .key_value = KEY_IR_NUM20, .remap_table = key_bt_ir_num20_msg_table },
+#endif
+#if TCFG_IOKEY_ENABLE
+    { .key_value = KEY_IO_NUM0, .remap_table = key_bt_io_num0_msg_table },
+    { .key_value = KEY_IO_NUM1, .remap_table = key_bt_io_num1_msg_table },
+    { .key_value = KEY_IO_NUM2, .remap_table = key_bt_io_num2_msg_table },
+    { .key_value = KEY_IO_NUM3, .remap_table = key_bt_io_num3_msg_table },
+    { .key_value = KEY_IO_NUM4, .remap_table = key_bt_io_num4_msg_table },
+    { .key_value = KEY_IO_NUM5, .remap_table = key_bt_io_num5_msg_table },
+    { .key_value = KEY_IO_NUM6, .remap_table = key_bt_io_num6_msg_table },
+    { .key_value = KEY_IO_NUM7, .remap_table = key_bt_io_num7_msg_table },
+    { .key_value = KEY_IO_NUM8, .remap_table = key_bt_io_num8_msg_table },
+    { .key_value = KEY_IO_NUM9, .remap_table = key_bt_io_num9_msg_table },
+#endif
+#if TCFG_LPTOUCH_ENABLE
+    /* 单通道触摸按键 ch0~ch7 */
+    { .key_value = KEY_LPTOUCH_NUM0, .remap_table = key_bt_lptouch_num0_msg_table },
+    { .key_value = KEY_LPTOUCH_NUM1, .remap_table = key_bt_lptouch_num1_msg_table },
+    { .key_value = KEY_LPTOUCH_NUM2, .remap_table = key_bt_lptouch_num2_msg_table },
+    { .key_value = KEY_LPTOUCH_NUM3, .remap_table = key_bt_lptouch_num3_msg_table },
+    { .key_value = KEY_LPTOUCH_NUM4, .remap_table = key_bt_lptouch_num4_msg_table },
+    { .key_value = KEY_LPTOUCH_NUM5, .remap_table = key_bt_lptouch_num5_msg_table },
+    { .key_value = KEY_LPTOUCH_NUM6, .remap_table = key_bt_lptouch_num6_msg_table },
+    { .key_value = KEY_LPTOUCH_NUM7, .remap_table = key_bt_lptouch_num7_msg_table },
+    /* 滑动手势 */
+    { .key_value = KEY_LPTOUCH_SWIPE_FORWARD,  .remap_table = key_bt_lptouch_swipe_forward_msg_table },
+    { .key_value = KEY_LPTOUCH_SWIPE_BACKWARD, .remap_table = key_bt_lptouch_swipe_backward_msg_table },
+    /* 双指长按 */
+    { .key_value = KEY_LPTOUCH_TWO_FINGER,     .remap_table = key_bt_lptouch_two_finger_msg_table },
+#endif
+    { .key_value = 0xff }
+};
+
+#endif /* #if TCFG_APP_BT_EN */

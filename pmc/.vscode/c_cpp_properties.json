@@ -1,0 +1,51 @@
+{
+    "configurations": [
+        {
+            "cStandard": "c99",
+            "compilerPath": "C:/JL/pi32/bin/clang.exe",
+            "cppStandard": "c++11",
+            "defines": [
+                "SUPPORT_MS_EXTENSIONS",
+                "CONFIG_RELEASE_ENABLE",
+                "__GCC_Q32S__",
+                "PMU_SYSTEM",
+                "CPU_CORE_NUM=1",
+                "CONFIG_CPU_BR33",
+                "CONFIG_BR33_FPGA_VERIFY",
+                "CONFIG_UCOS_ENABLE",
+                "BREDR_PMC_CODE",
+                "BT_PMC_BT_FUN_OVERWRITE",
+                "BREDR_Q32F",
+                "CONFIG_NEW_BREDR_ENABLE",
+                "CONFIG_NEW_MODEM_ENABLE",
+                "CONFIG_SUPPORT_AES_CCM_FOR_EDR",
+                "CONFIG_SUPPORT_EX_TWS_ADJUST",
+                "__PI32V2__"
+            ],
+            "includePath": [
+                "${workspaceFolder}/apps",
+                "${workspaceFolder}/apps/bsp/cpu/br33/config",
+                "${workspaceFolder}/include/driver",
+                "${workspaceFolder}/include/driver/cpu/br33",
+                "${workspaceFolder}/include/driver/cpu/br33/power/pmc",
+                "${workspaceFolder}/include/system",
+                "${workspaceFolder}/include/system/typedef",
+                "${workspaceFolder}/include/system/cpu/br33",
+                "${workspaceFolder}/include/utils",
+                "${workspaceFolder}/include/utils/generic",
+                "${workspaceFolder}/apps/sensor",
+                "${workspaceFolder}/apps/sensor/driver_vc_hr_11",
+                "${workspaceFolder}/apps/btctrler/soft_baseband",
+                "${workspaceFolder}/apps/sensor/driver",
+                "${workspaceFolder}/apps/sensor/driver/driver_vc_hr_11",
+                "${workspaceFolder}/apps/sensor/driver/driver_hr_vc30fx",
+                "${workspaceFolder}/apps/sensor/hal",
+                "${workspaceFolder}/apps/sensor/service",
+                "C:/JL/pi32/pi32v2-include"
+            ],
+            "intelliSenseMode": "clang-x86",
+            "name": "JL380N_PMC"
+        }
+    ],
+    "version": 4
+}

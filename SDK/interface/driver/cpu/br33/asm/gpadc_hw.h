@@ -1,0 +1,246 @@
+#ifndef  __GPADC_HW_H__
+#define  __GPADC_HW_H__
+//br35
+
+#include "generic/typedef.h"
+#include "gpio.h"
+#include "gpadc_def.h"
+#include "clock.h"
+#include "asm/power_interface.h"
+
+//
+// ===============================
+// 通道层级定义
+// ===============================
+enum {
+    ADC_MAIN_DMUX = 0b001,
+    ADC_MAIN_AMUX = 0b010,
+    ADC_MAIN_TMUX = 0b111,      //for test
+};
+
+enum {
+    ADC_ASEL_AUDIO_TEST,
+    ADC_ASEL_BT_TEST_LV,
+    ADC_ASEL_FLL24M,
+    ADC_ASEL_PMU_TEST,
+    ADC_ASEL_VPP_DET,
+    ADC_ASEL_XOSC32K,
+    ADC_ASEL_STRC32K,
+    ADC_ASEL_OCP,
+    ADC_ASEL_XOSC,
+    ADC_ASEL_SYSPLL,
+    ADC_ASEL_WAT,
+    ADC_ASEL_MIPI,
+    ADC_ASEL_PSRAMPLL,
+    ADC_ASEL_PSRAM,
+    ADC_ASEL_LPCTMU,
+    ADC_ASEL_USB,
+    ADC_ASEL_DIFF = 0xfe,
+    ADC_ASEL_IO = 0xff,
+};
+
+enum {
+    PMU_MAIN_BG             = 0b00000,
+    PMU_MAIN_PROGI          = 0b00010,
+    PMU_MAIN_VTEMP          = 0b00100,
+    PMU_MAIN_VPWR_4         = 0b00101,
+    PMU_MAIN_VBAT_4         = 0b00110,
+    PMU_MAIN_VBAT_2         = 0b00111,
+    PMU_MAIN_DCVDD          = 0b01010,
+    PMU_MAIN_DVDD           = 0b01011,
+    PMU_MAIN_WVDD           = 0b01101,
+    PMU_MAIN_PADC           = 0b10010,
+};
+
+enum {
+    PMU_SUB_WVBG0  = 0b00,
+    PMU_SUB_MVBG08 = 0b01,
+    PMU_SUB_LVDVBG = 0b10,
+    PMU_SUB_WVBG1  = 0b11,
+};
+
+//
+// ===============================
+// ADC 通道枚举表
+// ===============================
+enum AD_CH {
+    // --- IO 通道 ---
+    AD_CH_IO_PH8  = ADC_IO_CHANNEL_CODE(0),
+    AD_CH_IO_PB0  = ADC_IO_CHANNEL_CODE(1),
+    AD_CH_IO_PB1  = ADC_IO_CHANNEL_CODE(2),
+    AD_CH_IO_PB4  = ADC_IO_CHANNEL_CODE(3),
+    AD_CH_IO_PB5  = ADC_IO_CHANNEL_CODE(4),
+    AD_CH_IO_PC5  = ADC_IO_CHANNEL_CODE(5),
+    AD_CH_IO_PC7  = ADC_IO_CHANNEL_CODE(6),
+    AD_CH_IO_PC15 = ADC_IO_CHANNEL_CODE(7),
+    AD_CH_IO_PD0  = ADC_IO_CHANNEL_CODE(8),
+    AD_CH_IO_PD2  = ADC_IO_CHANNEL_CODE(9),
+    AD_CH_IO_PD10 = ADC_IO_CHANNEL_CODE(10),
+    AD_CH_IO_PP2  = ADC_IO_CHANNEL_CODE(11),
+    AD_CH_IO_PH0  = ADC_IO_CHANNEL_CODE(12),
+    AD_CH_IO_PH6  = ADC_IO_CHANNEL_CODE(13),
+    AD_CH_IO_PC9  = ADC_IO_CHANNEL_CODE(14),
+    AD_CH_IO_PD4  = ADC_IO_CHANNEL_CODE(15),
+
+    // --- BT  ---
+    AD_CH_BT = ADC_BT_CHANNEL_CODE(0),
+
+    // --- AUDIO  ---
+    AD_CH_AUDIO_MIC_LDO = ADC_AUDIO_CHANNEL_CODE(0),
+    AD_CH_AUDIO_MIC_BIAS0 = ADC_AUDIO_CHANNEL_CODE(1),
+    AD_CH_AUDIO_MIC_BIAS1 = ADC_AUDIO_CHANNEL_CODE(2),
+    AD_CH_AUDIO_MIC_BIAS2 = ADC_AUDIO_CHANNEL_CODE(3),
+    AD_CH_AUDIO_MIC_BIAS3 = ADC_AUDIO_CHANNEL_CODE(4),
+    AD_CH_AUDIO_MIC_QTVDD0 = ADC_AUDIO_CHANNEL_CODE(5),
+    AD_CH_AUDIO_MIC_QTVDD1 = ADC_AUDIO_CHANNEL_CODE(6),
+    AD_CH_AUDIO_MIC_QTVDD2 = ADC_AUDIO_CHANNEL_CODE(7),
+    AD_CH_AUDIO_MIC_QTVDD3 = ADC_AUDIO_CHANNEL_CODE(8),
+    AD_CH_AUDIO_MIC_QTREF0 = ADC_AUDIO_CHANNEL_CODE(9),
+    AD_CH_AUDIO_MIC_QTREF1 = ADC_AUDIO_CHANNEL_CODE(10),
+    AD_CH_AUDIO_MIC_QTREF2 = ADC_AUDIO_CHANNEL_CODE(11),
+    AD_CH_AUDIO_MIC_QTREF3 = ADC_AUDIO_CHANNEL_CODE(12),
+    AD_CH_AUDIO_MIC_ADCVDD0 = ADC_AUDIO_CHANNEL_CODE(13),
+    AD_CH_AUDIO_MIC_ADCVDD1 = ADC_AUDIO_CHANNEL_CODE(14),
+    AD_CH_AUDIO_MIC_ADCVDD2 = ADC_AUDIO_CHANNEL_CODE(15),
+    AD_CH_AUDIO_MIC_ADCVDD3 = ADC_AUDIO_CHANNEL_CODE(16),
+    AD_CH_AUDIO_MIC_ADC0_BUF0_OUT = ADC_AUDIO_CHANNEL_CODE(17),
+    AD_CH_AUDIO_MIC_ADC0_BUF1_OUT = ADC_AUDIO_CHANNEL_CODE(18),
+    AD_CH_AUDIO_MIC_ADC1_BUF0_OUT = ADC_AUDIO_CHANNEL_CODE(19),
+    AD_CH_AUDIO_MIC_ADC1_BUF1_OUT = ADC_AUDIO_CHANNEL_CODE(20),
+    AD_CH_AUDIO_MIC_ADC2_BUF0_OUT = ADC_AUDIO_CHANNEL_CODE(21),
+    AD_CH_AUDIO_MIC_ADC2_BUF1_OUT = ADC_AUDIO_CHANNEL_CODE(22),
+    AD_CH_AUDIO_MIC_ADC3_BUF0_OUT = ADC_AUDIO_CHANNEL_CODE(23),
+    AD_CH_AUDIO_MIC_ADC3_BUF1_OUT = ADC_AUDIO_CHANNEL_CODE(24),
+    AD_CH_AUDIO_MIC_AIN_A0 = ADC_AUDIO_CHANNEL_CODE(25),
+    AD_CH_AUDIO_MIC_AIN_B0 = ADC_AUDIO_CHANNEL_CODE(26),
+    AD_CH_AUDIO_MIC_AIN_C0 = ADC_AUDIO_CHANNEL_CODE(27),
+    AD_CH_AUDIO_MIC_AIN_D0 = ADC_AUDIO_CHANNEL_CODE(28),
+    AD_CH_AUDIO_DACVCM = ADC_AUDIO_CHANNEL_CODE(29),
+    AD_CH_AUDIO_FIFOVDD = ADC_AUDIO_CHANNEL_CODE(30),
+    AD_CH_AUDIO_DACVDD = ADC_AUDIO_CHANNEL_CODE(31),
+    AD_CH_AUDIO_HPVDD = ADC_AUDIO_CHANNEL_CODE(32),
+    AD_CH_AUDIO_RDACFL = ADC_AUDIO_CHANNEL_CODE(33),
+    AD_CH_AUDIO_RDACFR = ADC_AUDIO_CHANNEL_CODE(34),
+    AD_CH_AUDIO_RDACRL = ADC_AUDIO_CHANNEL_CODE(35),
+    AD_CH_AUDIO_DACFL = ADC_AUDIO_CHANNEL_CODE(36),
+    AD_CH_AUDIO_DACFR = ADC_AUDIO_CHANNEL_CODE(37),
+    AD_CH_AUDIO_DACRL = ADC_AUDIO_CHANNEL_CODE(38),
+    AD_CH_AUDIO_AMUXFL = ADC_AUDIO_CHANNEL_CODE(39),
+    AD_CH_AUDIO_AMUXFR = ADC_AUDIO_CHANNEL_CODE(40),
+    AD_CH_AUDIO_AMUXRL = ADC_AUDIO_CHANNEL_CODE(41),
+    AD_CH_AUDIO_VBGVDD = ADC_AUDIO_CHANNEL_CODE(42),
+    AD_CH_AUDIO_VCMBUF = ADC_AUDIO_CHANNEL_CODE(43),
+    AD_CH_AUDIO_IRP10U = ADC_AUDIO_CHANNEL_CODE(44),
+
+    // --- CLK  ---
+    AD_CH_CLK_XOSC     = ADC_ANA_CHANNEL_CODE(ADC_ASEL_XOSC, 0),
+    AD_CH_CLK_SYSPLL   = ADC_ANA_CHANNEL_CODE(ADC_ASEL_SYSPLL, 0),
+    AD_CH_CLK_FLL24M   = ADC_ANA_CHANNEL_CODE(ADC_ASEL_FLL24M, 0),
+    AD_CH_CLK_XOSC32K  = ADC_ANA_CHANNEL_CODE(ADC_ASEL_XOSC32K, 0),
+    AD_CH_CLK_STRC32K  = ADC_ANA_CHANNEL_CODE(ADC_ASEL_STRC32K, 0),
+
+    // --- xxx  ---
+    AD_CH_USB          = ADC_ANA_CHANNEL_CODE(ADC_ASEL_USB, 0),
+    AD_CH_LPCTM        = ADC_ANA_CHANNEL_CODE(ADC_ASEL_LPCTMU, 0),
+
+    // --- PMU  ---
+    AD_CH_PMU_WVBG0  = ADC_PMU_CHANNEL_CODE(PMU_MAIN_BG, PMU_SUB_WVBG0),
+    AD_CH_PMU_MVBG08 = ADC_PMU_CHANNEL_CODE(PMU_MAIN_BG, PMU_SUB_MVBG08),
+    AD_CH_PMU_LVDVBG = ADC_PMU_CHANNEL_CODE(PMU_MAIN_BG, PMU_SUB_LVDVBG),
+    AD_CH_PMU_WVBG1  = ADC_PMU_CHANNEL_CODE(PMU_MAIN_BG, PMU_SUB_WVBG1),
+
+    AD_CH_PMU_PROGI  = ADC_PMU_CHANNEL_CODE(PMU_MAIN_PROGI, 0),
+    AD_CH_PMU_VTEMP  = ADC_PMU_CHANNEL_CODE(PMU_MAIN_VTEMP, 0),
+    AD_CH_PMU_VPWR_4 = ADC_PMU_CHANNEL_CODE(PMU_MAIN_VPWR_4, 0),
+    AD_CH_PMU_VBAT_4 = ADC_PMU_CHANNEL_CODE(PMU_MAIN_VBAT_4, 0),
+    AD_CH_PMU_VBAT_2 = ADC_PMU_CHANNEL_CODE(PMU_MAIN_VBAT_2, 0),
+    AD_CH_PMU_DCVDD  = ADC_PMU_CHANNEL_CODE(PMU_MAIN_DCVDD, 0),
+    AD_CH_PMU_DVDD   = ADC_PMU_CHANNEL_CODE(PMU_MAIN_DVDD, 0),
+    AD_CH_PMU_WVDD   = ADC_PMU_CHANNEL_CODE(PMU_MAIN_WVDD, 0),
+    AD_CH_PMU_PADC0  = ADC_PMU_CHANNEL_CODE(PMU_MAIN_PADC, 0),
+    AD_CH_PMU_PADC1  = ADC_PMU_CHANNEL_CODE(PMU_MAIN_PADC, 1),
+    AD_CH_PMU_PADC2  = ADC_PMU_CHANNEL_CODE(PMU_MAIN_PADC, 2),
+
+    // --- 虚拟通道，不做adc采样，直接返回adc的最大量程 ---
+    AD_CH_IOVDD = -1,
+};
+
+
+#define AD_CH_IO_BASE       AD_CH_IO_PH8
+
+#define ADC_CLK_MAX         500*1000 //ADC时钟最高支持频率 默认8M, vbg+vbat+vtemp+io 时间在50us左右
+#define ADC_VBG_CENTER      800
+#define ADC_VBG_TRIM_STEP   3
+#define ADC_VBG_DATA_WIDTH  0
+#define ADC_EXTERN_VOLTAGE_TRIM_EN  0
+
+extern const u8 gpadc_battery_mode;
+extern const u32 gpadc_ch_power;
+extern const u8 gpadc_ch_power_div;
+extern const u8 gpadc_power_supply_mode;
+
+
+//防编译报错
+#define AD_CH_PMU_VBG   AD_CH_PMU_MVBG08
+#define AD_CH_LDOREF    AD_CH_PMU_VBG
+#define AD_CH_PMU_VPWR  AD_CH_PMU_VPWR_4
+#define AD_CH_PMU_VBAT  gpadc_ch_power
+#define AD_CH_PMU_VBAT_DIV  gpadc_ch_power_div
+
+#define AD_CH_LPCTMU    AD_CH_LPCTM
+
+#define ADC_CH_PMU_VPWR_4  AD_CH_PMU_VPWR_4
+#define ADC_CH_PMU_VBAT_2  AD_CH_PMU_VBAT_2
+#define ADC_CH_PMU_VBAT_4  AD_CH_PMU_VBAT_4
+
+
+#define AD_CH_IO_PE3   AD_CH_PMU_PADC0
+#define AD_CH_IO_PE4   AD_CH_PMU_PADC1
+
+#define ADC_PMU_PADC_TEST_SEL(x)    P33_CON_SET(P3_PMU_ADC2, 0, 2, x)
+#define ADC_PMU_CHANNEL_ADC(x)      P33_CON_SET(P3_PMU_ADC1, 0, 5, x)//PMU_TEST_S3-0
+#define ADC_PMU_VBG_TEST_SEL(x)     P33_CON_SET(P3_PMU_ADC0, 4, 2, x)
+#define ADC_PMU_VBG_TEST_EN(x)      P33_CON_SET(P3_PMU_ADC0, 3, 1, x)
+#define ADC_PMU_VBG_BUFFER_EN(x)    P33_CON_SET(P3_PMU_ADC0, 2, 1, x)
+#define ADC_PMU_DET_OE(x)           P33_CON_SET(P3_PMU_ADC0, 1, 1, x)
+#define ADC_PMU_TOADC_EN(x)         P33_CON_SET(P3_PMU_ADC0, 0, 1, x)
+#define ADC_PMU_CH_CLOSE()  {   ADC_PMU_DET_OE(0);\
+                                ADC_PMU_TOADC_EN(0);\
+                                ADC_PMU_VBG_TEST_EN(0);\
+                            }
+
+
+enum {
+    M2P_MSG_GPADC_SUSPEND,
+    M2P_MSG_GPADC_RESUME,
+    M2P_MSG_GPADC_INFO_INIT,
+};
+
+
+//gpadc_hw.c 实现
+void adc_pmu_vbg_enable();
+void adc_pmu_vbg_disable();
+void adc_pmu_ch_select(u32 ch);
+void adc_audio_ch_select(u32 ch_sel, u32 *_adc_con);
+void adc_adjust_div(void);
+_INLINE_ u8 adc_get_clk_div();
+
+
+//gpadc_hw_v4.c 实现
+void adc_close();
+void adc_sample(enum AD_CH ch, u32 ie, u32 calibrate_en);
+void adc_wait_enter_idle();
+u32 adc_wait_pnd();
+void adc_set_enter_idle();
+u32 adc_get_res();
+_INLINE_ u32 adc_idle_query();
+_INLINE_ void adc_register_clear();
+void adc_data_res_check();
+void adc_suspend();
+void adc_resume();
+void adc_internal_signal_to_io(enum AD_CH analog_ch, u16 gpio);
+void adc_delay_init();
+void adc_delay_set(enum AD_CH ch, u32 trig_delay_us, u32 sample_delay);
+
+#endif  /*GPADC_HW_H*/
+

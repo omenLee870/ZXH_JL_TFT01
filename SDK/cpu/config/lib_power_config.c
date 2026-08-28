@@ -1,0 +1,77 @@
+#ifdef SUPPORT_MS_EXTENSIONS
+#pragma bss_seg(".lib_power_config.data.bss")
+#pragma data_seg(".lib_power_config.data")
+#pragma const_seg(".lib_power_config.text.const")
+#pragma code_seg(".lib_power_config.text")
+#endif
+#include "asm/power_interface.h"
+#include "cpu/includes.h"
+#include "app_config.h"
+#include "rtc/rtc_dev.h"
+
+//-------------------------------------------------------------------
+/*config
+ */
+#define CONFIG_UART_DEBUG_ENABLE	UART_DEBUG//CONFIG_DEBUG_ENABLE
+#ifdef TCFG_DEBUG_UART_TX_PIN
+#define CONFIG_UART_DEBUG_PORT		TCFG_DEBUG_UART_TX_PIN
+#else
+#define CONFIG_UART_DEBUG_PORT		-1
+#endif
+
+//-------------------------------------------------------------------
+/*调试pdown进不去的场景，影响低功耗流程
+ * 打印蓝牙和系统分别可进入低功耗的时间(msec)
+ * 打印当前哪些模块处于busy,用于蓝牙已经进入sniff但系统无法进入低功耗的情况，如果usr_timer处于busy则会打印对应的func地址
+ */
+const char debug_is_idle = 0;
+
+//-------------------------------------------------------------------
+/* 调试快速起振信息，不影响低功耗流程
+ */
+const bool pdebug_xosc_resume = 0;
+
+//-------------------------------------------------------------------
+/* 调试低功耗流程
+ */
+//出pdown打印信息，不影响低功耗流程
+const bool pdebug_pdown_info = 0;
+
+//使能串口调试低功耗，在pdown、soff模式保持串口, pdebug_pubyte_pdown\pdebug_lp_dump_ram\pdebug_putbyte_soff\log_debug
+const u32 pdebug_uart_lowpower = 0;
+#ifdef CONFIG_UART_DEBUG_PORT
+const u32 pdebug_uart_port = CONFIG_UART_DEBUG_PORT;
+#else
+const u32 pdebug_uart_port = -1;
+#endif
+
+//使能串口putbyte调试pdown流程
+const bool pdebug_putbyte_pdown = 0;
+
+//使能串口putbyte调试soff流程
+const bool pdebug_putbyte_soff = 0;
+
+//使能串口pdown/poff/soff打印所有的寄存器
+const bool pdebug_lp_dump_ram = 0;
+
+//使能uart_flowing
+const bool pdebug_uart_flowing = 0;
+
+//使能低功耗耗时检查
+// 1:打印程序执行时间 2:程序执行时间有问题报错
+const bool pdebug_reserve_time = 0;
+
+//使能xosc自动功耗控制
+const u32 lib_xosc_auto_ctrl_enable = 1;
+
+#if (TCFG_APP_RTC_EN)
+const bool control_rtc_enable = 1;
+#else
+const bool control_rtc_enable = 0;
+#endif
+
+#if (RTC_CLK_RES_SEL == CLK_SEL_LRC)
+const u32 control_rtc_clk_sel = CLK_SEL_LRC;
+#else
+const u32 control_rtc_clk_sel = CLK_SEL_32K;
+#endif
