@@ -174,6 +174,16 @@
 #ifndef SPK_FRAME_LEN
 #define SPK_FRAME_LEN               (((SPK_AUDIO_RATE) * SPK_AUDIO_RES / 8 * SPK_CHANNEL)/1000+4)
 #endif
+
+/* ---------- UAC multi-stream config ---------- */
+#ifndef UAC_MAX_STREAMS
+#define UAC_MAX_STREAMS  1
+#endif
+
+#if defined(MAX_EP_RX) && ((UAC_MAX_STREAMS * 2) > (MAX_EP_RX - 1))
+#error "UAC_MAX_STREAMS exceeds available endpoints"
+#endif
+
 #ifndef SPK_PCM_Type
 #define SPK_PCM_Type                (SPK_AUDIO_RES >> 4)                // 0=8 ,1=16
 #endif
@@ -190,18 +200,10 @@
 #ifndef SPEAKER_STR_INDEX
 #define SPEAKER_STR_INDEX           5
 #endif
-#ifndef SPK_INPUT_TERMINAL_ID
-#define SPK_INPUT_TERMINAL_ID       1
-#endif
-#ifndef SPK_FEATURE_UNIT_ID
-#define SPK_FEATURE_UNIT_ID         2
-#endif
-#ifndef SPK_OUTPUT_TERMINAL_ID
-#define SPK_OUTPUT_TERMINAL_ID      3
-#endif
-#ifndef SPK_SELECTOR_UNIT_ID
-#define SPK_SELECTOR_UNIT_ID        8
-#endif
+#define SPK_INPUT_TERMINAL_ID(n)   (1  + (n) * 10)
+#define SPK_FEATURE_UNIT_ID(n)     (2  + (n) * 10)
+#define SPK_SELECTOR_UNIT_ID(n)    (3  + (n) * 10)
+#define SPK_OUTPUT_TERMINAL_ID(n)  (4  + (n) * 10)
 
 /////////////Microphone Class
 #ifndef MIC_AUDIO_RATE_NUM
@@ -236,6 +238,50 @@
 #ifndef MIC_CHANNEL
 #define MIC_CHANNEL                 1
 #endif
+
+/* ---------- wChannelConfig 值（u16，供 g_stream_configs 使用） ---------- */
+/* 位定义见 USB Audio Class Spec：FL=0x1 FR=0x2 FC=0x4 LFE=0x8
+ * BL=0x10 BR=0x20 SL=0x200 SR=0x400 ... */
+#if SPK_CHANNEL == 1
+#define SPK_CHANNEL_CONFIG_VAL       0x0004
+#elif SPK_CHANNEL == 2
+#define SPK_CHANNEL_CONFIG_VAL       0x0003
+#elif SPK_CHANNEL == 3
+#define SPK_CHANNEL_CONFIG_VAL       0x000B
+#elif SPK_CHANNEL == 4
+#define SPK_CHANNEL_CONFIG_VAL       0x0033
+#elif SPK_CHANNEL == 5
+#define SPK_CHANNEL_CONFIG_VAL       0x0037
+#elif SPK_CHANNEL == 6
+#define SPK_CHANNEL_CONFIG_VAL       0x003F
+#elif SPK_CHANNEL == 7
+#define SPK_CHANNEL_CONFIG_VAL       0x0637
+#elif SPK_CHANNEL == 8
+#define SPK_CHANNEL_CONFIG_VAL       0x063F
+#else
+#error "unsupport usb speaker channel number"
+#endif
+
+#if MIC_CHANNEL == 1
+#define MIC_CHANNEL_CONFIG_VAL       0x0000
+#elif MIC_CHANNEL == 2
+#define MIC_CHANNEL_CONFIG_VAL       0x0003
+#elif MIC_CHANNEL == 3
+#define MIC_CHANNEL_CONFIG_VAL       0x000B
+#elif MIC_CHANNEL == 4
+#define MIC_CHANNEL_CONFIG_VAL       0x0033
+#elif MIC_CHANNEL == 5
+#define MIC_CHANNEL_CONFIG_VAL       0x0037
+#elif MIC_CHANNEL == 6
+#define MIC_CHANNEL_CONFIG_VAL       0x003F
+#elif MIC_CHANNEL == 7
+#define MIC_CHANNEL_CONFIG_VAL       0x0637
+#elif MIC_CHANNEL == 8
+#define MIC_CHANNEL_CONFIG_VAL       0x063F
+#else
+#error "unsupport usb mic channel number"
+#endif
+
 #ifndef MIC_FRAME_LEN
 #define MIC_FRAME_LEN               ((MIC_AUDIO_RATE * MIC_AUDIO_RES / 8 * MIC_CHANNEL)/1000)
 #endif
@@ -251,18 +297,54 @@
 #ifndef MIC_STR_INDEX
 #define MIC_STR_INDEX               6
 #endif
-#ifndef MIC_INPUT_TERMINAL_ID
-#define MIC_INPUT_TERMINAL_ID       4
+
+/* ---------- UAC Stream 1 string indices ---------- */
+#ifndef UAC_STREAM_1_SPEAKER_STR_INDEX
+#define UAC_STREAM_1_SPEAKER_STR_INDEX  0  /* 0 = OS auto-generates name */
 #endif
-#ifndef MIC_FEATURE_UNIT_ID
-#define MIC_FEATURE_UNIT_ID         5
+#ifndef UAC_STREAM_1_MIC_STR_INDEX
+#define UAC_STREAM_1_MIC_STR_INDEX      0
 #endif
-#ifndef MIC_OUTPUT_TERMINAL_ID
-#define MIC_OUTPUT_TERMINAL_ID      6
+
+/* ---------- UAC Stream 1 配置默认值（默认继承 stream 0，项目可在 sdk_config.h 覆盖） ---------- */
+#ifndef UAC_STREAM_1_SPK_RATE_NUM
+#define UAC_STREAM_1_SPK_RATE_NUM       SPK_AUDIO_RATE_NUM
 #endif
-#ifndef MIC_SELECTOR_UNIT_ID
-#define MIC_SELECTOR_UNIT_ID        7
+#ifndef UAC_STREAM_1_SPK_RATE_1
+#define UAC_STREAM_1_SPK_RATE_1         SPK_AUDIO_RATE_1
 #endif
+#ifndef UAC_STREAM_1_SPK_RATE_2
+#define UAC_STREAM_1_SPK_RATE_2         SPK_AUDIO_RATE_2
+#endif
+#ifndef UAC_STREAM_1_SPK_RATE_3
+#define UAC_STREAM_1_SPK_RATE_3         SPK_AUDIO_RATE_3
+#endif
+#ifndef UAC_STREAM_1_SPK_RES
+#define UAC_STREAM_1_SPK_RES            SPK_AUDIO_RES
+#endif
+#ifndef UAC_STREAM_1_SPK_RES_2
+#define UAC_STREAM_1_SPK_RES_2          SPK_AUDIO_RES_2
+#endif
+#ifndef UAC_STREAM_1_SPK_CHANNELS
+#define UAC_STREAM_1_SPK_CHANNELS       SPK_CHANNEL
+#endif
+#ifndef UAC_STREAM_1_SPK_CHANNEL_CONFIG
+#define UAC_STREAM_1_SPK_CHANNEL_CONFIG SPK_CHANNEL_CONFIG_VAL
+#endif
+#ifndef UAC_STREAM_1_SPK_EP
+#define UAC_STREAM_1_SPK_EP             (SPK_ISO_EP_OUT + 1)  /* 需与 stream 0 不同，项目应显式配置 */
+#endif
+#ifndef UAC_STREAM_1_MIC_RATE_NUM
+#define UAC_STREAM_1_MIC_RATE_NUM       0   /* stream 1 默认无 MIC */
+#endif
+#ifndef UAC_STREAM_1_MIC_EP
+#define UAC_STREAM_1_MIC_EP             0
+#endif
+
+#define MIC_INPUT_TERMINAL_ID(n)   (5  + (n) * 10)
+#define MIC_FEATURE_UNIT_ID(n)     (6  + (n) * 10)
+#define MIC_SELECTOR_UNIT_ID(n)    (7  + (n) * 10)
+#define MIC_OUTPUT_TERMINAL_ID(n)  (8  + (n) * 10)
 
 ////////////CDC Class
 #ifndef CDC_DATA_EP_IN
@@ -335,6 +417,13 @@
 #elif defined(FUSB_MODE) && FUSB_MODE == 0
 #define CUSTOM_HID_INTERVAL         CUSTOM_HID_INTERVAL_HS
 #endif
+#endif
+
+///USB MIDI Version
+#define USB_MIDI_VERSION_1_0       0x10
+#define USB_MIDI_VERSION_2_0       0x20
+#ifndef USB_MIDI_VERSION
+#define USB_MIDI_VERSION           USB_MIDI_VERSION_1_0
 #endif
 
 ////////////MIDI Class

@@ -23,13 +23,14 @@
         *(.debug_code)
         *(.debug_const)
 
-
+		. = ALIGN(4);
 	    _lib_version_begin = .;
 	    PROVIDE(lib_version_begin = .);
 	    KEEP(*(.lib_version))
 	    _lib_version_end = .;
 	    PROVIDE(lib_version_end = .);
 
+		. = ALIGN(4);
 		_initcall_begin = .;
 		PROVIDE(initcall_begin = .);
 	    KEEP(*(.initcall))

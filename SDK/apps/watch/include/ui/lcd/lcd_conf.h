@@ -127,9 +127,9 @@
 #endif
 
 #if defined(TCFG_LCD_MCU_ST7789V_240x320_ENABLE) && TCFG_LCD_MCU_ST7789V_240x320_ENABLE
-// 物理屏240x320竖屏, 通过0x36 MADCTL(MV|MX=0x60)硬件旋转90°显示320x240横屏UI
-#define LCD_WIDTH  320
-#define LCD_HEIGHT 240
+// 物理屏240x320竖屏, MADCTL 0x00 原生竖屏(与 lcd_spi_st7789v_240x320 一致)
+#define LCD_WIDTH  240
+#define LCD_HEIGHT 320
 #endif
 
 #if TCFG_SPI_LCD_ENABLE

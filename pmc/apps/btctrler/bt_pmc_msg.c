@@ -87,8 +87,8 @@ static void bt_rxtx_gpio(u8 *__msg, u32 len)
     SFR(PMC_IOMC->OCH_IOMC0, 0, 8, 16);
     SFR(PMC_IOMC->OCH_IOMC0, 8, 8, 17);
 
-    gpio_set_fun_output_port(rxtx->rx_io, PMC_FO_GP_OCH0, 1, 1); //RX
-    gpio_set_fun_output_port(rxtx->tx_io, PMC_FO_GP_OCH1, 1, 1); //TX
+    gpio_set_fun_output_port(rxtx->rx_io, PMC_FO_GP_OCH1, 1, 1); //RX
+    gpio_set_fun_output_port(rxtx->tx_io, PMC_FO_GP_OCH0, 1, 1); //TX
 }
 
 static void bt_main_msg_handler(void *priv, u8 *msg, u32 len)

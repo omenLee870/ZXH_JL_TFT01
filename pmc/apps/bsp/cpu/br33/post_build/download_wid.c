@@ -54,21 +54,21 @@ copy pmu_rlse.bin pmu_text.bin
 
 set LZ4_PACKET=.\lz4_packet.exe
 
-set bank_files=0x404 pmu_text.bin
+set bank_files=%bank_files% 0x404 pmu_text.bin
 %LZ4_PACKET% -input pmu_text.bin 0 -o pmu_text.lz4
-set bank_lz4_files=0x404 pmu_text.lz4
+set bank_lz4_files=%bank_lz4_files% 0x404 pmu_text.lz4
 
-set bank_files=0x200 pmc1_rst.bin
+set bank_files=%bank_files% 0x200 pmc1_rst.bin
 %LZ4_PACKET% -input pmc1_rst.bin 0 -o pmc1_rst.lz4
-set bank_lz4_files=0x200 pmc1_rst.lz4
+set bank_lz4_files=%bank_lz4_files% 0x200 pmc1_rst.lz4
 
-set bank_files=0xe560 pmc1_text.bin
+set bank_files=%bank_files% 0xe560 pmc1_text.bin
 %LZ4_PACKET% -input pmc1_text.bin 0 -o pmc1_text.lz4
-set bank_lz4_files=0xeb68 pmc1_text.lz4
+set bank_lz4_files=%bank_lz4_files% 0xeb68 pmc1_text.lz4
 
-set bank_files=0x80000 pmc1_text2.bin
+set bank_files=%bank_files% 0x80000 pmc1_text2.bin
 %LZ4_PACKET% -input pmc1_text2.bin 0 -o pmc1_text2.lz4
-set bank_lz4_files=0x80000 pmc1_text2.lz4
+set bank_lz4_files=%bank_lz4_files% 0x80000 pmc1_text2.lz4
 
 
 for %%a in (bank_demo_init.bin) do if %%~za gtr 0 (

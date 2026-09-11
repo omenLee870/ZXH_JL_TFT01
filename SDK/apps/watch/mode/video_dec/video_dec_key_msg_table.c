@@ -40,8 +40,13 @@ const int key_video_dec_io_num2_msg_table[KEY_ACTION_MAX] = {
 #endif
 
 #if TCFG_ADKEY_ENABLE
+/* AD 键(本机实体键) 全屏回放页:
+ *   AD0: 单击=上一个(UI 层已处理弹回列表, 双击/长按不用), 长按返回由 UI 层处理;
+ *   AD1: 单击=播放/暂停, 长按=删除菜单;
+ *   AD2: 单击=下一个。
+ * 上一/下一个都改为短按, 移除原先 AD1双击=下一个 / AD2双击=上一个, 避免误翻。 */
 const int key_video_dec_ad_num0_msg_table[KEY_ACTION_MAX] = {
-    /* CLICK */ APP_MSG_VIDEO_DEC_BACK,
+    /* CLICK */ APP_MSG_VIDEO_DEC_PREV,
     /* LONG  */ APP_MSG_NULL,
     /* HOLD  */ APP_MSG_NULL,
     /* UP    */ APP_MSG_NULL,
@@ -53,7 +58,7 @@ const int key_video_dec_ad_num1_msg_table[KEY_ACTION_MAX] = {
     /* LONG  */ APP_MSG_VIDEO_DEC_SHOW_DEL_MENU,
     /* HOLD  */ APP_MSG_NULL,
     /* UP    */ APP_MSG_NULL,
-    /* DOUBLE*/ APP_MSG_VIDEO_DEC_NEXT,
+    /* DOUBLE*/ APP_MSG_NULL,
     /* TRIPLE*/ APP_MSG_NULL,
 };
 const int key_video_dec_ad_num2_msg_table[KEY_ACTION_MAX] = {
@@ -61,7 +66,7 @@ const int key_video_dec_ad_num2_msg_table[KEY_ACTION_MAX] = {
     /* LONG  */ APP_MSG_NULL,
     /* HOLD  */ APP_MSG_NULL,
     /* UP    */ APP_MSG_NULL,
-    /* DOUBLE*/ APP_MSG_VIDEO_DEC_PREV,
+    /* DOUBLE*/ APP_MSG_NULL,
     /* TRIPLE*/ APP_MSG_NULL,
 };
 #endif

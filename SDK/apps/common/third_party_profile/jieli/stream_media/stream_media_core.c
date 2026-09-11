@@ -15,6 +15,7 @@
 #include "stream_media_core.h"
 #include "stream_media_protocol.h"
 #include "stream_media_device_config.h"
+#include "media_spp/media_spp.h"
 
 // 命令收发 buffer
 #define STREAM_CMD_BUF_SIZE  512
@@ -123,7 +124,10 @@ static int send_sm_data(const u8 *data, u16 len, u16 ble_att_handle, u8 att_op_t
         return app_ble_att_send_data(rcsp_server_edr_att_hdl, ble_att_handle, (u8 *)data, len, att_op_type);
     }
 #endif
-    // 降级走 SPP
+    // 降级走 SPP: 优先走流媒体独立通道(media_spp), 未连接再回退 RCSP 0x1101
+    if (media_spp_is_connected()) {
+        return media_spp_send((u8 *)data, len);
+    }
     u8 *spp_addr = app_spp_get_hdl_remote_addr(bt_rcsp_spp_hdl);
     if (spp_addr) {
         return app_spp_data_send(bt_rcsp_spp_hdl, (u8 *)data, len);
@@ -559,6 +563,14 @@ int stream_media_push_frame(const u8 *frame_data, u32 frame_size,
 
 static u8 g_core_inited = 0;
 
+/* media_spp 接收回调适配: 数据到达独立 SPP 通道后交给 stream_media 的 SPP 帧解析 */
+static void media_spp_on_recv_adapt(void *hdl, void *remote_addr, u8 *buf, u16 len)
+{
+    (void)hdl;
+    (void)remote_addr;
+    stream_media_on_spp_recv(buf, len);
+}
+
 void stream_media_core_init(void)
 {
     if (g_core_inited) {
@@ -568,6 +580,7 @@ void stream_media_core_init(void)
     g_negotiated_mtu = 512;
     set_state(STREAM_STATE_IDLE);
     g_cmd_sn = 0;
+    media_spp_recv_handler_register(media_spp_on_recv_adapt);
 }
 
 void stream_media_core_exit(void)
@@ -576,6 +589,7 @@ void stream_media_core_exit(void)
         return;
     }
     g_core_inited = 0;
+    media_spp_recv_handler_register(NULL);
     if (g_stream_stop_cb) {
         g_stream_stop_cb();
     }

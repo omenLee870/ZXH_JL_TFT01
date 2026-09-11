@@ -26,6 +26,8 @@ gpcnt需要打断低功耗采样，优先即最高且不可屏蔽
 #define IRQ_LP_CTM_IP   	    1
 #define IRQ_LP_VAD_IP   		0
 #define IRQ_GPCNT_IP   			3
+#define IRQ_SOFT3_IP   			7
+
 
 
 

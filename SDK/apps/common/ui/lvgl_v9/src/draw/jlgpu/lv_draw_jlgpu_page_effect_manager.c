@@ -7,6 +7,7 @@
 #include "jieli/extra/libs/jl_hexagon/lv_hexagon.h"
 #include "lv_draw_jlgpu_page_effect_hexagon.h"
 #include "lv_draw_jlgpu_page_effect_hexagon_reflection.h"
+#include "lv_draw_jlgpu_page_effect_lrb_mirror.h"
 #include "jieli/extra/libs/cube/lv_cube.h"
 #include "lv_draw_jlgpu_page_effect_cube.h"
 #include "lv_draw_jlgpu_page_effect_ops.h"
@@ -28,6 +29,13 @@
  *      DEFINES
  *********************/
 #define LV_PAGE_CLICK_SWIPE_THRESHOLD  10  /* 滑动/点击区分阈值(像素)，超过此距离视为滑动 */
+#define LV_PAGE_RIPPLE_MAX_AMP_DIV   1     /* 水波纹最大振幅 = 屏宽/DIV(除数越小浪越高) */
+#define LV_PAGE_RIPPLE_SPEED_GAIN    15    /* 振幅增益: target = 分界线速度(px/帧)*GAIN, clamp到最大振幅 */
+#define LV_PAGE_RIPPLE_STOP_DECAY_DIV 3    /* 分界线停下时衰减: 越小回直越快 */
+#define LV_PAGE_RIPPLE_RISE_DIV      2     /* 移动升起: 每帧 amp += (target-amp)/DIV, 越小升起越急 */
+#define LV_PAGE_RIPPLE_MOVE_THRESHOLD 2    /* 移动检测阈值(越小越易触发波浪): 分界线每帧位移超过才视为移动 */
+#define LV_PAGE_RIPPLE_SHARPNESS    3     /* 浪尖尖锐度: cos^N 幂次, 越大浪越尖, 1=圆润, 全屏覆盖 */
+#define LV_PAGE_RIPPLE_BAND_H       16     /* 每带高度(px), 越大相邻带错开越明显、锯齿越强 */
 
 /**********************
  *      TYPEDEFS
@@ -39,11 +47,13 @@
 extern lv_obj_t *ui_get_setup_scr_obj(int32_t scr_id);
 extern void get_touch_x_y_status(int32_t *x, int32_t *y, uint8_t *status);
 extern void jlgpu_set_page_effect_x_anim(void *obj, int32_t v);
+extern void jlgpu_page_effect_flatten_done(void);
 extern int32_t lv_port_get_first_touch_x(void);
 extern void dbi_link_gpu(u8 en);
 /**********************
  *  STATIC PROTOTYPES
  **********************/
+static void jlgpu_page_effect_set_translate(int32_t tx);
 
 /**********************
  *  STATIC VARIABLES
@@ -64,12 +74,22 @@ int lv_page_effect_get_page_num(lv_screen_load_anim_t page_mode)
     case LV_SCR_LOAD_ANIM_HEXAGON:
         return POLYTOPE_CONFIG;
     case LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION:
-        return POLYTOPE_CONFIG * 2;
     case LV_SCR_LOAD_ANIM_LRB_MIRROR:
-        return 4;
+        /* 倒影类: 6 本体面 + 6 镜像面 = 12 个 quad */
+        return POLYTOPE_CONFIG * 2;
     default:
         return 2;
     }
+}
+
+/* 反射/镜像类特效(本体面下挂镜像面): 页数 12, ctx 前半段与后半段共享本体指针 */
+static bool lv_page_effect_is_reflection_mode(void)
+{
+    if (g_page_effect_state.page_mode == LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION ||
+        g_page_effect_state.page_mode == LV_SCR_LOAD_ANIM_LRB_MIRROR) {
+        return true;
+    }
+    return false;
 }
 
 bool lv_page_effect_need_sticky(lv_screen_load_anim_t page_mode)
@@ -95,6 +115,8 @@ static const sticky_effect_ops_t *sticky_effect_get_ops(void)
         return lv_hexagon_effect_get_ops();
     case LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION:
         return lv_hexagon_reflection_effect_get_ops();
+    case LV_SCR_LOAD_ANIM_LRB_MIRROR:
+        return lv_lrb_mirror_effect_get_ops();
     default:
         return NULL;
     }
@@ -112,6 +134,9 @@ void lv_page_effect_set_page_index(lv_screen_load_anim_t page_mode,
         break;
     case LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION:
         lv_hexagon_reflection_effect_set_page_index(page_id, page_index);
+        break;
+    case LV_SCR_LOAD_ANIM_LRB_MIRROR:
+        lv_lrb_mirror_effect_set_page_index(page_id, page_index);
         break;
     default:
         break;
@@ -154,8 +179,7 @@ static void lv_page_effect_make_front(void)
     // page_id 数组的实际长度：reflection 模式是 POLYTOPE_CONFIG（不含倒影面），
     // 其他模式与 page_num 一致
     int page_num = lv_page_effect_get_page_num(g_page_effect_state.page_mode);
-    int id_count = (g_page_effect_state.page_mode == LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION)
-                   ? POLYTOPE_CONFIG : page_num;
+    int id_count = lv_page_effect_is_reflection_mode() ? POLYTOPE_CONFIG : page_num;
     int front_idx = lv_page_effect_get_front_index();
 
     if (front_idx < 0 || front_idx >= id_count) {
@@ -238,7 +262,7 @@ void lv_jlgpu_set_global_trans_param(lv_draw_jlgpu_unit_t *unit, const lv_area_t
     }
 
     switch (page_mode) {
-    case LV_SCR_LOAD_ANIM_DEFAULT:
+    case LV_SCR_LOAD_ANIM_OTHER_PAGE:
         // eff_touch_x 语义：0=全旧页, fb_width=全新页
         // 左区域 [0, eff_touch_x]=eff_ctx_new（新页面），右区域 [eff_touch_x, fb_width]=eff_ctx_old（旧页面）
         // RTL 时方向适配已在入口完成（eff_touch_x 镜像 + ctx 交换）
@@ -528,6 +552,154 @@ void lv_jlgpu_set_global_trans_param(lv_draw_jlgpu_unit_t *unit, const lv_area_t
             lv_jlgpu_task_list_run(unit);
         }
         break;
+    case LV_SCR_LOAD_ANIM_RIPPLE:
+        if (g_page_effect_state.effect_busy) {
+            if (!g_page_effect_state.swipe_ready) {
+                //方向未确定：只画旧页面全屏，避免首帧闪烁
+                unit->jlgpu_ctx = g_page_effect_state.jlgpu_ctx_list[0];
+                lv_area_t draw_area;
+                draw_area.x1 = screen_window->x1;
+                draw_area.x2 = screen_window->x2;
+                draw_area.y1 = screen_window->y1;
+                draw_area.y2 = screen_window->y2;
+                lv_jlgpu_sfr_set(unit, &draw_area, fb_width,
+                                 lv_jlgpu_get_offset_buf(px_map, screen_window, &draw_area),
+                                 JLGPU_FORMAT_RGB565);
+                lv_jlgpu_task_list_run(unit);
+            } else {
+                //水波纹：浪尖锚定在手指处(完全跟手), 波谷朝滑动后方延伸 amp(起伏), 恢复慢不影响跟手
+                int fb_height = lv_area_get_height(screen_window);
+                int lambda = fb_height * 2;                                //覆盖全屏: 半宽=屏高(全屏行都有波纹)
+                //最大振幅=屏宽/DIV, 实际振幅由下方按分界线速度(手指跟手/动画)驱动
+
+                int32_t base_div = eff_touch_x;
+                if (base_div < 0) {
+                    base_div = 0;
+                }
+                if (base_div > (int32_t)fb_width) {
+                    base_div = fb_width;
+                }
+
+                //振幅：由分界线速度统一驱动(手指跟手 + 按键/松手动画都适用)——分界线每帧位移
+                //超过阈值则升起, 停下则衰减拉平
+                if (g_page_effect_state.ripple_prev_div < 0) {
+                    g_page_effect_state.ripple_prev_div = base_div;   //首帧初始化, 避免残留位移尖峰
+                }
+                int32_t div_dx = base_div - g_page_effect_state.ripple_prev_div;
+                g_page_effect_state.ripple_prev_div = base_div;
+
+                int32_t amp = g_page_effect_state.ripple_amp;
+                int32_t adx = div_dx < 0 ? -div_dx : div_dx;
+                if (adx > LV_PAGE_RIPPLE_MOVE_THRESHOLD) {
+                    //分界线移动：更新凸出方向(朝移动方向)，目标振幅跟速度成正比
+                    g_page_effect_state.ripple_dir = (div_dx > 0) ? 1 : -1;
+                    int32_t max_amp = (int32_t)fb_width / LV_PAGE_RIPPLE_MAX_AMP_DIV;
+                    int32_t target = adx * LV_PAGE_RIPPLE_SPEED_GAIN;
+                    if (target > max_amp) {
+                        target = max_amp;
+                    }
+                    if (target > amp) {
+                        amp += (target - amp) / LV_PAGE_RIPPLE_RISE_DIV;
+                    }
+                } else {
+                    //分界线停下：向上取整衰减, 保证回直到0(不会被整数除法卡在1)
+                    amp -= (amp + LV_PAGE_RIPPLE_STOP_DECAY_DIV - 1) / LV_PAGE_RIPPLE_STOP_DECAY_DIV;
+                    if (amp < 0) {
+                        amp = 0;
+                    }
+                }
+                g_page_effect_state.ripple_amp = amp;
+
+                //浪尖y：实时跟随手指，未触摸时取屏幕中心
+                int finger_y = g_page_effect_state.finger_y;
+                if (finger_y < 0) {
+                    finger_y = screen_window->y1 + fb_height / 2;
+                }
+
+                //凸出方向：跟随手指当前水平移动方向, 未移动时兜底朝右
+                int sign = g_page_effect_state.ripple_dir;
+                if (sign == 0) {
+                    sign = 1;
+                }
+
+                //8行一条带，逐带重放新旧ctx，分界线随行交错形成波纹
+                const int band_h = LV_PAGE_RIPPLE_BAND_H;
+                int y = screen_window->y1;
+                while (y <= screen_window->y2) {
+                    int y_end = y + band_h - 1;
+                    if (y_end > screen_window->y2) {
+                        y_end = screen_window->y2;
+                    }
+
+                    int y_c = (y + y_end) / 2;                    //带中心行采样相位
+                    int dy = y_c - finger_y;
+                    int abs_dy = dy < 0 ? -dy : dy;
+                    int32_t div_x = base_div;
+                    if (abs_dy <= lambda / 2) {
+                        float cosv = cosf((float)dy * 3.14159265f / (float)lambda);
+                        //cos^N 幂次让峰顶更尖(N=1圆润, N大→尖峰), 同时保持全屏覆盖
+                        float shape = 1.0f;
+                        for (int i = 0; i < LV_PAGE_RIPPLE_SHARPNESS; i++) {
+                            shape *= cosv;
+                        }
+                        //浪尖(手指处, shape=1)=base_div(跟手); 波谷(边缘, shape=0)=base_div-sign*amp(后方拖尾)
+                        div_x = base_div + (int32_t)(sign * amp * (shape - 1.0f));
+                    }
+                    if (div_x < screen_window->x1) {
+                        div_x = screen_window->x1;
+                    }
+                    if (div_x > screen_window->x2) {
+                        div_x = screen_window->x2;
+                    }
+
+                    //左边 [x1, div_x] = 新页（首尾相接：新页右缘平移对齐到 div_x）
+                    if (div_x > screen_window->x1) {
+                        lv_area_t draw_left;
+                        draw_left.x1 = screen_window->x1;
+                        draw_left.x2 = div_x;
+                        draw_left.y1 = y;
+                        draw_left.y2 = y_end;
+                        unit->jlgpu_ctx = eff_ctx_new;
+                        jlgpu_page_effect_set_translate(div_x - (int32_t)fb_width);
+                        lv_jlgpu_sfr_set(unit, &draw_left, fb_width,
+                                         lv_jlgpu_get_offset_buf(px_map, screen_window, &draw_left),
+                                         JLGPU_FORMAT_RGB565);
+                        lv_jlgpu_task_list_run(unit);
+                    }
+
+                    //右边 [div_x, x2] = 旧页（旧页左缘平移对齐到 div_x）
+                    if (div_x < screen_window->x2) {
+                        lv_area_t draw_right;
+                        draw_right.x1 = div_x;
+                        draw_right.x2 = screen_window->x2;
+                        draw_right.y1 = y;
+                        draw_right.y2 = y_end;
+                        unit->jlgpu_ctx = eff_ctx_old;
+                        jlgpu_page_effect_set_translate(div_x);
+                        lv_jlgpu_sfr_set(unit, &draw_right, fb_width,
+                                         lv_jlgpu_get_offset_buf(px_map, screen_window, &draw_right),
+                                         JLGPU_FORMAT_RGB565);
+                        lv_jlgpu_task_list_run(unit);
+                    }
+
+                    y = y_end + 1;
+                }
+                lv_jlgpu_reset_global_trans_param();
+            }
+        } else if (g_page_effect_state.effect_exit) {
+            //出场：画目标页全屏
+            unit->jlgpu_ctx = g_page_effect_state.jlgpu_ctx_list[g_page_effect_state.end_page_index_id];
+            lv_area_t draw_area;
+            draw_area.x1 = screen_window->x1;
+            draw_area.x2 = screen_window->x2;
+            draw_area.y1 = screen_window->y1;
+            draw_area.y2 = screen_window->y2;
+            lv_jlgpu_sfr_set(unit, &draw_area, fb_width,
+                             lv_jlgpu_get_offset_buf(px_map, screen_window, &draw_area),
+                             JLGPU_FORMAT_RGB565);
+            lv_jlgpu_task_list_run(unit);
+        }
+        break;
     case LV_SCR_LOAD_ANIM_CENTER_FLIP:
         if (g_page_effect_state.effect_busy) {
             if (!g_page_effect_state.swipe_ready) {
@@ -757,6 +929,7 @@ void lv_jlgpu_set_global_trans_param(lv_draw_jlgpu_unit_t *unit, const lv_area_t
     case LV_SCR_LOAD_ANIM_HEXAGON:
     case LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION:
     case LV_SCR_LOAD_ANIM_CUBE:
+    case LV_SCR_LOAD_ANIM_LRB_MIRROR:
         if (g_page_effect_state.effect_busy) {
             lv_jlgpu_clean_buf(unit, px_map, JLGPU_FORMAT_RGB565, screen_window);
             /* sticky 特效：x_offset/y_offset 取反后传入 move，
@@ -794,6 +967,14 @@ void lv_jlgpu_set_global_trans_param(lv_draw_jlgpu_unit_t *unit, const lv_area_t
                 jlgpu_set_global_trans_param(g_page_effect_state.global_matrix[draw_order]);
                 lv_jlgpu_task_list_run(unit);
             }
+            /* 后置合成钩子: 所有槽重放完(倒影等已上屏)后, 允许特效在整帧之上再叠一层。
+             * 仅实现了 overlay 的特效(LRB 真倒影渐隐)会执行, 其余保持 NULL 行为不变。 */
+            {
+                const sticky_effect_ops_t *ops = sticky_effect_get_ops();
+                if (ops && ops->overlay) {
+                    ops->overlay(unit, px_map, screen_window);
+                }
+            }
         } else if (g_page_effect_state.effect_exit) {
             unit->jlgpu_ctx = g_page_effect_state.jlgpu_ctx_list[g_page_effect_state.end_page_index_id];
             lv_area_t draw_area;
@@ -826,6 +1007,22 @@ void lv_jlgpu_reset_global_trans_param(void)
     global_matrix.fw_mat = matrix;//正向矩阵
     global_matrix.bw_mat = matrix;//逆向矩阵
     jlgpu_set_global_trans_param(&global_matrix);
+}
+
+//设置全局平移变换：tx>0 向右平移，tx<0 向左平移（fw: 源→屏幕, bw: 逆）
+static void jlgpu_page_effect_set_translate(int32_t tx)
+{
+    jlgpu_matrix_t fw, bw;
+    jlgpu_matrix_set_identity(&fw);
+    fw.m[0][2] = (float)tx;
+    jlgpu_matrix_set_identity(&bw);
+    bw.m[0][2] = -(float)tx;
+
+    jlgpu_global_matrix_t gm = {0};
+    gm.trans_en = 1;
+    gm.fw_mat = fw;
+    gm.bw_mat = bw;
+    jlgpu_set_global_trans_param(&gm);
 }
 
 
@@ -929,6 +1126,21 @@ static void timer_cb(lv_timer_t *timer)
     }
     g_prev_touch_status = status;
 
+    //水波纹：振幅/方向由绘制阶段按分界线速度统一驱动(手指跟手 + 按键/松手动画都适用)。
+    //此处负责两件事:
+    // 1) 手指按住停住/回直阶段持续重绘, 让波纹逐帧衰减(分界线不动时绘制阶段会衰减振幅);
+    // 2) 动画结束(分界线到边界)进入 ripple_flatten 后, 波纹回直到0再收尾, 避免瞬间消失太突兀。
+    if (g_page_effect_state.page_mode == LV_SCR_LOAD_ANIM_RIPPLE) {
+        if (g_page_effect_state.act_scr) {
+            if ((status || g_page_effect_state.ripple_flatten) && g_page_effect_state.ripple_amp > 0) {
+                lv_obj_invalidate(g_page_effect_state.act_scr);
+            }
+            if (g_page_effect_state.ripple_flatten && g_page_effect_state.ripple_amp == 0) {
+                jlgpu_page_effect_flatten_done();
+            }
+        }
+    }
+
     //特效期间触摸按下
     if (g_page_effect_state.effect_busy && status && g_page_effect_state.a_old) {
         //暂停动画
@@ -962,6 +1174,9 @@ static void timer_cb(lv_timer_t *timer)
                 g_page_effect_state.touch_y = 0;
             }
         }
+
+        //水波纹浪尖实时跟随手指y
+        g_page_effect_state.finger_y = y;
 
         //触摸接管：使用手指移动距离（delta）作为分界位置
         {
@@ -1057,8 +1272,10 @@ static void timer_cb(lv_timer_t *timer)
                 lv_anim_resume(g_page_effect_state.a_old);
                 lv_anim_resume(g_page_effect_state.a_new);
 
-                //松手后不再进入
-                lv_timer_pause(timer);
+                //松手后不再进入。水波纹例外：动画结束后还要靠 timer 驱动"回直再收尾", 不能停
+                if (g_page_effect_state.page_mode != LV_SCR_LOAD_ANIM_RIPPLE) {
+                    lv_timer_pause(timer);
+                }
             } else {
                 /* 快速滑动松手 / 纯动画（按键触发等）：
                  * a_old 未暂停，动画已在运行。用首次触摸位置判断方向。
@@ -1131,7 +1348,7 @@ void lv_page_effect_clean(void)
 {
     int page_num = lv_page_effect_get_page_num(g_page_effect_state.page_mode);
     int ctx_count = page_num;
-    bool shared_ctx = (g_page_effect_state.page_mode == LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION);
+    bool shared_ctx = lv_page_effect_is_reflection_mode();
 
     // reflection 模式 ctx 后半段和前半段共享指针，只释放前半段
     if (shared_ctx) {
@@ -1166,11 +1383,16 @@ void lv_page_effect_clean(void)
 
 int lv_page_effect_manager(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t *unit, const lv_area_t *screen_area, uint8_t *px_map)
 {
-    if (g_page_effect_state.page_mode >= LV_SCR_LOAD_ANIM_DEFAULT && g_page_effect_state.page_mode <= LV_SCR_LOAD_ANIM_USER) {
+    if (g_page_effect_state.page_mode >= LV_SCR_LOAD_ANIM_OTHER_PAGE && g_page_effect_state.page_mode <= LV_SCR_LOAD_ANIM_USER) {
         //入场cb
         if (g_page_effect_state.effect_enter) {
             //固定环节
             g_page_effect_state.effect_enter = 0;
+            g_page_effect_state.finger_y = -1;//水波纹浪尖默认屏幕中心
+            g_page_effect_state.ripple_dir = 0;
+            g_page_effect_state.ripple_amp = 0;
+            g_page_effect_state.ripple_prev_div = -1;//未初始化, 首帧绘制时用当前分界线位置初始化
+            g_page_effect_state.ripple_flatten = 0;
             lv_jlgpu_task_list_free(unit);
             jlgpu_ctx_list_ori = unit->jlgpu_ctx;
 
@@ -1214,7 +1436,7 @@ int lv_page_effect_manager(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t *unit, c
                     }
                     // reflection 模式：倒影面可以复用本体 ctx（仅矩阵和 draw_area 独立），
                     // 但需要单独分配 global_matrix 和 draw_area（每个面的投影矩阵不同）
-                    if (g_page_effect_state.page_mode == LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION) {
+                    if (lv_page_effect_is_reflection_mode()) {
                         int refl_idx = i + POLYTOPE_CONFIG;
                         g_page_effect_state.jlgpu_ctx_list[refl_idx] = g_page_effect_state.jlgpu_ctx_list[i]; // 指针复用
                         g_page_effect_state.global_matrix[refl_idx] = lv_malloc_zeroed(sizeof(jlgpu_global_matrix_t));
@@ -1223,6 +1445,13 @@ int lv_page_effect_manager(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t *unit, c
                 }
 
                 sticky_effect_get_ops()->init(unit, true);
+
+                /* sticky 特效进入时，a_old 动画在 scr_load_anim_start 被 pause 前可能已执行过
+                 * 1 帧，残留的 x_offset/y_offset 会让第一帧多面体带一个小角度偏转、页面不正对屏幕。
+                 * 这里在第一次 busy 绘制前清零，保证第一帧正面正对屏幕。
+                 * 注意不能动 touch_x：保持与 a_old 动画值一致，松手点击 resume 时才不会产生位移跳变。 */
+                g_page_effect_state.x_offset = 0;
+                g_page_effect_state.y_offset = 0;
             }
 
             unit->jlgpu_ctx = jlgpu_ctx_list_ori;
@@ -1277,6 +1506,11 @@ int lv_page_effect_manager(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t *unit, c
             g_page_effect_state.y_offset = 0;
             g_page_effect_state.start_x = 0;
             g_page_effect_state.start_y = 0;
+            g_page_effect_state.finger_y = -1;
+            g_page_effect_state.ripple_dir = 0;
+            g_page_effect_state.ripple_amp = 0;
+            g_page_effect_state.ripple_prev_div = -1;
+            g_page_effect_state.ripple_flatten = 0;
             g_page_effect_state.swipe_left = 0;
             g_page_effect_state.swipe_ready = 0;
             g_page_effect_state.act_scr = NULL;

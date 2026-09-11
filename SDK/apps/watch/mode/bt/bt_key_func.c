@@ -13,6 +13,7 @@
 #include "bt_key_func.h"
 #include "ui/ui_api.h"
 #include "ui_manage.h"
+#include "rcsp_device_status.h"
 
 #include "bt_event_func.h"
 #include "app_tone.h"
@@ -264,6 +265,12 @@ void bt_key_vol_up(void)
     }
     printf("music_vol:vol=%d, state:%d", vol, app_audio_get_state());
     app_send_message(APP_MSG_VOL_CHANGED, vol);
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+    /* 智能眼镜: 非通话本地按键调节媒体音量后, 主动上报给手机控制端 */
+    if (bt_get_call_status() == BT_CALL_HANGUP) {
+        rcsp_ai_glasses_vol_update();
+    }
+#endif
 }
 
 /*************************************************************************************************/
@@ -293,6 +300,12 @@ void bt_key_vol_down(void)
     }
     printf("music_vol:vol=%d, state:%d", vol, app_audio_get_state());
     app_send_message(APP_MSG_VOL_CHANGED, vol);
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+    /* 智能眼镜: 非通话本地按键调节媒体音量后, 主动上报给手机控制端 */
+    if (bt_get_call_status() == BT_CALL_HANGUP) {
+        rcsp_ai_glasses_vol_update();
+    }
+#endif
 }
 
 /*************************************************************************************************/

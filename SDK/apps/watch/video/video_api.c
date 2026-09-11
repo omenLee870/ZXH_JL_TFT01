@@ -15,7 +15,11 @@
 #include "fs/fs.h"
 #include "device/device.h"
 #include "video_api.h"
+#if TCFG_APP_MUSIC_EN
+#include "file_player.h"
+#endif
 #include "system/malloc.h"
+#include "asm/sdmmc.h"
 
 #if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
 
@@ -679,6 +683,12 @@ static void app_camera_test_event_handler(void *priv, int argc, int *argv)
         /* SD卡写满或I/O错误时，立即停止录像清理管线，避免死机和文件损坏 */
         printf("[VIDEO_API] camera record error, stopping\n");
         camera_stop_record_video();
+#if (defined(TCFG_SD0_ENABLE) && (TCFG_SD0_ENABLE))
+        sdmmc_dev_enter_lowpower("sd0");
+#endif
+#if (defined(TCFG_SD1_ENABLE) && (TCFG_SD1_ENABLE))
+        sdmmc_dev_enter_lowpower("sd1");
+#endif
         break;
 
     default:
@@ -784,6 +794,18 @@ void camera_api_record_video()
     }
 
     printf("[VIDEO_API] starting record: %s\n", rec_attr.path);
+
+#if TCFG_APP_MUSIC_EN
+    /* 正在播放本地音乐时先暂停，避免录像抢占音频通路后音乐无法暂停 */
+    {
+        struct file_player *file_player = get_music_file_player();
+        if (file_player && music_file_get_player_status(file_player) == FILE_PLAYER_START) {
+            printf("[VIDEO_API] local music playing, pause before record\n");
+            music_file_player_pp(file_player);
+        }
+    }
+#endif
+
     ret = app_camera_rec_start(rec_handle, &rec_attr);
     if (ret != APP_CAMERA_OK) {
         printf("[VIDEO_API] rec_start failed, ret=%d\n", ret);

@@ -141,6 +141,9 @@ static const char dec_file_ext[][3] = {
 #if (TCFG_DEC_M4A_ENABLE || TCFG_DEC_ALAC_ENABLE)
     {"MP4"},
 #endif
+#if (TCFG_ENC_OPUS_ENABLE)
+    {"OPS"},
+#endif
     {"TMP"},
     {'\0'},
 #endif // WATCH_FILE_TO_FLASH
@@ -357,6 +360,12 @@ static void rcsp_browser_task(void *p)
         }
 
         file_printf_dir(&dir_info, 1);
+        /* Do not expose a failed/empty FAT entry that cannot be read by cluster. */
+        if (dir_info.dir_type == BS_DIR_TYPE_FILE && !dir_info.sclust) {
+            log_error("skip invalid file with cluster 0: %s\n",
+                      dir_info.lfn_buf.lfn);
+            continue;
+        }
         if (offset && ((offset + dir_info.lfn_buf.lfn_cnt + sizeof(struct JL_FILE_DATA)) > FILE_BROWSE_BUF_LEN)) {
             ///如果buf不够填充了， 先将数据发送了先，再重新填充
             ret = JL_DATA_send(JL_OPCODE_DATA, JL_OPCODE_FILE_BROWSE_REQUEST_START, path_data, offset, JL_NOT_NEED_RESPOND, 0, NULL);

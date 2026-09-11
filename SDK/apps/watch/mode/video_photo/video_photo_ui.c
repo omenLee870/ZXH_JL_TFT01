@@ -20,6 +20,7 @@ extern char *gui_get_res_path(int32_t id);
 #if CONFIG_LVGL_UI_ENABLE
 extern void *lvgl_video_init(int32_t width, int32_t height, int32_t x, int32_t y, const char *fb_name);
 extern void lvgl_video_exit(void *handle);
+extern void lvgl_video_exit_drain(void *handle);
 extern u8 lvgl_ui_is_suspended(void);
 extern int lvgl_rpc_post_func(void (*rpc_func)(void *, ...), int argc, ...);
 
@@ -56,6 +57,43 @@ static lv_video_disp_handle_t *photo_ui_get_fb5(void)
 #endif
 }
 
+/* 竖屏面板(240x320)上把 320x240 本地预览旋转 90° 铺满全屏。
+ * 仅当"控件尺寸 == 显示尺寸对调"(320x240 <-> 240x320)时生效, 其它产品/布局
+ * 不触发; 旋转在显示层由 JLGPU 完成, fb5 出帧/编码尺寸不变。需在 LVGL 线程调用。 */
+#if CONFIG_LVGL_UI_ENABLE
+static void photo_ui_preview_rotate(lv_video_disp_handle_t *h)
+{
+    lv_obj_t *img;
+    lv_display_t *disp;
+    int32_t w, hh, dw, dh;
+
+    if (!h) {
+        return;
+    }
+    img = lv_port_video_disp_get_img_obj(h);
+    disp = lv_display_get_default();
+    if (!img || !disp) {
+        return;
+    }
+    w  = lv_obj_get_width(img);
+    hh = lv_obj_get_height(img);
+    dw = lv_display_get_horizontal_resolution(disp);
+    dh = lv_display_get_vertical_resolution(disp);
+    /* 仅当旋转后恰好铺满(宽高对调)才转, 避免影响无需旋转的产品 */
+    if (w == dh && hh == dw) {
+        lv_port_video_disp_set_rotation(h, 900);
+        lv_port_video_disp_set_pivot(h, w / 2, hh / 2);
+        lv_obj_set_pos(img, (dw - w) / 2, (dh - hh) / 2);
+    }
+}
+
+static void photo_ui_preview_rotate_rpc(void *unused, ...)
+{
+    (void)unused;
+    photo_ui_preview_rotate(photo_ui_get_fb5());
+}
+#endif
+
 static const char *g_photo_sticker_path = NULL;
 
 _WEAK_
@@ -69,6 +107,9 @@ static void photo_ui_trigger_effect_rpc(int32_t effect_type, int32_t src, int32_
     lv_video_disp_handle_t *h = photo_ui_get_fb5();
     if (h) {
         lv_port_video_set_effect(h, (uint8_t)effect_type, (const void *)(uintptr_t)src, x, y);
+        /* set_effect 会把 img 切回 STRETCH(自动变换 align), LVGL 会清零 rotation/
+         * pivot; 需重新套用竖屏预览旋转, 否则滤镜后画面退回横屏被截/留白 */
+        photo_ui_preview_rotate(h);
     }
 }
 
@@ -86,9 +127,12 @@ void photo_ui_init(int width, int height, int x, int y, int show_video)
             return;
         }
     }
-    /* H264 直通不显示预览: 不创建 fb5 视频显示对象 */
+    /* H264 直通不显示预览: 不创建 fb5 视频显示对象。
+     * 摄像头预览保持 320x240(width/height 同时决定 LVGL 对 fb5 NV12 帧的读取) */
     if (show_video) {
         g_photo_video_handle = lvgl_video_init(width, height, x, y, "fb5");
+        /* create 在 UI 线程完成(经 RPC+信号量); 旋转也需回 UI 线程执行 */
+        lvgl_rpc_post_func((void *)photo_ui_preview_rotate_rpc, 0);
     }
 #endif
 }
@@ -101,6 +145,8 @@ static void photo_ui_video_refresh_rpc(void *unused, ...)
     if (!h) {
         return;
     }
+    /* 拍照大图流程会销毁并重建 fb5 实例, 这里重新应用预览旋转(幂等) */
+    photo_ui_preview_rotate(h);
     lv_port_video_disp_show(h, 1);
     lv_obj_t *img = lv_port_video_disp_get_img_obj(h);
     if (img) {
@@ -148,7 +194,9 @@ void photo_ui_deinit(void)
     lvgl_rpc_post_func((void *)photo_overlay_cleanup_rpc, 0);
     lv_video_disp_handle_t *h = photo_ui_get_fb5();
     if (h) {
-        lvgl_video_exit(h);
+        /* 同步退出: 删除视频 img 并排空双链表(LIST==2)的异步渲染线程,
+         * 返回后释放视频 buffer 才安全, 避免与异步渲染竞态。 */
+        lvgl_video_exit_drain(h);
     }
     g_photo_video_handle = NULL;
 #endif
@@ -395,6 +443,8 @@ void photo_ui_update_battery(void)
     if (get_ldo5v_online_hw()) {
         if (lvl >= 3) {
             show = 3;                   /* 充电器插入且电量满档: 定格满电 */
+        } else if (pct == 0) {
+            show = 3;                   // 无电量检测电路时插电定格满格, 避免空/满每秒闪烁
         } else {
             s_blink ^= 1;               /* 充电中: 当前档<->满档交替, 形成充电闪烁 */
             show = s_blink ? 3 : lvl;

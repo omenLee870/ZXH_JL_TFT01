@@ -1457,6 +1457,10 @@ static int jlgpu_scheduler_kick_start(pJLGPUMultTaskList_t mult_list, struct dra
     __this->gpu_is_busy = false;
     /* os_sem_post(&__this->gpu_sem); */
 
+    /* GPU 合成完成, 释放圆环绘制等任务在 gpu_buf_add 中临时申请的 clut 缓冲 */
+    extern void gpu_buf_list_free();
+    gpu_buf_list_free();
+
     if (JLUI_MULTI_PAGE_OVERLAY_SUPPORT) {
         async_buffer_clr();
     }

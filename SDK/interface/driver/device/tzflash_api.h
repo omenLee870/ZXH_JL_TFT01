@@ -1,7 +1,7 @@
 #ifndef  __TZFLASH_API_H__
 #define  __TZFLASH_API_H__
 
-#include "typedef.h"
+#include "device.h"
 
 struct flash_rw {
     u32 addr;
@@ -62,8 +62,9 @@ extern int tzflash_write(void *device, const void *buffer, u32 len, u32 addr);
 extern int tzflash_read(void *device, void *buffer, u32 len, u32 addr);
 
 u32 tzflash_get_flash_capacity();
-u8 *tzflash_get_uuid();
-u8 *get_norflash_uuid(void);//同tzflash_get_flash_uuid
+u8 *tzflash_get_flash_uuid();
+u8 *get_norflash_uuid(void);
+u8 *tzflash_get_uuid(void);
 u32 tzflash_get_flash_id();
 
 void tzflash_dump();
@@ -88,6 +89,8 @@ int tzflash_cfg_wps_area(struct flash_wps_area_cfg *wps_area, u32 area_group_siz
 //获取wps状态
 enum tzflash_wps_status_mode tzflash_get_wps_status();
 void tzflash_change_mode();//dtr(clk),continue
+
+void votp_cfg_addr_patch(void);
 
 //获取认证码(三元组、序列号)信息
 void *rsv_auth_analysis(void);

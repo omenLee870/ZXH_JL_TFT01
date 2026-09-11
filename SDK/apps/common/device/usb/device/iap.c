@@ -15,9 +15,10 @@
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[IAP_USB]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -149,6 +150,7 @@ u8 MCU_USBToSRAM_app(void *hdl, u8 *pBuf, u16 uCount)
     return ret;
 }
 
+USB_CLASS_REGISTER(iap_desc_config, iap_register, iap_release, TCFG_USB_IAP_INDEX, IAP_CLASS, 0);
 #endif
 
 

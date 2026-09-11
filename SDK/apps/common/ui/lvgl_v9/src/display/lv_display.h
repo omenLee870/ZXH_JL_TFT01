@@ -77,17 +77,17 @@ typedef enum {
     LV_SCREEN_LOAD_ANIM_OUT_TOP,
     LV_SCREEN_LOAD_ANIM_OUT_BOTTOM,
 #if defined(LV_USE_DRAW_JLGPU) && LV_USE_DRAW_JLGPU
-    LV_SCR_LOAD_ANIM_DEFAULT,		    //默认页面滑动
+    LV_SCR_LOAD_ANIM_OTHER_PAGE,		//当前页面不动，其他页面滑动
     LV_SCR_LOAD_ANIM_SCALE_DOUBLE,	    //双页面缩放
     LV_SCR_LOAD_ANIM_FLIP,	            //翻页
     LV_SCR_LOAD_ANIM_CENTER_FLIP,       //中心轴翻转
     LV_SCR_LOAD_ANIM_EDGE_FLIP,	        //边沿翻转
     LV_SCR_LOAD_ANIM_CUBE_FLIP,         //立方体翻页
-    LV_SCR_LOAD_ANIM_RIPPLE,            //水波纹(todo)
+    LV_SCR_LOAD_ANIM_RIPPLE,            //水波纹
     LV_SCR_LOAD_ANIM_CUBE,	            //sticky 3D 立方体
     LV_SCR_LOAD_ANIM_HEXAGON,           //sticky 3D 灯笼
     LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION,//sticky 3D 灯笼 + 倒影
-    LV_SCR_LOAD_ANIM_LRB_MIRROR,        //sticky 左右下镜像(todo)
+    LV_SCR_LOAD_ANIM_LRB_MIRROR,        //sticky 左右下镜像
     LV_SCR_LOAD_ANIM_USER,
 #endif
 } lv_screen_load_anim_t;

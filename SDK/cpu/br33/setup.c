@@ -473,6 +473,8 @@ void setup_arch(void)
     sdfile_init();
     syscfg_tools_init();
 
+    xosc_set_cap(TCFG_CLOCK_OSC_CAP, TCFG_CLOCK_OSC_CAP);
+    xosc_set_cap_fine(TCFG_CLOCK_OSC_CAP_FINE, TCFG_CLOCK_OSC_CAP_FINE);
     /* clk_early_init(PLL_REF_XOSC_DIFF, TCFG_CLOCK_OSC_HZ, 480 * MHz); */
     clk_early_init(PLL_REF_XOSC_DIFF, TCFG_CLOCK_OSC_HZ, 768 * MHz);
 

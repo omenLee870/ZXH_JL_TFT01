@@ -11,6 +11,7 @@
 #include "usb/device/hid.h"
 #include "common_api.h"
 #include "video_api.h"
+#include "common_music_ctrl.h"
 
 #if TCFG_APP_PC_EN
 int pc_app_msg_handler(int *msg)
@@ -75,6 +76,10 @@ int pc_app_msg_handler(int *msg)
 #if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
         camera_api_record_video();
 #endif
+        break;
+    case APP_MSG_MUSIC_CTRL_NEXT:
+        printf("[PC_KEY]: APP_MSG_MUSIC_CTRL_NEXT \n");
+        music_ctrl_local_play(0);
         break;
     default:
         break;

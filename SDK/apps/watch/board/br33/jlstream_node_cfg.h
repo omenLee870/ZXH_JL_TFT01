@@ -173,6 +173,7 @@
 #define TCFG_SPLIT_GAIN_FADE_ENABLE               0                // Split Gain-Fade Time
 #define TCFG_VOCAL_REMOVER_LOW_PASS_ENABLE        1                // Vocal Remover-Low Pass
 #define TCFG_VOCAL_REMOVER_HIGH_PASS_ENABLE       1                // Vocal Remover-High Pass
+#define TCFG_AEC_REF_SOURCE_TYPE                  0                // 单MIC+DNS-回采类型
 #define CVP_THIRD_ALGO_TYPE                       0                // 通话第三方算法-算法预设
 #define CVP_THIRD_ALGO_VPU_ENABLE                 0                // 通话第三方算法-VPU方案
 #define TCFG_EQ_LIMITER_C_LIMITER_BAND_NUM        0                // EQ Limiter[C]-多带数
@@ -186,6 +187,7 @@
 #define TCFG_PLATE_REVERB_LR_DISABLE              0                // Plate Reverb LR
 #define TCFG_ECHO_COMBO_ENABLE                    0                // Echo Enable
 #define TCFG_VOCAL_REMOVER_PRESET_MODE            0                // Preset Mode
+#define MULTI_BAND_PHASE_COMPENSATION_EN          0                // MDRC 相位补偿
 // ------------表单节点全局配置宏------------
 
 // ------------流程图节点位宽定义------------

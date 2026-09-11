@@ -38,6 +38,7 @@
 #define LOG_INFO_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
+#include "kid_mem_dbg.h"
 
 #if TCFG_VSTREAM_TRANSFER
 
@@ -401,6 +402,7 @@ static void kwt_reconn_start(void);
 
 void kwt_stream_start(void)
 {
+    KWT_MEM_STATS("stream.start enter");
     /* 连接方向仲裁: outbound(本端主动 page)保持主叫标志; inbound(对端连入)则清除
      * 主叫标志(本端为被叫方)。否则角色反转时双方都会 master=1, 下次断线双方同时
      * page 导致"连上即断"。 */
@@ -419,22 +421,75 @@ void kwt_stream_start(void)
      * 发送卡死的实际缓解是 spp_send 里的有界等待(背压)。 */
     vstream_sender_reset();
 
-    kid_wt_video_xsmt_start();
-    kid_wt_video_recv_start();
-
-    extern void audio_app_open(void);
-    audio_app_open();
+    /* 连接建立只做会话状态复位与跳页, 不再无条件开启任何实时媒体:
+     * 双向语音(audio_app 对讲)与视频 TX/RX 都由 VIDEO_INTERCOM 页面 LOAD/重连触发
+     * (kwt_video_session_start_req), CHAT 页(纯聊天)期间不占麦克风/SPP/相机, 避免
+     * 实时语音与视频帧挤掉表情包/快捷文本(CMD 帧)。断线由 kwt_stream_stop 兜底拆除。 */
+    KWT_MEM_STATS("stream.start connect done");
 
     /* 连接建立后主叫/被叫双方都进入视频通话页。此前只有主叫(ble_search_poll_cb)
      * 跳转, 被叫只启动媒体不跳页, 画面不显示(WT-009/WT-004 被动侧)。统一由
-     * SPP 连接事件驱动跳转, 两侧一致。 */
+     * SPP 连接事件驱动跳转, 两侧一致。落到 VIDEO_INTERCOM 页时由页面 LOAD 启动
+     * 实时媒体(双向语音+视频); 若断线重连停留在视频页(LOAD 不再触发), 由
+     * wt_video_enter_rpc 的"已在目标页"分支补启。 */
     walkie_talkie_video_enter();
     walkie_talkie_unblank_remote();
 #endif
 }
 
+/* ============================================================================
+ * 视频/对讲会话启停请求(供 UI 层调用)。
+ *
+ * 双向语音(audio_app 对讲)与视频(xsmt/recv)的 start/stop 涉及 thread_fork/
+ * KILL_WAIT、MPI 相机/VENC/VO 拆除、stream_dev_media_clear 与音频 ADC/DAC, 只能
+ * 在 app_core 上下文执行(不能跑在 btstack 线程, 见 spp_transfer.c
+ * spp_state_callback 注释); 页面 LOAD/UNLOAD 回调跑在 LVGL "ui" 线程。故这里只
+ * 负责把请求 marshal 到 app_core, UI 任意线程直接调用即可。
+ * xsmt/recv/audio_app 各自带幂等守卫(重复 start/未 start 就 stop 都是 no-op),
+ * post 顺序即执行顺序, 页面反复进出安全。媒体只在 SPP 连接期间允许启动
+ * (kwt_stream_stop 兜底)。
+ * ============================================================================ */
+static void kwt_video_session_start_inner(void)
+{
+    if (!kwt_get_spp_connect()) {
+        log_info("%s: spp not connected, skip media start\n", __func__);
+        return;
+    }
+    extern void audio_app_open(void);
+    kid_wt_video_xsmt_start();
+    kid_wt_video_recv_start();
+    audio_app_open();
+}
+
+static void kwt_video_session_stop_inner(void)
+{
+    extern void audio_app_stop(void);
+    kid_wt_video_recv_stop();
+    kid_wt_video_xsmt_stop();
+    audio_app_stop();
+}
+
+void kwt_video_session_start_req(void)
+{
+    int msg[3] = {0};
+    msg[0] = (int)kwt_video_session_start_inner;
+    if (os_taskq_post_type("app_core", Q_CALLBACK, 3, msg)) {
+        log_error("%s: post app_core failed\n", __func__);
+    }
+}
+
+void kwt_video_session_stop_req(void)
+{
+    int msg[3] = {0};
+    msg[0] = (int)kwt_video_session_stop_inner;
+    if (os_taskq_post_type("app_core", Q_CALLBACK, 3, msg)) {
+        log_error("%s: post app_core failed\n", __func__);
+    }
+}
+
 void kwt_stream_stop(void)
 {
+    KWT_MEM_STATS("stream.stop enter");
     /* Disconnect (对端意外掉线/断电/超距): 不再跳回配对页, 而是
      * (1) 隐藏语音 overlay + 把远端画面置白(停留在对讲页);
      * (2) 进入可被发现/可连接状态, 接受对端回连;
@@ -459,6 +514,7 @@ void kwt_stream_stop(void)
 
     extern void audio_app_stop(void);
     audio_app_stop();
+    KWT_MEM_STATS("stream.stop media done");
 #endif
 }
 
@@ -466,7 +522,10 @@ void kwt_conn_handler(void)
 {
     log_debug("%s channel state:0x%x scan_flag:%d master_flag:%x \n", __func__, bt_get_curr_channel_state(), scan_flag, kwt_master_flag);
     kwt_inquiry_active = 0;   /* 查询(inquiry)已结束 */
-    if (bt_get_curr_channel_state() & SPP_CH) {
+    /* 与 kwt_get_spp_connect() 同理: BTSTACK 库更新后 bt_get_curr_channel_state()&SPP_CH
+     * 失效(库行为变化, 非本应用代码问题), 改用 SPP 状态回调维护的 kwt_spp_connected
+     * 标志判断链路是否已连上。 */
+    if (kwt_get_spp_connect()) {
         kwt_pending_conn = 0;
         return;
     }
@@ -614,28 +673,6 @@ void kwt_transfer_protocol_deinit(void)
 
     spp_protocol_deinit();
     clock_remove_set(VIDEO_TRANSFER_CLK);
-}
-
-
-void kwt_bt_pa_init(void)
-{
-//     log_info("%s %d", __func__, __LINE__);
-
-//     /**根据具体的pa芯片和匹配料，具体调整该参数
-//       *公版环境CB2401, AT2401 使用0x08
-//       */
-//     extern void balun_interface(u8 recfg_en, u8 txbalun);
-//     balun_interface(1, 0x8);
-
-//     void bt_set_rxtx_status_enable(u8 en);
-//     void bt_rf_PA_control_io_remap(u16 tx_io, u16 rx_io);
-//     bt_set_rxtx_status_enable(1);
-//     bt_rf_PA_control_io_remap(IO_PORTG_00, IO_PORTG_01);
-
-//     gpio_set_die(IO_PORTG_02, 1);
-//     gpio_set_hd(IO_PORTG_02, 0);
-//     gpio_set_hd0(IO_PORTG_02, 1);
-//     gpio_direction_output(IO_PORTG_02, 1);
 }
 
 u8 kid_bt_search_bd_name_filt(char *name_data, u8 name_len, u8 *addr, int rssi)

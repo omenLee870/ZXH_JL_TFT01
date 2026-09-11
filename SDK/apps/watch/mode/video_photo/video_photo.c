@@ -100,7 +100,8 @@ static photo_ctx_t g_ctx;
 /* 摄像头预览句柄 (persistent, across capture) */
 static app_camera_handle_t g_photo_cam = NULL;
 
-/* 显示属性 (LCD preview) */
+/* 显示属性 (LCD preview): 摄像头预览保持 320x240(传感器 4:3 等比画面),
+ * 预览 fb 与 LVGL 视频控件同尺寸 */
 static const app_camera_display_attr_t g_photo_disp_attr = {
     .fb_name = "fb5",
     .fb_num = 2,

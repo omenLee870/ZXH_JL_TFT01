@@ -29,6 +29,8 @@ int file_recorder_get_fmt(struct file_recorder *recorder, struct stream_enc_fmt 
 
 int file_recorder_set_fmt(struct file_recorder *recorder, struct stream_enc_fmt *fmt);
 
+int file_recorder_set_priv_fmt(struct file_recorder *recorder, struct encoder_fmt *fmt);
+
 FILE *file_recorder_open_file(struct file_recorder *recorder, const char *fname);
 
 int file_recorder_set_file(struct file_recorder *recorder, void *file,

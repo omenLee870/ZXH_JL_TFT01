@@ -29,12 +29,14 @@ const int config_printf_time         = 1;
 ///异常中断，asser打印开启
 #if CONFIG_DEBUG_ENABLE
 const int config_asser         = TCFG_EXCEPTION_LOG_ENABLE;  // 1:使能异常打印; 2:追加额外调试信息(dump另外一个CPU寄存器信息)
+const int config_exception_dump_enable = TCFG_EXCEPTION_LOG_ENABLE;
 const int config_exception_reset_enable = TCFG_EXCEPTION_RESET_ENABLE;//异常打印完毕能否复位
 const int CONFIG_LOG_OUTPUT_ENABLE = 1;
 const int config_ulog_enable = 0;
 const int config_dlog_enable = 0;
 #else
 const int config_asser         = 0;
+const int config_exception_dump_enable = TCFG_EXCEPTION_LOG_ENABLE;
 const int config_exception_reset_enable = 1;
 const int CONFIG_LOG_OUTPUT_ENABLE = 0;
 const int config_ulog_enable = 0;

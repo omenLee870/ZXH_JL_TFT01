@@ -93,12 +93,12 @@ int video_dec_app_msg_handler(int *msg)
         app_send_message(APP_MSG_GOTO_NEXT_MODE, 0);
         break;
     case APP_MSG_SD_EVENT:
-        /* 插卡刷新改由 APP_MSG_FLM_REBUILD_DONE 驱动(重建完成后), 避免 app_core 忙等重建线程 */
+        /* 插卡刷新改由 APP_MSG_FLM_DB_CHANGED 驱动(重建完成后), 避免 app_core 忙等重建线程 */
         if (msg[1] == DEVICE_EVENT_OUT) {
             video_dec_clear_on_card_out();
         }
         break;
-    case APP_MSG_FLM_REBUILD_DONE:
+    case APP_MSG_FLM_DB_CHANGED:
         video_dec_refresh_after_insert();
         break;
     default:

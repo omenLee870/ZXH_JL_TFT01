@@ -355,62 +355,12 @@ static app_camera_ret_t app_camera_rec_video_write(app_camera_handle_t ctx,
         uint32_t *last_rec_sec,
         uint32_t file_base_ms)
 {
-#if 1
-    static uint32_t diag_start_ms;
-    static uint32_t diag_write_count;
-    static uint32_t diag_total_ms;
-    static uint32_t diag_max_ms;
-    static uint32_t diag_over_budget_count;
-    uint32_t write_start_ms;
-    uint32_t write_end_ms;
-    uint32_t write_cost_ms;
-    uint32_t frame_budget_ms;
-#endif
     int ret = 0;
 
-#if 1
-    printf("[REC_FRAME] seq=%u len=%u quality=%u abr_cfg=%u est_kbps=%u\n",
-           stream->seq, stream->len, ctx->rec_attr.quality, ctx->rec_attr.abr_kbps,
-           ctx->rec_attr.fps ?
-           (uint32_t)(((uint64_t)stream->len * ctx->rec_attr.fps * 8u) / 1024u) : 0u);
-    write_start_ms = timer_get_ms();
-    if (diag_start_ms == 0 || (uint32_t)(write_start_ms - diag_start_ms) > 2000u) {
-        diag_start_ms = write_start_ms;
-        diag_write_count = 0;
-        diag_total_ms = 0;
-        diag_max_ms = 0;
-        diag_over_budget_count = 0;
-    }
-
-#endif
     ret = AVI_write_frame(ctx->avi,
                           (const char *)stream->addr,
                           (long)stream->len,
                           1);
-#if 1
-    write_end_ms = timer_get_ms();
-    write_cost_ms = (uint32_t)(write_end_ms - write_start_ms);
-    frame_budget_ms = ctx->rec_attr.fps ? 1000u / ctx->rec_attr.fps : 0;
-    diag_write_count++;
-    diag_total_ms += write_cost_ms;
-    if (write_cost_ms > diag_max_ms) {
-        diag_max_ms = write_cost_ms;
-    }
-    if (frame_budget_ms != 0 && write_cost_ms > frame_budget_ms) {
-        diag_over_budget_count++;
-    }
-    if ((uint32_t)(write_end_ms - diag_start_ms) >= 1000u) {
-        printf("[REC_IO] AVI_write_frame writes=%u avg_ms=%u max_ms=%u "
-               "over_budget=%u budget_ms=%u last_len=%u\n",
-               diag_write_count, diag_total_ms / diag_write_count, diag_max_ms,
-               diag_over_budget_count, frame_budget_ms, stream->len);
-        diag_start_ms = write_end_ms;
-        diag_write_count = 0;
-        diag_total_ms = 0;
-        diag_max_ms = 0;
-        diag_over_budget_count = 0;
-    }
-#endif
     if (ret != 0) {
         printf("failed to write AVI frame, len=%u ret:%d err:%s  \n\n", stream->len, ret, AVI_strerror());
         app_camera_rec_post_event(ctx, APP_CAMERA_EVENT_REC_ERROR);
@@ -464,7 +414,14 @@ static app_camera_ret_t app_camera_rec_wait_next_file(app_camera_handle_t ctx,
     }
 
     while (!ctx->rec_thread_exit_flag && !ctx->rec_path_ready) {
-        os_sem_pend(&ctx->rec_path_sem, 0);
+        os_sem_pend(&ctx->rec_path_sem, 1);
+        //修复: 边界等路径窗口内音频帧照常消费(丢弃), 防 jlstream 音频流积压吃物理池
+        if (ctx->audio_rec != NULL) {
+            app_video_audio_rec_frame_t *af;
+            while (app_video_audio_rec_get_frame(ctx->audio_rec, &af) == 0) {
+                app_video_audio_rec_release_frame(af);
+            }
+        }
     }
 
     if (ctx->rec_thread_exit_flag) {
@@ -1084,6 +1041,8 @@ static app_camera_ret_t app_camera_rec_avi_stop(app_camera_handle_t ctx)
             app_ret = APP_CAMERA_ERR_IO;
         }
         ctx->avi = NULL;
+        //录像整体停止: 释放跨段复用缓存的 idx 池(64KB), 下次录像 start 再分配
+        AVI_release_idx_pool();
     }
     ctx->rec_wait_path = 0;
     ctx->rec_path_ready = 0;

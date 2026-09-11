@@ -262,6 +262,18 @@ static int network_user_callback(void *network_ctx, enum WIFI_EVENT state, void 
     return 0;
 }
 
+//若需要重启wifi驱动，必须调用此接口。
+//关闭wifi： ext_wifi_off 后调用ext_wifi_power_set(0);
+//开启wifi： ext_wifi_power_set（1); 后调用ext_wifi_on
+void ext_wifi_power_set(u8 on)
+{
+    struct cfg_info info = {0};
+
+    info.port_status = on ? PORT_OUTPUT_LOW : PORT_OUTPUT_HIGH;
+    dev_ioctl(wifi_dev, DEV_SET_WIFI_POWER, (u32)&info);
+}
+
+
 void ext_wifi_on(void)
 {
     dev_ioctl(wifi_dev, DEV_NETWORK_START, 0);
@@ -280,7 +292,7 @@ int ext_wifi_work()
 }
 
 
-#if TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE || TCFG_RTL8733BS_ENABLE
+#if TCFG_NETWORK_ENABLE
 int ctp_cmd_analysis(const char *topic, char *content, void *priv);
 int net_event_handler(void *e)
 {
@@ -316,7 +328,7 @@ void wifi_app_event_handler(struct sys_event *event)
     int type = event->type;
     switch (type) {
     case SYS_NET_EVENT:
-#if TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE || TCFG_RTL8733BS_ENABLE
+#if TCFG_NETWORK_ENABLE
         net_event_handler((void *)event->payload);
 #endif
         break;
@@ -326,6 +338,32 @@ void wifi_app_event_handler(struct sys_event *event)
     }
 }
 
+// 启动测试
+int wifi_test(void)
+{
+    struct cfg_info info = {0};
+
+    if (wifi_dev == NULL) {
+        wifi_dev = dev_open("wifi", NULL);
+        if (wifi_dev == NULL) {
+            log_error("wifi dev open failed");
+            return -1;
+        }
+        info.cb = network_user_callback;
+        info.net_priv = NULL;
+        dev_ioctl(wifi_dev, DEV_SET_CB_FUNC, (u32)&info);
+    }
+
+    info.port_status = PORT_OUTPUT_LOW;
+    dev_ioctl(wifi_dev, DEV_SET_WIFI_POWER, (u32)&info);
+    ext_wifi_on();
+
+    info.p2p_role = 1;
+    info.ssid = P2P_SSID;
+    info.force_default_mode = 1;
+    dev_ioctl(wifi_dev, DEV_P2P_MODE, (u32)&info);
+    return 0;
+}
 
 static void ext_wifi_app_task(void *priv)
 {
@@ -335,6 +373,8 @@ static void ext_wifi_app_task(void *priv)
     struct cfg_info info = {0};
 
     os_time_dly(100);
+
+#if !TCFG_DASHBOARD_HARDWARE_TEST_ENABLE
 #if 1
     wifi_dev = dev_open("wifi", NULL);
 
@@ -342,8 +382,14 @@ static void ext_wifi_app_task(void *priv)
     info.net_priv = NULL;
     dev_ioctl(wifi_dev, DEV_SET_CB_FUNC, (u32)&info);
 
-    info.port_status = PORT_OUTPUT_LOW;
-    dev_ioctl(wifi_dev, DEV_SET_WIFI_POWER, (u32)&info);
+#if defined(TCFG_EXT_WIFI_RST_PIN)&&(TCFG_EXT_WIFI_RST_PIN)
+    gpio_set_mode(IO_PORT_SPILT(TCFG_EXT_WIFI_RST_PIN), PORT_OUTPUT_LOW);
+    os_time_dly(5);
+    gpio_set_mode(IO_PORT_SPILT(TCFG_EXT_WIFI_RST_PIN), PORT_OUTPUT_HIGH);
+    os_time_dly(100);
+#else
+    ext_wifi_power_set(1);
+#endif
 
     ext_wifi_on();
 #endif
@@ -369,8 +415,10 @@ static void ext_wifi_app_task(void *priv)
 #endif
 #endif
 
+
     void iperf_test(void);
     iperf_test();
+
 
     int ctp_init(u8 use_alive);
     ctp_init(1);
@@ -378,6 +426,7 @@ static void ext_wifi_app_task(void *priv)
     extern int http_virfile_reg(const char *path, const char *contents, unsigned long len);
     http_virfile_reg(DEV_DESC_PATH, DEV_DESC_CONTENT, strlen(DEV_DESC_CONTENT)); //注册虚拟文件描述文档,可在dev_desc.h修改
     http_get_server_init(8080); //8080
+#endif /* !TCFG_DASHBOARD_HARDWARE_TEST_ENABLE */
 
 #ifdef CONFIG_ENABLE_VLIST
     int preview_init(u16 port, int callback(void *priv, u8 * data, size_t len));

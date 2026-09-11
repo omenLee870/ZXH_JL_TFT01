@@ -148,6 +148,11 @@ void bt_background_resume(void)
         log_info("bt_background_goback_with_phone\n");
         background_goback_with_phone();
     }
+
+#if ((TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES) && TCFG_APP_PC_EN)
+    bt_cmd_prepare(USER_CTRL_CONN_A2DP, 0, NULL);
+#endif
+
     /*除切模式触发的后台返回的消息需要重新处理*/
     if (g_bt_hdl.background.backmode != BACKGROUND_GOBACK_WITH_MODE_SWITCH) {
         struct forward_msg *p, *n;

@@ -157,6 +157,11 @@ typedef struct _lv_page_effect_state_t {
     int start_y;//触摸按下后的第一个位置(y)
     int touch_y;//当前触摸位置(y)
     int y_offset;
+    int finger_y;//水波纹浪尖的y坐标(实时跟随手指, -1=未触摸取屏幕中心)
+    int ripple_dir;//水波纹浪尖凸出方向: +1=右, -1=左, 跟随分界线当前水平移动方向
+    int32_t ripple_amp;//水波纹浪尖当前振幅(px), 分界线移动升起/停下衰减拉平
+    int32_t ripple_prev_div;//上一帧分界线位置(px), 用于按分界线速度驱动振幅, -1=未初始化
+    uint8_t ripple_flatten;//1=动画结束分界线到边界后, 正在等待波纹回直再收尾
 
     //切换页面obj
     lv_obj_t *act_scr;

@@ -245,10 +245,15 @@ do { \
 		PRINT("jlgpu_task_texture_param_map_707n(), map clut table!\n"); \
 		u8 *clut_addr = NULL; \
 		uint16_t clut_size = get_clut_format_tabsize(gpu_format_to_res(task_param.format), task_param.clut_format); \
+        /* PRINT("%s(), clut: 0x%x, fmt: %d, size: %d\n", __func__, (u32)task_param.clut_tab, task_param.clut_format, clut_size); */ \
 		PRINT("jlgpu_task_texture_param_map_707n(), clut size: %d\n", clut_size); \
 		if (task_param.texture.mmu_tab_base) { \
 			/* 纹理有mmu时，颜色表也在mmu中 */ \
-			jlgpu_task_img_set_mmu_clut(true); \
+			/* jlgpu_task_img_set_mmu_clut(true); */ \
+            clut_addr = (u8 *)jlgpu_malloc(clut_size); \
+            u32 clut = ((u32*)task_param.texture.mmu_tab_base)[0] + (u32)task_param.texture.data - clut_size; \
+            memcpy(clut_addr, (u8 *)clut, clut_size); \
+            /* PRINT("clut addr: 0x%x, clut: 0x%x, size: %d\n", (u32)clut_addr, clut, clut_size); */ \
 		} else { \
 			u8* tab_addr = (u8 *)((u32)task_param.texture.data - clut_size); \
 			if ((task_param.has_clut == CLUT_TAB_FROM_RAM) && task_param.clut_tab) { \
@@ -265,7 +270,7 @@ do { \
 		} \
 		PRINT("jlgpu_task_texture_param_map_707n(), clut_format: %d, clut_tab: 0x%x, clut_size: %d\n", \
 				task_param.clut_format, (u32)clut_addr, clut_size); \
-		if (GPU_IMG_FMT_AX(task_param.format)) { \
+		if (GPU_IMG_NEED_COLOR(task_param.format)) { \
 			PRINT("jlgpu_task_texture_param_map_707n(), color: 0x%02x, 0x%02x, 0x%02x\n", \
 					clut_addr[2], clut_addr[1], clut_addr[0]); \
 			jlgpu_task_img_set_color(clut_addr[2], clut_addr[1], clut_addr[0]);  \
@@ -275,7 +280,13 @@ do { \
 			jlgpu_task_img_set_clut_format(task_param.clut_format); \
 			jlgpu_task_img_set_clut(clut_size, clut_addr); \
 		} \
-	} \
+    } else { \
+        if (GPU_IMG_NEED_COLOR(task_param.format)) { \
+            PRINT("jlgpu_task_texture_param_map_707n(), map color: 0x%02x, 0x%02x, 0x%02x\n", \
+                    task_param.red, task_param.green, task_param.blue); \
+            jlgpu_task_img_set_color(task_param.red, task_param.green, task_param.blue);   \
+        } \
+    } \
 	if (task_param.perspective_en) { \
 		PRINT("jlgpu_task_texture_param_map_707n(), map perspective!\n"); \
 		jlgpu_task_img_set_trans_mode(JLGPU_TRANS_MODE_PROJECTION); \
@@ -295,14 +306,6 @@ do { \
 		/* jlgpu_matrix_translate(task_param.matrix, task_param.draw.left, task_param.draw.top); */  \
 		/* jlgpu_task_img_set_trans_matrix(task_param.matrix); */ \
 		/* __DUMP_MATRIX(task_param.matrix); */ \
-	} \
-	if (!task_param.has_clut && \
-		((task_param.red & 0xff)   != GPU_MAGIC) && \
-		((task_param.green & 0xff) != GPU_MAGIC) && \
-		((task_param.blue & 0xff)  != GPU_MAGIC)) { \
-		PRINT("jlgpu_task_texture_param_map_707n(), map color: 0x%02x, 0x%02x, 0x%02x\n", \
-				task_param.red, task_param.green, task_param.blue); \
-		jlgpu_task_img_set_color(task_param.red, task_param.green, task_param.blue);   \
 	} \
 	int tranx = task_param.draw.left; \
 	int trany = task_param.draw.top; \

@@ -5,5 +5,6 @@
 
 int ctp_init(u8 use_alive);
 int ctp_exit(void);
+int ctp_is_init(void);
 
 #endif // CTP_CMD_HANDLE_H

@@ -1,6 +1,6 @@
 #include "app_config.h"
 
-#if TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE
+#if TCFG_WIFI_NET_ENABLE
 
 #include "ctp_cmd.h"
 #include "server/ctp_server.h"
@@ -69,6 +69,11 @@ int ctp_init(u8 use_alive)
     //ctp_cli_init();
 
     return 0;
+}
+
+int ctp_is_init(void)
+{
+    return g_ctp_hdl.ctp_server != NULL;
 }
 
 int ctp_exit(void)

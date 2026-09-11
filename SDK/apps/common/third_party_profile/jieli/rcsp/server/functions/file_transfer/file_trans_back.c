@@ -23,6 +23,7 @@
 #define FTP_DOWNLOAD_FOLDER_NAME				"download" //下载目录
 
 #define FILE_TRANS_BACK_TASK_NAME				"ftran_back"
+#define FILE_TRANS_BACK_SPP_WAKEUP_WAIT_MAX      20
 
 enum {
     FILE_TRANS_BACK_BY_NAME,
@@ -37,6 +38,7 @@ struct __file_trans_back {
     struct __dev *dev;
     struct vfscan *fsn;
     void (*end_callback)(void);
+    u32 file_offset;
     u8 OpCode_SN;
     u8 op;
 };
@@ -76,6 +78,9 @@ static const char scan_parm[] = "-t"
 #if (TCFG_DEC_MIDI_ENABLE)
                                 "MID"
 #endif
+#if (TCFG_ENC_OPUS_ENABLE)
+                                "OPS"
+#endif
                                 "TMP"
 #endif // WATCH_FILE_TO_FLASH
                                 " -sn -r"
@@ -114,6 +119,16 @@ static int get_file_prepare(u32 dev_handle)
         trans_back->dev = dev;
     }
     return 0;
+}
+
+static int file_trans_back_offset_is_valid(FILE *file, u32 file_offset)
+{
+    struct vfs_attr attr = {0};
+
+    if (!file || fget_attrs(file, &attr)) {
+        return 0;
+    }
+    return file_offset <= attr.fsize;
 }
 
 static void creat_file_path(char *path, char *root_path, const char *folder, u8 *name, u16 name_len)
@@ -165,11 +180,67 @@ static u8 file_trans_back_response_send(u8 *data, u16 len, u8 dire, u8 OpCode_SN
     return ret;
 }
 
+static int file_trans_back_is_spp(void)
+{
+#if defined(RCSP_USE_SPP)
+    return RCSP_USE_SPP == get_defalut_bt_channel_sel();
+#else
+    return 0;
+#endif
+}
+
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+static int file_trans_back_wait_spp_wakeup(u32 packet_count, u32 offset,
+        u32 wakeup_base)
+{
+    u16 wait_count = 0;
+
+    while (1) {
+        if ((u8) - 1 != g_trans_back_cancel_flag) {
+            return 1;
+        }
+        if (0 == get_rcsp_connect_status()) {
+            return -1;
+        }
+
+        int ret = rcsp_spp_tx_wait();
+        if (!ret) {
+            if ((u8) - 1 != g_trans_back_cancel_flag) {
+                return 1;
+            }
+            if (0 == get_rcsp_connect_status()) {
+                return -1;
+            }
+            if ((packet_count <= 3) || (0 == (packet_count & 0x1f))) {
+                printf("file trans spp wakeup: packet=%u, offset=%u, total=%u\n",
+                       packet_count, offset,
+                       rcsp_spp_tx_wakeup_count_get() - wakeup_base);
+            }
+            return 0;
+        }
+        if (ret != OS_TIMEOUT) {
+            printf("file trans spp wakeup wait err: %d\n", ret);
+            return -1;
+        }
+
+        wait_count++;
+        if ((1 == wait_count) || (0 == (wait_count % 10))) {
+            printf("file trans spp wakeup pending: packet=%u, offset=%u, waits=%u\n",
+                   packet_count, offset, wait_count);
+        }
+        if (wait_count >= FILE_TRANS_BACK_SPP_WAKEUP_WAIT_MAX) {
+            printf("file trans spp wakeup timeout: packet=%u, offset=%u\n",
+                   packet_count, offset);
+            return -1;
+        }
+    }
+}
+#endif
+
 extern void notify_update_connect_parameter(u8 table_index);
 
 static void file_trans_back_task(void *p)
 {
-    struct RcspModel *rcspModel = (struct RcspModel *)p;
     // 从文件句柄中获取当前文件的大小
     struct vfs_attr attr;
     fget_attrs(trans_back->file, &attr);
@@ -198,11 +269,25 @@ static void file_trans_back_task(void *p)
     file_trans_idle_set(0);
 
     u16 crc = 0;
+    u32 spp_packet_count = 0;
+    int is_spp = file_trans_back_is_spp();
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+    int spp_wakeup_flow = is_spp && rcsp_spp_tx_flow_ctrl_ready();
+    u32 spp_wakeup_base = rcsp_spp_tx_wakeup_count_get();
+#else
+    int spp_wakeup_flow = 0;
+#endif
     resp_data_len -= 4;
     if (FILE_TRANS_BACK_BY_NAME != trans_back->op) {
         resp_data_len -= 2;
     }
-    for (u32 offset = 0, data_len = 0, ret = 0; offset < file_size;) {
+    printf("file trans start: size=%u, offset=%u, payload=%u, spp=%d, wakeup=%d\n",
+           file_size, trans_back->file_offset, resp_data_len,
+           is_spp, spp_wakeup_flow);
+    if (is_spp && !spp_wakeup_flow) {
+        printf("file trans spp wakeup unavailable, use one-tick delay\n");
+    }
+    for (u32 offset = trans_back->file_offset, data_len = 0, ret = 0; offset < file_size;) {
         wdt_clear();
         // 假如当前spp或ble断开连接
         if (0 == get_rcsp_connect_status()) {
@@ -233,8 +318,13 @@ static void file_trans_back_task(void *p)
         }
 
         // 发送文件数据
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+        if (spp_wakeup_flow) {
+            rcsp_spp_tx_wait_prepare();
+        }
+#endif
         ret = file_trans_back_response_send(resp_data, data_len + 4, 1, trans_back->OpCode_SN);
-        if (JL_ERR_SEND_DATA_OVER_LIMIT == ret) {
+        if ((JL_ERR_SEND_DATA_OVER_LIMIT == ret) || (JL_ERR_SEND_BUSY == ret)) {
             os_time_dly(1);
             continue;
         }
@@ -243,22 +333,56 @@ static void file_trans_back_task(void *p)
             break;
         }
 
-        // 每发2块, 等底层发送队列消化完再继续, 防止入队超出底层消费速率导致lbuf池爆
-        if (0 == ((offset / resp_data_len) & 0x1)) {
-            while (!(rcsp_send_list_is_empty() && check_le_pakcet_sent_finish_flag())) {
+        /* Only replace the original delay when SPP wakeup is available. */
+        if (spp_wakeup_flow) {
+            spp_packet_count++;
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+            int wait_ret = file_trans_back_wait_spp_wakeup(
+                               spp_packet_count, offset,
+                               spp_wakeup_base);
+            if (wait_ret < 0) {
+                goto __file_trans_back_task_err;
+            }
+            if (wait_ret > 0) {
+                break;
+            }
+#endif
+        } else {
+            /* Keep the original SDK pacing for BLE and SPP fallback. */
+            os_time_dly(1);
+            while (!(rcsp_send_list_is_empty() &&
+                     check_le_pakcet_sent_finish_flag())) {
                 os_time_dly(1);
                 if (0 == get_rcsp_connect_status()) {
                     goto __file_trans_back_task_err;
+                }
+                if ((u8) - 1 != g_trans_back_cancel_flag) {
+                    break;
                 }
             }
         }
         offset += resp_data_len;
     }
 
-    while (!(rcsp_send_list_is_empty() && check_le_pakcet_sent_finish_flag())) {
+    if (spp_wakeup_flow) {
+        if (0 == get_rcsp_connect_status()) {
+            goto __file_trans_back_task_err;
+        }
+        printf("file trans spp data done: packets=%u, wakeups=%u\n",
+               spp_packet_count,
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+               rcsp_spp_tx_wakeup_count_get() - spp_wakeup_base
+#else
+               0
+#endif
+              );
+    }
+
+    while (!(rcsp_send_list_is_empty() &&
+             check_le_pakcet_sent_finish_flag())) {
         os_time_dly(10);
         if (0 == get_rcsp_connect_status()) {
-            break;
+            goto __file_trans_back_task_err;
         }
     }
 
@@ -280,7 +404,15 @@ __file_trans_back_task_err:
     }
 
     file_trans_idle_set(1);
-    rcsp_msg_post(USER_MSG_RCSP_FILE_TRANS_BACK, 1, (int)p);
+    u16 close_post_retry = 0;
+    while (!rcsp_msg_post(USER_MSG_RCSP_FILE_TRANS_BACK, 1, (int)p)) {
+        close_post_retry++;
+        if ((1 == close_post_retry) || (0 == (close_post_retry % 10))) {
+            printf("file trans close post retry: %u\n", close_post_retry);
+        }
+        os_time_dly(10);
+    }
+    printf("file trans close post ok: retries=%u\n", close_post_retry);
     while (1) {
         os_time_dly(10);
     }
@@ -288,18 +420,37 @@ __file_trans_back_task_err:
 
 static int get_file_by_name(void *priv, u8 *data, u16 len)
 {
-    u32 file_offset = data[0] << 24 | data[1] << 16 << data[2] << 8 | data[3];
+    u32 file_offset;
     u8 offset = 4;
+    u8 *file_name;
+    char *root_path;
+    char *folder = NULL;
+    char *path;
 
-    u32 param_len = 0;
+    if (!data || len < 4) {
+        goto __get_file_file_by_name_err;
+    }
+
+    file_offset = ((u32)data[0] << 24) | ((u32)data[1] << 16) |
+                  ((u32)data[2] << 8) | data[3];
+
+    trans_back->file_offset = file_offset;
+
     if (FILE_TRANS_BACK_BY_NAME != trans_back->op) {
-        param_len = data[offset];
+        if (offset >= len) {
+            goto __get_file_file_by_name_err;
+        }
         offset++;
     }
-    u8 *file_name = data + offset;
+    if (offset >= len) {
+        goto __get_file_file_by_name_err;
+    }
+    file_name = data + offset;
     // 拼凑绝对路径
-    char *root_path = dev_manager_get_root_path(trans_back->dev);
-    char *folder = NULL;
+    root_path = dev_manager_get_root_path(trans_back->dev);
+    if (!root_path) {
+        goto __get_file_file_by_name_err;
+    }
     if (RCSPDevMapFLASH == g_dev_handle ||
         RCSPDevMapFLASH_2 == g_dev_handle) {
         if ('/' == file_name[0]) {
@@ -309,7 +460,13 @@ static int get_file_by_name(void *priv, u8 *data, u16 len)
     } else {
         folder = FTP_DOWNLOAD_FOLDER_NAME;
     }
-    char *path = zalloc(creat_path_len(root_path, folder, file_name, len - offset));
+    if (offset >= len) {
+        goto __get_file_file_by_name_err;
+    }
+    path = zalloc(creat_path_len(root_path, folder, file_name, len - offset));
+    if (!path) {
+        goto __get_file_file_by_name_err;
+    }
     creat_file_path(path, root_path, folder, file_name, len - offset);
 
     if (NULL == trans_back->file) {
@@ -322,6 +479,9 @@ static int get_file_by_name(void *priv, u8 *data, u16 len)
 
     if (NULL == trans_back->file) {
         // 文件不存在
+        goto __get_file_file_by_name_err;
+    }
+    if (!file_trans_back_offset_is_valid(trans_back->file, file_offset)) {
         goto __get_file_file_by_name_err;
     }
 
@@ -338,10 +498,13 @@ __get_file_file_by_name_err:
 static int cancel_file_trans_back(u8 OpCode_SN, u8 *data, u16 len)
 {
     int ret = 0;
-    if (trans_back) {
+    if (trans_back && data && len >= 1) {
         trans_back->OpCode_SN = OpCode_SN;
         trans_back->op = FILE_TRANS_BACK_CANCEL;
         g_trans_back_cancel_flag = data[0];
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+        rcsp_spp_tx_wait_wakeup();
+#endif
     } else {
         ret = -1;
     }
@@ -351,6 +514,13 @@ static int cancel_file_trans_back(u8 OpCode_SN, u8 *data, u16 len)
 // 关闭向手机发送文件
 void rcsp_file_trans_back_close(void)
 {
+    if (!trans_back) {
+        return;
+    }
+
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+    rcsp_spp_tx_wait_wakeup();
+#endif
     task_kill(FILE_TRANS_BACK_TASK_NAME);
     g_trans_back_cancel_flag = -1;
 
@@ -373,12 +543,22 @@ void rcsp_file_trans_back_close(void)
 
 static int get_file_by_clust(void *priv, u8 *data, u16 len)
 {
-    u32 file_offset = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
-    u32 cluster = data[4] << 24 | data[5] << 16 | data[6] << 8 | data[7];
+    if (!data || len < 8) {
+        goto __get_file_by_clust_err;
+    }
+
+    u32 file_offset = ((u32)data[0] << 24) | ((u32)data[1] << 16) |
+                      ((u32)data[2] << 8) | data[3];
+    u32 cluster = ((u32)data[4] << 24) | ((u32)data[5] << 16) |
+                  ((u32)data[6] << 8) | data[7];
+    trans_back->file_offset = file_offset;
     // find name by cluster
     if (NULL == trans_back->file) {
         if (NULL == trans_back->fsn) {
             trans_back->fsn = file_manager_scan_disk(trans_back->dev, NULL, scan_parm, 0, NULL);
+        }
+        if (NULL == trans_back->fsn) {
+            goto __get_file_by_clust_err;
         }
         trans_back->file = file_manager_select(trans_back->dev, trans_back->fsn, FSEL_BY_SCLUST, cluster, NULL);
     }
@@ -388,6 +568,9 @@ static int get_file_by_clust(void *priv, u8 *data, u16 len)
     }
 
     if (NULL == trans_back->file) {
+        goto __get_file_by_clust_err;
+    }
+    if (!file_trans_back_offset_is_valid(trans_back->file, file_offset)) {
         goto __get_file_by_clust_err;
     }
 
@@ -406,11 +589,22 @@ void rcsp_file_trans_back_opt(void *priv, u8 OpCode_SN, u8 *data, u16 len)
 {
     int ret = 0;
     u8 offset = 0;
-    u8 op = data[0];
+    u8 op;
+
+    if (!data || !len) {
+        return;
+    }
+    op = data[0];
     switch (op) {
     case FILE_TRANS_BACK_BY_NAME_2:
-        g_dev_handle = data[1] << 24 | data[2] << 16 | data[3] << 8 | data[4];
+        if (len < 5) {
+            ret = -1;
+            break;
+        }
+        g_dev_handle = ((u32)data[1] << 24) | ((u32)data[2] << 16) |
+                       ((u32)data[3] << 8) | data[4];
         offset = 5;
+    /* fall through */
     case FILE_TRANS_BACK_BY_NAME:
         ret = get_file_prepare(g_dev_handle);
         if (ret) {
@@ -421,7 +615,12 @@ void rcsp_file_trans_back_opt(void *priv, u8 OpCode_SN, u8 *data, u16 len)
         ret = get_file_by_name(priv, data + offset, len - offset);
         break;
     case FILE_TRANS_BACK_BY_CLUST:
-        g_dev_handle = data[1] << 24 | data[2] << 16 | data[3] << 8 | data[4];
+        if (len < 5) {
+            ret = -1;
+            break;
+        }
+        g_dev_handle = ((u32)data[1] << 24) | ((u32)data[2] << 16) |
+                       ((u32)data[3] << 8) | data[4];
         offset = 5;
         ret = get_file_prepare(g_dev_handle);
         if (ret) {

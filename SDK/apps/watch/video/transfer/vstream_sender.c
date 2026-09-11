@@ -21,6 +21,7 @@
 #define log_debug(...)
 #define log_error(...)
 #endif
+#include "kid_mem_dbg.h"
 
 #if TCFG_VSTREAM_TRANSFER
 
@@ -130,6 +131,10 @@ static int vstream_lbuf_manager_init(struct lbuf_manager *lm, int size)
         if (lm->ptr) {
             memset(lm->ptr, 0, size);   /* malloc is not zeroed */
         }
+    }
+    if (!lm->ptr) {
+        log_error("%s malloc(%d) failed\n", __func__, size);
+        KWT_MEM_STATS("sender.lbuf_init malloc fail");
     }
     log_debug("%s %d ptr:%x", __func__, __LINE__, lm->ptr);
     if (lm->ptr) {
@@ -342,12 +347,14 @@ int vstream_sender_open(struct vstream_info *s_info)
 
     if (info == NULL) {
         log_error("%s %d->Error in zalloc()\n", __func__, __LINE__);
+        KWT_MEM_STATS("sender.open calloc fail");
         return -1;
     }
 
     info->udp_send_buf = (u8 *)zalloc(UDP_SEND_BUF_SIZE);
     if (info->udp_send_buf == NULL) {
         log_error("%s %d->Error in zalloc()\n", __func__, __LINE__);
+        KWT_MEM_STATS("sender.open udp_buf zalloc fail");
         goto err;
     }
     int cmd_lbuf_size = CMD_STREAM_PACKET_NUM * (CMD_STREAM_BUF_ALIGN + 32) + 64;
@@ -365,6 +372,7 @@ int vstream_sender_open(struct vstream_info *s_info)
         goto err;
     }
     log_info("%s succ!\n", __func__);
+    KWT_MEM_STATS("sender.open done");
     return 0;
 err:
 
@@ -403,6 +411,7 @@ int vstream_sender_close(void)
     free(info);
 
     log_info("%s succ!\n", __func__);
+    KWT_MEM_STATS("sender.close done");
     return 0;
 }
 
@@ -428,6 +437,7 @@ int vstream_sender_video_init()
     int video_lbuf_size = VIDEO_STREAM_PACKET_NUM * (VIDEO_STREAM_BUF_ALIGN + 32) + 64;
     vstream_lbuf_manager_init(&info->video, video_lbuf_size);
     log_info("%s succ!\n", __func__);
+    KWT_MEM_STATS("sender.video_init done");
     return 0;
 }
 int vstream_sender_video_deinit()
@@ -439,6 +449,7 @@ int vstream_sender_video_deinit()
     struct stream_info *info  = g_stream_info;
     vstream_lbuf_manager_deinit(&info->video);
     log_info("%s succ!\n", __func__);
+    KWT_MEM_STATS("sender.video_deinit done");
     return 0;
 }
 int vstream_sender_audio_init()

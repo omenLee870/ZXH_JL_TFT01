@@ -15,6 +15,17 @@ struct ring_info {
     s8 percent;
     u8 dont_output;
 };
+
+struct gpu_ring_info {
+    int center_x;
+    int center_y;
+    int inner_radius;
+    int outer_radius;
+    int start_angle;
+    int curr_angle;
+    u32 fill_color;
+};
+
 /* ------------------------------------------------------------------------------------*/
 /**
  * @brief draw_ring 圆环接口

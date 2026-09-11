@@ -20,11 +20,12 @@
 
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[USB]"
+#define LOG_TAG             "[USER_SETUP]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -66,6 +67,13 @@ static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest 
 
 #if TCFG_USB_WEBUSB_ENABLE
     ret =  webusb_setup_device_hook(usb_device, req);
+    if (ret) {
+        return ret;
+    }
+#endif
+
+#if TCFG_USB_SLAVE_HCI_ENABLE
+    ret = hci_setup_device_hook(usb_device, req);
     if (ret) {
         return ret;
     }
@@ -128,10 +136,36 @@ static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest 
     }
     return ret;
 }
-static int usb_1to8_burner(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
+
+#if TCFG_WLM_PRODUCTION_TEST_ENABLE
+_WEAK_
+int user_slave_send_data_process(struct usb_ctrlrequest *req, u8 *tx_payload)
+{
+    return 0;
+}
+_WEAK_
+void user_slave_receive_data_process(struct usb_ctrlrequest *req, u8 *buf, u32 len)
+{
+}
+static u32 receive_data_from_usb(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
+{
+    u8 buf[64];
+    u32 len;
+    const usb_dev usb_id = usb_device2id(usb_device);
+    len = sizeof(buf) > req->wLength ? req->wLength : sizeof(buf);
+    usb_read_ep0(usb_id, buf, len);
+    g_printf("%s", __func__);
+    printf_buf(buf, len);
+    user_slave_receive_data_process(req, buf, len);
+    return USB_EP0_STAGE_SETUP;
+}
+#endif
+
+static u32 setup_other(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
 {
     u8 ack_data[8] = {0};
     u32 ret = 0;
+    u32 tx_len = 0;
     u8 *tx_payload = usb_get_setup_buffer(usb_device);
     switch (req->bRequest) {
     case USB_REQ_GET_STATUS:
@@ -152,21 +186,37 @@ static int usb_1to8_burner(struct usb_device_t *usb_device, struct usb_ctrlreque
             ret = 1;
         }
         break;
+#if TCFG_WLM_PRODUCTION_TEST_ENABLE
+    case 0xf0:  //dir: device -> host
+        if ((req->bRequestType & 0x80) != 0) {
+            switch (req->bRequestType & USB_TYPE_MASK) {
+            case USB_TYPE_VENDOR:
+                r_printf("s->h, wValue: 0x%x, wIndex: 0x%x", req->wValue, req->wIndex);
+                tx_len = user_slave_send_data_process(req, tx_payload);
+                usb_set_data_payload(usb_device, req, tx_payload, tx_len);
+                ret = 1;
+                break;
+            }
+        }
+        break;
+    case 0x70:  //dir: host -> device
+        if ((req->bRequestType & 0x80) == 0) {
+            switch (req->bRequestType & USB_TYPE_MASK) {
+            case USB_TYPE_VENDOR:
+                r_printf("h->s, wValue: 0x%x, wIndex: 0x%x", req->wValue, req->wIndex);
+                usb_set_setup_recv(usb_device, receive_data_from_usb);
+                ret = 1;
+                break;
+            }
+        }
+        break;
+#endif
     default:
         ret = 1 ;
         break;
     }
     return ret;
-
 }
-
-static u32 setup_other(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
-{
-    u32 ret = 0;
-    ret = usb_1to8_burner(usb_device, req);
-    return ret;
-}
-
 
 static u32 user_setup_filter(struct usb_device_t *usb_device, struct usb_ctrlrequest *request)
 {

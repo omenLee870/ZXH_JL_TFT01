@@ -1,5 +1,6 @@
 #include "app_config.h"
-#include "usb_host.h"
+#include "usb/host/usb_host.h"
+#include "device_event.h"
 #include "usbnet.h"
 #include "cdc_defs.h"
 #include "device_drive.h"
@@ -38,18 +39,74 @@ static int get_power(struct usb_host_device *host_dev, u32 value)
 
 static struct wireless_device_t wireless_dev[USB_MAX_HW_NUM];
 
+static int usbnet_wireless_event_ioctl(const struct usb_host_device *host_dev, u32 cmd, u32 arg)
+{
+    struct device_event *ev = (struct device_event *)arg;
+    struct device_event notify_ev = {0};
+    const char *name;
+
+    if (cmd != USB_IOCTL_NOTIFY_EVENT || !ev) {
+        return 0;
+    }
+    name = (const char *)ev->value;
+    if (!name || strncmp(name, "wireless", strlen("wireless"))) {
+        return 0;
+    }
+    if (ev->event == DEVICE_EVENT_IN) {
+        log_info("wireless online %s", name);
+    } else if (ev->event == DEVICE_EVENT_OUT) {
+        log_info("wireless offline %s", name);
+        usb_net_stop_process(host_device2id(host_dev));
+    } else {
+        return 0;
+    }
+    notify_ev.event = ev->event;
+    notify_ev.arg = (void *)"usb_host0";
+    notify_ev.value = ev->value;
+    device_event_notify(DEVICE_EVENT_FROM_USB_HOST, &notify_ev);
+    return 0;
+}
+
+static int usbnet_at_port_event_ioctl(const struct usb_host_device *host_dev, u32 cmd, u32 arg)
+{
+    struct device_event *ev = (struct device_event *)arg;
+    struct device_event notify_ev = {0};
+    const char *name;
+
+    if (cmd != USB_IOCTL_NOTIFY_EVENT || !ev) {
+        return 0;
+    }
+    name = (const char *)ev->value;
+    if (!name || strncmp(name, "at_port", strlen("at_port"))) {
+        return 0;
+    }
+    if (ev->event == DEVICE_EVENT_IN) {
+        log_info("at_port online %s", name);
+    } else if (ev->event == DEVICE_EVENT_OUT) {
+        log_info("at_port offline %s", name);
+        usb_net_at_port_stop_process(host_device2id(host_dev));
+    } else {
+        return 0;
+    }
+    notify_ev.event = ev->event;
+    notify_ev.arg = (void *)"usb_host0";
+    notify_ev.value = ev->value;
+    device_event_notify(DEVICE_EVENT_FROM_USB_HOST, &notify_ev);
+    return 0;
+}
+
 static const struct interface_ctrl wireless_ctrl = {
     .interface_class = USB_CLASS_WIRELESS_CONTROLLER,
     .set_power = set_power,
     .get_power = get_power,
-    .ioctl = NULL,
+    .ioctl = usbnet_wireless_event_ioctl,
 };
 
 static const struct interface_ctrl at_port_ctrl = {
     .interface_class = USB_CLASS_VENDOR_SPEC,
     .set_power = set_power,
     .get_power = get_power,
-    .ioctl = NULL,
+    .ioctl = usbnet_at_port_event_ioctl,
 };
 
 static const struct usb_interface_info wireless_inf[USB_MAX_HW_NUM] = {
@@ -586,7 +643,7 @@ int rndis_command(struct usb_host_device *device, struct rndis_msg_hdr *buf, int
                                              USB_CDC_SEND_ENCAPSULATED_COMMAND,
                                              USB_TYPE_CLASS | USB_RECIP_INTERFACE,
                                              0, master_ifnum,
-                                             msg, sizeof * msg
+                                             msg, sizeof *msg
                                             );
                     if (unlikely(retval < 0))
                         log_info(
@@ -777,7 +834,7 @@ int generic_rndis_bind(struct usb_host_device *device, int flags)
 
 #endif
     phym = NULL;
-    reply_len = sizeof * phym;
+    reply_len = sizeof *phym;
     retval = rndis_query(device, u.buf, OID_GEN_PHYSICAL_MEDIUM,
                          0, (void **) &phym, &reply_len);
 
@@ -801,7 +858,7 @@ int generic_rndis_bind(struct usb_host_device *device, int flags)
         goto halt_fail_and_release;
     }
 
-    reply_len = sizeof * phym;
+    reply_len = sizeof *phym;
     retval = rndis_query(device, u.buf, OID_GEN_MEDIA_CONNECT_STATUS,
                          0, (void **)&conn_status, &reply_len);
     log_info("QUERY->OID_GEN_MEDIA_CONNECT_STATUS, retval = %d, conn_status = %x", retval, *conn_status);

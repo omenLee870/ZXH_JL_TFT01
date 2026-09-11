@@ -8,6 +8,7 @@
 #include "app_main.h"
 #include "init.h"
 #include "rtc.h"
+#include "common_music_ctrl.h"
 
 #if TCFG_APP_RTC_EN
 
@@ -37,6 +38,10 @@ int rtc_app_msg_handler(int *msg)
     case APP_MSG_RTC_SW_POS:
         printf("APP_MSG_RTC_SW_POS \n");
         set_rtc_pos();
+        break;
+    case APP_MSG_MUSIC_CTRL_NEXT:
+        printf("APP_MSG_MUSIC_CTRL_NEXT \n");
+        music_ctrl_local_play(0);
         break;
     default:
         break;

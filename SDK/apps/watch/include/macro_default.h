@@ -782,6 +782,17 @@
 #define CONFIG_TWS_POWEROFF_SAME_TIME 			0x0 //同步关机
 #endif
 
+#ifndef TCFG_BT_PA_ENABLE
+#define TCFG_BT_PA_ENABLE 				        DISABLE_THIS_MOUDLE
+#endif
+
+#ifndef TCFG_CLOCK_OSC_CAP
+#define TCFG_CLOCK_OSC_CAP                      7
+#endif
+
+#ifndef TCFG_CLOCK_OSC_CAP_FINE
+#define TCFG_CLOCK_OSC_CAP_FINE                 3
+#endif
 //*********************************************************************************//
 //                               power CONFIG                                      //
 //*********************************************************************************//
@@ -839,6 +850,12 @@
 #endif
 #ifndef TCFG_CAMERA_DVP_ENABLE
 #define TCFG_CAMERA_DVP_ENABLE									DISABLE
+#endif
+#ifndef TCFG_CAMERA_SPI_POWER_IO_CTRL
+#define TCFG_CAMERA_SPI_POWER_IO_CTRL					1		// SPI摄像头VCC有效电平: 1=高电平有效
+#endif
+#ifndef TCFG_CAMERA_DVP_POWER_IO_CTRL
+#define TCFG_CAMERA_DVP_POWER_IO_CTRL					1		// DVP摄像头VCC有效电平: 1=高电平有效
 #endif
 #ifndef TCFG_VSTREAM_TRANSFER
 #define TCFG_VSTREAM_TRANSFER									DISABLE

@@ -34,6 +34,8 @@
 #include "adv_1t2_setting.h"
 #include "rcsp_watch_device_config.h"
 #include "rcsp_watch_info.h"
+#include "audio_video_control.h"
+#include "rcsp_trace.h"
 
 
 #if TCFG_USER_TWS_ENABLE
@@ -92,6 +94,10 @@ static void get_target_feature(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u1
     u8 *resp = zalloc(TARGET_FEATURE_RESP_BUF_SIZE);
     ASSERT(resp, "func = %s, line = %d, no ram!!\n", __FUNCTION__, __LINE__);
     wlen = rcsp_target_feature_parse_packet(priv, resp, TARGET_FEATURE_RESP_BUF_SIZE, mask);
+#if RCSP_CMD_TRACE_EN
+    /* 抓包: 回复特征表(内容大, 截断打印) */
+    rcsp_trace_frame("-->", "TX GET_FEATURE_RESP", OpCode, OpCode_SN, JL_PRO_STATUS_SUCCESS, resp, wlen);
+#endif
     JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, resp, wlen, ble_con_handle, spp_remote_addr);
     free(resp);
 }
@@ -267,6 +273,10 @@ static void get_sys_info(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len,
     if (rlen == 0) {
         rcsp_printf("get_sys_info LTV NULL !!!!\n");
     }
+#if RCSP_CMD_TRACE_EN
+    /* 抓包: 0x07 获取公有模式/各功能信息 的回复 (LTV, 如 Bit1 音量 = [sys][media][call]) */
+    rcsp_trace_frame("-->", "TX SYSINFO_GET_RESP", OpCode, OpCode_SN, JL_PRO_STATUS_SUCCESS, resp, (u16)rlen + 1);
+#endif
     JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, resp, (u16)rlen + 1, ble_con_handle, spp_remote_addr);
     free(resp);
 }
@@ -291,6 +301,11 @@ static void set_sys_info(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len,
         return;
     }
 #endif
+#if RCSP_CMD_TRACE_EN
+    /* 抓包: 0x08 设置公有模式/各功能信息 (含 Bit1 音量三字节) 的回复状态 */
+    rcsp_trace_frame("-->", "TX SYSINFO_SET_RESP", OpCode, OpCode_SN,
+                     ret ? JL_PRO_STATUS_SUCCESS : JL_PRO_STATUS_FAIL, NULL, 0);
+#endif
     if (ret == true) {
         JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0, ble_con_handle, spp_remote_addr);
     } else {
@@ -303,6 +318,11 @@ static void function_cmd_handle(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u
 
     u8 function = data[0];
     bool ret = rcsp_device_status_cmd_set(priv, OpCode, OpCode_SN, function, data + 1, len - 1, ble_con_handle, spp_remote_addr);
+#if RCSP_CMD_TRACE_EN
+    /* 抓包: 0x0E 功能命令(模式切换等) 的回复状态 */
+    rcsp_trace_frame("-->", "TX FUNCTION_CMD_RESP", OpCode, OpCode_SN,
+                     ret ? JL_PRO_STATUS_SUCCESS : JL_PRO_STATUS_FAIL, NULL, 0);
+#endif
     if (ret == true) {
         JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0, ble_con_handle, spp_remote_addr);
     } else {
@@ -686,6 +706,13 @@ static void get_watch_device_config(void *priv, u8 OpCode, u8 OpCode_SN, u8 *dat
     ASSERT(resp, "func = %s, line = %d, no ram!!\n", __FUNCTION__, __LINE__);
     wlen = rcsp_watch_get_device_config(priv, resp, TARGET_FEATURE_RESP_BUF_SIZE);
     JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, resp, wlen, ble_con_handle, spp_remote_addr);
+#if RCSP_CMD_TRACE_EN
+    /* 抓包: 0xD9 设备配置回复(智能眼镜能力表), 用于核对产品标识/音频能力声明。
+     * 放在 response_send 之后、free 之前, 避免在"收包→组包→发包"临界区内长时间打印;
+     */
+    rcsp_trace_frame("-->", "TX DEVICE_CFG_RESP", JL_OPTCODE_DEVICE_CONFIG_GET, OpCode_SN,
+                     JL_PRO_STATUS_SUCCESS, resp, (u16)wlen);
+#endif
     free(resp);
 }
 
@@ -697,6 +724,10 @@ static void get_watch_device_config(void *priv, u8 OpCode, u8 OpCode_SN, u8 *dat
 
 void rcsp_cmd_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len, u16 ble_con_handle, u8 *spp_remote_addr)
 {
+#if RCSP_CMD_TRACE_EN
+    /* 抓包: 手机下发且需要设备回复的命令 (0x07 获取/0x08 设置/0x03 特征 等) */
+    rcsp_trace_frame("<--", "RX CMD", OpCode, OpCode_SN, 0, data, len);
+#endif
     switch (OpCode) {
     case JL_OPCODE_GET_TARGET_FEATURE:
         get_target_feature(priv, OpCode, OpCode_SN, data, len, ble_con_handle, spp_remote_addr);
@@ -829,6 +860,11 @@ void rcsp_cmd_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len, u1
         rcsp_jlstm_cmd_deal(OpCode_SN, data, len);
         break;
 
+    case JL_OPCODE_AUDIO_VIDEO_CONTROL:
+        rcsp_audio_video_cmd_deal(priv, OpCode, OpCode_SN, data, len,
+                                  ble_con_handle, spp_remote_addr);
+        break;
+
     default:
 #if JL_RCSP_SENSORS_DATA_OPT
         if (0 == JL_rcsp_sensors_data_opt(priv, OpCode, OpCode_SN, data, len)) {
@@ -858,5 +894,108 @@ void rcsp_cmd_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len, u1
         break;
     }
 }
+
+#if (RCSP_CMD_TRACE_EN)
+/* RCSP 交互指令抓包打印: 见 rcsp_trace.h 说明 */
+void rcsp_trace_frame(const char *dir, const char *name, u8 opcode, u8 sn, u8 status, const u8 *data, u16 len)
+{
+    const char *op_name = NULL;
+    u16 dump_len = (len <= 24) ? len : 24;
+    u16 i;
+
+    switch (opcode) {
+    case JL_OPCODE_GET_TARGET_FEATURE_MAP:
+        op_name = "GET_FEATURE_MAP";
+        break;
+    case JL_OPCODE_GET_TARGET_FEATURE:
+        op_name = "GET_FEATURE";
+        break;
+    case JL_OPCODE_APP_RECORDING:
+        op_name = "APP_RECORDING";
+        break;
+    case JL_OPCODE_APP_RECORD_END:
+        op_name = "APP_RECORD_END";
+        break;
+    case JL_OPCODE_DISCONNECT_EDR:
+        op_name = "DISCONNECT_EDR";
+        break;
+    case JL_OPCODE_SYS_INFO_GET:
+        op_name = "SYS_INFO_GET";
+        break;
+    case JL_OPCODE_SYS_INFO_SET:
+        op_name = "SYS_INFO_SET";
+        break;
+    case JL_OPCODE_SYS_INFO_AUTO_UPDATE:
+        op_name = "SYS_INFO_AUTO_UPDATE";
+        break;
+    case JL_OPCODE_CALL_REQUEST:
+        op_name = "CALL_REQUEST";
+        break;
+    case JL_OPCODE_SWITCH_DEVICE:
+        op_name = "SWITCH_DEVICE";
+        break;
+    case JL_OPCODE_FUNCTION_CMD:
+        op_name = "FUNCTION_CMD";
+        break;
+    case JL_OPCODE_SYS_OPEN_BT_SCAN:
+        op_name = "OPEN_BT_SCAN";
+        break;
+    case JL_OPCODE_SYS_UPDATE_BT_STATUS:
+        op_name = "UPDATE_BT_STATUS";
+        break;
+    case JL_OPCODE_SYS_STOP_BT_SCAN:
+        op_name = "STOP_BT_SCAN";
+        break;
+    case JL_OPCODE_SYS_BT_CONNECT_SPEC:
+        op_name = "BT_CONNECT_SPEC";
+        break;
+    case JL_OPCODE_SYS_FIND_DEVICE:
+        op_name = "FIND_DEVICE";
+        break;
+    case JL_OPCODE_ALARM_EXTRA:
+        op_name = "ALARM_EXTRA";
+        break;
+    case JL_OPCODE_MASS_DATA:
+        op_name = "MASS_DATA";
+        break;
+    case JL_OPCODE_1T2_DEVICE_EDR_INFO_LIST:
+        op_name = "1T2_EDR_INFO_LIST";
+        break;
+    case JL_OPCODE_AI_DIAL:
+        op_name = "AI_DIAL";
+        break;
+    case JL_OPCODE_COMMON_INFO_SET:
+        op_name = "COMMON_INFO_SET";
+        break;
+    case JL_OPCODE_STREAM_CONTROL:
+        op_name = "STREAM_CONTROL";
+        break;
+    case JL_OPCODE_AUDIO_VIDEO_CONTROL:
+        op_name = "AUDIO_VIDEO_CONTROL";
+        break;
+    case JL_OPCODE_GET_MD5:
+        op_name = "GET_MD5";
+        break;
+    case JL_OPCODE_CUSTOMER_USER:
+        op_name = "CUSTOMER_USER";
+        break;
+    default:
+        op_name = "?";
+        break;
+    }
+
+    if (data && len) {
+        printf("[RCSP][%s] %-16s code=0x%02x(%-18s) sn=%-3d status=%-2d len=%u%s data:",
+               dir, name, opcode, op_name, sn, status, len, (len > dump_len) ? "(截断)" : "");
+        for (i = 0; i < dump_len; i++) {
+            printf("%02x ", data[i]);
+        }
+        printf("\n");
+    } else {
+        printf("[RCSP][%s] %-16s code=0x%02x(%-18s) sn=%-3d status=%-2d len=%u\n",
+               dir, name, opcode, op_name, sn, status, len);
+    }
+}
+#endif//RCSP_CMD_TRACE_EN
 
 #endif//RCSP_MODE

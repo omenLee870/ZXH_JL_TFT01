@@ -204,6 +204,7 @@ u8 connect_last_source_device_from_vm();
 void bredr_conn_dev(u8 *mac);
 void bredr_search_device();
 void bt_emitter_start_search_device();
+void bt_pa_init(void);
 
 
 #endif

@@ -20,7 +20,7 @@
 #define FRAME_HDR_SIZE      8
 
 /* ========== Max channels ========== */
-#define TEST_CHANNEL_MAX    6
+#define TEST_CHANNEL_MAX    7
 
 /* ========== Per-channel config ==========
  * Each channel = one bidirectional EP, all run simultaneously
@@ -37,12 +37,12 @@ struct test_ch_cfg {
 
 #ifndef TEST_CHANNEL_CONFIG
 #define TEST_CHANNEL_CONFIG                        \
-    { 1, TEST_XFER_BULK, 64,   1 },               \
-    { 2, TEST_XFER_INT,  64,   1 },               \
-    { 3, TEST_XFER_ISOC, 800, 1 },               \
-    { 4, TEST_XFER_ISOC, 800, 1 },               \
-    { 5, TEST_XFER_INT,  64,   1 },               \
-    { 6, TEST_XFER_INT,  64,   1 }
+    { 1, TEST_XFER_INT, 64,   1 },               \
+    { 2, TEST_XFER_BULK,  64,   1 },               \
+    { 3, TEST_XFER_ISOC, 192, 1 },               \
+    { 4, TEST_XFER_ISOC, 96, 1 },               \
+    { 5, TEST_XFER_INT,  16,   1 },               \
+    { 6, TEST_XFER_BULK,  64,   1 }
 #endif
 
 /* ========== CTRL via EP0 ========== */
@@ -50,7 +50,7 @@ struct test_ch_cfg {
 #define TEST_EP_CTRL_ENABLE  1
 #endif
 #ifndef TEST_CTRL_MAXP
-#define TEST_CTRL_MAXP       64
+#define TEST_CTRL_MAXP       256
 #endif
 
 /* ========== Interface protocol marker ========== */

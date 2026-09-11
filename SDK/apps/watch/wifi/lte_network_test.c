@@ -1,6 +1,6 @@
 #include "system/includes.h"
 
-#if TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE
+#if TCFG_WIFI_NET_ENABLE || TCFG_LTE_PHY_ENABLE
 #include "http/http_cli.h"
 #include "ip_addr.h"
 #include "dns.h"

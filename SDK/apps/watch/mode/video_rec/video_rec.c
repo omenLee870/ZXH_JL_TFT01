@@ -72,7 +72,8 @@ u8 kid_settings_get_rec_recyle_sec(void)
 extern void rtc_read_time(struct sys_time *time);
 extern void fat_set_datetime_info(u16 year, u8 month, u8 day, u8 hour, u8 minute, u8 second);
 
-/* 显示属性 (LCD preview) */
+/* 显示属性 (LCD preview): 摄像头预览保持 320x240(传感器 4:3 等比画面),
+ * 预览 fb 与 LVGL 视频控件同尺寸 */
 #if TCFG_CAMERA_DVP_ENABLE
 static const app_camera_display_attr_t g_rec_disp_attr = {
     .fb_name = "fb5",
@@ -95,7 +96,7 @@ static const video_rec_uvc_disp_attr_t g_rec_disp_attr = {
 };
 #endif
 
-/* 录像实际文件名, AVI_close 前填, 停止/分段事件中延迟入库 */
+/* 录像实际文件名, AVI_close 前填, 供上层缓存/回显 */
 static char g_last_video_file[128];
 
 /*==============================================================================
@@ -103,6 +104,11 @@ static char g_last_video_file[128];
  *==============================================================================*/
 
 video_rec_ctx_t g_rec_ctx = {0};
+
+/* SD IN 自动开录串行化: 重建进行中挂起, 等 APP_MSG_FLM_DB_CHANGED; 5s 超时兜底防重建挂死 */
+#define VIDEO_REC_SD_AUTO_START_TIMEOUT_MS 5000
+static u8  g_sd_auto_start_pending;
+static u32 g_sd_auto_start_pending_ms;
 
 /* GC0308 source dimensions used by the camera zoom crop. */
 #define VIDEO_REC_SENSOR_WIDTH   640u
@@ -302,7 +308,6 @@ static void video_rec_log_task_stack(const char *tag, const char *task_name)
     log_info("[VREC][STK] %s: task '%s' not in list (n=%u)\n", tag, task_name, n);
 }
 
-
 /* 状态查询 */
 int video_rec_is_recording(void)
 {
@@ -365,7 +370,6 @@ static void video_rec_event_handler(void *priv, int argc, int *argv)
         /* argv[1] = cyc_count (1-based, MPI 自增) */
         int cyc_count = (argc > 1) ? argv[1] : 0;
         g_cyc_file_count++;
-
         /* Mode0 时间戳命名走 frename+file_index 段号; Mode1 固定 VID_****.AVI 由 JLFS 撞名自增 */
         if (VIDEO_REC_NAMING_MODE == 1) {
             /* Mode 1: 跳过 frename + 跳过 file_index, 仅刷新 ctx 字段 */
@@ -379,9 +383,6 @@ static void video_rec_event_handler(void *priv, int argc, int *argv)
                      " next=%s\n", cyc_count, g_rec_ctx.current_file_path);
             /* 必须 set_path 交下一段路径, 否则 wait_next_file 永久 pend 阻塞(VENC 缓冲不排空死循环) */
             app_camera_rec_set_path(g_camera_handle, new_path);
-            if (flm_add_by_name(MEDIA_VIDEO_DIR, g_last_video_file) != 0) {
-                log_error("[VREC] CYC_FILE flm_add_by_name failed: %s\n", g_last_video_file);
-            }
             break;
         }
 
@@ -446,7 +447,7 @@ static void video_rec_fill_rec_attr(app_camera_rec_attr_t *ra)
     /* MPI cyc_sec 写满 cyc_frame 帧自动 close+reopen 并 post CYC_FILE, 回调 frename 时间戳名 */
     ra->cyc_sec         = (u32)g_rec_ctx.loop_time_sec;
     /* 录音走 app_video_audio_rec_open, PCM 16kHz 免编码器电脑可放 */
-    ra->audio_enable            = 1;
+    ra->audio_enable            = 0;
     ra->audio_codec_type        = APP_CAMERA_AUDIO_CODEC_PCM;  /* 0=PCM */
     ra->audio_sample_rate       = 16000;   /* 16kHz, 优于电话8kHz, 环境音更清晰 */
     ra->audio_buf_size          = 32 * 1024;   /* 探针实证: 32KB够用 */
@@ -571,9 +572,8 @@ static void video_rec_worker(void *arg)
     if (g_camera_handle != NULL && (g_rec_ctx.recording || g_rec_ctx.paused)) {
         app_camera_rec_stop(g_camera_handle);
     }
-    if (flm_add_by_name(MEDIA_VIDEO_DIR, g_last_video_file) != 0) {
-        log_error("[VREC] stop flm_add_by_name failed: %s\n", g_last_video_file);
-    }
+    //停止后重建媒体索引: 目录 diff 全量入库, app_camera_rec_stop 已同步关 AVI(管线完全停止)
+    flm_rebuild_async();
     g_rec_ctx.recording = 0;
     g_rec_ctx.worker_stop = 0;
 
@@ -722,6 +722,7 @@ int video_rec_start(void)
 {
     /* MEMDBG (2): video_rec_start entry - log free mem */
     log_info("[VREC] video_rec_start\n");
+    g_sd_auto_start_pending = 0;  /* 任意路径开录: 清 pending 防 DONE 重触自动开录 */
     g_rec_ctx.low_bat_alert_shown = 0;  /* 新录像: 复位低电量弹窗标志 */
     /* 新一段录像必须清累计暂停时长, 否则 elapsed 计算会减出负值 -> UI 时间溢出 */
     g_rec_ctx.pause_start_ms = 0;
@@ -845,9 +846,8 @@ int video_rec_stop(void)
     g_rec_ctx.worker_stop = 0;
 #elif (TCFG_HOST_UVC_ENABLE && TCFG_USB_HOST_ENABLE)
     vrec_uvc_rec_stop();
-    if (flm_add_by_name(MEDIA_VIDEO_DIR, g_last_video_file) != 0) {
-        log_error("[VREC] stop flm_add_by_name failed: %s\n", g_last_video_file);
-    }
+    //停止后重建媒体索引: 目录 diff 全量入库, vrec_uvc_rec_stop 已同步 AVI_close(管线完全停止)
+    flm_rebuild_async();
 #endif
 
     video_rec_transition_to(VIDEO_STATE_IDLE);
@@ -1084,6 +1084,11 @@ static void video_app_msg_handler(int *msg)
                 /* 拔卡抖动会来假 IN, 查卡在线才 auto start */
                 if (flm_sd_online() != 0) {
                     log_info("[VREC] SD IN but card not ready, skip auto start\n");
+                } else if (flm_rebuild_in_progress()) {
+                    /* 重建进行中: 挂起自动开录, 等 APP_MSG_FLM_DB_CHANGED, 防并发抢 SD 读与内存 */
+                    g_sd_auto_start_pending = 1;
+                    g_sd_auto_start_pending_ms = sys_timer_get_ms();
+                    log_info("[VREC] SD IN -> rebuild in progress, defer auto start\n");
                 } else {
                     log_info("[VREC] SD IN -> auto start\n");
                     video_rec_start();
@@ -1093,6 +1098,7 @@ static void video_app_msg_handler(int *msg)
             }
         } else if (arg == DEVICE_EVENT_OUT) {
             log_info("[VREC] SD OUT -> stop + ERROR + alert\n");
+            g_sd_auto_start_pending = 0;  /* 拔卡: 清 pending 防后续 DONE 误触开录 */
             if (g_rec_ctx.recording || g_rec_ctx.paused) {
                 video_rec_stop();
             }
@@ -1105,6 +1111,36 @@ static void video_app_msg_handler(int *msg)
         }
         return;
     }
+}
+
+/* SD IN 自动开录统一出口: 清 pending 并复检模式/卡在线/状态后才开录 */
+static void video_rec_sd_auto_start_flush(void)
+{
+    g_sd_auto_start_pending = 0;
+    if (!app_in_mode(APP_MODE_VIDEO_REC)) {
+        return;
+    }
+    if (flm_sd_online() != 0) {
+        log_info("[VREC] SD gone before auto start, cancel pending\n");
+        return;
+    }
+    if (video_rec_get_state() != VIDEO_STATE_IDLE) {
+        log_info("[VREC] state not idle, cancel pending auto start\n");
+        return;
+    }
+    log_info("[VREC] SD IN -> auto start\n");
+    video_rec_start();
+}
+
+/* APP_MSG_FLM_DB_CHANGED 补开录: 仅 pending 时生效, 停录触发的重建 DONE 不误触 */
+int video_rec_flm_rebuild_done(void)
+{
+    if (!g_sd_auto_start_pending) {
+        return 0;
+    }
+    log_info("[VREC] APP_MSG_FLM_DB_CHANGED: flush pending auto start\n");
+    video_rec_sd_auto_start_flush();
+    return 0;
 }
 
 /*==============================================================================
@@ -1927,6 +1963,7 @@ static int video_rec_mode_init(int param)
 void video_rec_mode_exit(void)
 {
     log_info("video_rec_mode_exit\n");
+    g_sd_auto_start_pending = 0;  /* 退出模式: 清 pending 防退出后 DONE 误触开录 */
     /* MEMDBG: mode exit - log mem, compare with mode_init/start to find leak */
     /* 先停录再拆 UI: stop 会触发 state->IDLE 的 UI 回调, 必须在 UI 仍存活时执行 */
     if (g_rec_ctx.recording || g_rec_ctx.paused) {
@@ -1977,6 +2014,12 @@ struct app_mode *app_enter_video_rec_mode(int arg)
             if (curr_state != prev_state) {
                 video_rec_ui_on_state_change(prev_state, curr_state);
                 prev_state = curr_state;
+            }
+            /* SD IN 自动开录超时兜底: 重建异常挂死也不能永不开录 */
+            if (g_sd_auto_start_pending &&
+                (u32)(sys_timer_get_ms() - g_sd_auto_start_pending_ms) >= VIDEO_REC_SD_AUTO_START_TIMEOUT_MS) {
+                log_info("[VREC] SD IN -> rebuild wait timeout(5s), auto start anyway\n");
+                video_rec_sd_auto_start_flush();
             }
             continue;
         }

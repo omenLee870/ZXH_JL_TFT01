@@ -38,9 +38,20 @@
 #if TCFG_HUB_HOST_ENABLE
 #include "usb/host/hub.h"
 #endif
+#if TCFG_HID_HOST_ENABLE
+#include "usb/host/hid.h"
+#endif
+
+#if TCFG_USB_SLAVE_CDC_ENABLE
+#include "usb/device/cdc.h"
+#endif
 
 #if TCFG_HOST_WIRELESS_ENABLE
 #include "usbnet.h"
+#endif
+
+#if TCFG_HOST_UVC_ENABLE
+#include "usb/host/host_uvc.h"
 #endif
 
 #define LOG_TAG_CONST       USB
@@ -52,7 +63,7 @@
 #define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
-#include "usb/host/host_uvc.h"
+
 
 #if TCFG_USB_SLAVE_ENABLE || TCFG_USB_HOST_ENABLE
 
@@ -258,6 +269,16 @@ static void handle_slave_msg(int *msg, u8 *is_cdc_background)
 
         break;
 #endif
+#if TCFG_USB_SLAVE_CDC_ENABLE
+    case USBSTACK_CDC_DATA: {
+        const usb_dev usb_id = msg[2];
+        const usb_dev cdc_num = msg[3];
+        u8 buf[64];
+        u32 rlen = cdc_read_data(usb_id, buf, 64, cdc_num);
+        cdc_write_data(usb_id, buf, rlen, cdc_num);
+        break;
+    }
+#endif
 
     }
 
@@ -296,9 +317,7 @@ static void handle_host_msg(int *msg, char *otg_msg, u8 *disk_msg)
                 DEVICE_EVENT_FROM_USB_HOST,
                 event,
                 usb_msg);
-
-            //usb_message_to_stack(USBSTACK_TEST, disk_msg, 0);
-
+            // os_taskq_post_msg("usb_stack", 4, USBSTACK_TEST);
         }
 
     } else if (!strncmp(usb_msg, "audio", 5)) {
@@ -330,6 +349,21 @@ static void handle_host_msg(int *msg, char *otg_msg, u8 *disk_msg)
         } else if (event == DEVICE_EVENT_OUT) {
 
             log_info("usb_hub offline %s", usb_msg);
+        }
+
+#endif
+    } else if (!strncmp(usb_msg, "hid", 3)) {
+
+#if TCFG_HID_HOST_ENABLE
+
+        if (event == DEVICE_EVENT_IN) {
+
+            log_info("hid_host IN %s", usb_msg);
+            hid_process(usb_msg[3] - '0');
+
+        } else if (event == DEVICE_EVENT_OUT) {
+
+            log_info("hid_host OUT %s", usb_msg);
         }
 
 #endif
@@ -387,38 +421,8 @@ static void handle_host_remount(int *msg)
 
 #endif
 }
-static void handle_udisk_test(int *msg)
-{
-    struct device *device;
-    device = dev_open("udisk0", NULL);
-    if (!device) {
-        r_f_printf("udisk0 open failed\n");
-        return;
-    }
-    u32 test_size = 1024;
-    void *p = malloc(test_size);
-    u32 lba = 0;
-    u32 numOflba = test_size / 512;
-    while (1) {
-        if ((dev_bulk_read(device, p, lba, numOflba)) != numOflba) {
-            r_f_printf("read error %d", lba);
-            break;
-            // while (1);
-        }
-        lba += numOflba;
-        if (lba % (100 * numOflba) == 0) {
-            log_debug("read %d lba\n", lba);
-            os_time_dly(100);
-        }
-        if (lba > 1000) {
-            log_info("test success\n");
-            break;
-        }
-    }
-    dev_close(device);
-    free(p);
 
-}
+
 u32 work_in_slave()
 {
 #if TCFG_USB_TEST_ENABLE

@@ -83,7 +83,7 @@ typedef struct {
 } axis_data_t;
 
 
-
+int sensor_driver_bus_init(void);
 u8 sensor_write(u8 w_chip_id, u8 register_address, const u8 *buf, u8 data_len);
 u8 sensor_read(u8 r_chip_id, u8 register_address, u8 *buf, u8 data_len, u8 ignore_len);
 

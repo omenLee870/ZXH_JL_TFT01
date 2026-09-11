@@ -48,7 +48,10 @@
 #define LOG_DEBUG_ENABLE
 #include "debug.h"
 
-#if (defined TCFG_PSRAM_SIZE && TCFG_PSRAM_SIZE > 0)
+/* 内存申请封装: 按"是否实际使能 PSRAM"(TCFG_PSRAM_DEV_ENABLE)选择 psram 堆。
+ * 不要改用 TCFG_PSRAM_SIZE 判断: 该容量宏在未使能 PSRAM 的方案里仍 > 0,
+ * 会误走 malloc_psram 去初始化 0x14000000 的未映射 PSRAM 区, 触发 hmem 写异常死机 */
+#if TCFG_PSRAM_DEV_ENABLE
 #define kc_malloc(sz)       malloc_psram(sz)
 #define kc_free(p)          free_psram(p)
 #else

@@ -460,6 +460,12 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
          */
         log_info("BT_STATUS_INIT_OK\n");
 
+        //3M包
+#if 1
+        set_bt_data_rate_acl_3mbs_mode(1);
+        bt_set_support_3M_size(1);
+#endif
+
         bt_status_init_ok();
         app_send_message(APP_MSG_STATUS_INIT_OK, APP_MODE_BT);
         break;
@@ -1601,6 +1607,30 @@ void fmy_other_device_bt_name_set(u8 *name)
 }
 #endif
 
+#if TCFG_BT_PA_ENABLE
+extern void bt_set_rxtx_status_io(u32 tx_pin, u32 rx_pin);
+void bt_pa_init(void)
+{
+    log_info("%s %d", __func__, __LINE__);
+
+//     /**根据具体的pa芯片和匹配料，具体调整该参数
+//       *公版环境CB2401, AT2401 使用0x08
+//       */
+//     extern void balun_interface(u8 recfg_en, u8 txbalun);
+//     balun_interface(1, 0x8);
+
+    bt_set_rxtx_status_io(TCFG_BT_PA_TX_IO, TCFG_BT_PA_RX_IO);
+
+    //使能PA芯片
+    if (TCFG_BT_PA_PWR_IO != NO_CONFIG_PORT) {
+        if (TCFG_BT_PA_PWR_IO_LEVEL == 1) {
+            gpio_set_mode(IO_PORT_SPILT(TCFG_BT_PA_PWR_IO), PORT_OUTPUT_HIGH);
+        } else if (TCFG_BT_PA_PWR_IO_LEVEL == 0) {
+            gpio_set_mode(IO_PORT_SPILT(TCFG_BT_PA_PWR_IO), PORT_OUTPUT_LOW);
+        }
+    }
+}
+#endif
 
 static int bt_mode_try_enter(int arg)
 {

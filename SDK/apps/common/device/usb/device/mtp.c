@@ -21,11 +21,12 @@
 #if TCFG_USB_SLAVE_MTP_ENABLE
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[USB]"
+#define LOG_TAG             "[MTP]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -162,23 +163,14 @@ const static u8 DeviceInfoDeviceSerialNumber[] = {
 };
 
 struct usb_mtp_handle *mtp_handle;
-#if USB_MALLOC_ENABLE
-#else
-#if USB_MTP_BULK_DEV_USE_ASYNC
-static u8 mtp_buf[MTP_BUFFER_SIZE * 2]  SEC(.usb.data.bss.exchange) __attribute__((aligned(64)));
-#else
-static u8 mtp_buf[MTP_BUFFER_SIZE] SEC(.usb.data.bss.exchange) __attribute__((aligned(64)));
-#endif
-static struct usb_mtp_handle _mtp_handle SEC(.usb.data.bss.exchange);
-#endif
 
 static void mtp_command_block_dump()
 {
-    log_debug("mtp command block:\n");
-    log_debug("ContainerLength:0x%x\n", mtp_handle->command.container_length);
-    log_debug("ContainerType:0x%x\n", mtp_handle->command.container_type);
-    log_debug("Code:0x%x\n", mtp_handle->command.code);
-    log_debug("TransactionID:0x%x\n", mtp_handle->command.transaction_id);
+    log_info("mtp command block:\n");
+    log_info("ContainerLength:0x%x\n", mtp_handle->command.container_length);
+    log_info("ContainerType:0x%x\n", mtp_handle->command.container_type);
+    log_info("Code:0x%x\n", mtp_handle->command.code);
+    log_info("TransactionID:0x%x\n", mtp_handle->command.transaction_id);
     /* log_debug("Parameter1:0x%x\n", mtp_handle->command.parameter1); */
     /* log_debug("Parameter2:0x%x\n", mtp_handle->command.parameter2); */
     /* log_debug("Parameter3:0x%x\n", mtp_handle->command.parameter3); */
@@ -187,11 +179,11 @@ static void mtp_command_block_dump()
 }
 static void mtp_response_block_dump()
 {
-    log_debug("mtp_response block:\n");
-    log_debug("ContainerLength:0x%x\n", mtp_handle->response.container_length);
-    log_debug("ContainerType:0x%x\n", mtp_handle->response.container_type);
-    log_debug("Cod:0x%x\n", mtp_handle->response.code);
-    log_debug("TransactionID:0x%x\n", mtp_handle->response.transaction_id);
+    log_info("mtp_response block:\n");
+    log_info("ContainerLength:0x%x\n", mtp_handle->response.container_length);
+    log_info("ContainerType:0x%x\n", mtp_handle->response.container_type);
+    log_info("Cod:0x%x\n", mtp_handle->response.code);
+    log_info("TransactionID:0x%x\n", mtp_handle->response.transaction_id);
     /* log_debug("Parameter1:0x%x\n", mtp_handle->response.parameter1); */
     /* log_debug("Parameter2:0x%x\n", mtp_handle->response.parameter2); */
     /* log_debug("Parameter3:0x%x\n", mtp_handle->response.parameter3); */
@@ -325,15 +317,14 @@ static void mtp_set_state(struct usb_device_t *usb_device, enum mtp_state state)
 }
 static void mtp_reset(struct usb_device_t *usb_device, u32 itf_num)
 {
-    const usb_dev usb_id = usb_device2id(usb_device);
-    log_debug("mtp_reset");
+    log_info("mtp_reset");
     memset(mtp_handle, 0, sizeof(struct usb_mtp_handle));
     mtp_endpoint_init(usb_device, itf_num);
     mtp_handle->state = MTP_STATE_COMMAND;
 }
 u32 mtp_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 {
-    log_debug("mtp_desc_config() %d", *cur_itf_num);
+    log_info("mtp_desc_config() %d", *cur_itf_num);
     //cppcheck-suppress unreadVariable
     struct usb_device_t *usb_device = usb_id2device(usb_id);
     memcpy(ptr, sMtpDescriptor, sizeof(sMtpDescriptor));
@@ -494,10 +485,9 @@ u32 mtp_unregister_all()
 u32 mtp_register(const usb_dev usb_id)
 {
     if (mtp_handle == NULL) {
-#if USB_MALLOC_ENABLE
         mtp_handle = (struct usb_mtp_handle *)zalloc(sizeof(struct usb_mtp_handle));
         if (mtp_handle == NULL) {
-            log_error("mtp_register err");
+            log_warn("mtp_register err");
             return -1;
         }
 #if USB_MTP_BULK_DEV_USE_ASYNC
@@ -506,14 +496,11 @@ u32 mtp_register(const usb_dev usb_id)
         mtp_handle->mtp_buf = (u8 *)malloc(MTP_BUFFER_SIZE);
 #endif
         if (mtp_handle->mtp_buf == NULL) {
-            log_error("mtp_register err");
+            log_warn("mtp_register err");
+            free(mtp_handle);
+            mtp_handle = NULL;
             return -1;
         }
-#else
-        memset(&_mtp_handle, 0, sizeof(struct usb_mtp_handle));
-        _mtp_handle.mtp_buf = mtp_buf;
-        mtp_handle = &_mtp_handle;
-#endif
         log_info("mtp_handle = %x", mtp_handle);
 
         mtp_handle->ep_out_dmabuffer = usb_alloc_ep_dmabuffer(usb_id, MTP_BULK_EP_OUT, MAXP_SIZE_BULKIN + MAXP_SIZE_BULKOUT);
@@ -535,7 +522,6 @@ u32 mtp_release(usb_dev usb_id)
             usb_free_ep_dmabuffer(usb_id, mtp_handle->ep_out_dmabuffer);
             mtp_handle->ep_out_dmabuffer = NULL;
         }
-#if USB_MALLOC_ENABLE
         if (mtp_handle->mtp_buf) {
 #if USB_MTP_BULK_DEV_USE_ASYNC
             dma_free(mtp_handle->mtp_buf);
@@ -545,7 +531,6 @@ u32 mtp_release(usb_dev usb_id)
             mtp_handle->mtp_buf = NULL;
         }
         free(mtp_handle);
-#endif
         mtp_handle = NULL;
     }
     return 0;
@@ -577,8 +562,10 @@ static u32 mtp_block_fill(struct mtp_block_header *header, u16 container_type, u
     memcpy(&buf[offset], (u8 *)header, sizeof(struct mtp_block_header));
     offset += sizeof(struct mtp_block_header);
 
-    memcpy(&buf[offset], data, data_len);
-    offset += data_len;
+    if (data && data_len) {
+        memcpy(&buf[offset], data, data_len);
+        offset += data_len;
+    }
 
     ASSERT(header->container_length == offset, "mtp_block_fill()\n");
     return offset;
@@ -713,9 +700,7 @@ u32 _mtp_operation_get_device_prop_desc(u8 *data, u32 *para)
 {
     log_debug("func:_mtp_operation_get_device_prop_desc(), line:%d\n", __LINE__);
     u32 offset = 0;
-    u32 *ptr;
 
-    u16 propertycode = (u16)para[0];
     struct DevicePropDesc dev_pro_desc = {
         .PropertyCode = (u16)para[0],
         .Datatype = 0xFFFF,
@@ -833,14 +818,13 @@ u32 _mtp_operation_get_storage_info(u8 *data, u32 *para)
     }
     void *dev_fd = check_disk_status(cur_lun);
     if (!dev_fd) {
-        log_error("func:_mtp_operation_get_storage_info(), line:%d\n", __LINE__);
+        log_debug("func:_mtp_operation_get_storage_info(), line:%d\n", __LINE__);
         return 0;
     }
     u32 capacity;
     dev_ioctl(dev_fd, IOCTL_GET_CAPACITY, (u32)&capacity);
 
     u32 offset = 0;
-    u32 *ptr;
 
     u64 max_capacity = capacity * 512;
     u64 free_space_in_bytes = 0xFFFFFFFF;
@@ -923,7 +907,7 @@ u32 _mtp_operation_get_object_handles(u8 *data, u32 *para)
     }
     void *dev_fd = check_disk_status(cur_lun);
     if (!dev_fd) {
-        log_error("func:_mtp_operation_get_object_handles(), line:%d\n", __LINE__);
+        log_debug("func:_mtp_operation_get_object_handles(), line:%d\n", __LINE__);
         return 0;
     }
 
@@ -932,7 +916,7 @@ u32 _mtp_operation_get_object_handles(u8 *data, u32 *para)
     mtp_handle->info.dev = dev;
     struct vfscan *fsn = file_manager_scan_disk(dev, NULL, scan_parm, FCYCLE_ALL, NULL);
     mtp_handle->info.fsn = fsn;
-    log_info("file_number %d\n", fsn->file_number);
+    log_debug("file_number %d\n", fsn->file_number);
 
 
 
@@ -1003,12 +987,11 @@ const static u32 ObjectInfoKeywords[] = {
 u32 _mtp_operation_get_object_info(u8 *data, u32 *para)
 {
     log_debug("func:_mtp_operation_get_object_info(), line:%d\n", __LINE__);
-    struct __dev *dev = mtp_handle->info.dev;
     struct vfscan *fsn = mtp_handle->info.fsn;
 
     FILE *file = fselect(fsn, FSEL_BY_NUMBER, (int) * para); //选择指定文件
     if (file == NULL) {
-        log_error("error i = %d\n", *para);
+        log_warn("error i = %d\n", *para);
         return 0;
     }
     u8 file_name[64] = {0};
@@ -1027,16 +1010,15 @@ u32 _mtp_operation_get_object_info(u8 *data, u32 *para)
         memcpy(Filename, file_name, strings_num);
         strings_num  = strings_num / 2 + 1;
     }
-    log_info("file_name buf: %d\n", *para);
+    log_debug("file_name buf: %d\n", *para);
     put_buf((u8 *)Filename, strings_num * 2);
 
     u32 FileSize = flen(file);
-    log_info("FileSize:%dByte\n", FileSize);
+    log_debug("FileSize:%dByte\n", FileSize);
     fclose(file);
 
 
     u32 offset = 0;
-    u32 *ptr;
 
     struct ObjectInfo obj_info = {
         .StorageID = 0x1,
@@ -1150,7 +1132,7 @@ u32 _mtp_operation_get_object(u8 *data, u32 *para, u32 len)
     struct vfscan *fsn = mtp_handle->info.fsn;
     FILE *file = fselect(fsn, FSEL_BY_NUMBER, (int) * para); //选择指定文件
     if (file == NULL) {
-        log_error("error i = %d\n", *para);
+        log_warn("error i = %d\n", *para);
         return 0;
     }
 #if 1
@@ -1198,7 +1180,6 @@ u32 mtp_operation_get_object(struct usb_device_t *usb_device, u32 transaction_id
     memcpy(&buf[0], (u8 *)header, sizeof(struct mtp_block_header));
     u32 data_len = (header->container_length < MTP_BUFFER_SIZE ? header->container_length : MTP_BUFFER_SIZE);
     u32 rlen = _mtp_operation_get_object(&buf[MTP_BLOCK_HEADER_SIZE], para, data_len - MTP_BLOCK_HEADER_SIZE);
-    const usb_dev usb_id = usb_device2id(usb_device);
     /* usb_g_set_intr_hander(usb_id, USB_DIR_IN|MTP_BULK_EP_IN, mtp_data_tx_cb); */
     /* usb_set_intr_txe(usb_id, MTP_BULK_EP_IN); */
     mtp_mcu2usb(usb_device, buf, rlen + MTP_BLOCK_HEADER_SIZE);
@@ -1212,7 +1193,7 @@ static u32 mtp_state_command(struct usb_device_t *usb_device)
     u32 rx_len = mtp_usb2mcu(usb_device, packet, sizeof(packet));
     u16 ContainerType = ((packet[MTP_CONTAINER_TYPE_OFFSET + 1] << 8) | packet[MTP_CONTAINER_TYPE_OFFSET]);
     if (ContainerType != MTP_CONTAINER_TYPE_COMMAND) {
-        log_error("func:mtp_state_command(), line:%d\n", __LINE__);
+        log_debug("func:mtp_state_command(), line:%d\n", __LINE__);
         return -1;
     }
     struct mtp_command_block *cmd_block = &mtp_handle->command;
@@ -1246,7 +1227,7 @@ static u32 mtp_state_command(struct usb_device_t *usb_device)
         mtp_operation_get_object(usb_device, cmd_block->transaction_id, &cmd_block->parameter1);
         break;
     default:
-        log_error("func:mtp_state_command(), line:%d\n", __LINE__);
+        log_debug("func:mtp_state_command(), line:%d\n", __LINE__);
         break;
     }
     return 0;
@@ -1268,10 +1249,9 @@ static u32 mtp_state_data_tx(struct usb_device_t *usb_device)
         break;
     case MTP_OPERATION_GET_OBJECT:
         if (object_data_offset == mtp_handle->data.container_length - MTP_BLOCK_HEADER_SIZE) {
-            const usb_dev usb_id = usb_device2id(usb_device);
             /* usb_clr_intr_txe(usb_id, MTP_BULK_EP_IN); */
-            struct mtp_block_header *header = (struct mtp_block_header *)&mtp_handle->response;
-            mtp_block_fill(header, MTP_CONTAINER_TYPE_RESPONSE, MTP_RESPONSE_OK, mtp_handle->data.transaction_id, NULL, 0);
+            struct mtp_block_header *rsp_header = (struct mtp_block_header *)&mtp_handle->response;
+            mtp_block_fill(rsp_header, MTP_CONTAINER_TYPE_RESPONSE, MTP_RESPONSE_OK, mtp_handle->data.transaction_id, NULL, 0);
             mtp_set_state(usb_device, MTP_STATE_RESPONSE);
             break;
         }
@@ -1280,7 +1260,7 @@ static u32 mtp_state_data_tx(struct usb_device_t *usb_device)
         mtp_wakeup(usb_device, MTP_BULK_EP_IN);
         break;
     default:
-        log_error("func:mtp_state_data_tx(), line:%d\n", __LINE__);
+        log_debug("func:mtp_state_data_tx(), line:%d\n", __LINE__);
         break;
     }
     return 0;
@@ -1290,7 +1270,7 @@ static u32 mtp_state_data_rx(struct usb_device_t *usb_device)
     log_debug("func:mtp_state_data_rx(), line:%d\n", __LINE__);
     switch (mtp_handle->command.code) {
     default:
-        log_error("func:mtp_state_data_rx(), line:%d\n", __LINE__);
+        log_debug("func:mtp_state_data_rx(), line:%d\n", __LINE__);
         break;
     }
     return 0;
@@ -1307,7 +1287,7 @@ void usb_mtp_process(struct usb_device_t *usb_device)
     log_debug("func:usb_mtp_process(), line:%d\n", __LINE__);
     switch (mtp_handle->state) {
     case MTP_STATE_IDLE:
-        log_error("MTP not init!!!\n");
+        log_warn("MTP not init!!!\n");
         break;
     case MTP_STATE_COMMAND:
         mtp_state_command(usb_device);
@@ -1325,5 +1305,7 @@ void usb_mtp_process(struct usb_device_t *usb_device)
         break;
     }
 }
+
+USB_CLASS_REGISTER(mtp_desc_config, mtp_register, mtp_release, TCFG_USB_MTP_INDEX, MTP_CLASS, 0);
 #endif
 

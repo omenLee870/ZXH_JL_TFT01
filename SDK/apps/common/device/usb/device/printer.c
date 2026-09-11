@@ -14,11 +14,12 @@
 #include "printer.h"  //need redefine __u8, __u16, __u32
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[Printer]"
+#define LOG_TAG             "[PRINTER]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -59,10 +60,6 @@ struct usb_printer_handle {
 };
 
 struct usb_printer_handle *printer_handle = NULL;
-#if USB_MALLOC_ENABLE
-#else
-struct usb_printer_handle _printer_handle SEC(.usb.data.bss.exchange);
-#endif
 
 
 u32 printer_set_wakeup_handle(void (*handle)(struct usb_device_t *usb_device))
@@ -155,7 +152,7 @@ static u32 printer_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlre
 
 u32 printer_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 {
-    log_debug("printer interface num: %d", *cur_itf_num);
+    log_info("printer interface num: %d", *cur_itf_num);
     memcpy(ptr, printer_desc, sizeof(printer_desc));
     ptr[2] = *cur_itf_num;
     if (usb_set_interface_hander(usb_id, *cur_itf_num, printer_itf_hander) != *cur_itf_num) {
@@ -171,16 +168,11 @@ u32 printer_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 u32 printer_register(const usb_dev usb_id)
 {
     if (printer_handle == NULL) {
-#if USB_MALLOC_ENABLE
         printer_handle = (struct usb_printer_handle *)zalloc(sizeof(struct usb_printer_handle));
         if (printer_handle == NULL) {
             log_error("printer_register err");
             return -1;
         }
-#else
-        memset(&_printer_handle, 0, sizeof(usb_printer_handle));
-        printer_handle = &_printer_handle;
-#endif
         log_info("printer_handle = %x", printer_handle);
 
         printer_handle->ep_out_dmabuffer = usb_alloc_ep_dmabuffer(usb_id, PTR_BULK_EP_OUT, MAXP_SIZE_PTR_EPOUT);
@@ -200,12 +192,11 @@ u32 printer_release(const usb_dev usb_id)
             usb_free_ep_dmabuffer(usb_id, printer_handle->ep_in_dmabuffer);
             printer_handle->ep_in_dmabuffer = NULL;
         }
-#if USB_MALLOC_ENABLE
         free(printer_handle);
-#endif
         printer_handle = NULL;
     }
     return 0;
 }
 
+USB_CLASS_REGISTER(printer_desc_config, printer_register, printer_release, TCFG_USB_PRINTER_INDEX, PRINTER_CLASS, 0);
 #endif

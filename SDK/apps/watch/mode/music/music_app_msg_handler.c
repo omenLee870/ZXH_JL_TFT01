@@ -207,6 +207,12 @@ int music_app_msg_handler(int *msg)
         err = music_player_play_first_file(music_hdl.player_hd, NULL);
         break;
     case APP_MSG_MUSIC_NEXT:
+#if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
+        if (get_camera_status() == CAMERA_STATE_VIDEO) {
+            printf("[MUSIC] video recording, skip music next\n");
+            break;
+        }
+#endif
         printf("app msg music next\n");
 
         mem_stats();
@@ -215,6 +221,12 @@ int music_app_msg_handler(int *msg)
         err = music_player_play_next(music_hdl.player_hd);
         break;
     case APP_MSG_MUSIC_PREV:
+#if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
+        if (get_camera_status() == CAMERA_STATE_VIDEO) {
+            printf("[MUSIC] video recording, skip music prev\n");
+            break;
+        }
+#endif
         printf("app msg music prev\n");
         mem_stats();
         /* app_status_handler(APP_STATUS_MUSIC_FFR); */

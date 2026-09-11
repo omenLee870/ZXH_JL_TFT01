@@ -1,4 +1,7 @@
 #include "ai_internal.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include "libwebsockets.h"
 #include "curl/curl.h"
@@ -1031,3 +1034,5 @@ int ai_vision_recognize(struct ai_client *client,
         return ai_vision_recognize_curl(client, image, prompt, out);
     }
 }
+
+#endif

@@ -71,6 +71,20 @@ int music_ctrl_play_source(music_ctrl_source_t source);
 int music_ctrl_pause(void);
 
 /**
+ * @brief 去电通话打断本地音乐：暂停本地播放
+ * @note  仅当处于本地音乐模式且正在播放时才暂停，并记录恢复标志供通话结束后恢复
+ * @return 0 成功, -1 失败
+ */
+int music_ctrl_pause_for_call(void);
+
+/**
+ * @brief 通话结束后恢复因通话而暂停的本地音乐
+ * @note  仅在之前由 music_ctrl_pause_for_call 暂停过时才恢复
+ * @return 0 成功, -1 失败
+ */
+int music_ctrl_resume_after_call(void);
+
+/**
  * @brief 上一曲
  * @return 0 成功, -1 失败
  */

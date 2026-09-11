@@ -41,6 +41,13 @@ extern const unsigned int GPU_PSRAM_ADDR_RANGE; /*!< PSRAM地址段定义 */
 
 /* ================================== 地址段基址定义 ================================== */
 
+/* SRAM 地址段 */
+#define SRAM_BASE_ADDR          0x07800000U
+#define SRAM_END_ADDR           0x07C00000U
+
+#define UI_ADDR_IN_SRAM(addr) \
+    (((unsigned int)(addr) >= SRAM_BASE_ADDR) && ((unsigned int)(addr) < SRAM_END_ADDR))
+
 /* FLASH 三段地址 */
 #define FLASH_BASE_ADDR         0x08000000U
 #define FLASH_END_ADDR          0x14000000U

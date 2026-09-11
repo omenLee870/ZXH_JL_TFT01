@@ -35,8 +35,45 @@
 #if CONFIG_LVGL_UI_ENABLE
 extern void *lvgl_video_init(int32_t width, int32_t height, int32_t x, int32_t y, const char *fb_name);
 extern void lvgl_video_exit(void *handle);
+extern void lvgl_video_exit_drain(void *handle);
 extern u8 lvgl_ui_is_suspended(void);
 extern int lvgl_rpc_post_func(void (*rpc_func)(void *, ...), int argc, ...);
+#endif
+
+/* 竖屏面板(240x320)上把 320x240 回放画面旋转 90° 铺满全屏(与对讲/拍照/录像一致)。
+ * 仅当"控件尺寸 == 显示尺寸对调"(320x240 <-> 240x320)时生效, 其它产品/布局跳过;
+ * 旋转在显示层由 JLGPU 完成, 解码出帧仍 320x240。需在 LVGL 线程调用。 */
+#if CONFIG_LVGL_UI_ENABLE
+static void video_dec_preview_rotate(lv_video_disp_handle_t *h)
+{
+    lv_obj_t *img;
+    lv_display_t *disp;
+    int32_t w, hh, dw, dh;
+
+    if (!h) {
+        return;
+    }
+    img = lv_port_video_disp_get_img_obj(h);
+    disp = lv_display_get_default();
+    if (!img || !disp) {
+        return;
+    }
+    w  = lv_obj_get_width(img);
+    hh = lv_obj_get_height(img);
+    dw = lv_display_get_horizontal_resolution(disp);
+    dh = lv_display_get_vertical_resolution(disp);
+    if (w == dh && hh == dw) {
+        lv_port_video_disp_set_rotation(h, 900);
+        lv_port_video_disp_set_pivot(h, w / 2, hh / 2);
+        lv_obj_set_pos(img, (dw - w) / 2, (dh - hh) / 2);
+    }
+}
+
+static void video_dec_preview_rotate_rpc(void *unused, ...)
+{
+    (void)unused;
+    video_dec_preview_rotate(lv_port_video_disp_get_instance_by_fb_index(5));
+}
 #endif
 
 #if CONFIG_LVGL_UI_ENABLE
@@ -155,8 +192,11 @@ void video_dec_ui_init(int width, int height)
 #endif
 #if CONFIG_LVGL_UI_ENABLE
     /* fb 只在进回放模式时创建一次, 全程照片/视频切换共用(对齐官方playback demo),
-     * 避免每次切换重复 lvgl_video_init 导致 fb 泄漏白屏。 */
+     * 避免每次切换重复 lvgl_video_init 导致 fb 泄漏白屏。
+     * 回放画面保持 320x240(width/height 同时决定 LVGL 对 fb5 NV12 帧的读取) */
     g_vdec_video_handle = lvgl_video_init(width, height, 0, 0, "fb5");
+    /* create 在 UI 线程完成(经 RPC+信号量); 竖屏旋转也需回 UI 线程执行 */
+    lvgl_rpc_post_func((void *)video_dec_preview_rotate_rpc, 0);
 #endif
     log_info("video_dec_ui_init()\n");
 }
@@ -164,7 +204,11 @@ void video_dec_ui_init(int width, int height)
 void video_dec_ui_deinit(void)
 {
 #if CONFIG_LVGL_UI_ENABLE
-    lvgl_video_exit(g_vdec_video_handle);
+    if (g_vdec_video_handle) {
+        /* 同步退出: 删视频 img + 排空双链表(LIST==2)异步渲染, 返回后再释放 buffer 才安全 */
+        lvgl_video_exit_drain(g_vdec_video_handle);
+        g_vdec_video_handle = NULL;
+    }
 #endif
     log_info("video_dec_ui_deinit()\n");
 }

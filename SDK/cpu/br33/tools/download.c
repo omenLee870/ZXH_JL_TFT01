@@ -52,6 +52,12 @@ cp pmc_code${case_suffix}.bin pmc_code.bin
 cp p11_code${case_suffix}.bin p11_code.bin
 cp p11_code${case_suffix}.lz4 p11_code.lz4
 
+#if TCFG_PMC_CODE_SIZE == 0
+if [ -s p11_code.bin ]; then
+	printf "\033[0;31m 错误：pmc_code.bin 必须为0; 请将pmc工程的TCFG_PMC_CODE_SIZE设置为0, 且TCFG_SUB_CASE_TYPE值跟sdk相同，再重编译后放到sdk \033[0m \r\n"
+    exit 1
+fi
+#endif
 
 cat startup_entry.bin pmc_code.bin text.bin data.bin data_code.bin aec.bin aac.bin psr_data_code.bin d_ram_data.bin i_ram_data_code.bin pmc_ram_data_code.bin > app.bin
 

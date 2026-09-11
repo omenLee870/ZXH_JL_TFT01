@@ -21,6 +21,7 @@ int flm_sd_online(void);  /* 拔卡检测唯一入口 */
 int flm_sd_is_exfat(void);  /* 当前 SDK 不支持 exFAT, 返回 1 表示需要提示用户格式化为 FAT32 */
 void flm_rebuild(void);  /* 插卡后强制重建索引, 不删文件 */
 void flm_rebuild_async(void);  /* 插卡等场景: 重建放独立线程, app_core 只投递 (同步扫会栈溢出) */
+int flm_rebuild_in_progress(void);  /* 插卡重建进行中: 录像自动开录串行化判断 */
 void flm_reset(void);  /* 拔卡清索引状态, 不删文件 */
 int flm_get_count(void);
 int flm_get_entry(int index, flm_file_t *out);

@@ -12,7 +12,6 @@
 
 #include "system/includes.h"
 #include "app_main.h"
-#include "rtc/rtc_dev.h"
 #include "spi.h"
 #include "asm/sdmmc.h"
 #include "asm/spi_hw.h"
@@ -153,32 +152,6 @@ const struct multi_chip_conn_config chip_conn_configs [] =  {
     }
 };
 #endif // TCFG_MULTI_CHIP_CONN_ENABLE
-
-#if TCFG_APP_RTC_EN
-static struct sys_time def_sys_time = {  //初始化系统时间
-    .year = 2025,
-    .month = 10,
-    .day = 1,
-    .hour = 0,
-    .min = 0,
-    .sec = 0,
-};
-
-void rtc_event_isr(const struct rtc_event_t *ev)    //闹钟回调函数测试
-{
-    if (ev->event & BIT(RTC_ALARM_EVENT)) {
-        alm_wakeup_isr();
-    } else if (ev->event == RTC_1HZ_EVENT) {
-
-    }
-}
-
-struct rtc_dev_platform_data rtc_dev_config = {   //RTC初始化结构体
-    .default_sys_time = &def_sys_time,   //配置默认系统时钟
-    .cbfun = rtc_event_isr,
-    //rtc闹钟回调函数
-};
-#endif
 
 #ifndef CONFIG_EXTRAM_CODE_ENABLE
 #if TCFG_PSRAM_DEV_ENABLE
@@ -642,44 +615,6 @@ const struct dbi_signal_remap dbi_8bit_rgb_signal_remap_tab[] = {
 };
 #endif
 
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH)
-// DBI硬件支持映射的IO，请参考enum DBI_IO
-const struct dbi_signal_remap dbi_24bit_rgb_signal_remap_tab[] = {
-    {DBI_CSX, DBI_PORTA_07},//SPI/MCU - DBI_CSX, RGB - VSYNC
-    {DBI_DCX, DBI_PORTA_09},//SPI/MCU - DBI_DCX, RGB - HSYNC
-    {DBI_SCL, DBI_PORTA_11},//SPI - SCL, MCU - WRX, RGB - DCLK
-    {DBI_RWX, DBI_PORTB_00},//MCU - RDX, RGB - DEN
-
-    {DBI_D0,  DBI_PORTB_02},
-    {DBI_D1,  DBI_PORTB_04},
-    {DBI_D2,  DBI_PORTB_06},
-    {DBI_D3,  DBI_PORTB_08},
-    {DBI_D4,  DBI_PORTB_10},
-    {DBI_D5,  DBI_PORTG_00},
-    {DBI_D6,  DBI_PORTG_02},
-    {DBI_D7,  DBI_PORTC_00},
-
-    {DBI_D8,  DBI_PORTC_02},
-    {DBI_D9,  DBI_PORTC_04},
-    {DBI_D10, DBI_PORTC_06},
-    {DBI_D11, DBI_PORTA_08},
-    {DBI_D12, DBI_PORTA_10},
-    {DBI_D13, DBI_PORTA_12},
-    {DBI_D14, DBI_PORTB_01},
-    {DBI_D15, DBI_PORTB_03},
-
-    {DBI_D16, DBI_PORTB_05},
-    {DBI_D17, DBI_PORTB_07},
-    {DBI_D18, DBI_PORTB_09},
-    {DBI_D19, DBI_PORTB_11},
-    {DBI_D20, DBI_PORTG_01},
-    {DBI_D21, DBI_PORTG_03},
-    {DBI_D22, DBI_PORTC_01},
-    {DBI_D23, DBI_PORTC_03},
-};
-#endif
-
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_DASHBOARD)
 // DBI硬件支持映射的IO，请参考enum DBI_IO
 const struct dbi_signal_remap dbi_24bit_rgb_signal_remap_tab[] = {
     {DBI_CSX, DBI_PORTC_07},//SPI/MCU - DBI_CSX, RGB - VSYNC
@@ -714,7 +649,26 @@ const struct dbi_signal_remap dbi_24bit_rgb_signal_remap_tab[] = {
     {DBI_D22, DBI_PORTB_01},//R6
     {DBI_D23, DBI_PORTB_02},//R7
 };
+
+const struct dbi_signal_remap dbi_rgb_signal_remap_tab[] = {
+    {DBI_CSX, TCFG_LCD_RGB_PIN_VSYNC},//SPI/MCU - DBI_CSX, RGB - VSYNC
+    {DBI_DCX, TCFG_LCD_RGB_PIN_HSYNC},//SPI/MCU - DBI_DCX, RGB - HSYNC
+    {DBI_SCL, TCFG_LCD_RGB_PIN_DCLK},//SPI - SCL, MCU - WRX, RGB - DCLK
+    {DBI_RWX, TCFG_LCD_RGB_PIN_DEN},//MCU - RDX, RGB - DEN
+
+    {DBI_D0,  TCFG_LCD_RGB_PIN_D0},
+    {DBI_D1,  TCFG_LCD_RGB_PIN_D1},
+    {DBI_D2,  TCFG_LCD_RGB_PIN_D2},
+    {DBI_D3,  TCFG_LCD_RGB_PIN_D3},
+    {DBI_D4,  TCFG_LCD_RGB_PIN_D4},
+    {DBI_D5,  TCFG_LCD_RGB_PIN_D5},
+    {DBI_D6,  TCFG_LCD_RGB_PIN_D6},
+    {DBI_D7,  TCFG_LCD_RGB_PIN_D7},
+
+#if (TCFG_LCD_RGB_PIN_DATA_NUM > 8)
+#error "rgb gpio need set"
 #endif
+};
 
 // DBI硬件支持映射的IO，请参考enum DBI_IO
 const struct dbi_signal_remap dbi_8bit_mcu_signal_remap_tab[] = {
@@ -762,6 +716,43 @@ const struct dbi_signal_remap dbi_18bit_mcu_signal_remap_tab[] = {
     {DBI_D17, DBI_PORTB_07},
 };
 
+// DBI硬件支持映射的IO，请参考enum DBI_IO
+const struct dbi_signal_remap dbi_mcu_signal_remap_tab[] = {
+    {DBI_CSX, TCFG_LCD_MCU_PIN_CS},//SPI/MCU - DBI_CSX, RGB - VSYNC
+    {DBI_DCX, TCFG_LCD_MCU_PIN_DC},//SPI/MCU - DBI_DCX, RGB - HSYNC
+    {DBI_SCL, TCFG_LCD_MCU_PIN_RWX},//SPI - SCL, MCU - WRX, RGB - DCLK
+    {DBI_RWX, TCFG_LCD_MCU_PIN_RDX},//MCU - RDX, RGB - DEN
+
+    {DBI_D0,  TCFG_LCD_MCU_PIN_D0},
+    {DBI_D1,  TCFG_LCD_MCU_PIN_D1},
+    {DBI_D2,  TCFG_LCD_MCU_PIN_D2},
+    {DBI_D3,  TCFG_LCD_MCU_PIN_D3},
+    {DBI_D4,  TCFG_LCD_MCU_PIN_D4},
+    {DBI_D5,  TCFG_LCD_MCU_PIN_D5},
+    {DBI_D6,  TCFG_LCD_MCU_PIN_D6},
+    {DBI_D7,  TCFG_LCD_MCU_PIN_D7},
+
+#if (TCFG_LCD_MCU_PIN_DATA_NUM > 8)
+    {DBI_D8,  TCFG_LCD_MCU_PIN_D8},
+    {DBI_D9,  TCFG_LCD_MCU_PIN_D9},
+    {DBI_D10, TCFG_LCD_MCU_PIN_D10},
+    {DBI_D11, TCFG_LCD_MCU_PIN_D11},
+    {DBI_D12, TCFG_LCD_MCU_PIN_D12},
+    {DBI_D13, TCFG_LCD_MCU_PIN_D13},
+    {DBI_D14, TCFG_LCD_MCU_PIN_D14},
+    {DBI_D15, TCFG_LCD_MCU_PIN_D15},
+#endif
+
+#if (TCFG_LCD_MCU_PIN_DATA_NUM > 16)
+    {DBI_D16, TCFG_LCD_MCU_PIN_D16},
+    {DBI_D17, TCFG_LCD_MCU_PIN_D17},
+#endif
+
+#if (TCFG_LCD_MCU_PIN_DATA_NUM > 18)
+#error "mcu gpio need set"
+#endif
+};
+
 static void lcd_mipi_reset_enter(int pin_reset)
 {
     gpio_set_mode(IO_PORT_SPILT(pin_reset), PORT_OUTPUT_LOW);
@@ -774,7 +765,6 @@ static void lcd_mipi_reset_exit(int pin_reset)
     os_time_dly(10);
 }
 
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_DASHBOARD)
 static void board_lcd_highz_init(void)
 {
 	//仪表板子MIPI Lane和一些IO内绑在一起，使用时需要设为高阻
@@ -783,7 +773,6 @@ static void board_lcd_highz_init(void)
 
     gpio_set_mode(PORTG, PORT_PIN_0, PORT_HIGHZ);
 }
-#endif
 
 //推屏使用有专门硬件模块,不是普通spi模块,io固定,根据屏幕驱动类似输出时序
 LCD_SPI_PLATFORM_DATA_BEGIN(lcd_spi_data) = {
@@ -792,64 +781,69 @@ LCD_SPI_PLATFORM_DATA_BEGIN(lcd_spi_data) = {
     .pin_en_ex = NO_CONFIG_PORT,
     .pin_te = TCFG_LCD_PIN_TE,
     .pin_bl = TCFG_LCD_PIN_BL,
-
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_DASHBOARD)
 	.board_pre_init = board_lcd_highz_init,
-#endif
     // DBI io映射
-#if (defined(TCFG_LCD_RGB_ST7701S_480x800_ENABLE) && TCFG_LCD_RGB_ST7701S_480x800_ENABLE)
-    //RGB接口，需要初始化
+#if (defined(TCFG_LCD_RGB_ST7701S_480x800_ENABLE) && TCFG_LCD_RGB_ST7701S_480x800_ENABLE) ||\
+      (defined(TCFG_LCD_RGB_FL58202_800x480_ENABLE) && TCFG_LCD_RGB_FL58202_800x480_ENABLE) ||\
+      (defined(TCFG_LCD_RGB_480x272_ENABLE) && TCFG_LCD_RGB_480x272_ENABLE)
+#if (TCFG_DBI_TYPE != CONFIG_DBI_TYPE_RGB)
+#error "DBI TYPE ERROR, is RGB"
+#endif
     .dbi_hw = {
-        .remap_tab = dbi_24bit_rgb_signal_remap_tab,
-        .remap_tab_size = sizeof(dbi_24bit_rgb_signal_remap_tab) / sizeof(dbi_24bit_rgb_signal_remap_tab[0]),
+        .remap_tab = dbi_rgb_signal_remap_tab,
+        .remap_tab_size = sizeof(dbi_rgb_signal_remap_tab) / sizeof(dbi_rgb_signal_remap_tab[0]),
         .rgb = {//任意gpio
-            .data_bus = DATA_BUS_24BIT,
-            .use_soft_spi = true,
-            .soft_spi_cs = IO_PORTC_08,
-            .soft_spi_scl = IO_PORTC_05,
-            .soft_spi_sda = IO_PORTC_07,
-        },
-    }
-#elif (defined(TCFG_LCD_RGB_FL58202_800x480_ENABLE) && TCFG_LCD_RGB_FL58202_800x480_ENABLE)
-    //RGB接口，不用初始化
-    .dbi_hw = {
-        .remap_tab = dbi_24bit_rgb_signal_remap_tab,
-        .remap_tab_size = sizeof(dbi_24bit_rgb_signal_remap_tab) / sizeof(dbi_24bit_rgb_signal_remap_tab[0]),
-        .rgb = {
-            .data_bus = DATA_BUS_24BIT,
-        },
-    }
-#elif defined(TCFG_LCD_RGB_480x272_ENABLE) && TCFG_LCD_RGB_480x272_ENABLE
-    //RGB接口，不用初始化
-    .dbi_hw = {
-        .remap_tab = dbi_8bit_rgb_signal_remap_tab,
-        .remap_tab_size = sizeof(dbi_8bit_rgb_signal_remap_tab) / sizeof(dbi_8bit_rgb_signal_remap_tab[0]),
-        .eva_link_mode = LINKAGE_MODE_DMM,
-        .rgb = {
+#if ((TCFG_LCD_RGB_PIN_DATA_NUM/TCFG_LCD_RGB_PIN_DATA_CYCLE)==6)
+            .data_bus = DATA_BUS_6BIT,
+#elif ((TCFG_LCD_RGB_PIN_DATA_NUM/TCFG_LCD_RGB_PIN_DATA_CYCLE)==8)
             .data_bus = DATA_BUS_8BIT,
-        }
+#elif ((TCFG_LCD_RGB_PIN_DATA_NUM/TCFG_LCD_RGB_PIN_DATA_CYCLE)==9)
+            .data_bus = DATA_BUS_9BIT,
+#elif ((TCFG_LCD_RGB_PIN_DATA_NUM/TCFG_LCD_RGB_PIN_DATA_CYCLE)==16)
+            .data_bus = DATA_BUS_16BIT,
+#elif ((TCFG_LCD_RGB_PIN_DATA_NUM/TCFG_LCD_RGB_PIN_DATA_CYCLE)==18)
+            .data_bus = DATA_BUS_18BIT,
+#elif ((TCFG_LCD_RGB_PIN_DATA_NUM/TCFG_LCD_RGB_PIN_DATA_CYCLE)==24)
+            .data_bus = DATA_BUS_24BIT,
+#else
+#error "RGB data & cycle error"
+#endif
+            .use_soft_spi = TCFG_LCD_RGB_USE_SOFT_SPI,
+            .soft_spi_cs = TCFG_LCD_RGB_PIN_SPI_CS,
+            .soft_spi_scl = TCFG_LCD_RGB_PIN_SPI_SCL,
+            .soft_spi_sda = TCFG_LCD_RGB_PIN_SPI_SDA,
+        },
+        .eva_link_mode = LINKAGE_MODE_DMM,
     }
 #elif (defined(TCFG_LCD_MCU_JD5858_360x360_ENABLE) && TCFG_LCD_MCU_JD5858_360x360_ENABLE) ||\
       (defined(TCFG_LCD_MCU_NV3031A_240x320_ENABLE) && TCFG_LCD_MCU_NV3031A_240x320_ENABLE) ||\
-	  (defined(TCFG_LCD_MCU_ST7789V_240x320_ENABLE) && TCFG_LCD_MCU_ST7789V_240x320_ENABLE)
-    // MCU接口
+      (defined(TCFG_LCD_MCU_ST7789V_240x320_ENABLE) && TCFG_LCD_MCU_ST7789V_240x320_ENABLE) ||\
+      (defined(TCFG_LCD_MCU_ST7789V_240x320_ENABLE) && TCFG_LCD_MCU_ST7789V_240x320_ENABLE)
+#if (TCFG_DBI_TYPE != CONFIG_DBI_TYPE_MCU)
+#error "DBI TYPE ERROR, is MCU"
+#endif
     .dbi_hw = {
-        .remap_tab = dbi_8bit_mcu_signal_remap_tab,
-        .remap_tab_size = sizeof(dbi_8bit_mcu_signal_remap_tab) / sizeof(dbi_8bit_mcu_signal_remap_tab[0]),
+        .remap_tab = dbi_mcu_signal_remap_tab,
+        .remap_tab_size = sizeof(dbi_mcu_signal_remap_tab) / sizeof(dbi_mcu_signal_remap_tab[0]),
         .mcu = {
+#if ((TCFG_LCD_MCU_PIN_DATA_NUM/TCFG_LCD_MCU_PIN_DATA_CYCLE)==6)
+            .data_bus = DATA_BUS_6BIT,
+#elif ((TCFG_LCD_MCU_PIN_DATA_NUM/TCFG_LCD_MCU_PIN_DATA_CYCLE)==8)
             .data_bus = DATA_BUS_8BIT,
-            .use_rd_pin = 1,
-        }
-    }
-#elif defined(TCFG_LCD_MCU_D54E4PA7551B_XP26_400x240_ENABLE) && TCFG_LCD_MCU_D54E4PA7551B_XP26_400x240_ENABLE
-    // MCU接口
-    .dbi_hw = {
-        .remap_tab = dbi_18bit_mcu_signal_remap_tab,
-        .remap_tab_size = sizeof(dbi_18bit_mcu_signal_remap_tab) / sizeof(dbi_18bit_mcu_signal_remap_tab[0]),
-        .mcu = {
+#elif ((TCFG_LCD_MCU_PIN_DATA_NUM/TCFG_LCD_MCU_PIN_DATA_CYCLE)==9)
             .data_bus = DATA_BUS_9BIT,
+#elif ((TCFG_LCD_MCU_PIN_DATA_NUM/TCFG_LCD_MCU_PIN_DATA_CYCLE)==16)
+            .data_bus = DATA_BUS_16BIT,
+#elif ((TCFG_LCD_MCU_PIN_DATA_NUM/TCFG_LCD_MCU_PIN_DATA_CYCLE)==18)
+            .data_bus = DATA_BUS_18BIT,
+#elif ((TCFG_LCD_MCU_PIN_DATA_NUM/TCFG_LCD_MCU_PIN_DATA_CYCLE)==24)
+            .data_bus = DATA_BUS_24BIT,
+#else
+#error "MCU data & cycle error"
+#endif
             .use_rd_pin = 1,
-        }
+        },
+		.eva_link_mode = LINKAGE_MODE_GPU,
     }
 #elif (defined(TCFG_LCD_MIPI_ST7701S_480x854_ENABLE) && TCFG_LCD_MIPI_ST7701S_480x854_ENABLE) ||\
       (defined(TCFG_LCD_MIPI_ILI9881C_800x1280_ENABLE) && TCFG_LCD_MIPI_ILI9881C_800x1280_ENABLE) || \
@@ -1399,11 +1393,6 @@ void board_init()
 {
 
     board_power_init();
-
-#if TCFG_APP_RTC_EN
-    /* rtc_dev_init(&rtc_dev_config); */
-    rtc_init(&rtc_dev_config);
-#endif
 
     gpadc_init();
 

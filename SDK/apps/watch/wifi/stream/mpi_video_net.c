@@ -1,7 +1,7 @@
 #include "system/includes.h"
 #include "app_config.h"
 
-#if TCFG_EXT_WIFI_ENABLE
+#if TCFG_WIFI_NET_ENABLE
 
 #if (defined TCFG_CAMERA_DVP_ENABLE) && (TCFG_CAMERA_DVP_ENABLE == 1)
 
@@ -1676,4 +1676,4 @@ int mpi_video_net_get_reso_by_index(int index, int *w, int *h)
 
 #endif /* TCFG_CAMERA_DVP_ENABLE / TCFG_HOST_UVC_ENABLE */
 
-#endif /* TCFG_EXT_WIFI_ENABLE */
+#endif /* TCFG_WIFI_NET_ENABLE */

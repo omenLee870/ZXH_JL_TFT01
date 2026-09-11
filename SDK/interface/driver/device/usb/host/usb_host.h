@@ -52,7 +52,7 @@ struct usb_private_data {
 };
 
 struct usb_host_device;
-
+#define USB_IOCTL_NOTIFY_EVENT      1
 /**@struct  interface_ctrl
   * @brief  interface_ctrl
   */
@@ -60,7 +60,7 @@ struct interface_ctrl {
     u8 interface_class;
     int (*set_power)(struct usb_host_device *host_dev, u32 value);
     int (*get_power)(struct usb_host_device *host_dev, u32 value);
-    int (*ioctl)(struct usb_host_device *host_dev, u32 cmd, u32 arg);
+    int (*ioctl)(const struct usb_host_device *host_dev, u32 cmd, u32 arg);
     int (*release)(struct usb_host_device *host_dev);
 };
 
@@ -84,7 +84,7 @@ struct usb_interface_info {
 #ifdef USB_HW_20
 #define     MAX_HOST_INTERFACE  9
 #else
-#define     MAX_HOST_INTERFACE  6
+#define     MAX_HOST_INTERFACE  7
 #endif
 
 /**@struct  usb_host_device

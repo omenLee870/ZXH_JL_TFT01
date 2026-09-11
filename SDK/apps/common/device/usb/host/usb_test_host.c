@@ -25,7 +25,7 @@
 #include "debug.h"
 
 #define TEST_TASK_NAME      "usb_test"
-#define TEST_CTRL_MAXP      64
+#define TEST_CTRL_MAXP      256
 #define TEST_STATS_INTERVAL 10000 /* 打印统计间隔(ms) */
 #define BULK_BATCH_SIZE     64   /* BULK每批包数 */
 
@@ -261,8 +261,8 @@ int usb_test_parser(struct usb_host_device *host_dev, u8 interface_num, const u8
         ch->interval = end_desc->bInterval;
     }
 
-    log_debug("test parser: subclass %d, ep_in %d, ep_out %d, maxp %d",
-              subclass, ch->target_ep_in, ch->target_ep_out, ch->maxp);
+    log_info("test parser: subclass %d, ep_in %d, ep_out %d, maxp %d",
+             subclass, ch->target_ep_in, ch->target_ep_out, ch->maxp);
 
     return len;
 }
@@ -295,14 +295,16 @@ void usb_test_process(struct usb_host_device *host_dev)
                 continue;
             }
             ch->ep_in_dma = usb_h_alloc_ep_buffer(usb_id, ch->host_ep_in | USB_DIR_IN, ch->maxp * 2);
+#ifdef USB_HW_20
             usb_write_rxfuncaddr(usb_id, ch->host_ep_in, host_dev->private_data.devnum);
+#endif
             usb_h_ep_config(usb_id, ch->host_ep_in | USB_DIR_IN, ch->type, 1, ch->interval,
                             ch->ep_in_dma, ch->maxp);
             usb_h_set_ep_isr(host_dev, ch->host_ep_in | USB_DIR_IN, test_rx_isr, NULL);
             //arm首次接收
             usb_h_ep_read_async(usb_id, ch->host_ep_in, ch->target_ep_in,
                                 ch->ep_in_dma, ch->maxp, ch->type, 1);
-            log_debug("test ep_in: host %d -> target %d", ch->host_ep_in, ch->target_ep_in);
+            log_info("test ep_in: host %d -> target %d", ch->host_ep_in, ch->target_ep_in);
         }
 
         //OUT EP: host -> device, 发送端
@@ -316,11 +318,13 @@ void usb_test_process(struct usb_host_device *host_dev)
             }
             ch->ep_out_dma = usb_h_alloc_ep_buffer(usb_id, ch->host_ep_out, ch->maxp);
             memset(ch->ep_out_dma, ch->target_ep_out, ch->maxp);
+#ifdef USB_HW_20
             usb_write_txfuncaddr(usb_id, ch->host_ep_out, host_dev->private_data.devnum);
+#endif
             usb_h_ep_config(usb_id, ch->host_ep_out, ch->type, 1, ch->interval,
                             ch->ep_out_dma, ch->maxp);
             usb_h_set_ep_isr(host_dev, ch->host_ep_out, test_tx_isr, NULL);
-            log_debug("test ep_out: host %d -> target %d", ch->host_ep_out, ch->target_ep_out);
+            log_info("test ep_out: host %d -> target %d", ch->host_ep_out, ch->target_ep_out);
         }
     }
 
@@ -369,7 +373,7 @@ static int test_release(struct usb_host_device *host_dev)
     }
 
     memset(&test_dev, 0, sizeof(test_dev));
-    log_debug("test host release done");
+    log_info("test host release done");
     return 0;
 }
 
@@ -485,26 +489,26 @@ static void test_stats_timer_cb(void *priv)
         usb_test_get_remote_stats(host_dev, i, &remote_out);
         usb_test_get_remote_in_stats(host_dev, i, &remote_in);
 
-        log_debug("CH%d host: tx %d/%dB rx %d/%dB err %d lost %d | "
-                  "dev: tx %d/%dB rx %d/%dB err %d lost %d",
-                  i,
-                  local.tx_packets, local.tx_bytes,
-                  local.rx_packets, local.rx_bytes, local.rx_errors, local.rx_lost,
-                  remote_in.tx_packets, remote_in.tx_bytes,
-                  remote_out.rx_packets, remote_out.rx_bytes,
-                  remote_out.rx_errors, remote_out.rx_lost);
+        log_info("CH%d host: tx %d/%dB rx %d/%dB err %d lost %d | "
+                 "dev: tx %d/%dB rx %d/%dB err %d lost %d",
+                 i,
+                 local.tx_packets, local.tx_bytes,
+                 local.rx_packets, local.rx_bytes, local.rx_errors, local.rx_lost,
+                 remote_in.tx_packets, remote_in.tx_bytes,
+                 remote_out.rx_packets, remote_out.rx_bytes,
+                 remote_out.rx_errors, remote_out.rx_lost);
     }
 
 #if TEST_EP_CTRL_ENABLE
     {
         struct test_ep_stats ctrl_dev_out, ctrl_dev_in;
         usb_test_get_remote_ctrl_stats(host_dev, &ctrl_dev_out, &ctrl_dev_in);
-        log_debug("CTRL host: tx %d/%dB rx %d/%dB err %d | "
-                  "dev: tx %d/%dB rx %d/%dB err %d",
-                  ctrl_local_stats.tx_packets, ctrl_local_stats.tx_bytes,
-                  ctrl_local_stats.rx_packets, ctrl_local_stats.rx_bytes, ctrl_local_stats.rx_errors,
-                  ctrl_dev_in.tx_packets, ctrl_dev_in.tx_bytes,
-                  ctrl_dev_out.rx_packets, ctrl_dev_out.rx_bytes, ctrl_dev_out.rx_errors);
+        log_info("CTRL host: tx %d/%dB rx %d/%dB err %d | "
+                 "dev: tx %d/%dB rx %d/%dB err %d",
+                 ctrl_local_stats.tx_packets, ctrl_local_stats.tx_bytes,
+                 ctrl_local_stats.rx_packets, ctrl_local_stats.rx_bytes, ctrl_local_stats.rx_errors,
+                 ctrl_dev_in.tx_packets, ctrl_dev_in.tx_bytes,
+                 ctrl_dev_out.rx_packets, ctrl_dev_out.rx_bytes, ctrl_dev_out.rx_errors);
     }
 #endif
 }
@@ -516,7 +520,7 @@ static void usb_test_task(void *arg)
     int ret;
     int msg[16];
 
-    log_debug("test task running");
+    log_info("test task running");
 
     while (1) {
         ret = os_taskq_pend("taskq", msg, ARRAY_SIZE(msg));
@@ -540,7 +544,7 @@ static void usb_test_task(void *arg)
             memset(&ctrl_local_stats, 0, sizeof(struct test_ep_stats));
             os_taskq_post_msg(TEST_TASK_NAME, 2, USB_TEST_MSG_CTRL_TEST, (int)host_dev);
 #endif
-            log_debug("test started");
+            log_info("test started");
             break;
         }
 

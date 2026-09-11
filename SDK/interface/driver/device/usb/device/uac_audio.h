@@ -460,21 +460,9 @@ struct uac1_status_word {
     u8 bOriginator;
 } __attribute__((packed));
 
-u32 uac_spk_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
-
-u32 uac_mic_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
-u32 uac_audio_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
 const u8 *uac_get_string(u32 id);
-void uac_get_cur_vol(const usb_dev usb_id, u16 *l_vol, u16 *r_vol);
-u16 uac_get_mic_vol(const usb_dev usb_id);
-u32 uac_spk_register(const usb_dev usb_id);
-void uac_spk_release(const usb_dev usb_id);
-u32 uac_mic_register(const usb_dev usb_id);
-void uac_mic_release(const usb_dev usb_id);
-/* USB_CLASS_REGISTER dispatch wrappers */
-u32 uac_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
-void uac_register(usb_dev usb_id);
-void uac_release(usb_dev usb_id);
+void uac_get_cur_vol(u8 stream_id, u16 *l_vol, u16 *r_vol);
+u16 uac_get_mic_vol(u8 stream_id);
 
 #ifdef __cplusplus
 }

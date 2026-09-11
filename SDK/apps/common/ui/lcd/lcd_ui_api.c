@@ -1852,6 +1852,9 @@ static void ui_task(void *p)
     u32 time_start = 0;
     u32 time_end = 0;
 
+    extern void gpu_buf_init();
+    gpu_buf_init();
+
     while (1) {
         time_end = jiffies_msec();
         if (time_start && time_end) {

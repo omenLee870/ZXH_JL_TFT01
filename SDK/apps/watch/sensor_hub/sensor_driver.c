@@ -22,6 +22,24 @@
 #include "iic_api.h"
 #if TCFG_SENSOR_HUB
 const u8 sensor_iic_hdl   = 1;
+static u8 sensor_iic_ready = 0;
+
+int sensor_driver_bus_init(void)
+{
+    int ret;
+
+    if (sensor_iic_ready) {
+        return IIC_OK;
+    }
+    ret = system_iic_init(sensor_iic_hdl, get_iic_config(sensor_iic_hdl));
+    if (ret == IIC_OK) {
+        sensor_iic_ready = 1;
+        log_info("sensor iic%d init ok", sensor_iic_hdl);
+    } else {
+        log_error("sensor iic%d init failed:%d", sensor_iic_hdl, ret);
+    }
+    return ret;
+}
 
 u8 sensor_write(u8 iic_dev_addr, u8 register_address, const u8 *buf, u8 data_len)
 {

@@ -99,36 +99,3 @@ int small_file_get_max_item(u8 small_file_type)
 
 /* small_file_delete_by_index 在 data_storage_fdb.c / data_storage_vm.c 中已定义，此处不重复提供 */
 
-/* ============================================================================
- * BT PA/RF stubs — old SDK GPIO API wrappers
- * ============================================================================ */
-
-void bt_rf_PA_control_io_remap(u16 tx_io, u16 rx_io)
-{
-    log_info("stub: %s(tx=0x%x, rx=0x%x) called\n", __func__, tx_io, rx_io);
-}
-
-int gpio_set_die(u32 gpio, u32 value)
-{
-    log_info("stub: %s(gpio=0x%x, value=%d) called\n", __func__, gpio, value);
-    return 0;
-}
-
-int gpio_set_hd(u32 gpio, u32 value)
-{
-    log_info("stub: %s(gpio=0x%x, value=%d) called\n", __func__, gpio, value);
-    return 0;
-}
-
-int gpio_set_hd0(u32 gpio, u32 value)
-{
-    log_info("stub: %s(gpio=0x%x, value=%d) called\n", __func__, gpio, value);
-    return 0;
-}
-
-int gpio_direction_output(u32 gpio, u32 value)
-{
-    log_info("stub: %s(gpio=0x%x, value=%d) called\n", __func__, gpio, value);
-    return 0;
-}
-

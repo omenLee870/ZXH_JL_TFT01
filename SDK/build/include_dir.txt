@@ -242,6 +242,10 @@
 -Iinterface/net/lwip_2_2_0/lwip/src/include/compat/stdc
 -Iapps/common/timestamp
 -Iinterface/net/lwip_2_2_0/lwip/app/dhcp_srv
+-Iapps/common/netapps/iflytek/SparkDesk
+-Iapps/common/netapps/iflytek/tts
+-Iapps/common/netapps/iflytek/vad
+-Iapps/common/netapps/iflytek
 -Iinterface/system/math/cpu/br33
 -Iapps/watch/include/ui/jlui_app
 -Iinterface/ui/common/hardware

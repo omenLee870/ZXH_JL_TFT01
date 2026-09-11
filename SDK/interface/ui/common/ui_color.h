@@ -23,6 +23,94 @@
 
 
 /* ------------------------------------------------------------------------------------*/
+/* 常见颜色（RGB888 格式：0xRRGGBB） */
+#ifndef WHITE
+#define WHITE				0xffffff
+#endif
+#ifndef BLACK
+#define BLACK				0x000000
+#endif
+#ifndef RED
+#define RED				0xff0000
+#endif
+#ifndef GREEN
+#define GREEN				0x00ff00
+#endif
+#ifndef BLUE
+#define BLUE				0x0000ff
+#endif
+#ifndef YELLOW
+#define YELLOW				0xffff00
+#endif
+#ifndef CYAN
+#define CYAN				0x00ffff
+#endif
+#ifndef MAGENTA
+#define MAGENTA				0xff00ff
+#endif
+#ifndef SILVER
+#define SILVER				0xc0c0c0
+#endif
+#ifndef GRAY
+#define GRAY				0x808080
+#endif
+#ifndef DARK_GRAY
+#define DARK_GRAY			0x404040
+#endif
+#ifndef MAROON
+#define MAROON				0x800000
+#endif
+#ifndef OLIVE
+#define OLIVE				0x808000
+#endif
+#ifndef NAVY
+#define NAVY				0x000080
+#endif
+#ifndef PURPLE
+#define PURPLE				0x800080
+#endif
+#ifndef TEAL
+#define TEAL				0x008080
+#endif
+#ifndef ORANGE
+#define ORANGE				0xffa500
+#endif
+#ifndef PINK
+#define PINK				0xffc0cb
+#endif
+#ifndef BROWN
+#define BROWN				0xa52a2a
+#endif
+#ifndef GOLD
+#define GOLD				0xffd700
+#endif
+/* ------------------------------------------------------------------------------------*/
+
+
+/* ------------------------------------------------------------------------------------*/
+/* RGB888 颜色值(RGB888格式, 如RED) 转换为指定颜色值 */
+#ifndef COLOR_TO_RGB565
+#define COLOR_TO_RGB565(color) \
+	RGB565(RGB888_R(color), RGB888_G(color), RGB888_B(color))
+#endif
+
+#ifndef COLOR_TO_RGB888
+#define COLOR_TO_RGB888(color)	((unsigned int)((color) & 0xffffff))
+#endif
+
+#ifndef COLOR_TO_ARGB8565
+#define COLOR_TO_ARGB8565(alpha, color) \
+	ARGB8565((unsigned char)(alpha), RGB888_R(color), RGB888_G(color), RGB888_B(color))
+#endif
+
+#ifndef COLOR_TO_ARGB8888
+#define COLOR_TO_ARGB8888(alpha, color) \
+	ARGB8888((unsigned char)(alpha), RGB888_R(color), RGB888_G(color), RGB888_B(color))
+#endif
+/* ------------------------------------------------------------------------------------*/
+
+
+/* ------------------------------------------------------------------------------------*/
 #ifndef RGB555 /*! 合成RGB555颜色值 */
 #define RGB555(R, G, B) \
     (0x8000 | ((((unsigned short)(R) & 0xf8) << 7) | \
@@ -62,7 +150,7 @@
 
 /*! 从RGB565颜色值中提取红色分量（5位，0-31）*/
 #define RGB565_R(C) ((unsigned char)(((((C) >> 11) & 0x1f) << 3) | 0x7))
-/*! 从RGB565颜色值中提取绿色分量（6位，0-31）*/
+/*! 从RGB565颜色值中提取绿色分量（6位，0-63）*/
 #define RGB565_G(C) ((unsigned char)(((((C) >> 5) & 0x3f) << 2) | 0x3))
 /*! 从RGB565颜色值中提取蓝色分量（5位，0-31）*/
 #define RGB565_B(C) ((unsigned char)((((C) & 0x1f) << 3) | 0x7))

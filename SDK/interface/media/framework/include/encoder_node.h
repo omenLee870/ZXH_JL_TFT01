@@ -12,6 +12,11 @@ struct encoder_plug_ops {
     void (*release)(void *);
 };
 
+struct priv_param {
+    u16 len;
+    void *param;
+};
+
 struct encoder_fmt {
     u8 quality;
     union {
@@ -26,9 +31,17 @@ struct encoder_fmt {
     u8 format;   	//opus同一格式，不同的封装配置
     u8 bit_width;
     u16 frame_dms;
+#ifdef CONFIG_CPU_BR63
+    u32 bit_rate;
+    u32 sample_rate;
+    u16 bitpool;            //br63 rom 没有此变量
+    struct priv_param priv; //br63 rom 没有此变量
+#else
     u16 bitpool;
     u32 bit_rate;
     u32 sample_rate;
+    struct priv_param priv;
+#endif
 };
 
 

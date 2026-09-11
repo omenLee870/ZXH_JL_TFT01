@@ -61,6 +61,7 @@ static void eq_setting_info_deal(u8 *eq_info_data)
         status = *(((u8 *)eq_info_data) + 1);
     }
     mode = eq_info_data[0] & 0x7F;
+    log_info("eq mode set: %d\n", mode);
     if (mode < EQ_MODE_CUSTOM) {
         clock_refurbish();
         eq_mode_set(mode);

@@ -59,24 +59,6 @@ int small_file_get_max_item(u8 small_file_type);
 /** Delete small file record by index. */
 int small_file_delete_by_index(u8 small_file_type, int index);
 
-/* ============================================================================
- * BT PA/RF stubs — old SDK GPIO API wrappers (gpio_set_die/gpio_set_hd/gpio_set_hd0)
- * ============================================================================ */
-
-/** BT RF PA control IO remap. Stub — SDK btctrler 库未包含此符号 */
-void bt_rf_PA_control_io_remap(u16 tx_io, u16 rx_io);
-
-/** GPIO digital input enable (old SDK API). */
-int gpio_set_die(u32 gpio, u32 value);
-
-/** GPIO high drive strength (old SDK API). */
-int gpio_set_hd(u32 gpio, u32 value);
-
-/** GPIO high drive strength pin 0 (old SDK API). */
-int gpio_set_hd0(u32 gpio, u32 value);
-
-/** GPIO direction output (old SDK API). */
-int gpio_direction_output(u32 gpio, u32 value);
 
 /* ============================================================================
  * Music player stubs — music_player.c 仅在 LVGL UI 模式下编译

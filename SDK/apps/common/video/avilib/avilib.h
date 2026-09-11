@@ -331,6 +331,7 @@ int  AVI_dup_empty_frame(avi_t *AVI);
 int  AVI_write_audio(avi_t *AVI, const char *data, long bytes);
 long AVI_bytes_remain(avi_t *AVI);
 int  AVI_close(avi_t *AVI);
+void AVI_release_idx_pool(void);  /* 录像整体停止时释放跨段缓存idx池 */
 long AVI_bytes_written(avi_t *AVI);
 
 avi_t *AVI_open_input_file(const char *filename, int getIndex);

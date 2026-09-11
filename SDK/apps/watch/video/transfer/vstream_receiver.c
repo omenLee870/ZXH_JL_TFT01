@@ -20,6 +20,7 @@
 #define log_debug(...)
 #define log_error(...)
 #endif
+#include "kid_mem_dbg.h"
 
 #if TCFG_VSTREAM_TRANSFER
 
@@ -149,6 +150,7 @@ static int stream_dev_queue_init(struct stream_dev *dev, int type, int size)
     }
     if (!lm->ptr) {
         log_error(" stream dev lbuf ptr alloc err \n");
+        KWT_MEM_STATS("recv.queue_init malloc fail");
         return -1;
     }
     os_sem_create(&lm->sem, 0);
@@ -161,6 +163,9 @@ static int stream_dev_queue_init(struct stream_dev *dev, int type, int size)
         return -1;
     }
     log_info("%s type:%d succ\n", __func__, type);
+    if (type == VIDEO_FRAME) {
+        KWT_MEM_STATS("recv.queue_init video done");
+    }
     return 0;
 }
 
@@ -187,6 +192,7 @@ static int vstream_recv_create(struct vstream_recv_hdl **hdl)
     recv_hdl = zalloc(sizeof(struct vstream_recv_hdl));
     if (!recv_hdl) {
         log_error(" stream recv hdl alloc err \n");
+        KWT_MEM_STATS("recv.hdl zalloc fail");
         return -1;
     }
 
@@ -215,6 +221,7 @@ int vstream_receiver_open(void)
         log_error(" video stream recv task create err :%d \n", ret);
         return -1;
     }
+    KWT_MEM_STATS("receiver.open done");
 
     return 0;
 }
@@ -238,6 +245,7 @@ int vstream_recv_destroy(struct vstream_recv_hdl **hdl)
 
     free(recv_hdl);
     *hdl = NULL;
+    KWT_MEM_STATS("recv.destroy done");
 
     return 0;
 }
@@ -551,6 +559,7 @@ static struct stream_dev *stream_dev_create(u32 ip_addr)
     dev->parse_info.data_buf = malloc(STREAM_PARSE_BUF_SIZE);   /* malloc redirects to PSRAM: reassembly buffer */
     if (!dev->parse_info.data_buf) {
         log_error(" stream dev parse buf alloc err \n");
+        KWT_MEM_STATS("recv.parse_buf malloc fail");
         free(dev);
         return NULL;
     }
@@ -859,6 +868,16 @@ static int parse_recv_data(u8 *recv_buf, int recv_len, struct parse_info *parse_
             if (head_info->seq > parse_info->old_frame_seq || head_info->offset == 0) {
                 parse_info->old_frame_seq = head_info->seq;
                 parse_info->total_payload_len = 0;
+            }
+
+            /* head_info->offset 是线上原始 u32, 未校验过; 越界(或 32 位回绕)会让
+             * data_buf + offset 覆盖组包缓冲之外的内存。用减法形式比较, 避免
+             * offset + payload_size 自身溢出后绕回小值绕过检查。 */
+            if ((u32)head_info->offset >= STREAM_PARSE_BUF_SIZE ||
+                head_info->payload_size > STREAM_PARSE_BUF_SIZE - (u32)head_info->offset) {
+                log_error("reassembly offset out of bounds: offset=%u payload=%u\n",
+                          head_info->offset, head_info->payload_size);
+                return -1;
             }
 
             memcpy(parse_info->data_buf + head_info->offset,

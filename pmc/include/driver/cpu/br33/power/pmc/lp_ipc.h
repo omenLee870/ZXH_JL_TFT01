@@ -166,6 +166,8 @@
 //===========================================================================//
 #define P2P_F2S_CMD										P2P_MESSAGE_ACCESS(0)
 #define P2P_S2F_CMD										P2P_MESSAGE_ACCESS(1)
+#define P2P_POWER_CMD                                   P2P_MESSAGE_ACCESS(2)
+#define P2P_MSYS_STATE                                  P2P_MESSAGE_ACCESS(3)
 
 //==================aes==========================
 #define P2P_AES128     								    P2P_MESSAGE_ACCESS(10)
@@ -209,6 +211,7 @@ enum {
 
     M2P_VAD_INDEX = F_M2P_INT_OFFSET_START * 2, // int8
     M2P_F_APP_INDEX,
+    M2P_F_POWER_INDEX,
 };
 
 #define M2P_IDX_MASK_CMAC_S	(0x00000003)
@@ -263,6 +266,11 @@ enum {
 
 enum {
     MSG_CLOCK_LRC24M_OK = 1,
+};
+
+enum {
+    POWER_M2P_MSYS_LP_ENTER,
+    POWER_M2P_MSYS_LP_EXIT,
 };
 
 #include "lp_msg.h"

@@ -205,6 +205,56 @@ int music_ctrl_pause(void)
     return 0;
 }
 
+/* ================================================================
+ *                  通话打断 / 恢复
+ * ================================================================*/
+
+#if TCFG_APP_MUSIC_EN
+/** 记录是否因去电通话暂停了本地音乐，用于通话结束后恢复 */
+static u8 s_local_music_paused_by_call = 0;
+#endif
+
+int music_ctrl_pause_for_call(void)
+{
+#if TCFG_APP_MUSIC_EN
+    /* 仅处理本地音乐模式且正在播放的场景 */
+    if (app_get_current_mode_name() != APP_MODE_MUSIC) {
+        return 0;
+    }
+
+    struct file_player *file_player = get_music_file_player();
+    if (file_player && (music_file_get_player_status(file_player) == FILE_PLAYER_START)) {
+        /* 直接暂停本地文件播放器，避免走 APP_MSG_MUSIC_PP 被 AVRCP 重定向到手机 */
+        music_file_player_pp(file_player);
+        s_local_music_paused_by_call = 1;
+        log_info("<%s> pause local music for call", __func__);
+    }
+#endif
+    return 0;
+}
+
+int music_ctrl_resume_after_call(void)
+{
+#if TCFG_APP_MUSIC_EN
+    if (!s_local_music_paused_by_call) {
+        return 0;
+    }
+    s_local_music_paused_by_call = 0;
+
+    /* 仅当仍处于本地音乐模式且处于暂停态时才恢复 */
+    if (app_get_current_mode_name() != APP_MODE_MUSIC) {
+        return 0;
+    }
+
+    struct file_player *file_player = get_music_file_player();
+    if (file_player && (music_file_get_player_status(file_player) == FILE_PLAYER_PAUSE)) {
+        music_file_player_pp(file_player);
+        log_info("<%s> resume local music after call", __func__);
+    }
+#endif
+    return 0;
+}
+
 int music_ctrl_prev(void)
 {
 #if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)

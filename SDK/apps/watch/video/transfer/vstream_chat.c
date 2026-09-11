@@ -14,6 +14,7 @@
 #include "vstream_cmd.h"
 #include "data_storage/data_storage.h"
 #include "transfer_stubs.h"
+#include "dev_manager.h"   /* dev_manager_check_by_logo: 判 SD 在位 */
 
 #define LOG_TAG             "[KWT_CMD]"
 #define LOG_ERROR_ENABLE
@@ -21,10 +22,14 @@
 #define LOG_INFO_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
+#include "kid_mem_dbg.h"
 
 #define MSG_PEND_TIMEOUT	1000
 #define MSG_PEND_START		2
-#define FILE_TRANS_CRC_ENABLE 0
+/* 接收端文件类消息(CHAT_PHOTO/CHAT_VOICE)收完后的"改名保存 + 写聊天记录 + 回ACK"
+ * 整段被包在 FILE_TRANS_CRC_ENABLE 里。若为 0, 接收端只存临时文件、不写聊天记录、
+ * 不回 ACK -> 对端聊天列表不显示图片/语音。必须置 1。 */
+#define FILE_TRANS_CRC_ENABLE 1
 #define SEND_TIMEOUT		10*1000//MS
 #define CACHE_BUF_SIZE		4096//优化写入效率
 #ifndef UI_WINDOW_PREEMPTION_POP_DELAY
@@ -51,6 +56,9 @@ struct chat_file_info {
     //接收
     FILE *fp;
     int save_file_len;
+    u32 save_total_len;    /* 本次接收文件总长(由第一包记录) */
+    u8  recv_drop_file;    /* 无处落盘(卡也没有), 已丢弃文件内容(仍回记录+ACK 兜底) */
+    u8  recv_use_sd;       /* 本次接收文件写 SD(1) 还是 内置 virfat(0) */
     u32 file_crc;
     u16 file_cmd;
     u16 file_sn;
@@ -66,6 +74,13 @@ static struct chat_file_info _chat_file_info;
 static volatile u8 _chat_file_recv_busy = 0;
 // 避免同一次文件接收过程中重复 push 同一个聊天页面。
 static volatile u8 _chat_file_recv_preempt_active = 0;
+
+/* 接收落盘辅助(定义在文件后部, 先声明给 vstream_cmd_ask_chat_with_file 用) */
+static void chat_recv_root(char *buf, int size, u8 use_sd);
+static int  chat_recv_sd_online(void);
+static u32  chat_recv_free_space(const char *root);
+static void chat_recv_pick_name(const char *root, const char *ext, char *out16);
+
 static void kid_wt_chat_file_recv_preempt_push(void)
 {
 #if CONFIG_JL_UI_ENABLE
@@ -134,6 +149,11 @@ int chat_send_list_init()
 int chat_send_list_add(int fid, u8 sn)
 {
     struct chat_send_list *p = malloc(sizeof(struct chat_send_list));
+    if (!p) {
+        log_error("%s malloc failed\n", __func__);
+        KWT_MEM_STATS("chat.send_list malloc fail");
+        return -1;
+    }
     p->fid  = fid;
     p->sn = sn;
     p->status = FILE_STATUS_LOADING;
@@ -306,19 +326,25 @@ static int kid_wt_chat_data_storage_del()
 
     int has_file =  chat_data_has_file(save->type);
     if (has_file) {
-        char path[64] = {0};
-        strcat(path, "storage/virfat_flash/C/");
-        strcat(path, (const char *)save->data);
-        log_debug("%s path:%s", __func__, path);
-
-        if (strstr(path, "CAM")) {
-            //删除聊天记录时，不删除本地图片
-            return 0;
-        }
-        FILE *fp = fopen(path, "r");
-        if (fp) {
-            fdelete(fp);
-            log_info("%s path:%s del succ!!\n", __func__, path);
+        /* 接收文件可能在 virfat 或 SD: 两个根目录都尝试删除 */
+        int try_idx;
+        for (try_idx = 0; try_idx < 2; try_idx++) {
+            char root[64];
+            char path[96] = {0};
+            FILE *fp;
+            chat_recv_root(root, sizeof(root), try_idx ? 1 : 0);
+            snprintf(path, sizeof(path), "%s%s", root, (const char *)save->data);
+            log_debug("%s path:%s", __func__, path);
+            if (strstr(path, "CAM")) {
+                //删除聊天记录时，不删除本地图片
+                return 0;
+            }
+            fp = fopen(path, "r");
+            if (fp) {
+                fdelete(fp);
+                log_info("%s path:%s del succ!!\n", __func__, path);
+                break;
+            }
         }
     }
     return 0;
@@ -534,6 +560,11 @@ static int vstream_file_get_dirinfo(s8 *file, s8 *pre, int pre_len, s8 *ext, u32
     u32 ext_max  = 0;
     virfat_flash_get_dirinfo(NULL, &all_total);
     u8 *file_name = zalloc(12 * all_total);
+    if (!file_name) {
+        log_error("%s zalloc(%d) failed\n", __func__, 12 * all_total);
+        KWT_MEM_STATS("chat.dirinfo zalloc fail");
+        return -1;
+    }
     virfat_flash_get_dirinfo(file_name, &all_total);
     int star_start = -1;
     int star_end = -1;
@@ -585,70 +616,95 @@ static int vstream_cmd_ask_chat_with_file(u8 cmd, u8 cmd_sn, u8 *data, int len)
 {
     int type = 0;
     char *EXT;
-    char *NAME;
-    char *dev = "storage/virfat_flash/C/";
+    char root[64];   /* 本次接收文件所在根目录(virfat 或 SD), 由 file_save 首包选定 */
+    chat_recv_root(root, sizeof(root), __info->recv_use_sd);
     //cmd_map_type
     switch (cmd) {
     case VSTREAM_CMD_CHAT_VOICE:
         type = CHAT_TYPE_VOICE;
-
         EXT = "VOI";
-        NAME = "R*******.VOI";
         break;
     case VSTREAM_CMD_CHAT_PHOTO:
         type = CHAT_TYPE_PIC;
         EXT = "JPG";
-        NAME = "R*******.JPG";
         break;
     }
     log_debug("%s cmd:%d sn:%d", __func__, cmd, cmd_sn);
+    /* 两盘都没空间而丢弃文件内容: 仍写一条接收记录 + 回 ACK, 让对端能看到该图片/语音消息
+     * (文件未落盘, 仅显示占位/名称)。 */
+    if (__info->recv_drop_file) {
+        char file_name[16] = {0};
+        u32 fid = 0;
+        chat_recv_pick_name(root, EXT, file_name);
+        log_error("%s no space, record-only name:%s\n", __func__, file_name);
+        kid_wt_chat_data_storage_write(type, &fid, (u8 *)file_name, strlen(file_name), FILE_STATUS_RECV);
+        vstream_cmd_send_recv(cmd, cmd_sn, NULL, 0);
+        __info->recv_drop_file = 0;
+        __info->save_total_len = 0;
+        __info->recv_use_sd = 0;
+        memset(__info->last_name, 0, 16);
+        __info->file_crc = 0;
+        __info->file_cmd = 0;
+        __info->file_sn = 0;
+        kid_wt_chat_file_recv_preempt_pop();
+        return 0;
+    }
     if (__info->last_name[0]) {
         u32 crc = 0;
         memcpy(&crc, data, 4);
-        char path[64] = {0};
-        strcat(path, dev);
-        strcat(path, (const char *)__info->last_name);
+        char path[96] = {0};
+        snprintf(path, sizeof(path), "%s%s", root, (const char *)__info->last_name);
         FILE *fp = fopen(path, "r");
         int file_crc  = 0;
 
-        int crc_check_succ  = 0;
         log_debug("%s fp:%x crc:%x path:%s ", __func__, fp, crc, path);
         if (fp) {
 #if FILE_TRANS_CRC_ENABLE
-            int file_len = flen(fp);
-            int file_offset = 0;
-            u8 *rbuf = zalloc(512);
-            do {
-                int rlen = 512;
-                rlen = fread(rbuf, 1, rlen, fp);
-                file_crc = CRC16_with_initval(rbuf, rlen, file_crc);
-                file_offset += file_len;
-            } while (file_offset >= file_len);
-            free(rbuf);
+            /* 整文件重算 CRC 与发送端逐包累计值比对。
+             * 注意: 不能照旧用 "file_offset += file_len" 的写法(会只读一包/死循环),
+             * 需从文件头完整读一遍。 */
+            {
+                int rlen;
+                u8 *rbuf = zalloc(512);
+                if (!rbuf)
+                {
+                    log_error("%s crc rbuf zalloc(512) failed\n", __func__);
+                } else
+                {
+                    fseek(fp, 0, SEEK_SET);
+                    file_crc = 0;
+                    while ((rlen = fread(rbuf, 1, 512, fp)) > 0) {
+                        file_crc = CRC16_with_initval(rbuf, rlen, file_crc);
+                    }
+                    free(rbuf);
+                }
+            }
             log_debug("%s fp:%x crc:%x file_crc:%x", __func__, fp, crc, file_crc);
 #if VSTREAM_DATA_CRC_CHECK_EN
             if (crc == file_crc)
 #endif
             {
-                u32 max = 0;
-                u32 total = 0;
-                vstream_file_get_dirinfo(NAME, "R", 1, EXT, &max, &total);
-                max++;
                 char file_name[16] = {0};
-                sprintf(file_name, "R%07d.%s", max, EXT);
+                u32 fid = 0;
+                chat_recv_pick_name(root, EXT, file_name);
                 log_info("%s file_name:%s", __func__, file_name);
                 frename(fp, file_name);
-                u32 fid =  0;
                 kid_wt_chat_data_storage_write(type, &fid, (u8 *)file_name, strlen(file_name),  FILE_STATUS_RECV);
                 vstream_cmd_send_recv(cmd, cmd_sn, NULL, 0);
             }
 #if VSTREAM_DATA_CRC_CHECK_EN
             else {
+                /* CRC 不匹配: 删除临时文件, 避免残留 R*.TMP 占满 virfat;
+                 * fdelete 会关掉句柄, 置 NULL 防下面重复 fclose */
                 log_error("%s save err\n", __func__);
+                fdelete(fp);
+                fp = NULL;
             }
 #endif
 #endif
-            fclose(fp);
+            if (fp) {
+                fclose(fp);
+            }
         }
         memset(__info->last_name, 0, 16);
         __info->file_crc = 0;
@@ -665,13 +721,121 @@ static int vstream_cmd_ask_chat_with_file(u8 cmd, u8 cmd_sn, u8 *data, int len)
     return 0;
 }
 
+/* 删除 virfat 根目录残留的 R*.TMP 接收临时文件。
+ * 旧固件 FILE_TRANS_CRC_ENABLE=0 / 接收中途失败 都会留下 .TMP 不清理,
+ * 在很小的内置 virfat(4M 版仅 64K)上会很快塞满, 导致 fget_free_space 为 0,
+ * 新图片收不下来(space:0)。 */
+static void chat_recv_purge_leftover_tmp(void)
+{
+    u32 all_total = 0;
+    u32 cap;
+    u8 *file_name;
+    int freed = 0;
+
+    virfat_flash_get_dirinfo(NULL, &all_total);
+    if (all_total == 0) {
+        return;
+    }
+    /* 第一次只数数目, 第二次回填内容; 给点余量并封顶, 防两次查询间目录增长导致越界 */
+    cap = all_total;
+    if (cap > 512) {
+        cap = 512;
+    }
+    file_name = zalloc(12 * (cap + 16));
+    if (!file_name) {
+        log_error("%s zalloc(%d) failed\n", __func__, 12 * (cap + 16));
+        return;
+    }
+    virfat_flash_get_dirinfo(file_name, &all_total);
+    if (all_total > cap + 16) {
+        all_total = cap + 16;   /* 超出余量按余量遍历, 残余等下次再清 */
+    }
+    for (u32 i = 0; i < all_total; i++) {
+        char nm[13];
+        char path[64] = {0};
+        FILE *fp;
+        memcpy(nm, file_name + i * 12, 12);
+        nm[12] = 0;
+        if (strncmp(nm, "R", 1) || !strstr(nm, ".TMP")) {
+            continue;
+        }
+        strcat(path, "storage/virfat_flash/C/");
+        strcat(path, nm);
+        fp = fopen(path, "r");
+        if (fp) {
+            fdelete(fp);
+            freed++;
+            log_info("%s del leftover tmp:%s\n", __func__, nm);
+        }
+    }
+    free(file_name);
+    if (freed) {
+        log_info("%s freed %d tmp files\n", __func__, freed);
+    }
+}
+
+/* 接收文件落盘根目录: SD 用 CONFIG_ROOT_PATH(如 storage/sd1/C/), 否则内置 virfat */
+static void chat_recv_root(char *buf, int size, u8 use_sd)
+{
+    if (use_sd) {
+        snprintf(buf, size, "%s", CONFIG_ROOT_PATH);
+    } else {
+        snprintf(buf, size, "storage/virfat_flash/C/");
+    }
+}
+
+/* 外部卡(SD0/SD1, 以当前生效的 SDX_DEV 为准)是否在线(插入/挂载成功) */
+static int chat_recv_sd_online(void)
+{
+#if (TCFG_SD0_ENABLE || TCFG_SD1_ENABLE)
+    return dev_manager_check_by_logo(SDX_DEV) ? 1 : 0;
+#else
+    return 0;
+#endif
+}
+
+/* 查询某根目录剩余空间(KB), 0 表示该盘不存在/不可写 */
+static u32 chat_recv_free_space(const char *root)
+{
+    char path[96];
+    u32 kb = 0;
+    snprintf(path, sizeof(path), "%s%s", root, "R*******.TMP");
+    fget_free_space(path, &kb);
+    return kb;
+}
+
+/* 在某根目录选一个空闲 R 文件名(8.3, 探测 fopen 是否存在) */
+static void chat_recv_pick_name(const char *root, const char *ext, char *out16)
+{
+    u32 i;
+    for (i = 0; i < 9999999; i++) {
+        char cand[24];
+        char path[96];
+        FILE *t;
+        snprintf(cand, sizeof(cand), "R%07d.%s", i, ext);
+        snprintf(path, sizeof(path), "%s%s", root, cand);
+        t = fopen(path, "r");
+        if (!t) {
+            snprintf(out16, 16, "%s", cand);
+            return;
+        }
+        fclose(t);
+    }
+    snprintf(out16, 16, "R%07d.%s", 0, ext);
+}
+
 int vstream_file_save(u8 *data, int len)
 {
     struct chat_data_mult_packet *packet = (struct chat_data_mult_packet *)data;
     int type = 0;
-    char *path = "storage/virfat_flash/C/R*******.TMP";
+    char path[96] = {0};
+    u8  use_sd = 0;
     //第一包数据，创建文件
     if (packet->offset == 0) {
+        // 新文件开始: 复位
+        __info->recv_drop_file = 0;
+        __info->recv_use_sd = 0;
+        __info->save_total_len = 0;
         // 第一包即进入文件接收态，后续分包期间保持聊天页抢占。
         kid_wt_chat_file_recv_preempt_push();
         /* ASSERT(!__info->fp); */
@@ -680,26 +844,69 @@ int vstream_file_save(u8 *data, int len)
             __info->fp = NULL;
         }
         u32 space;
-        fget_free_space(path, &space);
+        /* 1) 优先写内置 virfat */
+        chat_recv_root(path, sizeof(path), 0);
+        snprintf(path + strlen(path), sizeof(path) - strlen(path), "%s", "R*******.TMP");
+        space = chat_recv_free_space("storage/virfat_flash/C/");
         space *= 1024;
-        //空间不足
         if (packet->total_len > space) {
-            log_error("%s  space:%d file_len:%d \n", __func__, space, packet->total_len);
+            /* 先清理 virfat 残留 R*.TMP 再看一次 */
+            chat_recv_purge_leftover_tmp();
+            space = chat_recv_free_space("storage/virfat_flash/C/");
+            space *= 1024;
+        }
+        /* 2) virfat 不够 -> 尝试写 SD(如果有卡) */
+        if (packet->total_len > space && chat_recv_sd_online()) {
+            char sd_path[96];
+            u32 sd_space;
+            chat_recv_root(sd_path, sizeof(sd_path), 1);
+            sd_space = chat_recv_free_space(sd_path);
+            sd_space *= 1024;
+            if (packet->total_len <= sd_space) {
+                use_sd = 1;
+                space = sd_space;
+                snprintf(path, sizeof(path), "%s%s", sd_path, "R*******.TMP");
+            }
+        }
+        /* 3) 都没空间 -> 丢弃文件内容, 仅补记录+ACK(让消息框出现) */
+        if (packet->total_len > space) {
+            log_error("%s  no space anywhere (virfat+sd), drop file, keep chat record\n", __func__);
 #if CONFIG_JL_UI_ENABLE
             UI_WINDOW_PREEMPTION_POSH(ID_WINDOW_NOT_SPACE, NULL, NULL, UI_WINDOW_PREEMPTION_TYPE_PHONE);
             UI_WINDOW_PREEMPTION_POP_DELAY(ID_WINDOW_NOT_SPACE, 2000);
 #endif
-            // 文件无法接收时立即清 busy，避免相机后续一直被拦截。
-            kid_wt_chat_file_recv_preempt_pop();
-            return -1;
+            /* 放弃文件内容但仍接收/计数: 等 CRC 尾包到达时补一条"接收"记录并回 ACK,
+             * 让对端聊天列表能显示这条图片(文件未能落盘)。 */
+            __info->recv_drop_file = 1;
+            __info->recv_use_sd = 0;
+            __info->save_total_len = packet->total_len;
+            return 0;
         }
+        __info->recv_use_sd = use_sd;
         __info->fp = fopen(path, "w+");
         if (!__info->cache_buf) {
             __info->cache_buf = malloc(CACHE_BUF_SIZE);
+            if (!__info->cache_buf) {
+                log_error("%s cache_buf malloc(%d) failed\n", __func__, CACHE_BUF_SIZE);
+                KWT_MEM_STATS("chat.cache_buf malloc fail");
+            }
         }
         __info->cache_buf_offset = 0;
         __info->save_file_len = 0;
     }
+
+    /* 丢弃文件模式(两盘都没空间): 只计数不写盘; 到最后一包且已收到 CRC cmd 时
+     * 补记录+ACK(无真实文件)。 */
+    if (__info->recv_drop_file) {
+        __info->save_file_len += packet->data_len;
+        if ((packet->offset + packet->data_len >= __info->save_total_len) &&
+            __info->file_crc && __info->file_cmd) {
+            u32 crc = __info->file_crc;
+            vstream_cmd_ask_chat_with_file(__info->file_cmd, __info->file_sn, (u8 *)&crc, 4);
+        }
+        return 0;
+    }
+
     //逐包写入
     if (!__info->fp) {
         // 文件句柄无效说明接收失败，释放聊天页抢占状态。
@@ -828,6 +1035,11 @@ int vstream_cmd_send_chat(u8 type, u8 *data, int data_len)
 
     int packet_head = sizeof(struct chat_data_mult_packet);
     u8 *send_data = zalloc(FILE_PACKET_SIZE	+ packet_head);
+    if (!send_data) {
+        log_error("%s zalloc(%d) failed\n", __func__, FILE_PACKET_SIZE + packet_head);
+        KWT_MEM_STATS("chat.send_data zalloc fail");
+        return -1;
+    }
     struct chat_data_mult_packet *packet = (struct chat_data_mult_packet *)send_data;
     int packet_max_len = FILE_PACKET_SIZE;
     int offset = 0;

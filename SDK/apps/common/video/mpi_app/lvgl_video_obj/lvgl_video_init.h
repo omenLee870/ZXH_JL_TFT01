@@ -6,6 +6,7 @@
 
 void *lvgl_video_init(int32_t width, int32_t height, int32_t x, int32_t y, const char *fb_name);
 void  lvgl_video_exit(void *handle);         /* 异步, 通过 RPC 投递到 LVGL 线程 */
-void  lvgl_video_exit_sync(void *handle);    /* 同步, 直接在调用线程执行 (必须在 LVGL 线程上下文调用) */
+void  lvgl_video_exit_sync(void *handle);    /* 同步, 直接在调用线程执行 (必须在 LVGL 线程上下文调用), 并排空 LIST==2 异步渲染 */
+void  lvgl_video_exit_drain(void *handle);   /* 同步, 任意线程: 删视频 img + 排空 LIST==2 异步渲染, 再返回 */
 
 #endif /* LVGL_VIDEO_INIT_H */

@@ -1,6 +1,6 @@
 #include "app_config.h"
 
-#if TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE || TCFG_RTL8733BS_ENABLE
+#if TCFG_NETWORK_ENABLE
 #include "server/server_core.h"
 #include "server/net_server.h"
 #include "server/ctp_server.h"
@@ -364,6 +364,12 @@ static int add_jpg_file_to_database(
 /* 重建线程在跑标志: 防重入, 外部扫等待复用结果 */
 static volatile bool flm_rebuild_busy;
 
+/* 重建进行中查询: 录像 SD IN 自动开录先等重建完成, 避免并发抢 SD 读与内存 */
+int flm_rebuild_in_progress(void)
+{
+    return flm_rebuild_busy ? 1 : 0;
+}
+
 static int add_files_in_path_to_database(
     bp_db_t *database_handle,
     const char *path,
@@ -534,41 +540,326 @@ static void flm_names_cache_invalidate(void)
     g_flm.names_count = 0;
 }
 
+/* ---- 开机重建: 增量(目录diff, 不删库) + 目录级扫描(免解析头) + 分段bulk写库 ---- */
+#define FLM_SCAN_BATCH      64u
+#define FLM_SCAN_MAX_FILES  1024u
+
+typedef struct {
+    char name[64];
+    u8  type;      //0=PHOTO 1=VIDEO
+    u8  to_write;
+    u32 fsize;
+    struct vfs_attr attr;
+    int _attr;
+} flm_scan_file_t;
+
+struct flm_key_ctx {
+    char (*names)[64];
+    int count;
+    int cap;
+    int overflow;
+};
+
+static int flm_key_collect_cb(void *arg, const bp_key_t *key, const bp_value_t *value)
+{
+    struct flm_key_ctx *ctx = (struct flm_key_ctx *)arg;
+
+    (void)value;
+    if (ctx->count >= ctx->cap) {
+        ctx->overflow = 1;
+        return -1;
+    }
+    strncpy(ctx->names[ctx->count], key->value, 63);
+    ctx->names[ctx->count][63] = '\0';
+    ctx->count++;
+    return 0;
+}
+
+//目录扫描收集: 不解析文件头; AVI 验 RIFF(4B); 超限返回-1; files==NULL 时仅计数不存储
+static int flm_scan_collect(const char *path, const char *extension, u8 type,
+                            flm_scan_file_t *files, int max,
+                            char repair_paths[][160], int *repair_count)
+{
+    char file_name[128] = {0};
+    char media_name[128] = {0};
+    char options[32] = {0};
+    int file_count = 0;
+
+    snprintf(options, 32, "-t%s -sn", extension);
+    if (fdir_exist(path) != 0) {
+        return 0;
+    }
+    struct vfscan *scan_result = fscan(path, options, 9);
+    if (scan_result == NULL) {
+        printf("Failed to scan path %s\n", path);
+        return 0;
+    }
+    FILE *file_handle = fselect(scan_result, FSEL_FIRST_FILE, 0);
+    while (file_handle != NULL) {
+        int name_len = fget_name(file_handle, (u8 *)file_name, sizeof(file_name));
+
+        if (flm_normalize_name(file_name, name_len, media_name, sizeof(media_name)) < 0) {
+            printf("Skip invalid media name: %s%s\n", path, file_name);
+        } else if (type == 1) {
+            u8 hdr[4] = {0};
+            fseek(file_handle, 0, SEEK_SET);
+            int has_riff = (fread(hdr, 1, 4, file_handle) == 4 && !memcmp(hdr, "RIFF", 4));
+            if (has_riff) {
+                if (files != NULL) {
+                    if (file_count >= max) {
+                        fclose(file_handle);
+                        fscan_release(scan_result);
+                        return -1;
+                    }
+                    strncpy(files[file_count].name, media_name, 63);
+                    files[file_count].name[63] = '\0';
+                    files[file_count].type = 1;
+                    fget_attrs(file_handle, &files[file_count].attr);
+                    fget_attr(file_handle, &files[file_count]._attr);
+                    files[file_count].fsize = (u32)flen(file_handle);
+                }
+                file_count++;
+            } else if (flm_rebuild_busy && repair_count != NULL &&
+                       *repair_count < 4) {
+                snprintf(repair_paths[*repair_count], 160, "%s%s", path, media_name);
+                (*repair_count)++;
+            }
+        } else {
+            if (files != NULL) {
+                if (file_count >= max) {
+                    fclose(file_handle);
+                    fscan_release(scan_result);
+                    return -1;
+                }
+                strncpy(files[file_count].name, media_name, 63);
+                files[file_count].name[63] = '\0';
+                files[file_count].type = 0;
+                fget_attrs(file_handle, &files[file_count].attr);
+                fget_attr(file_handle, &files[file_count]._attr);
+                files[file_count].fsize = (u32)flen(file_handle);
+            }
+            file_count++;
+        }
+        fclose(file_handle);
+        file_handle = fselect(scan_result, FSEL_NEXT_FILE, 0);
+    }
+    fscan_release(scan_result);
+    return file_count;
+}
+
+//固定元数据 json(宽高/fps/时长无人消费, 本机录制格式固定): 返回 json 长度
+static int flm_fill_json(const flm_scan_file_t *e, char *buf, int buf_len)
+{
+    struct tm _tm;
+    int bytes;
+
+    _tm.tm_year = e->attr.crt_time.year - 1900;
+    _tm.tm_mon  = e->attr.crt_time.month - 1;
+    _tm.tm_mday = e->attr.crt_time.day;
+    _tm.tm_hour = e->attr.crt_time.hour;
+    _tm.tm_min  = e->attr.crt_time.min;
+    _tm.tm_sec  = e->attr.crt_time.sec;
+    incr_date_time(&_tm, e->type ? 60 : 0);
+
+    if (e->type) {
+        bytes = snprintf(buf, buf_len, VF_LIST_VIDEO_FORMAT,
+                         1, MEDIA_VIDEO_DIR, e->name,
+                         e->attr.crt_time.year, e->attr.crt_time.month, e->attr.crt_time.day,
+                         e->attr.crt_time.hour, e->attr.crt_time.min, e->attr.crt_time.sec,
+                         60, 480, 640, 20, (int)e->fsize, 0, (long)mktime(&_tm));
+    } else {
+        bytes = snprintf(buf, buf_len, VF_LIST_PHOTO_FORMAT,
+                         MEDIA_PHOTO_DIR, e->name,
+                         e->attr.crt_time.year, e->attr.crt_time.month, e->attr.crt_time.day,
+                         e->attr.crt_time.hour, e->attr.crt_time.min, e->attr.crt_time.sec,
+                         480, 640, (int)e->fsize, 0, (long)mktime(&_tm));
+    }
+    if (bytes < 0 || bytes >= buf_len) {
+        return -1;
+    }
+    return bytes;
+}
+
+//diff + 分段bulk写; 返回卡上文件总数(失败-1)
+static int flm_rebuild_fast(bp_db_t *db, flm_scan_file_t *files, int nfiles)
+{
+    struct flm_key_ctx *kctx;
+    int i, j;
+    int key_cnt = 0;
+    int added = 0, removed = 0;
+    u32 t0 = sys_timer_get_ms();
+
+    //先数 DB 键数再按需分配名字表, 不再按 1024 满额预占 64KB
+    bp_get_ranges(db, "/", "z", accumulate, &key_cnt);
+    kctx = malloc(sizeof(struct flm_key_ctx));
+    if (kctx == NULL) {
+        return -1;
+    }
+    memset(kctx, 0, sizeof(*kctx));
+    kctx->cap = key_cnt;
+    if (key_cnt > 0) {
+        kctx->names = malloc((size_t)key_cnt * 64);
+        if (kctx->names == NULL) {
+            free(kctx);
+            return -1;
+        }
+    }
+    bp_get_ranges(db, "/", "z", flm_key_collect_cb, kctx);
+    if (kctx->overflow) {
+        free(kctx->names);
+        free(kctx);
+        return -1;
+    }
+    //DB 残留 key(卡上已无文件) → 删除, 索引错位自愈
+    for (i = 0; i < kctx->count; i++) {
+        for (j = 0; j < nfiles; j++) {
+            if (strcmp(kctx->names[i], files[j].name) == 0) {
+                break;
+            }
+        }
+        if (j == nfiles) {
+            bp_key_t k = { .value = kctx->names[i], .length = strlen(kctx->names[i]) + 1 };
+            bp_remove(db, &k);
+            removed++;
+        }
+    }
+    //卡上文件: DB 无 → 待写
+    for (i = 0; i < nfiles; i++) {
+        files[i].to_write = 1;
+        for (j = 0; j < kctx->count; j++) {
+            if (strcmp(files[i].name, kctx->names[j]) == 0) {
+                files[i].to_write = 0;
+                break;
+            }
+        }
+    }
+    free(kctx->names);
+    free(kctx);
+    //分段 bulk(批缓冲固定 ~26KB, 与文件总数无关)
+    static bp_key_t bkeys[FLM_SCAN_BATCH];
+    static bp_value_t bvals[FLM_SCAN_BATCH];
+    static char bnames[FLM_SCAN_BATCH][64];
+    static char bjsons[FLM_SCAN_BATCH][256];
+    int n = 0;
+
+    for (i = 0; i < nfiles; i++) {
+        if (!files[i].to_write) {
+            continue;
+        }
+        strncpy(bnames[n], files[i].name, 63);
+        bnames[n][63] = '\0';
+        int len = flm_fill_json(&files[i], bjsons[n], 256);
+        if (len <= 0) {
+            continue;
+        }
+        bkeys[n].value = bnames[n];
+        bkeys[n].length = strlen(bnames[n]) + 1;
+        bvals[n].value = bjsons[n];
+        bvals[n].length = len;
+        n++;
+        added++;
+        if (n == (int)FLM_SCAN_BATCH) {
+            const bp_key_t *pk = bkeys;
+            const bp_value_t *pv = bvals;
+            bp_bulk_set(db, n, &pk, &pv);
+            n = 0;
+        }
+    }
+    if (n > 0) {
+        const bp_key_t *pk = bkeys;
+        const bp_value_t *pv = bvals;
+        bp_bulk_set(db, n, &pk, &pv);
+    }
+    printf("[FLM] rebuild diff: scan=%d new=%d removed=%d ms=%u\n",
+           nfiles, added, removed, sys_timer_get_ms() - t0);
+    return nfiles;
+}
+
 static int flm_do_scan_and_load(void)
 {
+    char repair_paths[4][160];
+    int repair_count = 0;
+    int file_count = -1;
+
     flm_mutex_ensure();
     if (g_flm.is_initialized) {
         return 0;
     }
 
-    /* 每次扫描前删除旧数据库, 重建干净索引 (INDEX.DAT 持久化,
-     * 旧固件残留 key 会让 flm_get_entry 索引错乱导致回放卡住)。 */
-    FILE *db_old = fopen(MEDIA_DB_PATH, "r");
-    if (db_old) {
-        fdelete(db_old);
-        db_old = NULL;
-    }
-
     bp_db_t database_handle = {0};
     if (bp_open(&database_handle, MEDIA_DB_PATH) != BP_OK) {
         printf("Failed to open database %s\n", MEDIA_DB_PATH);
-        /* 写不进即停: 不再重试重扫, 清索引防 dec 读旧数据 (重插卡重建恢复) */
         g_flm.is_initialized = true;
         g_flm.file_count = 0;
         flm_names_cache_invalidate();
         return -1;
     }
 
-    int file_count = 0;
-    file_count += add_files_in_path_to_database(&database_handle, MEDIA_VIDEO_DIR, "AVI");
-    file_count += add_files_in_path_to_database(&database_handle, MEDIA_PHOTO_DIR, "JPG");
+    //fast: 增量重建(目录diff+免解析+bulk), 失败/超限退老路径
+    //先计数再按实际文件数分配, 不再按 1024 满额 malloc(~110KB 抢录像启动内存)
+    int n_v = flm_scan_collect(MEDIA_VIDEO_DIR, "AVI", 1, NULL, 0, NULL, NULL);
+    int n_p = flm_scan_collect(MEDIA_PHOTO_DIR, "JPG", 0, NULL, 0, NULL, NULL);
+    int total = (n_v >= 0 && n_p >= 0) ? n_v + n_p : -1;
+    if (total >= 0 && total <= (int)FLM_SCAN_MAX_FILES) {
+        flm_scan_file_t *files = malloc(sizeof(flm_scan_file_t) * (total > 0 ? total : 1));
+        if (files != NULL) {
+            int n = flm_scan_collect(MEDIA_VIDEO_DIR, "AVI", 1, files, total, repair_paths, &repair_count);
+            if (n >= 0) {
+                int n2 = flm_scan_collect(MEDIA_PHOTO_DIR, "JPG", 0, files + n, total - n, NULL, NULL);
+                if (n2 >= 0) {
+                    file_count = flm_rebuild_fast(&database_handle, files, n + n2);
+                }
+            }
+            free(files);
+        }
+    }
+
+#if TCFG_APP_VIDEO_REC_EN
+    //热拔卡收尾 AVI: 修复成功重新入库(数量少, 走老解析路径)
+    for (int i = 0; i < repair_count; i++) {
+        if (video_rec_repair_avi(repair_paths[i]) == 0) {
+            FILE *rfh = fopen(repair_paths[i], "r");
+            if (rfh) {
+                struct vfs_attr rattr = {0};
+                int r_attr = 0;
+                fget_attrs(rfh, &rattr);
+                fget_attr(rfh, &r_attr);
+                const char *rname = strrchr(repair_paths[i], '/');
+                rname = rname ? (rname + 1) : repair_paths[i];
+                if (add_avi_file_to_database(&database_handle, rfh, rname, &rattr, r_attr) == 0 &&
+                    file_count >= 0) {
+                    file_count++;
+                }
+                fclose(rfh);
+            }
+        }
+    }
+#endif
+
+    if (file_count < 0) {
+        //退化: 删库全扫(千级文件/DB key 超限场景, 保证正确性优先)
+        u32 t1 = sys_timer_get_ms();
+        FILE *db_old = fopen(MEDIA_DB_PATH, "r");
+        if (db_old) {
+            fdelete(db_old);
+        }
+        bp_close(&database_handle);
+        if (bp_open(&database_handle, MEDIA_DB_PATH) != BP_OK) {
+            g_flm.is_initialized = true;
+            g_flm.file_count = 0;
+            flm_names_cache_invalidate();
+            return -1;
+        }
+        file_count = 0;
+        file_count += add_files_in_path_to_database(&database_handle, MEDIA_VIDEO_DIR, "AVI");
+        file_count += add_files_in_path_to_database(&database_handle, MEDIA_PHOTO_DIR, "JPG");
+        printf("[FLM] rebuild full: scan=%d ms=%u\n", file_count, sys_timer_get_ms() - t1);
+    }
 
     bp_close(&database_handle);
-
     g_flm.is_initialized = true;
     g_flm.file_count = file_count;
     flm_names_cache_invalidate();
-
     return file_count;
 }
 
@@ -628,8 +919,8 @@ static void flm_rebuild_thread(void *arg)
     flm_rebuild();
     os_mutex_post(&g_flm.database_mutex);
     flm_rebuild_busy = false;
-    /* 完成即通知: dec 插卡刷新由此驱动, 不忙等 */
-    app_send_message(APP_MSG_FLM_REBUILD_DONE, 0);
+    /* 完成即通知: 录像停录入库/dec 插卡刷新由此驱动, 不忙等 */
+    app_send_message(APP_MSG_FLM_DB_CHANGED, 0);
 }
 
 /* 插卡等场景: 异步重建 (app_core 只投递, 重建在独立大栈线程) */

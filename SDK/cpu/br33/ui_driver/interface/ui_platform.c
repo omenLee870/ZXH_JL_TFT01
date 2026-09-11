@@ -27,6 +27,7 @@
 #include "buffer_manager.h"		// buffer管理
 #include "ui_expand.h"		// 部分宏定义
 #include "ui_addr.h"
+#include "ui_math/ui_prime.h"
 
 #include "font/font_all.h"
 #include "font/font_textout.h"
@@ -49,6 +50,8 @@
 #include "gxdec.h"
 #include "ui_multi_page_manager.h"
 #include "generic/list.h"
+#include "ui.h"
+#include "ui_draw/ui_ring.h"
 
 #include "ui_color.h"
 
@@ -899,6 +902,254 @@ __updtate_task:
 }
 
 
+static void gpu_draw_ring_full(struct draw_context *dc,
+                               int center_x, int center_y,
+                               int inner_radius, int outer_radius,
+                               int start_angle, int curr_angle,
+                               u32 fill_color)
+{
+    u16 id = 0;
+    int elm_id = dc->elm->id;
+    int task_id = GPU_TASK_ID(dc->page, id, dc->elm_index++);
+
+    u8 a = ((fill_color >> 24) & 0xff);
+    u8 r = ((fill_color >> 11) & 0x1f) << 3;
+    u8 g = ((fill_color >> 5) & 0x3f) << 2;
+    u8 b = (fill_color & 0x1f) << 3;
+
+
+    /* 渐变任务参数初始化 */
+    jlgpu_task_gradient_param_init(task_id/* GPU_GRAD_TASK_ID */, elm_id/*GPU_GRAD_ELEMENT*/);
+
+    /* 设置渐变任务的任务类型为径向+角度渐变 */
+    jlgpu_task_gradient_set_grad_type(JLGPU_DRAW_RADIALGRAD_ANGLEGRAD);
+
+    /* 渐变任务变换模式 */
+    jlgpu_task_gradient_set_trans_mode(JLGPU_TRANS_MODE_AFFINE);
+
+    jlgpu_task_gradient_set_quality(JLGPU_RENDERING_QUALITY_MSAA_8X);
+
+    /* 计算圆环中线半径和弧段线宽 */
+    float line_width = (float)(outer_radius - inner_radius);
+    float half_lw = line_width / 2.0f;
+    float radius  = (inner_radius + outer_radius) / 2.0f;
+    float inner_r = radius - half_lw;
+    float outer_r = radius + half_lw;
+
+    /* 渐变任务颜色表 */
+    /* static uint32_t clut[] = { */
+    /* ARGB8888(0xff, 0xff, 0xff, 0xff), */
+    /* ARGB8888(0xff, 0xff, 0xff, 0xff), */
+    /* ARGB8888(0xff, 0xff, 0xff, 0xff), */
+    /* }; */
+
+    /* static uint32_t radial_clut[] = { */
+    /* ARGB8888(0xff, 0xcd, 0xcd, 0xcd), */
+    /* ARGB8888(0xff, 0xcd, 0xcd, 0xcd), */
+    /* ARGB8888(0xff, 0xcd, 0xcd, 0xcd), */
+    /* }; */
+
+    struct rect win = {0};
+    jlgpu_get_win_rect(&win);
+
+    /* 绘制区域 (向外扩 1 像素避免浮点截边) */
+    float fill_x = (float)(center_x - outer_r) - 0;
+    float fill_y = (float)(center_y - outer_r) - 0;
+    float fill_w = (float)(outer_r * 2) + 0;
+    float fill_h = (float)(outer_r * 2) + 0;
+
+    uint32_t *clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
+    extern int gpu_buf_add(u8 * buf, u32 size);
+    gpu_buf_add((u8 *)clut, sizeof(uint32_t) * 3);
+    clut[0] = 0xffffffff;
+    clut[1] = 0xffffffff;
+    clut[2] = 0xffffffff;
+
+    jlgpu_task_gradient_set_clut(clut, 1, JLGPU_CLUT_FORMAT_ARGB8888);
+
+    uint32_t *radial_clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
+    extern int gpu_buf_add(u8 * buf, u32 size);
+    gpu_buf_add((u8 *)radial_clut, sizeof(uint32_t) * 3);
+    radial_clut[0] = (a << 24) | (r << 16) | (g << 8) | b;
+    radial_clut[1] = (a << 24) | (r << 16) | (g << 8) | b;
+    radial_clut[2] = (a << 24) | (r << 16) | (g << 8) | b;
+    jlgpu_task_gradient_set_radial_clut(radial_clut, 1, JLGPU_CLUT_FORMAT_ARGB8888);
+
+    /* 设置渐变的填充默认 */
+    jlgpu_task_gradient_set_spread_mode(JLGPU_COLOR_RAMP_SPREAD_FILL_ZREO);
+
+    jlgpu_task_gradient_set_affine_translate(win.left + fill_x, win.top + fill_y);
+
+    jlgpu_task_gradient_set_ring(win.left + center_x, win.top + center_y, inner_r, outer_r);
+
+    /* 设置角度渐变参数 */
+    jlgpu_task_gradient_set_angle(win.left + center_x, win.top + center_y, start_angle/* GPU_GRAD_S_ANGLE */, curr_angle/* GPU_GRAD_E_ANGLE */);
+
+    /* 复合指令时，只需设置径向渐变的模式，根据径向渐变的参数设置 */
+    jlgpu_task_gradient_set_grad_mode(JLGPU_GRAD_MODE_RING_GRADIENT);
+
+
+    /* 配置渐变位置区域 */
+    jlgpu_task_gradient_set_draw(win.left + fill_x, win.top + fill_y, fill_w, fill_h);
+
+    /* 配置渐变的父控件区域为整个屏幕 */
+    /* jlgpu_task_gradient_set_area(rect_left(screen), rect_top(screen), rect_width(screen), rect_height(screen)); */
+    jlgpu_task_gradient_set_area(win.left + fill_x, win.top + fill_y, fill_w, fill_h);
+
+    /* 缩放使能 */
+    JLGPU_TASK_SCALE_CONFIG(&task_param.fill.tran);
+
+    /* 旋转使能 */
+    JLGPU_TASK_ROTATE_CONFIG(&task_param.fill.tran);
+
+    /* 继承父控件变换 */
+    JLGPU_TASK_INHERIT_PARENT(&task_param.fill.tran);
+
+    /* 707N 兼容映射: 完全参照 gpu_fill_rect */
+    jlgpu_task_fill_param_map_707n();
+
+    /* 创建GPU任务，并添加到head任务链中 */
+    jlgpu_update_task_by_id(dc->gpu_task_head, task_param.task_id, task_param.element_id, &task_param);
+}
+
+/* GPU 圆环矢量绘制:
+ * 严格参照 ui_platform.c 中 gpu_fill_rect() 的任务参数设置步骤,
+ * 在此基础上加入 PATH 矢量路径描述圆环弧段形状 */
+static void gpu_draw_ring_arc(struct draw_context *dc,
+                              int center_x, int center_y,
+                              int inner_radius, int outer_radius,
+                              int start_angle, int curr_angle,
+                              u32 fill_color)
+{
+    /* task_id / element_id: 完全参照 gpu_fill_rect */
+    /* int elm_id  = dc->elm->id; */
+    /* u16 id_hash = CRC16(&fill_color, 4); */
+    /* int task_id = ((dc->page << 26) | (0 << 24) | (id_hash << 8) | dc->elm_index++); */
+
+    u16 id = 0;
+    int elm_id = dc->elm->id;
+    int task_id = GPU_TASK_ID(dc->page, id, dc->elm_index++);
+
+    /* ARGB 分量: 完全参照 gpu_fill_rect 的位操作方式 */
+    u8 a = ((fill_color >> 24) & 0xff);
+    u8 r = ((fill_color >> 11) & 0x1f) << 3;
+    u8 g = ((fill_color >> 5) & 0x3f) << 2;
+    u8 b = (fill_color & 0x1f) << 3;
+
+    jlgpu_task_fill_param_init(task_id, elm_id, a, r, g, b);
+
+    jlgpu_task_gradient_set_quality(JLGPU_RENDERING_QUALITY_MSAA_8X);
+
+    if (COLOR_VALID(fill_color)) {
+        log_debug("%s(), fill task is visible, color: 0x%x\n", __func__, fill_color);
+        task_param.invisible = false;
+    } else {
+        task_param.invisible = dc->elm->css.invisible;
+    }
+
+    /* 计算圆环中线半径和弧段线宽 */
+    float line_width = (float)(outer_radius - inner_radius);
+    float half_lw = line_width / 2.0f;
+    float radius  = (inner_radius + outer_radius) / 2.0f;
+    float inner_r = radius - half_lw;
+    float outer_r = radius + half_lw;
+
+    /* 绘制区域 (向外扩 1 像素避免浮点截边) */
+    float fill_x = (float)(center_x - outer_r) - 1;
+    float fill_y = (float)(center_y - outer_r) - 1;
+    float fill_w = (float)(outer_r * 2) + 2;
+    float fill_h = (float)(outer_r * 2) + 2;
+
+    jlgpu_task_fill_set_draw(fill_x, fill_y, fill_w, fill_h);
+    jlgpu_task_fill_set_area(fill_x, fill_y, fill_w, fill_h);
+
+    /* draw / area / priority: 完全参照 gpu_fill_rect */
+    task_param.draw.left   = fill_x;
+    task_param.draw.top    = fill_y;
+    task_param.draw.width  = fill_w;
+    task_param.draw.height = fill_h;
+    /* memcpy(&task_param.area, &task_param.draw, sizeof(struct rect)); */
+    /* jlgpu_shift_rect(&task_param.area); */
+    task_param.priority = dc->elm->prior;
+
+    /* task_type / global_alpha: 完全参照 gpu_fill_rect */
+    task_param.task_type = GPU_TASK_FILL;
+    /* int global_alpha = dc->elm->css.alpha * 128 / 100; */
+    /* task_param.global_alpha = global_alpha; */
+
+    /* 计算弧段端点坐标 */
+    float start_cx = center_x + radius * _trigo_cos(start_angle) * 1.0f / 32768;
+    float start_cy = center_y + radius * _trigo_sin(start_angle) * 1.0f / 32768;
+    float end_cx   = center_x + radius * _trigo_cos(curr_angle)  * 1.0f / 32768;
+    float end_cy   = center_y + radius * _trigo_sin(curr_angle)  * 1.0f / 32768;
+
+    float out_sx = center_x + outer_r * _trigo_cos(start_angle) * 1.0f / 32768;
+    float out_sy = center_y + outer_r * _trigo_sin(start_angle) * 1.0f / 32768;
+    float out_ex = center_x + outer_r * _trigo_cos(curr_angle)  * 1.0f / 32768;
+    float out_ey = center_y + outer_r * _trigo_sin(curr_angle)  * 1.0f / 32768;
+
+    float in_sx  = center_x + inner_r * _trigo_cos(start_angle) * 1.0f / 32768;
+    float in_sy  = center_y + inner_r * _trigo_sin(start_angle) * 1.0f / 32768;
+    float in_ex  = center_x + inner_r * _trigo_cos(curr_angle)  * 1.0f / 32768;
+    float in_ey  = center_y + inner_r * _trigo_sin(curr_angle)  * 1.0f / 32768;
+
+    struct rect win;
+    jlgpu_get_win_rect(&win);
+
+    /* 构建圆环弧段矢量路径 */
+    jl_path_t *path = jl_path_create();
+    jl_path_move_to(path, win.left + in_sx, win.top + in_sy);
+    jl_path_line_to(path, win.left + out_sx, win.top + out_sy);
+    jl_path_append_arc(path, (float)(win.left + center_x), (float)(win.top + center_y), outer_r,
+                       (float)start_angle, (float)(curr_angle - start_angle), 0);
+    jl_path_line_to(path, win.left + in_ex, win.top + in_ey);
+    jl_path_append_arc(path, (float)(win.left + center_x), (float)(win.top + center_y), inner_r,
+                       (float)curr_angle, (float)(start_angle - curr_angle), 0);
+    jl_path_append_circle(path, win.left + start_cx, win.top + start_cy, half_lw, half_lw);
+    jl_path_append_circle(path, win.left + end_cx, win.top + end_cy, half_lw, half_lw);
+    /* jl_path_dump(path); */
+    jl_path_end(path);
+
+    jlgpu_task_path_set_enable();
+    jlgpu_task_path_set_path(path);
+
+
+    /* 缩放使能 */
+    JLGPU_TASK_SCALE_CONFIG(&task_param.fill.tran);
+
+    /* 旋转使能 */
+    JLGPU_TASK_ROTATE_CONFIG(&task_param.fill.tran);
+
+    /* 继承父控件变换 */
+    JLGPU_TASK_INHERIT_PARENT(&task_param.fill.tran);
+
+    /* 707N 兼容映射: 完全参照 gpu_fill_rect */
+    jlgpu_task_fill_param_map_707n();
+
+    /* log_print("%s(), draw[%d, %d, %d, %d]\n", __func__, */
+    /* task_param.draw.left, task_param.draw.top, task_param.draw.width, task_param.draw.height); */
+
+    /* log_print("%s(), area [%d, %d, %d, %d]\n", __func__, */
+    /* task_param.area.left, task_param.area.top, task_param.area.width, task_param.area.height); */
+
+    /* 提交任务: 完全参照 gpu_fill_rect */
+    jlgpu_update_task_by_id(dc->gpu_task_head, task_param.task_id, task_param.element_id, &task_param);
+}
+
+int ui_gpu_draw(struct draw_context *dc, u8 *buf, int x, int y, int width, int height, void *cb, void *priv, int priv_len, int id)
+{
+
+    if (id == DRAW_RING) {
+        struct gpu_ring_info *info = (struct gpu_ring_info *)priv;
+        if ((info->curr_angle - info->start_angle) == 360) {
+            gpu_draw_ring_full(dc, info->center_x, info->center_y, info->inner_radius, info->outer_radius, info->start_angle, info->curr_angle, info->fill_color);
+        } else {
+            gpu_draw_ring_arc(dc, info->center_x, info->center_y, info->inner_radius, info->outer_radius, info->start_angle, info->curr_angle, info->fill_color);
+        }
+    }
+    return 0;
+}
+
 int gpu_fill_rect(struct draw_context *dc, int left, int top, int width, int height, u32 acolor);
 int ui_draw(struct draw_context *dc, u8 *buf, int x, int y, int width, int height, void *cb, void *priv, int priv_len, int id)
 {
@@ -930,8 +1181,6 @@ int ui_draw(struct draw_context *dc, u8 *buf, int x, int y, int width, int heigh
         dst_rect.width = src_rect.width = width;
         dst_rect.height = src_rect.height = height;
         u32 color = ui_draw_get_color(id, priv); // 获取自定义绘图颜色
-        /* printf("src_rect[%d, %d, %d, %d]\n", src_rect.left, src_rect.top, src_rect.width, src_rect.height); */
-        /* printf("dst_rect[%d, %d, %d, %d]\n", dst_rect.left, dst_rect.top, dst_rect.width, dst_rect.height); */
         ui_disp_out_stride_set(width * 1);
         custom_draw_func draw_func = (custom_draw_func)cb;
         draw_func(id, temp_buf, &dst_rect, &src_rect, 1, priv);
@@ -955,7 +1204,6 @@ int ui_draw(struct draw_context *dc, u8 *buf, int x, int y, int width, int heigh
         task_param.draw.top = y;
         task_param.draw.width = width;
         task_param.draw.height = height;
-        /* printf("@@@ %s(), %d, draw[%d, %d, %d, %d]\n", __func__, __LINE__, x, y, width, height); */
         jlgpu_get_win_rect(&task_param.area);
         task_param.texture.data = tile_buf;
         task_param.format = GPU_FORMAT_A8;
@@ -2300,7 +2548,10 @@ static int jlui_draw_image(struct draw_context *dc, u32 src, u8 quadrant, u8 *ex
             }
             u32 res_hash = 5383;
             res_hash =  mmu_hash(res_hash, (u8 *)prj_path, strlen(prj_path));
-            struct mmu_tab_cache *c = mmu_flash_info_cache_add(info, info->tab_size, res_hash);
+            u32 val[] = {res_hash, task_param.element_id, task_param.task_id};
+            res_hash = ui_prime_hash_int(val, ARRAY_SIZE(val));
+            /* struct mmu_tab_cache *c = mmu_flash_info_cache_add(info, info->tab_size, res_hash); */
+            struct mmu_tab_cache *c = mmu_flash_info_cache_add(&task_param.info, info->tab_size, res_hash);
             info = (struct flash_file_info *) & (c->tab);
         }
     }
@@ -2472,8 +2723,13 @@ static int jlui_draw_image(struct draw_context *dc, u32 src, u8 quadrant, u8 *ex
         JLGPU_TASK_INHERIT_PARENT(&task_param.texture.tran);
         task_param.clut_format = task_param.image.clut_format;
         task_param.has_clut = task_param.image.has_clut;
-        task_param.texture.data = (u8 *)task_param.info.offset;
-        task_param.texture.mmu_tab_base = (u8 *)task_param.info.tab;
+        if (__this->cache_mmu && (dc->prj == 1) && info->tab) {
+            task_param.texture.data = (u8 *)info->offset;
+            task_param.texture.mmu_tab_base = (u8 *)info->tab;
+        } else {
+            task_param.texture.data = (u8 *)task_param.info.offset;
+            task_param.texture.mmu_tab_base = (u8 *)task_param.info.tab;
+        }
     }
 
     task_param.priority = dc->elm->prior;
@@ -4413,6 +4669,9 @@ pJLGPUTaskHead_t jlui_load_win_task_list(pJLGPUTaskHead_t head, u32 win_id, int 
     elm->dc->refresh = false;
     ui_core_show(elm, true);
     new_head = jlgpu_task_list_copy_create(head, elm->dc->gpu_task_head, NULL, index);
+    /* BR33 创建链表头，将窗口设定到0点 */
+    new_head->win_rect.left = 0;
+    new_head->win_rect.top  = 0;
 
     /* if (cur_id != win_id) { */
     if (hide) {

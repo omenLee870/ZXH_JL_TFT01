@@ -866,27 +866,28 @@ static bool jd9165t_lvgl_read(lv_touch_data_t *data)
 
     system_iic_read_nbytes(__this->iic_hdl, HYN_I2C_ADDR, &reg_addr[0], 4, &buf[0], 8);
 
-#if SW_X_Y
-    data->point.y = buf[4] | ((buf[3] & 0xF) << 8);
-    data->point.x = buf[6] | ((buf[5] & 0xF) << 8);
-#else
-    data->point.x = buf[4] | ((buf[3] & 0xF) << 8);
-    data->point.y = buf[6] | ((buf[5] & 0xF) << 8);
-#endif
-
-    x_last = data->point.x;
-    y_last = data->point.y;
     data->state = (buf[0] != 0) ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+
+    if (buf[0] != 0) { /* 有有效触摸时才更新坐标 */
+#if SW_X_Y
+        data->point.y = buf[4] | ((buf[3] & 0xF) << 8);
+        data->point.x = buf[6] | ((buf[5] & 0xF) << 8);
+#else
+        data->point.x = buf[4] | ((buf[3] & 0xF) << 8);
+        data->point.y = buf[6] | ((buf[5] & 0xF) << 8);
+#endif
+        x_last = data->point.x;
+        y_last = data->point.y;
+    } else { /* 无触摸(抬起)时,保留上一次有效坐标,避免上报0xFFF(4095)越界坐标 */
+        data->point.x = x_last;
+        data->point.y = y_last;
+    }
+
     log_debug("finger:%d, (%d, %d), %s\n", buf[0], data->point.x, data->point.y, (data->state == LV_INDEV_STATE_PR) ? "pressed" : "released");
     if ((data->point.x == VK_X) && (data->point.y == VK_Y)) {
         vk_state = data->state;
         //printf("vk %s\n", (vk_state == LV_INDEV_STATE_PR) ? "press" : "release");
     }
-    /* } else { */
-    /* data->point.x = x_last; */
-    /* data->point.y = y_last; */
-    /* data->state = LV_INDEV_STATE_REL; */
-    /* } */
 
     return false; /* no more data to read */
 }

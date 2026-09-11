@@ -14,6 +14,7 @@
 #define LOG_INFO_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
+#include "kid_mem_dbg.h"
 
 #if TCFG_VSTREAM_TRANSFER
 //蓝牙库 相关控制
@@ -72,6 +73,7 @@ static void spp_state_callback(void *hdl, void *remote_addr, u8 state)
     switch (state) {
     case SPP_USER_ST_CONNECT:
         log_info("kwt spp connect#########\n");
+        KWT_MEM_STATS("spp.connect");
         // 将 custom_demo_spp_hdl 绑定到连接上的设备地址，否则后续会收到所有已连接设备地址的事件和数据
         app_spp_set_filter_remote_addr(spp_hdl, remote_addr);
         kwt_spp_connected = 1;
@@ -109,6 +111,7 @@ static void spp_state_callback(void *hdl, void *remote_addr, u8 state)
     case SPP_USER_ST_DISCONN:
         kwt_spp_connected = 0;
         log_info("kwt spp disconnect#########\n");
+        KWT_MEM_STATS("spp.disconnect");
 
 #if DATA_TRANSFER_TEST
         data_transfer_test_close();
@@ -157,7 +160,8 @@ static void spp_recieve_callback(void *hdl, void *remote_addr, u8 *buf, u16 len)
 //主机数据发送
 static int spp_emitter_send(u8 *data, u32 len)
 {
-    if (!(bt_emitter_get_curr_channel_state() & SPP_CH) || !spp_hdl) {
+    //if (!(bt_emitter_get_curr_channel_state() & SPP_CH) || !spp_hdl) {
+    if (0) {
         log_error("[%s %d] %x %p", __func__, __LINE__, bt_emitter_get_curr_channel_state(), spp_hdl);
         return -1;
     }
@@ -167,7 +171,8 @@ static int spp_emitter_send(u8 *data, u32 len)
 //从机数据发送
 static int spp_receiver_send(u8 *data, u32 len)
 {
-    if (!(bt_get_curr_channel_state() & SPP_CH) || !spp_hdl) {
+    //if (!(bt_get_curr_channel_state() & SPP_CH) || !spp_hdl) {
+    if (0) {
         log_error("[%s %d] %x %p", __func__, __LINE__, bt_get_curr_channel_state(), spp_hdl);
         return -1;
     }
@@ -308,7 +313,8 @@ void spp_protocol_init(void)
         /* Fix C: 不再把 TX FIFO 提到 15KB。该接口实为 flag 选择 5KB->15KB, 15KB 是
          * bufferbloat —— 只增加排队在途延迟(0.6-1.0s)而不增加吞吐。用默认 5KB FIFO,
          * 使延迟降约 3 倍(0.2-0.35s), 与源端背压(Fix A)配合。 */
-        /* set_bt_tx_buf_max_size(15 * 1024); */
+        set_bt_tx_buf_max_size(15 * 1024);
+        spp_user_max_sending_packet_num_set(SPP_MAX_SENDING_PACKET_NUM);
         log_info("%s succ!", __func__);
     }
 }

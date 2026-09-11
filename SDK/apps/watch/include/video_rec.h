@@ -97,9 +97,10 @@ enum video_rec_loop_time {
 #define VIDEO_REC_YUV_ORDER      MPI_YUV_ORDER_YUYV
 
 /* VENC配置 */
-#define VIDEO_REC_QUALITY        20      // 编码质量: q50=系数0.5, 首帧估算 640*480*0.5=153KB(原q80需215KB, 内存撑不住录像)
+/* 4M 无 PSRAM 内存档: 录像后物理池余量 ~34KB -> ~80-120KB, VGA+OSD 不再 P_MEM */
+#define VIDEO_REC_QUALITY        10      // 编码质量(低=省首帧输出缓冲)
 #define VIDEO_REC_VENC_ABR_KBPS  3000    // 码率(kbps)
-#define VIDEO_REC_STREAM_BUF_SIZE (192 * 1024)  // 码流缓冲区(探针实证: venc start分配262KB后仅剩138KB<编码首帧153KB; 192KB+音频32KB把首帧窗口抬到218KB)
+#define VIDEO_REC_STREAM_BUF_SIZE (128 * 1024)  // 码流缓冲(q10 首帧 ~77KB, 128KB 留余量)
 /* 同拍照根因(jpeg_encoder.c:out_buf_cal_size), 640*480*1.0(最坏系数)=307200B,
  * 原200KB对首帧偏紧, 提到384KB留余量(仅影响每次录像的第1帧, 后续帧自适应sizing)。 */
 

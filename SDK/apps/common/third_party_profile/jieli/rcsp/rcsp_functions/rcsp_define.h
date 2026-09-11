@@ -23,7 +23,7 @@
 #define		RCSP_SDK_TYPE_MANIFEST_SOUNDBOX				0xB
 #define     RCSP_SDK_TYPE_CHARGING_CASE                 0xC
 #define     RCSP_SDK_TYPE_707N_WATCH                    0xD
-#define     RCSP_SDK_TYPE_380N_WATCH                    0x10
+#define     RCSP_SDK_TYPE_681N_WATCH					0x10
 #define     RCSP_SDK_TYPE_COMMON                        0xFE
 
 //===========================================================================================
@@ -82,6 +82,7 @@
 
 // 流控制相关命令
 #define    JL_OPCODE_STREAM_CONTROL							        0x37
+#define    JL_OPCODE_AUDIO_VIDEO_CONTROL                            0x38
 
 #define    JL_OPCODE_SPORTS_DATA_INFO_GET							0xA0
 #define    JL_OPCODE_SPORTS_DATA_INFO_SET							0xA1

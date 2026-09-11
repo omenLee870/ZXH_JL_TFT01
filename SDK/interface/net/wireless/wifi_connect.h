@@ -193,7 +193,8 @@ enum wifi_module_state get_wifi_module_state(void);
 //    WIFI_STA_NETWORK_STACK_DHCP_TIMEOUT,
 //};
 enum wifi_sta_connect_state get_wifi_sta_connect_state(void);
-
+unsigned int wlan_if_getscan_netdev_ssid_info(struct netdev_ssid_info *ssid_info, unsigned int max_num);
+void wifi_network_scan_complete(void);
 
 #endif  //_WIFI_CONNECT_H_
 

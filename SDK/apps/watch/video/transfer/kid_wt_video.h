@@ -17,11 +17,14 @@ int  kid_wt_video_recv_get_status(void);
  * ============================================================================ */
 
 #define KWT_CAMERA_SENSOR           "GC0308"
+/* 对讲视频帧 320x240(传感器 4:3 等比): 该尺寸同时是发送端编码、接收端解码
+ * 输出 fb5(远端画面)以及 LVGL 控件尺寸, 收发两机(同款 kid camera 直连, 线上不交换
+ * 分辨率)必须以同配置编译。 */
 #define KWT_CAMERA_WIDTH            320
 #define KWT_CAMERA_HEIGHT           240
 #define KWT_CAMERA_JPEG_QUALITY     40
-#define KWT_CAMERA_ABR_KBPS         (20 * 8)    /* match s_info.abr_kbps */
-#define KWT_CAMERA_STREAM_BUF_SZ    (200 * 1024)
+#define KWT_CAMERA_ABR_KBPS         (50 * 8)    /* match s_info.abr_kbps */
+#define KWT_CAMERA_STREAM_BUF_SZ    (64 * 1024)
 #define KWT_CAMERA_FPS              10          /* match s_info.fps */
 #define KWT_VPSS_LINE_NUM           16u         /* rows buffered in VPSS chn */
 

@@ -152,7 +152,7 @@ const int key_music_io_num0_msg_table[KEY_ACTION_MAX] = {
     APP_MSG_NULL,           APP_MSG_CURRENT_BAT,  APP_MSG_NULL,
     APP_MSG_NULL,           APP_MSG_NULL,  APP_MSG_NULL,
     APP_MSG_NULL,           APP_MSG_NULL,  APP_MSG_POWER_OFF,
-    APP_MSG_NULL,           APP_MSG_START_PAIR, APP_MSG_DISCON_RESET_BT,
+    APP_MSG_NULL,           APP_MSG_NULL, APP_MSG_DISCON_RESET_BT,
 };
 const int key_music_io_num1_msg_table[KEY_ACTION_MAX] = {
     APP_MSG_TAKE_PHOTO,    APP_MSG_NULL,  APP_MSG_NULL,

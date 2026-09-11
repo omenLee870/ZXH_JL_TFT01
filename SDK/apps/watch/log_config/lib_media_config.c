@@ -101,7 +101,7 @@ const float const_out_dev_pns_time_ms = 1.0f;
 #endif/*TCFG_SUPPORT_MIC_CAPLESS*/
 const u8 const_mic_capless_en = 0;//TCFG_SUPPORT_MIC_CAPLESS;
 /*是否支持多个ADC 异步打开功能*/
-#if TCFG_PT_JL_TEST_ENABLE
+#if TCFG_PT_JL_TEST_ENABLE || TCFG_DASHBOARD_HARDWARE_TEST_ENABLE
 const u8 const_adc_async_en = 0;
 #else
 const u8 const_adc_async_en = 1;

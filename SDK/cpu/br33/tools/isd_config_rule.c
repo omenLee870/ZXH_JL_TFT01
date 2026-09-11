@@ -675,10 +675,7 @@ COMPRESS_EN = 0;
 //TEST_TYPE=0;      #TEST区被动升级配置，0：打包，1： 加密数据后打包，2： 不打包。默认为0即打包
 //TEST_FILE=test.bin;
 [PUP2_CONFIG]
-RESERVED_EN = NO;
-# 是否打包预留区域数据，预留区域是否升级开关, YES后，根据XXX_TYPE决定是否升级
-EX_FLASH_EN = NO;
-# 是否打包外置FLASH数据
-EX_NAND_EN = NO;
-# 是否打包NAND FLASH数据
+RESERVED_EN = NO; //# 是否打包预留区域数据，预留区域是否升级开关, YES后，根据XXX_TYPE决定是否升级
+EX_FLASH_EN = NO; //# 是否打包外置FLASH数据
+EX_NAND_EN = NO; //# 是否打包NAND FLASH数据
 #endif

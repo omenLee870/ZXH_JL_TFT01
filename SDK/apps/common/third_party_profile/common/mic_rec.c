@@ -241,6 +241,13 @@ int rec_enc_output(void *priv, void *buf, int len)
     return 0;
 }
 
+/* ai_tx 节点的编码输出回调 (tx_func) 为 int (*)(u8 *, u32), 而 rec_enc_output 为
+ * int (void *, void *, int), 通过适配器桥接, 由 ai_voice_recoder_set_ai_tx_node_func 注册 */
+static int rec_enc_output_tx(u8 *buf, u32 len)
+{
+    return rec_enc_output(NULL, buf, (int)len);
+}
+
 
 _WEAK_ int a2dp_tws_dec_suspend(void *p)
 {
@@ -296,6 +303,7 @@ int ai_mic_rec_start(void)
         printf("%s \n", __this->ai_enc_info.info);
         /* audio_mic_enc_open(rec_enc_output, __this->ai_enc_info.enc_type, __this->ai_enc_info.opus_type); */
         ai_voice_recoder_open(__this->ai_enc_info.enc_type, __this->ai_enc_info.opus_type);
+        ai_voice_recoder_set_ai_tx_node_func(rec_enc_output_tx);
         __this->ai_mic_busy_flg = 1;
     }
 

@@ -88,7 +88,7 @@ int lte_lwip_event_cb(void *lwip_ctx, enum LWIP_EVENT event)
         }
 
         void lte_network_test(void);
-        lte_network_test();
+        /* lte_network_test(); */
         // int lws_full_test_start(void);
         // lws_full_test_start();
         /* void coremqtt_demo_start(void); */

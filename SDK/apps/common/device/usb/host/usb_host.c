@@ -11,6 +11,7 @@
 #include "device_drive.h"
 /* #include "os/os_compat.h" */
 #include "system/event.h"
+#include "device_event.h"
 #include "clock_manager/clock_manager.h"
 #if TCFG_USB_HOST_ENABLE
 #include "usb_config.h"
@@ -21,11 +22,6 @@
 #include "usb/usb_task.h"
 #include "utils/resource_multiplex.h"
 #include "usb/host/hub.h"
-#include "device_event.h"
-
-#if TCFG_HOST_UVC_ENABLE
-#include "host_uvc.h"
-#endif
 
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB_HOST]"
@@ -253,22 +249,6 @@ static int usb_descriptor_parser(struct usb_host_device *host_dev, const u8 *pBu
                      interface->bInterfaceClass, interface->bInterfaceSubClass, interface->bNumEndpoints);
 
             bool matched = false;
-#if TCFG_HOST_UVC_ENABLE
-            /* UVC not in linker section, handle here */
-            if (interface->bInterfaceClass == USB_CLASS_VIDEO) {
-                i = usb_uvc_parser(host_dev, interface_num, pBuf);
-                if (i < 0) {
-                    log_error("---%s %d---", __func__, __LINE__);
-                    len = total_len;
-                } else {
-                    interface_num++;
-                    len += i;
-                    pBuf += i;
-                    have_find_valid_class = true;
-                }
-                matched = true;
-            }
-#endif
             for (const usb_host_class_item_t *p = __usb_host_class_start;
                  p < __usb_host_class_end; p++) {
                 if (p->match(device_desc, interface,
@@ -352,43 +332,38 @@ static bool _str_equals(const char *a, const char *b)
 static int usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
 {
     const usb_dev id = host_device2id(host_dev);
-    u32 event;
     typedef struct {
         char subdev[MAX_HOST_INTERFACE][16];
     } subdev_t;
     static subdev_t itf_set[USB_MAX_HW_NUM];
-    struct device_event event_ = {0};
     u32 have_post_event = 0;
 
     if (ev == 0) {
-        event = DEVICE_EVENT_IN;
-        event_.event = DEVICE_EVENT_IN;
+        ev = DEVICE_EVENT_IN;
     } else if (ev == 1) {
-        event = DEVICE_EVENT_CHANGE;
-        event_.event = DEVICE_EVENT_CHANGE;
+        ev = DEVICE_EVENT_CHANGE;
     } else {
-        event = DEVICE_EVENT_OUT;
-        event_.event = DEVICE_EVENT_OUT;
+        ev = DEVICE_EVENT_OUT;
         goto __usb_event_out;
     }
     for (u8 i = 0; i < MAX_HOST_INTERFACE; i++) {
         memset(itf_set[id].subdev[i], 0, sizeof(itf_set[id].subdev[i]));
         if (host_dev->interface_info[i]) {
             u8 if_class = host_dev->interface_info[i]->ctrl->interface_class;
+            int (*ioctl)(const struct usb_host_device * host_dev, u32 cmd, u32 arg) = NULL;
+            if (host_dev->interface_info[i]->ctrl) {
+                ioctl = host_dev->interface_info[i]->ctrl->ioctl;
+            }
 
-#if TCFG_HOST_UVC_ENABLE
-            if (if_class == USB_CLASS_VIDEO) {
-                sprintf(itf_set[id].subdev[i], "uvc%d", id);
-            } else
-#endif
-                /* Look up class item by interface_class */
-                for (const usb_host_class_item_t *p = __usb_host_class_start;
-                     p < __usb_host_class_end; p++) {
-                    if (p->interface_class == if_class) {
-                        sprintf(itf_set[id].subdev[i], p->event_name, id);
-                        break;
-                    }
+
+            /* Look up class item by interface_class */
+            for (const usb_host_class_item_t *p = __usb_host_class_start;
+                 p < __usb_host_class_end; p++) {
+                if (p->interface_class == if_class) {
+                    sprintf(itf_set[id].subdev[i], p->event_name, id);
+                    break;
                 }
+            }
 
             /* Dedup: skip if same event_name already sent */
             if (itf_set[id].subdev[i][0]) {
@@ -401,21 +376,24 @@ static int usb_event_notify(const struct usb_host_device *host_dev, u32 ev)
                     }
                 }
                 if (!dup) {
-                    log_info("event %x interface %x class %x %s",
-                             event, i, if_class, itf_set[id].subdev[i]);
-                    usb_driver_event_from_host(DEVICE_EVENT_FROM_USB_HOST, event, itf_set[id].subdev[i]);
+                    log_info("ev %x interface %x class %x %s",
+                             ev, i, if_class, itf_set[id].subdev[i]);
+                    if (ioctl) {
+                        struct device_event event = {0};
+                        event.event = ev;
+                        event.value = (int)itf_set[id].subdev[i];
+                        ioctl(host_dev, USB_IOCTL_NOTIFY_EVENT, (u32)&event);
+                    } else {
+                        usb_driver_event_from_host(DEVICE_EVENT_FROM_USB_HOST, ev, itf_set[id].subdev[i]);
+                    }
                     have_post_event = 1;
-
-                    event_.arg = (void *)"usb_host0";
-                    event_.value = (int)itf_set[id].subdev[i];
-                    device_event_notify(DEVICE_EVENT_FROM_USB_HOST, &event_);
                 }
             }
         }
     }
 
 __usb_event_out:
-    if (event == DEVICE_EVENT_OUT) {
+    if (ev == DEVICE_EVENT_OUT) {
         for (u8 i = 0; i < MAX_HOST_INTERFACE; i++) {
             if (!itf_set[id].subdev[i][0]) {
                 continue;
@@ -429,11 +407,7 @@ __usb_event_out:
             }
             if (!dup) {
                 have_post_event = 1;
-                usb_driver_event_from_host(DEVICE_EVENT_FROM_USB_HOST, event, itf_set[id].subdev[i]);
-
-                event_.arg = (void *)"usb_host0";
-                event_.value = (int)itf_set[id].subdev[i];
-                device_event_notify(DEVICE_EVENT_FROM_USB_HOST, &event_);
+                usb_driver_event_from_host(DEVICE_EVENT_FROM_USB_HOST, ev, itf_set[id].subdev[i]);
             }
         }
     }
@@ -565,6 +539,7 @@ static u32 _usb_host_mount(const usb_dev usb_id, u32 port,
                     ret = -DEV_ERR_INVALID_DATA;
                     break;
                 }
+
                 desc_buf = zalloc(cfg_desc.wTotalLength + 16);
                 state = USB_ENUM_GET_CFG_DESC_FULL;
                 break;
@@ -573,9 +548,11 @@ static u32 _usb_host_mount(const usb_dev usb_id, u32 port,
                 /* Step 2: read full wTotalLength bytes */
                 ret = get_config_descriptor(host_dev, desc_buf, cfg_desc.wTotalLength);
                 if (ret) {
-                    log_error("get_config_descriptor full error 0x%x", ret);
+                    log_warn("get_config_descriptor full error 0x%x", ret);
+                    usb_mdelay(20);
                     break;
                 }
+
                 state = USB_ENUM_SET_CONFIG;
                 break;
 

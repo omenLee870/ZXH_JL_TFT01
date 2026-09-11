@@ -1,5 +1,7 @@
 #include "system/includes.h"
 #include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 #include "ai_provider.h"
 #include "fs/fs.h"
 
@@ -330,3 +332,5 @@ void volc_ark_vision_builtin_demo_start(void)
 {
     volc_ark_vision_demo_start_task(volc_ark_vision_builtin_demo_task, "volc_ark_builtin_demo");
 }
+
+#endif

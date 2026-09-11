@@ -1,5 +1,7 @@
 #include "system/includes.h"
 #include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 #include "ai_realtime.h"
 #include "ai_audio_source.h"
 #include "ai_internal.h"
@@ -1073,3 +1075,5 @@ void ai_realtime_destroy(struct ai_realtime_session *session)
     ai_realtime_audio_stop(session);
     free(session);
 }
+
+#endif

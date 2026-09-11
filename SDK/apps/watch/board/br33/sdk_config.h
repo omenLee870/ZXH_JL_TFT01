@@ -41,12 +41,12 @@
 #define CONFIG_FLASH_SIZE                         0x1000000        // flash容量
 #define TCFG_VM_SIZE                              32               // VM大小（K）
 #define CONFIG_FLASH_DTR_EN                       0                // flash-dtr使能
-#define CONFIG_FLASH_WPS_EN                       0                // flash-上电写保护使能
+#define CONFIG_FLASH_WPS_EN                       1                // flash-上电写保护使能
 #define CONFIG_VOTP_SIZE                          256              // votp size（Byte）
 #define TCFG_NORFLASH_DEV_ENABLE                  0                // 外挂flash使能
 #define CONFIG_EXTERN_FLASH_SIZE                  0x0              // 外挂flash容量
 #define TCFG_PSRAM_DEV_ENABLE                     1                // PSRAM 使能
-#define TCFG_PSRAM_SIZE                           0x400000         // PSRAM容量
+#define TCFG_PSRAM_SIZE                           0x800000         // PSRAM容量
 #define TCFG_NANDFLASH_DEV_ENABLE                 0                // NANDFLASH使能
 #define TCFG_SD0_ENABLE                           0                // SD0使能
 #define TCFG_SD0_SDC_TYPE                         0                // 类型设置
@@ -94,10 +94,10 @@
 #define TCFG_SD1_PORT_DA3                         IO_PORTC_13      // SD_PORT_DATA3
 #define TCFG_SD1_PORT_CS                          NO_CONFIG_PORT   // SD_PORT_CS
 #define TCFG_SD1_PORT_WAKE                        NO_CONFIG_PORT   // SD_PORT_WAKE
-#define TCFG_SDPG_ALWAYS_ENABLE                   1                // SDPG使能
-#define TCFG_SDPG_TIEUP_PORT                      IO_PORTE_00      // SDPG绑定IO
+#define TCFG_SDPG_ALWAYS_ENABLE                   0                // SDPG使能
+#define TCFG_SDPG_TIEUP_PORT                      NO_CONFIG_PORT   // SDPG绑定IO
 #define FUSB_MODE                                 0                // USB工作模式
-#define TCFG_USB_HOST_ENABLE                      0                // USB主机总开关
+#define TCFG_USB_HOST_ENABLE                      1                // USB主机总开关
 #define USB_H_MALLOC_ENABLE                       1                // 主机使用malloc
 #define TCFG_USB_HOST_MOUNT_RESET                 40               // usb reset时间
 #define TCFG_USB_HOST_MOUNT_TIMEOUT               50               // 握手超时时间
@@ -127,8 +127,8 @@
 #define TCFG_HW_I2C0_CLK_PORT                     IO_PORTB_02      // 硬件iic-0 CLK脚
 #define TCFG_HW_I2C0_DAT_PORT                     IO_PORTB_03      // 硬件iic-0 DATA脚
 #define TCFG_HW_I2C0_CLK                          400000           // 硬件iic-0波特率
-#define TCFG_HW_I2C1_CLK_PORT                     NO_CONFIG_PORT   // 硬件iic-1 CLK脚
-#define TCFG_HW_I2C1_DAT_PORT                     NO_CONFIG_PORT   // 硬件iic-1 DATA脚
+#define TCFG_HW_I2C1_CLK_PORT                     IO_PORTD_12   // 硬件iic-1 CLK脚
+#define TCFG_HW_I2C1_DAT_PORT                     IO_PORTE_00   // 硬件iic-1 DATA脚
 #define TCFG_HW_I2C1_CLK                          400000           // 硬件iic-1波特率
 #define TCFG_HW_I2C2_CLK_PORT                     NO_CONFIG_PORT   // 硬件iic-2 CLK脚
 #define TCFG_HW_I2C2_DAT_PORT                     NO_CONFIG_PORT   // 硬件iic-2 DATA脚
@@ -148,8 +148,8 @@
 #define TCFG_HW_PMC_I2C1_CLK_PORT                 NO_CONFIG_PORT   // PMC iic-1 CLK脚
 #define TCFG_HW_PMC_I2C1_DAT_PORT                 NO_CONFIG_PORT   // PMC iic-1 DATA脚
 #define TCFG_HW_PMC_I2C1_CLK                      400000           // PMC iic-1波特率
-#define TCFG_SW_I2C0_CLK_PORT                     NO_CONFIG_PORT   //IO_PORTC_04      // 软件iic-0 CLK脚
-#define TCFG_SW_I2C0_DAT_PORT                     NO_CONFIG_PORT   //IO_PORTC_05      // 软件iic-0 DATA脚
+#define TCFG_SW_I2C0_CLK_PORT                     NO_CONFIG_PORT   // 软件iic-0 CLK脚
+#define TCFG_SW_I2C0_DAT_PORT                     NO_CONFIG_PORT   // 软件iic-0 DATA脚
 #define TCFG_SW_I2C0_DELAY_CNT                    50               // iic-0 延时
 #define TCFG_SW_I2C1_CLK_PORT                     NO_CONFIG_PORT   // 软件iic-1 CLK脚
 #define TCFG_SW_I2C1_DAT_PORT                     NO_CONFIG_PORT   // 软件iic-1 DATA脚
@@ -177,7 +177,7 @@
 #define TCFG_HW_SPI2_BAUD                         32000000         // SPI2  时钟
 #endif // TCFG_HW_SPI2_ENABLE
 
-#define TCFG_CAN_ENABLE                           0                // CAN
+#define TCFG_CAN_ENABLE                           1                 // CAN
 #if TCFG_CAN_ENABLE
 #define TCFG_CAN_MODE                             1                // CAN MODE
 #define TCFG_CAN_RX_IO                            IO_PORTD_00      // RX脚
@@ -186,17 +186,15 @@
 
 #define TCFG_MOTO_PORT                            NO_CONFIG_PORT   // MOTO
 
-#define TCFG_MULTI_CHIP_CONN_ENABLE               0                // 多芯片连接支持
-
+#define TCFG_MULTI_CHIP_CONN_ENABLE               0                // 多芯片连接
 #if TCFG_MULTI_CHIP_CONN_ENABLE
-#define TCFG_MULTI_CHIP_CONN_TYPE                 CHIP_CONN_TYPE_SPI  // 连接方式
-#define TCFG_SPI_CLK_PIN                          IO_PORTA_11      // CLK
-#define TCFG_SPI_DO_PIN                           IO_PORTA_10      // DO
-#define TCFG_SPI_DI_PIN                           IO_PORTA_09      // DI
-#define TCFG_SPI_CS_PIN                           IO_PORTA_08      // CS
-#define TCFG_SPI_BAUD                             16 * 1000000     // 频率
-#endif //TCFG_MULTI_CHIP_CONN_ENABLE
-
+#define TCFG_MULTI_CHIP_CONN_TYPE                 CHIP_CONN_TYPE_SPI // MULTI_CHIP_CONN_TYPE
+#define TCFG_SPI_CLK_PIN                          IO_PORTA_11      // SPI_CLK
+#define TCFG_SPI_DO_PIN                           IO_PORTA_10      // SPI_DO
+#define TCFG_SPI_DI_PIN                           IO_PORTA_09      // SPI_DI
+#define TCFG_SPI_CS_PIN                           IO_PORTA_08      // SPI_CS
+#define TCFG_SPI_BAUD                             16000000         // SPI 时钟
+#endif // TCFG_MULTI_CHIP_CONN_ENABLE
 // ------------板级配置.json------------
 
 // ------------功能配置.json------------
@@ -235,6 +233,8 @@
 #define TCFG_ADKEY_ENABLE                         1                // AD按键配置
 
 #define TCFG_QDEC_ENABLE                          0                // 旋转编码器配置
+
+#define TCFG_LPTOUCH_ENABLE                       0                // 触摸按键配置
 
 // ------------按键配置.json------------
 
@@ -309,6 +309,48 @@
 #define TCFG_LCD_PIN_D1                           IO_PORTB_08      // SPI D1
 #define TCFG_LCD_PIN_D2                           IO_PORTB_09      // SPI D2
 #define TCFG_LCD_PIN_D3                           IO_PORTB_10      // SPI D3
+#define TCFG_LCD_MCU_PIN_CS                       IO_PORTB_08      // LCD MCU CS
+#define TCFG_LCD_MCU_PIN_RDX                      IO_PORTB_11      // LCD MCU RDX
+#define TCFG_LCD_MCU_PIN_RWX                      IO_PORTB_06      // LCD MCU RWX
+#define TCFG_LCD_MCU_PIN_DC                       IO_PORTB_07      // LCD MCU DCX
+#define TCFG_LCD_MCU_PIN_DATA_NUM                 8                // DATA数设置
+#define TCFG_LCD_MCU_PIN_DATA_CYCLE               1                // CYCLE数设置
+#define TCFG_LCD_MCU_PIN_D0                       IO_PORTB_05      // MCU D0
+#define TCFG_LCD_MCU_PIN_D1                       IO_PORTB_04      // MCU D1
+#define TCFG_LCD_MCU_PIN_D2                       IO_PORTB_03      // MCU D2
+#define TCFG_LCD_MCU_PIN_D3                       IO_PORTB_02      // MCU D3
+#define TCFG_LCD_MCU_PIN_D4                       IO_PORTB_01      // MCU D4
+#define TCFG_LCD_MCU_PIN_D5                       IO_PORTB_00      // MCU D5
+#define TCFG_LCD_MCU_PIN_D6                       IO_PORTA_12      // MCU D6
+#define TCFG_LCD_MCU_PIN_D7                       IO_PORTA_11      // MCU D7
+#define TCFG_LCD_MCU_PIN_D8                       NO_CONFIG_PORT   // MCU D8
+#define TCFG_LCD_MCU_PIN_D9                       NO_CONFIG_PORT   // MCU D9
+#define TCFG_LCD_MCU_PIN_D10                      NO_CONFIG_PORT   // MCU D10
+#define TCFG_LCD_MCU_PIN_D11                      NO_CONFIG_PORT   // MCU D11
+#define TCFG_LCD_MCU_PIN_D12                      NO_CONFIG_PORT   // MCU D12
+#define TCFG_LCD_MCU_PIN_D13                      NO_CONFIG_PORT   // MCU D13
+#define TCFG_LCD_MCU_PIN_D14                      NO_CONFIG_PORT   // MCU D14
+#define TCFG_LCD_MCU_PIN_D15                      NO_CONFIG_PORT   // MCU D15
+#define TCFG_LCD_MCU_PIN_D16                      NO_CONFIG_PORT   // MCU D16
+#define TCFG_LCD_MCU_PIN_D17                      NO_CONFIG_PORT   // MCU D17
+#define TCFG_LCD_RGB_PIN_VSYNC                    IO_PORTB_08      // LCD RGB VSYNC
+#define TCFG_LCD_RGB_PIN_HSYNC                    IO_PORTB_11      // LCD RGB HSYNC
+#define TCFG_LCD_RGB_PIN_DCLK                     IO_PORTB_06      // LCD RGB DCLK
+#define TCFG_LCD_RGB_PIN_DEN                      IO_PORTB_07      // LCD RGB DEN
+#define TCFG_LCD_RGB_USE_SOFT_SPI                 0                // 使用软件SPI
+#define TCFG_LCD_RGB_PIN_SPI_CS                   IO_PORTC_08      // LCD RGB SPI CS
+#define TCFG_LCD_RGB_PIN_SPI_SCL                  IO_PORTC_05      // LCD RGB SPI SCL
+#define TCFG_LCD_RGB_PIN_SPI_SDA                  IO_PORTC_07      // LCD RGB SPI SDA
+#define TCFG_LCD_RGB_PIN_DATA_NUM                 8                // DATA数设置
+#define TCFG_LCD_RGB_PIN_DATA_CYCLE               1                // CYCLE数设置
+#define TCFG_LCD_RGB_PIN_D0                       IO_PORTB_05      // RGB D0
+#define TCFG_LCD_RGB_PIN_D1                       IO_PORTB_04      // RGB D1
+#define TCFG_LCD_RGB_PIN_D2                       IO_PORTB_03      // RGB D2
+#define TCFG_LCD_RGB_PIN_D3                       IO_PORTB_02      // RGB D3
+#define TCFG_LCD_RGB_PIN_D4                       IO_PORTB_01      // RGB D4
+#define TCFG_LCD_RGB_PIN_D5                       IO_PORTB_00      // RGB D5
+#define TCFG_LCD_RGB_PIN_D6                       IO_PORTA_12      // RGB D6
+#define TCFG_LCD_RGB_PIN_D7                       IO_PORTA_11      // RGB D7
 #define TCFG_MIPI_PIN_DATA_NUM                    2                // DATA数设置
 #define TCFG_MIPI_PIN_X0                          DSI_MAP_CK_LANE  // MIPI X0
 #define TCFG_MIPI_X0_INV                          0                // X0翻转DPDN
@@ -324,7 +366,7 @@
 #if TCFG_VIDEO0_ENABLE
 #define TCFG_CAMERA_SPI_ENABLE                    0                // SPI
 #define TCFG_CAMERA_DVP_ENABLE                    1                // DVP
-#define TCFG_CAMERA_SPI_VCC                       NO_CONFIG_PORT   // CAM_VCC
+#define TCFG_CAMERA_SPI_VCC                       IO_PORT_LDO28    // CAM_VCC
 #define TCFG_CAMERA_SPI_PWDN                      IO_PORTH_06      // PWDN
 #define TCFG_CAMERA_SPI_MCLK                      IO_PORTH_00      // MCLK
 #define TCFG_CAMERA_SPI_PCLK                      IO_PORTH_01      // PCLK
@@ -332,6 +374,7 @@
 #define TCFG_CAMERA_SPI_SDA                       IO_PORTH_05      // SDA
 #define TCFG_CAMERA_SPI_DATA0                     IO_PORTH_03      // DATA0
 #define TCFG_CAMERA_SPI_DATA1                     IO_PORTH_02      // DATA1
+#define TCFG_CAMERA_DVP_VCC                       IO_PORT_LDO28    // CAM_VCC
 #define TCFG_CAMERA_DVP_PWDN                      NO_CONFIG_PORT   // PWDN
 #define TCFG_CAMERA_DVP_RST                       IO_PORTH_00      // RST
 #define TCFG_CAMERA_DVP_XCLK                      NO_CONFIG_PORT   // XCLK
@@ -414,7 +457,6 @@
 #define TCFG_EXT_WIFI_ENABLE                      1                // 外挂WIFI
 #if TCFG_EXT_WIFI_ENABLE
 #define TCFG_AIC8800D40_ENABLE                    1                // AIC8800D40
-#define TCFG_RTL8733BS_ENABLE                     0                // AIC8800D40
 #define TCFG_AIC8800D40_SDC_CH                    0                // SDC通道
 #define TCFG_EXT_WIFI_MODE                        0x4              // MODE（bit0-AP; bit1-STA; bit2-P2P）
 #define TCFG_EXT_WIFI_AP_SSID                     "JL380N-AP"      // AP SSID
@@ -431,12 +473,14 @@
 #define TCFG_UART_NETIF_BAUD                      4000000          // 波特率
 #endif // TCFG_UART_NET_ENABLE
 
-#define TCFG_SPI_NET_ENABLE                       0                // SPI网卡
+#define TCFG_LTE_PHY_ENABLE                       1                // 4G网卡
 
-#define TCFG_LTE_PHY_ENABLE                       0                // 4G网卡
 #if TCFG_LTE_PHY_ENABLE
 #define TCFG_HOST_WIRELESS_ENABLE                 1                // USB网卡
 #endif // TCFG_LTE_PHY_ENABLE
+
+#define TCFG_SPI_NET_ENABLE                       0                // SPI网卡
+
 // ------------网络配置.json------------
 
 // ------------升级配置.json------------
@@ -451,6 +495,7 @@
 #define TCFG_COMPELTE_UFW_LC_EN                   0                // 升级文件存放本地触发升级（内置flash升级）
 #define TCFG_NORFLASH_UPDATE_EN                   0                // norflash_flash升级，目前功能没用到
 #define TCFG_UPDATE_RESOURCE_EN                   1                // 升级资源（除代码以外的其他部分）
+#define TCFG_HTTP_UPDATE_ENABLE                   1                // HTTP升级
 #define TCFG_TEST_BOX_WIRELESS_EN                 0                // 测试盒无线升级
 #define TCFG_APP_UPDATE_EN                        0                // APP升级
 #define TCFG_CHARGESTORE_PORT                     IO_PORTA_01      // 串口通信IO

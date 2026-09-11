@@ -875,7 +875,7 @@ bool ui_card_anim_sw(int idx)
     if (card_anim_type_tab[idx] == -1) {
         return false;
     }
-#if 1
+#if 0
     //特效优化中
     if (card_anim_type_tab[idx] == PAGE_MOVE_MODE_REFLECTION ||
         card_anim_type_tab[idx] == PAGE_MOVE_MODE_CUBE_REFLECTION ||

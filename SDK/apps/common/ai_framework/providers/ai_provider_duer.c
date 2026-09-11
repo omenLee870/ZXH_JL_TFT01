@@ -1,4 +1,7 @@
 #include "ai_internal.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include "cJSON.h"
 #include "curl/curl.h"
@@ -1243,3 +1246,5 @@ const struct ai_provider_ops ai_provider_duer = {
     .build_session_stop = duer_build_finish,
     .parse_ws_message = duer_parse_ws_message,
 };
+
+#endif

@@ -9,8 +9,10 @@
 #include "ai_audio_player.h"
 #include "classic/tws_api.h"
 #include "jlstream.h"
-#include "sdk_config.h"
+#include "app_config.h"
 #include "system/init.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #if TCFG_AI_RX_NODE_ENABLE
 
@@ -255,5 +257,7 @@ bool ai_audio_player_running(u8 source)
 {
     return 0;
 }
+
+#endif
 
 #endif

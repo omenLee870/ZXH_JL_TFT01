@@ -9,9 +9,10 @@
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB_S&R]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -61,7 +62,7 @@ void usb_slave_status_set(const usb_dev usb_id, usb_slave_status status)
 void usb_slave_suspend(const usb_dev usb_id)
 {
     if (usb_status == USB_SLAVE_SUSPEND) {
-        log_error("usb_slave_suspend already suspend");
+        log_warn("usb_slave_suspend already suspend");
         return;
     }
     if (usb_status != USB_SLAVE_SOF_READY) {
@@ -83,7 +84,7 @@ void usb_slave_resume(const usb_dev usb_id)
     }
 
     if (usb_status == USB_SLAVE_RESUME) {
-        log_error("usb_slave_resume already resume");
+        log_warn("usb_slave_resume already resume");
         return;
     }
 

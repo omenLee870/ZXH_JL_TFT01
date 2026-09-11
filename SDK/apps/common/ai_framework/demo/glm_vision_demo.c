@@ -1,5 +1,7 @@
 #include "system/includes.h"
 #include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 #include "ai_provider.h"
 #include "fs/fs.h"
 
@@ -256,3 +258,5 @@ void glm_text_demo_stream_start(void)
 {
     glm_vision_demo_start_with_cfg(&glm_text_demo_cfg_lws_stream);
 }
+
+#endif

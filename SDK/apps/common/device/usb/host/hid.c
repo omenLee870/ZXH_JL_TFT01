@@ -40,7 +40,18 @@ struct hid_device_t hid_device[USB_MAX_HW_NUM][MAX_HOST_INTERFACE];
 static int set_power(struct usb_host_device *host_dev, u32 value)
 {
     const usb_dev usb_id = host_device2id(host_dev);
-    memset(hid_device[usb_id], 0, sizeof(hid_device[usb_id]));
+    for (int i = 0; i < MAX_HOST_INTERFACE; i++) {
+        /* only clear report parsing state, keep bNumEndpoints + ep_pair + interval from usb_hid_parser */
+        u8 saved_bNumEndpoints = hid_device[usb_id][i].bNumEndpoints;
+        u8 saved_ep_pair[4];
+        u8 saved_interval[16];
+        memcpy(saved_ep_pair, hid_device[usb_id][i].ep_pair, 4);
+        memcpy(saved_interval, hid_device[usb_id][i].interval, 16);
+        memset(&hid_device[usb_id][i], 0, sizeof(struct hid_device_t));
+        hid_device[usb_id][i].bNumEndpoints = saved_bNumEndpoints;
+        memcpy(hid_device[usb_id][i].ep_pair, saved_ep_pair, 4);
+        memcpy(hid_device[usb_id][i].interval, saved_interval, 16);
+    }
     return DEV_ERR_NONE;
 }
 
@@ -121,7 +132,8 @@ int usb_hid_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 
              host_dev, interface_num, usb_if, usb_if->dev.hid);
 
     if ((interface->bInterfaceProtocol == 0x02) ||
-        (interface->bInterfaceProtocol == 0x01)) { //mouse & keyboard
+        (interface->bInterfaceProtocol == 0x01) ||
+        (interface->bInterfaceProtocol == 0x00)) { //keyboard (0x01), mouse (0x02), or report protocol (0x00)
 
         usb_if->dev.hid->bNumEndpoints = interface->bNumEndpoints;
         usb_if->dev.hid->report_list[0].usage = interface->bInterfaceProtocol;
@@ -154,6 +166,129 @@ int usb_hid_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 
     return pBuf - (u8 *)interface;
 }
 
+// ---------- Report descriptor parser: type-specific helpers ----------
+
+/// Track mouse Input item: buttons, X/Y, wheel position
+static void _hid_input_mouse(struct report_info_t *rpt, u8 cur_usage,
+                             u8 *total_bits, u8 section_bits)
+{
+    if (cur_usage == 1) {                       // buttons
+        if (rpt->btn_start_bit == 0) {
+            rpt->btn_start_bit = *total_bits;
+        }
+        rpt->btn_width += section_bits;
+    } else if ((cur_usage == 0x30) || (cur_usage == 0x31)) { // X / Y
+        if (rpt->xy_start_bit == 0) {
+            rpt->xy_start_bit = *total_bits;
+        }
+        rpt->xy_width = section_bits;
+    } else if (cur_usage == 0x38) {             // wheel
+        if (rpt->wheel_start_bit == 0) {
+            rpt->wheel_start_bit = *total_bits;
+        }
+        if (rpt->xy_width || section_bits < 24) {
+            rpt->wheel_width = section_bits;
+        } else {
+            rpt->wheel_width = rpt->xy_width = section_bits / 3;
+            rpt->xy_start_bit = *total_bits;
+            rpt->wheel_start_bit = rpt->xy_start_bit + rpt->xy_width * 2;
+        }
+    } else if (cur_usage == 0xb8) {             // wheel (extended)
+        rpt->wheel_width = rpt->xy_width = section_bits / 4;
+        rpt->xy_start_bit = *total_bits;
+        rpt->wheel_start_bit = rpt->xy_start_bit + rpt->xy_width * 2;
+    }
+}
+
+/// Track consumer Input item: bit offset / count for button bits
+static void _hid_input_consumer(struct report_info_t *rpt, int itemVal,
+                                u8 *total_bits, u8 section_bits)
+{
+    // (itemVal & 1) == 0 → Data (not Constant)
+    if ((itemVal & 1) == 0) {
+        if (rpt->consumer_bit_count == 0) {
+            rpt->consumer_bit_offset = *total_bits;
+        }
+        rpt->consumer_bit_count += section_bits;
+    }
+}
+
+/// Handle Usage Page (bTag 0x00): detect device type from page value
+/// Returns true when a report was saved (Consumer page switch)
+static bool _hid_handle_usage_page(struct report_info_t *rpt,
+                                   struct hid_device_t *hid, int itemVal)
+{
+    if (rpt->usage == 0x06 && itemVal == 0x07) {
+        rpt->usage = 0x07;
+        log_debug("usage page: keyboard(0x07)");
+        return false;
+    }
+    if (itemVal == 0x02) {
+        rpt->usage = 0x02;
+        log_debug("usage page: mouse(0x02)");
+        return false;
+    }
+    if (itemVal == 0x0C) {
+        rpt->usage = 0x0C;
+        rpt->consumer_usage_count = 0;
+        rpt->consumer_bit_offset = 0;
+        rpt->consumer_bit_count = 0;
+        log_debug("usage page: consumer(0x0C)");
+        return false;
+    }
+    // Usage Page switched away from Consumer — save what we collected
+    if (rpt->usage == 0x0C && rpt->consumer_bit_count > 0) {
+        if (hid->report_count < MAX_REPORT_COUNT) {
+            memcpy(&hid->report_list[hid->report_count], rpt, sizeof(*rpt));
+            hid->report_count++;
+            log_debug("consumer saved (Usage Page -> %x)", itemVal);
+        } else {
+            log_warn("report_list full(%d), drop consumer report", MAX_REPORT_COUNT);
+        }
+        memset(rpt, 0, sizeof(*rpt));
+        return true;
+    }
+    return false;
+}
+
+/// Handle Usage (bTag 0x00): detect type at top level, collect consumer usage IDs
+static void _hid_handle_usage(struct report_info_t *rpt,
+                              u8 itemVal, u8 *cur_usage, u8 collection_deep)
+{
+    if (rpt->usage == 0) {
+        rpt->usage = itemVal;
+        log_debug("set type %x", rpt->usage);
+    }
+    // collect consumer usage IDs inside consumer collections
+    if (rpt->usage == 0x0C && collection_deep > 0) {
+        if (rpt->consumer_usage_count < MAX_CONSUMER_USAGES) {
+            rpt->consumer_usages[rpt->consumer_usage_count++] = (u32)itemVal;
+            log_debug("consumer usage[%d] = %x",
+                      rpt->consumer_usage_count - 1, itemVal);
+        }
+    }
+    *cur_usage = itemVal;
+    // detect keyboard  / mouse type from top-level usage
+    if (!collection_deep) {
+        if (itemVal == 0x06 || itemVal == 0x07) {
+            rpt->usage = itemVal;
+            log_debug("set type keyboard %x", rpt->usage);
+        } else if (itemVal == 0x02) {
+            rpt->usage = itemVal;
+            log_debug("set type mouse %x", rpt->usage);
+        }
+    }
+}
+
+/// Check whether the current report should be saved at End Collection
+static bool _hid_is_saveable_report(u8 usage)
+{
+    return (usage == 0x02 || usage == 0x06 || usage == 0x07 || usage == 0x0C);
+}
+
+
+// ---------- Main report descriptor parser loop ----------
+
 static u32 _hid_report_parse(struct hid_device_t *hid, const u8 *report, u32 len)
 {
     hid->report_count = 0;
@@ -162,43 +297,39 @@ static u32 _hid_report_parse(struct hid_device_t *hid, const u8 *report, u32 len
 
     memset(rpt, 0, sizeof(*rpt));
 
-    unsigned char ops;
     int index = 0;
     u8 report_size = 0;
     u8 report_count = 0;
-    u8 cur_ops_is_report_size_count;
-    u8 old_ops_is_report_size_count = 0;
-    s8 cur_section_bit = 0;
-    u8 input_bit_index = 0;
+    u8 section_bits = 0;
     u8 total_bits = 0;
-    u8 output_bit_index = 0;
     u8 cur_usage = 0;
+    u8 collection_deep = 0;
     u32 undef_type = 0;
     u8 undef_usage = 0;
-    u8 collection_deep = 0;
 
     while (index < len) {
-        ops = (char)report[index++];
-        char bSize = ops & 0x03;
-        bSize = bSize == 3 ? 4 : bSize; // size is 4 when bSize is 3
-        char bType = (ops >> 2) & 0x03;
-        char bTag = (ops >> 4) & 0x0F;
+        u8 ops = report[index++];
+        u8 bSize = ops & 0x03;
+        if (bSize == 3) {
+            bSize = 4;
+        }
+        u8 bType = (ops >> 2) & 0x03;
+        u8 bTag = (ops >> 4) & 0x0F;
 
-        cur_ops_is_report_size_count = 0;
-        char bSizeActual = 0;
         int itemVal = 0;
-        for (int j = 0; j < bSize; j++) {
+        for (u8 j = 0; j < bSize; j++) {
             if (index + j < len) {
                 itemVal += report[index + j] << (8 * j);
-                bSizeActual++;
             }
         }
+
+        // skip vendor-defined long items
         if (undef_type) {
-            undef_type ++;
+            undef_type++;
             if (bTag == 0x0A) {
-                undef_usage ++;
+                undef_usage++;
             } else if (bTag == 0x0C) {
-                undef_usage --;
+                undef_usage--;
             }
             if (undef_usage == 0 && undef_type > 2) {
                 undef_type = 0;
@@ -206,219 +337,126 @@ static u32 _hid_report_parse(struct hid_device_t *hid, const u8 *report, u32 len
             index += bSize;
             continue;
         }
-        if (undef_type) {
-            index += bSize;
-            continue;
-        }
         if (itemVal == 0xffb5) {
             undef_type = 1;
             index += bSize;
             continue;
-        } else {
-            undef_type = 0;
         }
-        if (bType == MAIN_ITEM) {
-            if (old_ops_is_report_size_count) {
-                cur_section_bit += report_size * report_count;
+
+        switch (bType) {
+        case MAIN_ITEM:
+            // Global Report Size/Count persist — accumulate section bits
+            if (report_size && report_count) {
+                section_bits = report_size * report_count;
             }
-            if (bTag == 0x08) {
-                /* log_debug("input %X", itemVal);                       */
-                /* log_debug("\tusage %x", cur_usage);                   */
-                /* log_debug("\t\tcur_section_bit %d", cur_section_bit); */
-                if (rpt->usage == 0x02) { //mouse
-                    if (cur_usage == 1) {
-                        if (rpt->btn_start_bit == 0) {
-                            rpt->btn_start_bit = total_bits ;
-                        }
-                        rpt->btn_width += cur_section_bit ;
-                        /* log_debug("btn_width %d-%d", rpt->btn_start_bit, rpt->btn_width); */
-                    } else if ((cur_usage == 0x30) || (cur_usage == 0x31)) {
 
-                        if (rpt->xy_start_bit == 0) {
-                            rpt->xy_start_bit = total_bits;
-                        }
-                        rpt->xy_width = cur_section_bit;
-                        /* log_debug("xy_width %d-%d", rpt->xy_start_bit, rpt->xy_width); */
-                    } else if (cur_usage == 0x38) {
-                        if (rpt->wheel_start_bit == 0) {
-                            rpt->wheel_start_bit = total_bits;
-                        }
-                        if (rpt->xy_width || cur_section_bit < 24) {
-                            rpt->wheel_width = cur_section_bit;
-                            /* log_debug("wheel_width %d-%d", rpt->wheel_start_bit, rpt->wheel_width); */
-                        } else {
-                            rpt->wheel_width = rpt->xy_width = cur_section_bit / 3;
-
-                            rpt->xy_start_bit = total_bits;
-                            rpt->wheel_start_bit = rpt->xy_start_bit + rpt->xy_width * 2;
-                            /* log_debug("wheel_width %d-%d", rpt->wheel_start_bit, rpt->wheel_width); */
-                            /* log_debug("xy_width %d-%d", rpt->xy_start_bit, rpt->xy_width);          */
-                        }
-                    } else if (cur_usage == 0xb8) {
-                        rpt->wheel_width = rpt->xy_width = cur_section_bit / 4;
-                        rpt->xy_start_bit = total_bits;
-                        rpt->wheel_start_bit = rpt->xy_start_bit + rpt->xy_width * 2;
-                    }
+            switch (bTag) {
+            case 0x08: // Input
+                if (rpt->usage == 0x02) {
+                    _hid_input_mouse(rpt, cur_usage, &total_bits, section_bits);
+                } else if (rpt->usage == 0x0C) {
+                    _hid_input_consumer(rpt, itemVal, &total_bits, section_bits);
                 }
-                total_bits += cur_section_bit;
-                /* input_bit[input_bit_index++] = cur_section_bit; */
-                cur_section_bit = -1;
-            } else if (bTag == 0x09) {
-                /* log_debug("OUTPUT %X", itemVal);                      */
-                /* log_debug("\tusage %x", cur_usage);                   */
-                /* log_debug("\t\tcur_section_bit %d", cur_section_bit); */
-                /* output_bit[output_bit_index++] = cur_section_bit; */
-                cur_section_bit = -1;
-            } else if (bTag == 0x0B) {
-                /* log_debug("Feature %X", itemVal);                     */
-                /* log_debug("\tusage %x", cur_usage);                   */
-                /* log_debug("\t\tcur_section_bit %d", cur_section_bit); */
-                /* output_bit[output_bit_index++] = cur_section_bit; */
-                cur_section_bit = -1;
-            } else if (bTag == 0x0A) {
-                collection_deep ++ ;
+                total_bits += section_bits;
+                break;
+
+            case 0x09: // Output
+            case 0x0B: // Feature
+            case 0x0D:
+            case 0x0E:
+            case 0x0F: // Reserved
+                break;
+
+            case 0x0A: // Collection
+                collection_deep++;
                 log_debug("Collection %d %x", collection_deep, rpt->usage);
-            } else if (bTag == 0x0C) {
-                collection_deep --;
+                break;
+
+            case 0x0C: // End Collection
+                collection_deep--;
                 log_debug("End Collection %d %x", collection_deep, rpt->usage);
-                if (collection_deep == 0) {
-                    if (rpt->usage == 0x02 ||
-                        rpt->usage == 0x06 ||
-                        rpt->usage == 0x07) {
-
+                if (collection_deep == 0 && _hid_is_saveable_report(rpt->usage)) {
+                    if (hid->report_count < MAX_REPORT_COUNT) {
                         memcpy(&hid->report_list[hid->report_count], rpt, sizeof(*rpt));
-                        memset(rpt, 0, sizeof(*rpt));
-
-                        hid->report_count ++;
+                        hid->report_count++;
+                    } else {
+                        log_warn("report_list full(%d), drop report", MAX_REPORT_COUNT);
                     }
+                    memset(rpt, 0, sizeof(*rpt));
                 }
-                if (index < len) {
-                    continue;
+                break;
+
+            default:
+                // bTag == 0 is usually padding after End Collection
+                if (bTag != 0) {
+                    log_debug("MAIN_ITEM Unknown btag :%x", bTag);
                 }
-            } else {
-                log_debug("MAIN_ITEM Unknown btag :%x", bTag);
-                return 1;
+                break;
             }
-        } else if (bType == GLOBAL_ITEM) {
-            /* log_debug("GLOBAL_ITEM"); */
-            if (bTag == 0x00) {
-                /* log_debug("Usage Page %x", itemVal); */
+            break;
 
-                if (rpt->usage == 0x06) {
-                    if (itemVal == 0x07) {
-                        rpt->usage = 0x07;
-                        log_debug("re set type %x", 0x07);
-                    }
-                }
-                if (itemVal == 0x02) {
-                    rpt->usage = 0x02;
-                    log_debug("re set type %x", 0x02);
-                }
+        case GLOBAL_ITEM:
+            switch (bTag) {
+            case 0x00: // Usage Page
+                _hid_handle_usage_page(rpt, hid, itemVal);
+                break;
 
-            } else if (bTag == 0x01) {
-                //log_debug("Logical Minimum %x", itemVal);
-            } else if (bTag == 0x02) {
-                //log_debug("Logical Maximum %x", itemVal);
-            } else if (bTag == 0x03) {
-                /* log_debug("Physical Minimum %x", itemVal); */
-            } else if (bTag == 0x04) {
-                /* log_debug("Physical Maximum %x", itemVal); */
-            } else if (bTag == 0x05) {
-                /* log_debug("Unit Exponent %x", itemVal); */
-            } else if (bTag == 0x06) {
-                /* log_debug("Unit %x", itemVal); */
-            } else if (bTag == 0x07) {
-                /* log_debug("Report Size %x", itemVal); */
+            case 0x07: // Report Size
                 report_size = itemVal;
-                cur_ops_is_report_size_count = 1;
-            } else if (bTag == 0x08) {
-                log_debug("Report ID %x", itemVal, rpt->usage);
+                break;
+
+            case 0x08: // Report ID
                 rpt->report_id = itemVal;
-            } else if (bTag == 0x09) {
-                /* log_debug("Report Count %x", itemVal); */
+                log_debug("Report ID %x usage %x", itemVal, rpt->usage);
+                break;
+
+            case 0x09: // Report Count
                 report_count = itemVal;
-                cur_ops_is_report_size_count = 1;
-            } else if (bTag == 0x0A) {
-                /* log_debug("Push %x", bSizeActual); */
-            } else if (bTag == 0x0B) {
-                /* log_debug("Pop %x", bSizeActual); */
-            } else {
+                break;
+
+            case 0x01:
+            case 0x02: // Logical Min/Max
+            case 0x03:
+            case 0x04: // Physical Min/Max
+            case 0x05:
+            case 0x06: // Unit Exponent, Unit
+            case 0x0A:
+            case 0x0B: // Push, Pop
+                // not needed for keyboard/mouse/consumer
+                break;
+
+            default:
                 log_debug("GLOBAL_ITEM Unknown btag :%x", bTag);
                 return 2;
             }
-        } else if (bType == LOCAL_ITEM) {
-            /* log_debug("LOCAL_ITEM"); */
-            if (bTag == 0x00) {
-                if (rpt->usage == 0) {
-                    rpt->usage = itemVal;
-                    log_debug("set type %x", rpt->usage);
-                }
-                if (itemVal == 0x30) { //X
-                } else if (itemVal == 0x31) { //y
-                } else if (itemVal == 0x38) { //wheel
-                } else {
-                }
-                /* log_debug("\t change usage %x -> %x", cur_usage, itemVal); */
-                cur_usage = itemVal;
-                if (!collection_deep) {
-                    if (itemVal == 0x06 || itemVal == 0x07 || itemVal == 0x02) {
-                        //仅限键盘和鼠标
-                        rpt->usage = itemVal;
-                        log_debug("set typee %x", rpt->usage);
-                    }
-                }
-                /* type = itemVal; */
-            } else if (bTag == 0x01) {
-                // log_debug("Usage Minimum %x", itemVal);
-            } else if (bTag == 0x02) {
-                // log_debug("Usage Maximum %x", itemVal);
-            } else if (bTag == 0x03) {
-                /* log_debug("Designator Index %x", itemVal); */
-            } else if (bTag == 0x04) {
-                /* log_debug("Designator Minimum %x", itemVal); */
-            } else if (bTag == 0x05) {
-                /* log_debug("Designator Maximum %x", itemVal); */
-            } else if (bTag == 0x07) {
-                /* log_debug("String Index %x", itemVal); */
-            } else if (bTag == 0x08) {
-                /* log_debug("String Minimum %x", itemVal); */
-            } else if (bTag == 0x09) {
-                /* log_debug("String Maximum %x", itemVal); */
-            } else if (bTag == 0x0A) {
-                /* log_debug("Delimiter %x", itemVal); */
-            } else {
-                log_debug("LOCAL_ITEM Unknown btag :%x", bTag);
-                return 3;
+            break;
+
+        case LOCAL_ITEM:
+            if (bTag == 0x00) { // Usage
+                _hid_handle_usage(rpt, (u8)itemVal, &cur_usage, collection_deep);
             }
-        } else {
-            log_debug("OTHER Unknown btag :%x", bTag);
+            // other LOCAL items (Usage Min/Max, Designator, String, Delimiter)
+            // — not needed for keyboard/mouse/consumer
+            break;
+
+        default: // Reserved type
+            log_debug("OTHER Unknown btype :%x", bType);
             return 4;
         }
-        if (!cur_ops_is_report_size_count && old_ops_is_report_size_count) {
-            if (cur_section_bit != -1) {
-                cur_section_bit += report_size * report_count;
-            } else {
-                cur_section_bit = 0;
-            }
-        }
-        if (cur_section_bit == -1) {
-            cur_section_bit = 0;
-        }
-        old_ops_is_report_size_count = cur_ops_is_report_size_count;
-        index += bSize;
 
+        index += bSize;
     }
     return 0;
 }
 static u32 hid_report_parse(struct hid_device_t *hid, const u8 *report, u32 len)
 {
-    /* u8 type =  */_hid_report_parse(hid, report, len);
+    _hid_report_parse(hid, report, len);
     for (int i = 0; i < hid->report_count; i++) {
         struct report_info_t *rpt = &hid->report_list[i];
+        if (rpt->report_id == 0) {
+            rpt->report_id = 0xff;
+        }
         if (rpt->usage == 0x02) {
-            if (rpt->report_id == 0) {
-                rpt->report_id = 0xff;
-            }
             rpt->btn_start_bit /= 8;
             rpt->btn_width /= 8;
             rpt->xy_start_bit /= 8;
@@ -444,10 +482,11 @@ static u32 hid_report_parse(struct hid_device_t *hid, const u8 *report, u32 len)
                      rpt->btn_start_bit, rpt->btn_width);
 
         } else if (rpt->usage == 6 || rpt->usage == 7) {
-            if (rpt->report_id == 0) {
-                rpt->report_id = 0xff;
-            }
             log_info("keyboard report_id %d", rpt->report_id);
+        } else if (rpt->usage == 0x0C) {
+            log_info("consumer report_id %d bit_offset=%d bit_count=%d usage_count=%d",
+                     rpt->report_id, rpt->consumer_bit_offset,
+                     rpt->consumer_bit_count, rpt->consumer_usage_count);
         } else {
             log_info("unknown usage %d", rpt->usage);
         }
@@ -455,12 +494,11 @@ static u32 hid_report_parse(struct hid_device_t *hid, const u8 *report, u32 len)
     return 0;
 }
 
-void mouse_route(const struct mouse_data_t *p);
-/* __attribute__((weak)) void mouse_route(const struct mouse_data_t *p) */
-/* {                                                                    */
-/*     log_debug("btn: %x x-y %d %d wheel %d ac_pan %d",                 */
-/*              p->btn, p->x, p->y, p->wheel, p->ac_pan);               */
-/* }                                                                    */
+__attribute__((weak)) void mouse_route(const struct mouse_data_t *p)
+{
+    log_debug("btn: %x x-y %d %d wheel %d",
+              p->btn, p->x, p->y, p->wheel);
+}
 static void hid_convert_mouse(const struct report_info_t *mouse, const u8 *buffer)
 {
     struct mouse_data_t mouse_data;
@@ -513,9 +551,13 @@ static void hid_convert_mouse(const struct report_info_t *mouse, const u8 *buffe
 __attribute__((weak)) void keyboard_route(const u8  *p)
 {
     log_debug("keyboard_buffer:");
-    printf_buf(p, 12);
+    printf_buf((u8 *)p, 12);
 }
-void hid_convert_krbd(const struct report_info_t *kbd, u8 *buffer)
+__attribute__((weak)) void consumer_route(u32 consumer_key_mask)
+{
+    log_debug("consumer_key mask: %x", consumer_key_mask);
+}
+void hid_convert_krbd(const struct report_info_t *kbd, const u8 *buffer)
 {
 #if 0
     u8 keyboard_buffer[12];
@@ -581,42 +623,131 @@ void hid_convert_krbd(const struct report_info_t *kbd, u8 *buffer)
 #endif
 }
 
+static void hid_convert_consumer(const struct report_info_t *consumer, const u8 *buffer)
+{
+    u32 key_mask = 0;
+    static u32 prev_key_mask;
+
+    if (consumer->report_id != 0xff) {
+        if (consumer->report_id != buffer[0]) {
+            log_error("consumer report_id mismatch: expected %x got %x",
+                      consumer->report_id, buffer[0]);
+            return;
+        }
+        buffer++;
+    }
+
+    log_info("consumer data: %02x %02x", buffer[0], buffer[1]);
+
+    for (u8 i = 0; i < consumer->consumer_usage_count; i++) {
+        u32 usage_id = consumer->consumer_usages[i];
+
+        u16 abs_bit = consumer->consumer_bit_offset + i;
+        u8  byte_pos = abs_bit / 8;
+        u8  bit_pos  = abs_bit % 8;
+
+        if (!(buffer[byte_pos] & BIT(bit_pos))) {
+            continue;
+        }
+
+        switch (usage_id) {
+        case 0xE9:  /* VOLUME_INC */
+            key_mask |= CONSUMER_KEY_VOLUP;
+            log_info("volup");
+            break;
+        case 0xEA:  /* VOLUME_DEC */
+            key_mask |= CONSUMER_KEY_VOLDOWN;
+            log_info("voldown");
+            break;
+        case 0xE2:  /* MUTE */
+            key_mask |= CONSUMER_KEY_MUTE;
+            log_info("mute");
+            break;
+        case 0xCD:  /* PLAY_PAUSE */
+            key_mask |= CONSUMER_KEY_PLAYPAUSE;
+            log_info("play/pause");
+            break;
+        case 0xB5:  /* SCAN_NEXT_TRACK */
+            key_mask |= CONSUMER_KEY_NEXTTRACK;
+            log_info("next track");
+            break;
+        case 0xB6:  /* SCAN_PREV_TRACK */
+            key_mask |= CONSUMER_KEY_PREVTRACK;
+            log_info("prev track");
+            break;
+        case 0xB7:  /* STOP */
+            key_mask |= CONSUMER_KEY_STOP;
+            log_info("stop");
+            break;
+        case 0xCC:  /* STOP_EJECT */
+            key_mask |= CONSUMER_KEY_STOPEJECT;
+            log_info("stop/eject");
+            break;
+        case 0xB0:  /* PLAY */
+        case 0xB1:  /* PAUSE */
+            key_mask |= CONSUMER_KEY_PLAYPAUSE;
+            log_info("play/pause");
+            break;
+        default:
+            log_info("unmapped consumer usage %x", usage_id);
+            break;
+        }
+    }
+
+    // detect key release: all keys released
+    if (prev_key_mask && !key_mask) {
+        log_info("consumer key release");
+    }
+    prev_key_mask = key_mask;
+
+    consumer_route(key_mask);
+}
+
 static void hid_route(const struct hid_device_t *hid, const u8 *buffer)
 {
     for (int i = 0; i < hid->report_count; i++) {
-        if (hid->report_list[i].usage == 0x02) {
-            hid_convert_mouse(&hid->report_list[i], buffer);
-        } else if ((hid->report_list[i].usage == 0x06) ||
-                   (hid->report_list[i].usage == 0x07)) {
+        if ((hid->report_list[i].usage == 0x06) ||
+            (hid->report_list[i].usage == 0x07)) {
             hid_convert_krbd(&hid->report_list[i], buffer);
+        } else if (hid->report_list[i].usage == 0x02) {
+            hid_convert_mouse(&hid->report_list[i], buffer);
+        } else if (hid->report_list[i].usage == 0x0C) {
+            hid_convert_consumer(&hid->report_list[i], buffer);
         } else {
             r_printf("usage %x", hid->report_list[i].usage);
         }
     }
 }
-static void hid_isr(struct usb_interface_info *usb_if, u32 ep)
+static void hid_isr(struct usb_host_device *host_dev, u32 ep)
 {
     u8 buffer[64] = {0};
-    struct usb_host_device *host_dev = usb_if->dev.hid->parent;
-    usb_dev usb_id = host_device2id(host_dev);
-    u32 target_ep = usb_if->dev.hid->ep_pair[ep];
+
+    // host_dev is actually usb_if (passed via usb_h_set_ep_isr's p parameter)
+    struct usb_interface_info *usb_if = (struct usb_interface_info *)host_dev;
+    struct hid_device_t *hid = usb_if->dev.hid;
+
+    u32 target_ep = hid->ep_pair[ep];
+    if (!target_ep) {
+        return;
+    }
+
+    usb_dev usb_id = host_device2id((struct usb_host_device *)hid->parent);
     u32 rx_len = usb_h_ep_read_async(usb_id, ep, target_ep, buffer, 64, USB_ENDPOINT_XFER_INT, 0);
 
     if (rx_len) {
-        hid_route(usb_if->dev.hid, buffer);
+        hid_route(hid, buffer);
     }
-    /* printf_buf(buffer, rx_len);    */
 
     usb_h_ep_read_async(usb_id, ep, target_ep, buffer, 8, USB_ENDPOINT_XFER_INT, 1);
 }
 void hid_process(u32 id)
 {
-    struct usb_host_device *host_dev = host_id2device(id);
+    struct usb_host_device *host_dev = (struct usb_host_device *)host_id2device(id);
     u8 report[256 + 2];
     u8 ep_pair[5];
 
     for (u8 i = 0; i < MAX_HOST_INTERFACE; i++) {
-        struct usb_interface_info  *usb_if = host_dev->interface_info[i];
+        struct usb_interface_info  *usb_if = (struct usb_interface_info *)host_dev->interface_info[i];
         log_info("parent %x hid @ interface %d usb_if %x hid %x",
                  host_dev, i, usb_if, usb_if ? usb_if->dev.hid : 0);
         if (usb_if &&
@@ -628,19 +759,33 @@ void hid_process(u32 id)
             hid_report_parse(usb_if->dev.hid, report, 256);
             memcpy(ep_pair, usb_if->dev.hid->ep_pair, 4);
 
+            log_info("bNumEndpoints=%d report_count=%d ep_pair=%02x %02x %02x %02x",
+                     usb_if->dev.hid->bNumEndpoints, usb_if->dev.hid->report_count,
+                     ep_pair[0], ep_pair[1], ep_pair[2], ep_pair[3]);
+
             if (usb_if->dev.hid->report_count == 0) {
+                log_info("not found report, skip");
+                continue;
+            }
+
+            if (usb_if->dev.hid->bNumEndpoints == 0) {
+                log_info("bNumEndpoints=0, skip");
                 continue;
             }
 
             for (int j = 0; j < usb_if->dev.hid->bNumEndpoints; j++) {
+                u32 target_ep = ep_pair[j];
+                if (target_ep == 0) {
+                    log_info("target_ep=0, skip (index %d)", j);
+                    continue;
+                }
 
                 u32 host_ep = usb_get_ep_num(id, USB_DIR_IN, USB_ENDPOINT_XFER_INT);
 
                 if (host_ep == -1) {
+                    log_error("no free host ep, target_ep=%x", target_ep);
                     continue;
                 }
-
-                u32 target_ep = ep_pair[j];
 
                 usb_if->dev.hid->ep_pair[host_ep] = target_ep;
 
@@ -665,7 +810,7 @@ void hid_process(u32 id)
             }
         } else {
             if (usb_if) {
-                log_warn("error hid class %x", usb_if->ctrl->interface_class);
+                log_info("skip non-hid class %x", usb_if->ctrl->interface_class);
             }
         }
     }

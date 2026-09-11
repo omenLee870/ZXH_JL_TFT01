@@ -1093,6 +1093,11 @@ void lv_screen_load_anim(lv_obj_t *new_scr, lv_screen_load_anim_t anim_type, uin
         lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
         lv_anim_set_values(&a_old, 0, lv_display_get_horizontal_resolution(d));
         break;
+    case LV_SCR_LOAD_ANIM_LRB_MIRROR:
+        g_page_effect_state.page_mode = LV_SCR_LOAD_ANIM_LRB_MIRROR;
+        lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
+        lv_anim_set_values(&a_old, 0, lv_display_get_horizontal_resolution(d));
+        break;
     case LV_SCR_LOAD_ANIM_FLIP:
         g_page_effect_state.page_mode = LV_SCR_LOAD_ANIM_FLIP;
         lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
@@ -1118,8 +1123,13 @@ void lv_screen_load_anim(lv_obj_t *new_scr, lv_screen_load_anim_t anim_type, uin
         lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
         lv_anim_set_values(&a_old, 0, lv_display_get_horizontal_resolution(d));
         break;
-    case LV_SCR_LOAD_ANIM_DEFAULT:
-        g_page_effect_state.page_mode = LV_SCR_LOAD_ANIM_DEFAULT;
+    case LV_SCR_LOAD_ANIM_RIPPLE:
+        g_page_effect_state.page_mode = LV_SCR_LOAD_ANIM_RIPPLE;
+        lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
+        lv_anim_set_values(&a_old, 0, lv_display_get_horizontal_resolution(d));
+        break;
+    case LV_SCR_LOAD_ANIM_OTHER_PAGE:
+        g_page_effect_state.page_mode = LV_SCR_LOAD_ANIM_OTHER_PAGE;
         lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
         lv_anim_set_values(&a_old, 0, lv_display_get_horizontal_resolution(d));
         break;
@@ -1133,7 +1143,7 @@ void lv_screen_load_anim(lv_obj_t *new_scr, lv_screen_load_anim_t anim_type, uin
     }
 
 #if LV_USE_DRAW_JLGPU_LIST
-    if (g_page_effect_state.page_mode >= LV_SCR_LOAD_ANIM_DEFAULT && g_page_effect_state.page_mode <= LV_SCR_LOAD_ANIM_USER) {
+    if (g_page_effect_state.page_mode >= LV_SCR_LOAD_ANIM_OTHER_PAGE && g_page_effect_state.page_mode <= LV_SCR_LOAD_ANIM_USER) {
         g_page_effect_state.a_new = lv_anim_start(&a_new);
         if (act_scr) {
             g_page_effect_state.a_old = lv_anim_start(&a_old);
@@ -1814,7 +1824,7 @@ static void scr_load_anim_start(lv_anim_t *a)
 
     lv_obj_send_event(d->act_scr, LV_EVENT_SCREEN_LOAD_START, NULL);
 #if LV_USE_DRAW_JLGPU_LIST
-    if (g_page_effect_state.page_mode >= LV_SCR_LOAD_ANIM_DEFAULT && g_page_effect_state.page_mode <= LV_SCR_LOAD_ANIM_USER) {
+    if (g_page_effect_state.page_mode >= LV_SCR_LOAD_ANIM_OTHER_PAGE && g_page_effect_state.page_mode <= LV_SCR_LOAD_ANIM_USER) {
         g_page_effect_state.effect_enter = 1;
         g_page_effect_state.act_scr = d->prev_scr;//旧页面
         g_page_effect_state.new_scr = d->act_scr; //新页面
@@ -1862,7 +1872,17 @@ static void scr_anim_completed(lv_anim_t *a)
 
 
 #if LV_USE_DRAW_JLGPU_LIST
-    if (g_page_effect_state.page_mode >= LV_SCR_LOAD_ANIM_DEFAULT && g_page_effect_state.page_mode <= LV_SCR_LOAD_ANIM_USER) {
+    if (g_page_effect_state.page_mode >= LV_SCR_LOAD_ANIM_OTHER_PAGE && g_page_effect_state.page_mode <= LV_SCR_LOAD_ANIM_USER) {
+
+        //水波纹：动画结束(分界线到边界)后先等波纹回直, 再收尾, 避免波峰到边界瞬间消失太突兀
+        if (g_page_effect_state.page_mode == LV_SCR_LOAD_ANIM_RIPPLE) {
+            g_page_effect_state.a_old = NULL;
+            g_page_effect_state.a_new = NULL;
+            g_page_effect_state.ripple_flatten = 1;
+            //effect_busy 保持 1, 不立即 exit; 回直完成后由 timer_cb 调用 jlgpu_page_effect_flatten_done()
+            lv_obj_invalidate(d->act_scr);
+            return;
+        }
 
         d->act_scr = g_page_effect_state.new_scr;
 
@@ -1910,6 +1930,39 @@ static void scr_anim_completed(lv_anim_t *a)
         lv_obj_invalidate(d->act_scr);
     }
 }
+
+#if LV_USE_DRAW_JLGPU_LIST
+//水波纹：动画结束(分界线到边界)后波纹已回直, 此时才真正收尾(与 scr_anim_completed 的退出逻辑一致)
+void jlgpu_page_effect_flatten_done(void)
+{
+    lv_display_t *d = lv_obj_get_display(g_page_effect_state.act_scr);
+
+    d->act_scr = g_page_effect_state.new_scr;
+
+    g_page_effect_state.effect_exit = 1;
+    g_page_effect_state.effect_busy = 0;
+    g_page_effect_state.a_old = NULL;
+    g_page_effect_state.a_new = NULL;
+    g_page_effect_state.ripple_flatten = 0;
+
+    if (lv_obj_send_event(d->act_scr, LV_EVENT_SCREEN_LOADED, NULL) == LV_RESULT_INVALID) {
+        d->act_scr = NULL;
+    }
+
+    if (d->prev_scr && (d->prev_scr != g_page_effect_state.new_scr) && lv_obj_send_event(d->prev_scr, LV_EVENT_SCREEN_UNLOADED, NULL) != LV_RESULT_INVALID) {
+        if (d->del_prev) {
+            lv_obj_delete(d->prev_scr);
+        }
+    }
+    d->prev_scr = NULL;
+    d->draw_prev_over_act = false;
+    d->scr_to_load = NULL;
+    lv_obj_remove_local_style_prop(g_page_effect_state.new_scr, LV_STYLE_OPA, 0);
+    if (d->act_scr) {
+        lv_obj_invalidate(d->act_scr);
+    }
+}
+#endif
 
 static bool is_out_anim(lv_screen_load_anim_t anim_type)
 {

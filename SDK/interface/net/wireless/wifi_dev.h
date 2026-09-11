@@ -116,6 +116,9 @@ struct cfg_info {
     void *__lan_setting_info;
     u32 sta_channel;
     u8 p2p_role;
+    unsigned int channel;
+    u8 *scan_channels;
+    u32 scan_channel_num;
 };
 
 

@@ -33,17 +33,13 @@
 
 #define     SET_INTERRUPT   ___interrupt
 
-#ifdef USB_HW_20
-#define     MAX_EP_TX   7
-#define     MAX_EP_RX   7
-#else
-#define     MAX_EP_TX   5
-#define     MAX_EP_RX   5
-#endif
-static usb_interrupt usb_interrupt_tx[USB_MAX_HW_NUM][MAX_EP_TX];
-static usb_interrupt usb_interrupt_rx[USB_MAX_HW_NUM][MAX_EP_RX];
-static usb_sof_ep_hander usb_sof_ep_tx[USB_MAX_HW_NUM][MAX_EP_TX];
-static usb_sof_ep_hander usb_sof_ep_rx[USB_MAX_HW_NUM][MAX_EP_RX];
+
+
+
+static usb_interrupt usb_interrupt_tx[USB_MAX_HW_NUM][USB_MAX_HW_EPNUM];
+static usb_interrupt usb_interrupt_rx[USB_MAX_HW_NUM][USB_MAX_HW_EPNUM];
+static usb_sof_ep_hander usb_sof_ep_tx[USB_MAX_HW_NUM][USB_MAX_HW_EPNUM];
+static usb_sof_ep_hander usb_sof_ep_rx[USB_MAX_HW_NUM][USB_MAX_HW_EPNUM];
 
 struct usb_config_var_t {
     u8 usb_setup_buffer[USB_SETUP_SIZE];
@@ -71,7 +67,9 @@ static volatile u32 g_error_rx;
 void usb_irq_handle()
 {
     const usb_dev usb_id = 0;
+#ifdef USB_SOFT_IRQ
     bit_clr_ie(IRQ_USB_CTRL_IDX);
+#endif
     u32 intr_usb = g_intr_usb;
     u32 intr_tx = g_intr_tx;
     u32 intr_rx = g_intr_rx;
@@ -80,9 +78,9 @@ void usb_irq_handle()
     g_intr_tx = 0;
     g_error_rx = 0;
     g_error_tx = 0;
-
+#ifdef USB_SOFT_IRQ
     bit_set_ie(IRQ_USB_CTRL_IDX);
-
+#endif
     //  printf("2-intr_usb %x intr_rx %x intr_tx %x", intr_usb, intr_rx, intr_tx);
 
     struct usb_device_t *usb_device = usb_id2device(usb_id);
@@ -110,7 +108,7 @@ void usb_irq_handle()
         }
     }
 
-    for (int i = 1; i < MAX_EP_TX; i++) {
+    for (int i = 1; i < USB_MAX_HW_EPNUM; i++) {
         if (intr_tx & BIT(i)) {
             if (usb_interrupt_tx[usb_id][i]) {
                 usb_interrupt_tx[usb_id][i](usb_device, i);
@@ -118,7 +116,7 @@ void usb_irq_handle()
         }
     }
 
-    for (int i = 1; i < MAX_EP_RX; i++) {
+    for (int i = 1; i < USB_MAX_HW_EPNUM; i++) {
         if (intr_rx & BIT(i)) {
             if (usb_interrupt_rx[usb_id][i]) {
 
@@ -157,7 +155,7 @@ void usb_isr(const usb_dev usb_id)
     g_intr_tx |= intr_tx;
     u32 error_rx = 0;
     u32 error_tx = 0;
-    for (int i = 1; i < MAX_EP_TX; i++) {
+    for (int i = 1; i < USB_MAX_HW_EPNUM; i++) {
         if (intr_tx & BIT(i)) {
             if (usb_ep_tx_is_unmask_irq(usb_id, i)) {
                 int r = usb_g_ep_write(usb_id, i, NULL, -1);
@@ -168,7 +166,7 @@ void usb_isr(const usb_dev usb_id)
         }
     }
 
-    for (int i = 1; i < MAX_EP_RX; i++) {
+    for (int i = 1; i < USB_MAX_HW_EPNUM; i++) {
         if (intr_rx & BIT(i)) {
             if (usb_ep_rx_is_unmask_irq(usb_id, i)) {
                 int r = usb_g_ep_read(usb_id, i, NULL, -1, 0);
@@ -197,12 +195,12 @@ void usb_sof_isr(const usb_dev usb_id)
     usb_sof_clr_pnd(usb_id);
     usb_slave_status_set(usb_id, USB_SLAVE_SOF_READY);
 
-    for (int i = 0; i < MAX_EP_TX; i++) {
+    for (int i = 0; i < USB_MAX_HW_EPNUM; i++) {
         if (usb_sof_ep_tx[usb_id][i]) {
             usb_sof_ep_tx[usb_id][i](usb_device, i, frame);
         }
     }
-    for (int i = 0; i < MAX_EP_RX; i++) {
+    for (int i = 0; i < USB_MAX_HW_EPNUM; i++) {
         if (usb_sof_ep_rx[usb_id][i]) {
             usb_sof_ep_rx[usb_id][i](usb_device, i, frame);
         }

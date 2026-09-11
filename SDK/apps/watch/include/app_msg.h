@@ -316,7 +316,7 @@ enum {
     APP_MSG_MUSIC_CTRL_PREV,
     APP_MSG_INCALL_REC,
     APP_MSG_SD_EVENT,   /* SD 热插拔, app_default_msg_handler 转发, 各模式应用层处理 */
-    APP_MSG_FLM_REBUILD_DONE,   /* 媒体索引重建线程完成, dec 插卡由它驱动刷新(不在 app_core 忙等) */
+    APP_MSG_FLM_DB_CHANGED,   /* 媒体库变更(重建/入库)完成, 通知 UI 刷新 */
     APP_MSG_VIDEO_REC_PAUSE_RESUME, /* 录像右键: 暂停/继续(同一文件续录); 中键走 PP 开始/停止 */
     APP_MSG_VIDEO_REC_UI_TIMER_SYNC, /* 录像 UI 500ms 定时器启停统一投递到 app_core 执行 */
 };

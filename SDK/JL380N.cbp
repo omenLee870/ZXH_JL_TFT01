@@ -378,6 +378,10 @@
 <Add directory="interface/net/lwip_2_2_0/lwip/src/include/compat/stdc" />
 <Add directory="apps/common/timestamp" />
 <Add directory="interface/net/lwip_2_2_0/lwip/app/dhcp_srv" />
+<Add directory="apps/common/netapps/iflytek/SparkDesk" />
+<Add directory="apps/common/netapps/iflytek/tts" />
+<Add directory="apps/common/netapps/iflytek/vad" />
+<Add directory="apps/common/netapps/iflytek" />
 <Add directory="interface/system/math/cpu/br33" />
 <Add directory="apps/watch/include/ui/jlui_app" />
 <Add directory="interface/ui/common/hardware" />
@@ -803,7 +807,7 @@
 <Unit filename="apps/common/device/usb/device/iap.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/iap.h" />
 <Unit filename="apps/common/device/usb/device/midi.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="apps/common/device/usb/device/midi.h" />
+<Unit filename="apps/common/device/usb/device/midi2.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/msd.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/msd_upgrade.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/mtp.c"><Option compilerVer="CC"/></Unit>
@@ -820,7 +824,6 @@
 <Unit filename="apps/common/device/usb/device/usb_suspend_resume.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/usb_suspend_resume.h" />
 <Unit filename="apps/common/device/usb/device/usb_test_device.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="apps/common/device/usb/device/usb_test_device.h" />
 <Unit filename="apps/common/device/usb/device/user_setup.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/webusb.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/webusb.h" />
@@ -830,7 +833,6 @@
 <Unit filename="apps/common/device/usb/host/aoa.h" />
 <Unit filename="apps/common/device/usb/host/ch11.h" />
 <Unit filename="apps/common/device/usb/host/hid.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="apps/common/device/usb/host/host_uvc.h" />
 <Unit filename="apps/common/device/usb/host/hub.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/host/hub.h" />
 <Unit filename="apps/common/device/usb/host/uac_host.c"><Option compilerVer="CC"/></Unit>
@@ -844,13 +846,8 @@
 <Unit filename="apps/common/device/usb/host/usb_storage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/host/usb_storage.h" />
 <Unit filename="apps/common/device/usb/host/usb_test_host.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="apps/common/device/usb/host/usb_video.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/host/usbnet.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/host/usbnet.h" />
-<Unit filename="apps/common/device/usb/host/uvc.h" />
-<Unit filename="apps/common/device/usb/host/uvc_host.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="apps/common/device/usb/host/uvc_jpeg_demo.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="apps/common/device/usb/host/videobuf_stub.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/test_usb.h" />
 <Unit filename="apps/common/device/usb/usb_common_def.h" />
 <Unit filename="apps/common/device/usb/usb_config.c"><Option compilerVer="CC"/></Unit>
@@ -862,6 +859,7 @@
 <Unit filename="apps/common/device/usb/usb_std_class_def.h" />
 <Unit filename="apps/common/device/usb/usb_task.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/usb_task.h" />
+<Unit filename="apps/common/example/peripheral/can/can_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/fat_nor/cfg_private.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/fat_nor/cfg_private.h" />
 <Unit filename="apps/common/fat_nor/nor_fs.h" />
@@ -907,6 +905,21 @@
 <Unit filename="apps/common/net/lwip_2_2_0/port/spi_ethernetif.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/net/lwip_2_2_0/port/sys_arch.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/net/lwip_2_2_0/port/uart_ethernetif.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/SparkDesk/sparkdesk_main.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/SparkDesk/sparkdesk_main.h" />
+<Unit filename="apps/common/netapps/iflytek/authentication.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/authentication.h" />
+<Unit filename="apps/common/netapps/iflytek/demo.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/ifly_common.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/ifly_common.h" />
+<Unit filename="apps/common/netapps/iflytek/ifly_socket.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/ifly_socket.h" />
+<Unit filename="apps/common/netapps/iflytek/tts/ifly_dec_file.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/tts/ifly_dec_file.h" />
+<Unit filename="apps/common/netapps/iflytek/tts/tts_main.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/tts/tts_main.h" />
+<Unit filename="apps/common/netapps/iflytek/vad/vad_main.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/netapps/iflytek/vad/vad_main.h" />
 <Unit filename="apps/common/pay/upay_t_head_v2/app/aid_code/inc/aid_code.h" />
 <Unit filename="apps/common/pay/upay_t_head_v2/app/antchain/inc/bot_device_api.h" />
 <Unit filename="apps/common/pay/upay_t_head_v2/app/antchain/src/bot_adapter.c"><Option compilerVer="CC"/></Unit>
@@ -1010,6 +1023,7 @@
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/rcsp_functions/rcsp_manage.h" />
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/rcsp_functions/rcsp_task.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/rcsp_functions/rcsp_task.h" />
+<Unit filename="apps/common/third_party_profile/jieli/rcsp/rcsp_functions/rcsp_trace.h" />
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/browser/rcsp_browser.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/browser/rcsp_browser.h" />
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/device_info/device_status_cmd/rcsp_bt_func.c"><Option compilerVer="CC"/></Unit>
@@ -1112,6 +1126,8 @@
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/sensors/sport_info_opt.h" />
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/sensors/sport_info_sync.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/sensors/sport_info_sync.h" />
+<Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/stream_media/audio_video_control.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/stream_media/audio_video_control.h" />
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/stream_media/stream_media.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/stream_media/stream_media.h" />
 <Unit filename="apps/common/third_party_profile/jieli/rcsp/server/functions/watch_expand/rcsp_common_info_res_file_handler.c"><Option compilerVer="CC"/></Unit>
@@ -1145,6 +1161,8 @@
 <Unit filename="apps/common/third_party_profile/jieli/trans_data_demo/le_trans_data.h" />
 <Unit filename="apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.h" />
+<Unit filename="apps/common/third_party_profile/media_spp/media_spp.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/third_party_profile/media_spp/media_spp.h" />
 <Unit filename="apps/common/third_party_profile/multi_protocol_common.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/third_party_profile/multi_protocol_event.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/third_party_profile/multi_protocol_main.c"><Option compilerVer="CC"/></Unit>
@@ -1990,6 +2008,8 @@
 <Unit filename="apps/common/ui/lvgl_v9/src/draw/jlgpu/lv_draw_jlgpu_page_effect_hexagon.h" />
 <Unit filename="apps/common/ui/lvgl_v9/src/draw/jlgpu/lv_draw_jlgpu_page_effect_hexagon_reflection.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/ui/lvgl_v9/src/draw/jlgpu/lv_draw_jlgpu_page_effect_hexagon_reflection.h" />
+<Unit filename="apps/common/ui/lvgl_v9/src/draw/jlgpu/lv_draw_jlgpu_page_effect_lrb_mirror.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/ui/lvgl_v9/src/draw/jlgpu/lv_draw_jlgpu_page_effect_lrb_mirror.h" />
 <Unit filename="apps/common/ui/lvgl_v9/src/draw/jlgpu/lv_draw_jlgpu_page_effect_manager.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/ui/lvgl_v9/src/draw/jlgpu/lv_draw_jlgpu_page_effect_ops.h" />
 <Unit filename="apps/common/ui/lvgl_v9/src/draw/jlgpu/lv_draw_jlgpu_triangle.c"><Option compilerVer="CC"/></Unit>
@@ -2883,6 +2903,7 @@
 <Unit filename="apps/common/ui/lvgl_v9/src/widgets/win/lv_win.h" />
 <Unit filename="apps/common/ui/lvgl_v9/src/widgets/win/lv_win_private.h" />
 <Unit filename="apps/common/update/ex_flash_file_download.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/update/http_db_passive_update_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/update/lc_flash_ufw_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/update/nandflash_ufw_update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/update/norflash_ufw_update.c"><Option compilerVer="CC"/></Unit>
@@ -2999,6 +3020,7 @@
 <Unit filename="apps/watch/app_main.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/audio/jlstream_event_handler.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/audio/mix_record_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/audio/rcsp_mix_record.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/audio/scene_switch.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/audio/tone_table.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/audio/vol_sync.c"><Option compilerVer="CC"/></Unit>
@@ -3133,6 +3155,7 @@
 <Unit filename="apps/watch/include/pc.h" />
 <Unit filename="apps/watch/include/power_on.h" />
 <Unit filename="apps/watch/include/poweroff.h" />
+<Unit filename="apps/watch/include/rcsp_mix_record.h" />
 <Unit filename="apps/watch/include/record.h" />
 <Unit filename="apps/watch/include/rtc.h" />
 <Unit filename="apps/watch/include/rtc_ui.h" />
@@ -3320,12 +3343,16 @@
 <Unit filename="apps/watch/user_cfg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/video/transfer/audio_app.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/video/transfer/fps_counts.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/video/transfer/kid_mem_dbg.h" />
 <Unit filename="apps/watch/video/transfer/kid_wt_app.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/video/transfer/kid_wt_app.h" />
 <Unit filename="apps/watch/video/transfer/kid_wt_video.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/video/transfer/kid_wt_video.h" />
 <Unit filename="apps/watch/video/transfer/spp_transfer.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/video/transfer/spp_transfer.h" />
+<Unit filename="apps/watch/video/transfer/tjpgd.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/video/transfer/tjpgd.h" />
+<Unit filename="apps/watch/video/transfer/tjpgdcnf.h" />
 <Unit filename="apps/watch/video/transfer/transfer_stubs.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/video/transfer/transfer_stubs.h" />
 <Unit filename="apps/watch/video/transfer/vstream_chat.c"><Option compilerVer="CC"/></Unit>
@@ -3696,6 +3723,7 @@
 <Unit filename="cpu/br33/ui_driver/gpu_demo/img_data/img_test.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br33/ui_driver/interface/gpu_draw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br33/ui_driver/interface/gpu_draw.h" />
+<Unit filename="cpu/br33/ui_driver/interface/gpu_exception.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br33/ui_driver/interface/gpu_task.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br33/ui_driver/interface/gpu_task.h" />
 <Unit filename="cpu/br33/ui_driver/interface/jpeg_manager.c"><Option compilerVer="CC"/></Unit>
@@ -4210,6 +4238,7 @@
 <Unit filename="interface/net/curl/curl/system.h" />
 <Unit filename="interface/net/curl/curl/urlapi.h" />
 <Unit filename="interface/net/curl/curl/websockets.h" />
+<Unit filename="interface/net/http/http_cli.h" />
 <Unit filename="interface/net/http/http_server.h" />
 <Unit filename="interface/net/json_c/arraylist.h" />
 <Unit filename="interface/net/json_c/json.h" />
@@ -4311,6 +4340,7 @@
 <Unit filename="interface/net/libwebsockets/include/lws_config.h" />
 <Unit filename="interface/net/lte_module/lte_module.h" />
 <Unit filename="interface/net/lwip_2_2_0/lwip/app/ctp/ctp.h" />
+<Unit filename="interface/net/lwip_2_2_0/lwip/app/ntp/ntp.h" />
 <Unit filename="interface/net/lwip_2_2_0/lwip/app/sock_api/sock_api.h" />
 <Unit filename="interface/net/lwip_2_2_0/lwip/port/arch/cc.h" />
 <Unit filename="interface/net/lwip_2_2_0/lwip/port/arch/cpu.h" />
@@ -4383,11 +4413,14 @@
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/ecjpake.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/ecp.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/entropy.h" />
+<Unit filename="interface/net/mbedtls_3_4_0/mbedtls/error.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/gcm.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/legacy_or_psa.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/mbedtls_config.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/md.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/md5.h" />
+<Unit filename="interface/net/mbedtls_3_4_0/mbedtls/net.h" />
+<Unit filename="interface/net/mbedtls_3_4_0/mbedtls/net_sockets.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/pk.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/platform_time.h" />
 <Unit filename="interface/net/mbedtls_3_4_0/mbedtls/platform_util.h" />
@@ -4421,11 +4454,17 @@
 <Unit filename="interface/net/server/ctp_server.h" />
 <Unit filename="interface/net/server/net_server.h" />
 <Unit filename="interface/net/server/rt_stream_pkg.h" />
+<Unit filename="interface/net/web_socket/websocket_api.h" />
+<Unit filename="interface/net/web_socket/websocket_base64.h" />
+<Unit filename="interface/net/web_socket/websocket_define.h" />
+<Unit filename="interface/net/web_socket/websocket_intlib.h" />
+<Unit filename="interface/net/web_socket/websocket_sha_1.h" />
 <Unit filename="interface/net/wireless/hsm_ext.h" />
 <Unit filename="interface/net/wireless/wifi_connect.h" />
 <Unit filename="interface/net/wireless/wifi_module_event.h" />
 <Unit filename="interface/system/bank_switch.h" />
 <Unit filename="interface/system/boot.h" />
+<Unit filename="interface/system/device_event.h" />
 <Unit filename="interface/system/event.h" />
 <Unit filename="interface/system/generic/cpu.h" />
 <Unit filename="interface/system/generic/errno-base.h" />
@@ -4457,6 +4496,7 @@
 <Unit filename="interface/ui/common/effect/jlui_effect.h" />
 <Unit filename="interface/ui/common/ui_addr.h" />
 <Unit filename="interface/ui/common/ui_color.h" />
+<Unit filename="interface/ui/common/ui_math/ui_prime.h" />
 <Unit filename="interface/ui/hardware/br33/gpu/drive/hwGpu.h" />
 <Unit filename="interface/ui/hardware/br33/gpu/drive/jlgpu_constomize.h" />
 <Unit filename="interface/ui/hardware/br33/gpu/drive/jlgpu_def.h" />
@@ -4518,6 +4558,7 @@
 <Unit filename="interface/ui/jlui/ui_draw/ui_math.h" />
 <Unit filename="interface/ui/jlui/ui_draw/ui_obj.h" />
 <Unit filename="interface/ui/jlui/ui_draw/ui_rect.h" />
+<Unit filename="interface/ui/jlui/ui_draw/ui_ring.h" />
 <Unit filename="interface/ui/jlui/ui_draw/ui_type.h" />
 <Unit filename="interface/ui/jlui/ui_effect.h" />
 <Unit filename="interface/ui/jlui/ui_expand/ui_expand.h" />
@@ -4538,6 +4579,7 @@
 <Unit filename="interface/ui/jlui/ui_watch.h" />
 <Unit filename="interface/ui/jlui/window.h" />
 <Unit filename="interface/update/dual_bank_updata_api.h" />
+<Unit filename="interface/update/dual_bank_updata_api_v2.h" />
 <Unit filename="interface/update/jlota/jlota.h" />
 <Unit filename="interface/update/jlota/jlota_err.h" />
 <Unit filename="interface/update/uart_update.h" />
@@ -4583,7 +4625,6 @@
 <Unit filename="interface/video/cpu/br33/video.h" />
 <Unit filename="interface/video/cpu/br33/video_info.h" />
 <Unit filename="interface/video/cpu/br33/video_ioctl.h" />
-<Unit filename="interface/video/cpu/br33/videobuf.h" />
 <Unit filename="interface/video/h264/video_1_decode_api.h" />
 <Unit filename="interface/video/mpi/mpi_common.h" />
 <Unit filename="interface/video/mpi/mpi_sys.h" />

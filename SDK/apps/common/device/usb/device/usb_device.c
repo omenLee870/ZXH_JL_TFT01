@@ -7,36 +7,55 @@
 #endif
 
 #include "usb/device/usb_stack.h"
+#include "usb/device/descriptor.h"
 #include "usb_config.h"
-#include "usb/device/msd.h"
-#include "usb/device/mtp.h"
-#include "usb/scsi.h"
-#include "usb/device/hid.h"
-#include "usb/device/custom_hid.h"
-#include "usb/device/uac_audio.h"
-#include "usb/device/cdc.h"
-#include "usb/device/iap.h"
-#include "usb/device/midi.h"
-#include "usb/device/printer.h"
-#include "usb/device/webusb.h"
-#include "usb/test_usb.h"
-#include "usb/device/usb_test_device.h"
 #include "irq.h"
 #include "init.h"
 #include "gpio.h"
 #include "app_config.h"
 #include "clock_manager/clock_manager.h"
+#include "clock.h"
 #include "usb_multiplex.h"
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[USB]"
+#define LOG_TAG             "[USB_DEV]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
-
 #include "debug.h"
+
+/* Linker-section-based USB class driver table */
+extern const usb_class_item_t __usb_class_start[];
+extern const usb_class_item_t __usb_class_end[];
+
+/* Bubble-sort section items by interface_index */
+static void usb_class_sort(const usb_class_item_t **items, u8 count)
+{
+    for (u8 i = 0; i + 1 < count; i++) {
+        for (u8 j = 0; j + 1 + i < count; j++) {
+            if (items[j]->interface_index > items[j + 1]->interface_index) {
+                const usb_class_item_t *tmp = items[j];
+                items[j] = items[j + 1];
+                items[j + 1] = tmp;
+            }
+        }
+    }
+}
+
+/* Build sorted pointer array, returns count */
+static u8 usb_class_collect(const usb_class_item_t **out, u8 max)
+{
+    u8 count = 0;
+    for (const usb_class_item_t *p = __usb_class_start;
+         p < __usb_class_end && count < max; p++) {
+        out[count++] = p;
+    }
+    usb_class_sort(out, count);
+    return count;
+}
 
 #if TCFG_USB_SLAVE_ENABLE
 static void usb_device_init(const usb_dev usb_id)
@@ -68,71 +87,27 @@ static void usb_device_init(const usb_dev usb_id)
     /* usb_sofie_enable(usb_id); */
     /* USB_DEBUG_PRINTF("ep0 addr %x %x\n", usb_get_dma_taddr(0), ep0_dma_buffer); */
 }
-static void usb_device_hold(const usb_dev usb_id)
-{
-    if (usb_otg_online(usb_id) == OTG_STATE_SLAVE_MODE) {
-        usb_otg_suspend(usb_id,  OTG_KEEP_STATE);
-    }
-
-    usb_g_hold(usb_id);
-    usb_release(usb_id);
-}
 
 
 int usb_device_mode(const usb_dev usb_id, const u32 class)
 {
+    /* Collect and sort all registered USB class drivers */
+    const usb_class_item_t *items[MAX_INTERFACE_NUM + 1];
+    u8 item_count = usb_class_collect(items, MAX_INTERFACE_NUM + 1);
 
-    //cppcheck-suppress unreadVariable
-    u8 class_index = 0;
     if (class == 0) {
-        usb_device_hold(usb_id);
+        if (usb_otg_online(usb_id) == OTG_STATE_SLAVE_MODE) {
+            usb_otg_suspend(usb_id,  OTG_KEEP_STATE);
+        }
+        //先关闭设备，避免后面release的时候usb还在dma改写内存
+        usb_g_hold(usb_id);
 
-#if TCFG_USB_SLAVE_MSD_ENABLE
-        msd_release(usb_id);
-#endif
-
-#if TCFG_USB_APPLE_DOCK_EN
-        iap_release(usb_id);
-#endif
-
-#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
-        uac_spk_release(usb_id);
-#endif
-
-#if TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
-        uac_mic_release(usb_id);
-#endif
-
-#if TCFG_USB_SLAVE_CDC_ENABLE
-        cdc_release(usb_id);
-#endif
-
-#if TCFG_USB_SLAVE_HID_ENABLE
-        hid_release(usb_id);
-#endif
-
-#if TCFG_USB_SLAVE_MTP_ENABLE
-        mtp_release(usb_id);
-#endif
-
-#if TCFG_USB_CUSTOM_HID_ENABLE
-        custom_hid_release(usb_id);
-#endif
-
-#if TCFG_USB_SLAVE_MIDI_ENABLE
-        midi_release(usb_id);
-#endif
-
-#if TCFG_USB_SLAVE_PRINTER_ENABLE
-        printer_release(usb_id);
-#endif
-#if TCFG_USB_WEBUSB_ENABLE
-        webusb_release(usb_id);
-#endif
-
-#if TCFG_USB_TEST_ENABLE
-        test_release(usb_id);
-#endif
+        /* Release: traverse in reverse index order */
+        for (s8 i = item_count - 1; i >= 0; i--) {
+            items[i]->release_fn((usb_dev)usb_id);
+        }
+        usb_auto_trim_deinit();
+        usb_release(usb_id);
 
 #ifdef USB_HW_20
         clock_unlock("usb_device");
@@ -149,120 +124,50 @@ int usb_device_mode(const usb_dev usb_id, const u32 class)
     pc_multiplex_close_other_device();
     pc_multiplex_resume();
 
-    u32 _class = class;
 #if TCFG_USB_TEST_ENABLE
-    _class = TEST_CLASS;
+    u32 _class = TEST_CLASS;
+#else
+    u32 _class = class;
 #endif
 
     usb_add_desc_config(usb_id, MAX_INTERFACE_NUM, NULL);
+    struct usb_device_t *usb_device = usb_id2device(usb_id);
 
-#if TCFG_USB_SLAVE_MSD_ENABLE
-    if ((_class & MASSSTORAGE_CLASS) == MASSSTORAGE_CLASS) {
-        log_info("add desc msd");
-        usb_add_desc_config(usb_id, class_index++, msd_desc_config);
-        msd_register(usb_id);
-    }
-#endif
+    /* Set wDeviceClass early so register_fn can read it (Audio dispatch needs this) */
+    usb_device_set_class(usb_device, _class);
 
-#if TCFG_USB_APPLE_DOCK_EN
-    if ((_class & IAP_CLASS) == IAP_CLASS) {
-        log_info("add desc iap");
-        usb_add_desc_config(usb_id, class_index++, iap_desc_config);
-        iap_register(usb_id);
-    }
-#endif
+    u8 class_index = 0;
 
-#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE || TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
-    if ((_class & AUDIO_CLASS) == AUDIO_CLASS) {
-        log_info("add audio desc");
-        usb_add_desc_config(usb_id, class_index++, uac_audio_desc_config);
-        uac_spk_register(usb_id);
-        uac_mic_register(usb_id);
-    } else if ((_class & SPEAKER_CLASS) == SPEAKER_CLASS) {
-        log_info("add desc speaker");
-        usb_add_desc_config(usb_id, class_index++, uac_spk_desc_config);
-        uac_spk_register(usb_id);
-    } else if ((_class & MIC_CLASS) == MIC_CLASS) {
-        log_info("add desc mic");
-        usb_add_desc_config(usb_id, class_index++, uac_mic_desc_config);
-        uac_mic_register(usb_id);
-    }
-#endif
+    /* Register: traverse in index order, filter by class_mask */
+    for (u8 i = 0; i < item_count; i++) {
+        const usb_class_item_t *item = items[i];
 
-#if TCFG_USB_CUSTOM_HID_ENABLE
-    if ((_class & CUSTOM_HID_CLASS) == CUSTOM_HID_CLASS) {
-        log_info("add desc std custom_hid");
-        custom_hid_register(usb_id);
-        usb_add_desc_config(usb_id, class_index++, custom_hid_desc_config);
-    }
-#endif
+        /* Match mode: 0 = exact mask match, 1 = any bit overlap match */
+        if (item->match_mode == 0) {
+            if ((_class & item->class_mask) != item->class_mask) {
+                continue;
+            }
+        } else {
+            if ((_class & item->class_mask) == 0) {
+                continue;
+            }
+        }
 
-#if TCFG_USB_SLAVE_HID_ENABLE
-    if ((_class & HID_CLASS) == HID_CLASS) {
-        log_info("add desc std hid");
-        usb_add_desc_config(usb_id, class_index++, hid_desc_config);
-        hid_register(usb_id);
-        //dongle 1t2设置两条usb通路
-#if CONFIG_APP_DONGLE && (CONFIG_BT_GATT_CLIENT_NUM == 2)
-        hid_register_second(usb_id);
-        usb_add_desc_config(usb_id, class_index++, hid_second_desc_config);
-
-#endif
+        usb_add_desc_config(usb_id, class_index++, item->desc);
+        item->register_fn((usb_dev)usb_id);
     }
-#endif
-
-#if TCFG_USB_SLAVE_MTP_ENABLE
-    if ((_class & MTP_CLASS) == MTP_CLASS) {
-        log_info("add desc std mtp");
-        usb_add_desc_config(usb_id, class_index++, mtp_desc_config);
-        mtp_register(usb_id);
-    }
-#endif
-
-#if TCFG_USB_SLAVE_CDC_ENABLE
-    if ((_class & CDC_CLASS) == CDC_CLASS) {
-        log_info("add desc cdc");
-        usb_add_desc_config(usb_id, class_index++, cdc_desc_config);
-        cdc_register(usb_id);
-    }
-#endif
-
-#if TCFG_USB_SLAVE_MIDI_ENABLE
-    if (_class & MIDI_CLASS) {
-        log_info("add desc midi");
-        usb_add_desc_config(usb_id, class_index++, midi_desc_config);
-        midi_register(usb_id);
-    }
-#endif
-
-#if TCFG_USB_SLAVE_PRINTER_ENABLE
-    if ((_class & PRINTER_CLASS) == PRINTER_CLASS) {
-        log_info("add desc printer");
-        usb_add_desc_config(usb_id, class_index++, printer_desc_config);
-        printer_register(usb_id);
-    }
-#endif
-#if TCFG_USB_WEBUSB_ENABLE
-    if ((_class & WEBUSB_CLASS) == WEBUSB_CLASS) {
-        log_info("add desc webusb");
-        usb_add_desc_config(usb_id, class_index++, webusb_desc_config);
-        webusb_register(usb_id);
-    }
-#endif
-
-#if TCFG_USB_TEST_ENABLE
-    if ((_class & TEST_CLASS) == TEST_CLASS) {
-        log_info("add desc test");
-        usb_add_desc_config(usb_id, class_index++, test_desc_config);
-        test_register(usb_id);
-    }
-#endif
 
     usb_device_init(usb_id);
-    usb_device_set_class(usb_id2device(usb_id), _class);
-    user_setup_filter_install(usb_id2device(usb_id));
 
-    usb_otg_resume(usb_id); //从机初始化完成，进入sof检查模式
+    set_descriptor(usb_id,
+                   _class,
+                   usb_device->setup_buffer,
+                   USB_SETUP_SIZE);
+
+
+    user_setup_filter_install(usb_device);
+    usb_otg_resume(usb_id);
+    usb_auto_trim_init(1);
     return 0;
 }
 

@@ -1,5 +1,7 @@
 #include "system/includes.h"
 #include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 #include "ai_realtime.h"
 #include "ai_audio_url_player.h"
 
@@ -293,3 +295,5 @@ void duer_ai_test_start(void)
         printf("[duer] thread_fork failed: %d\n", ret);
     }
 }
+
+#endif

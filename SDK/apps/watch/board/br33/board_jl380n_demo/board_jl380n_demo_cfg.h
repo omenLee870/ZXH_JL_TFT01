@@ -24,9 +24,9 @@
 #define TCFG_NORFLASH_SFC_DEV_ENABLE        TCFG_NORFLASH_DEV_ENABLE         //外挂flash驱动
 
 #if TCFG_NORFLASH_SFC_DEV_ENABLE
-#define TCFG_EX_FLASH_POWER_IO				IO_PORTC_08   // 外置flash电源脚
-#define CONFIG_EX_FLASH_POWER_IO			PC08// NULL  // 外置flash电源脚。不接IO时填NULL或者屏蔽掉该宏定义
-#define CONFIG_EX_FLASH_POWER_IO_CTRL		1	// 0:power_io低电平时供电;1：高电平时供电	(针对io口低电平控制mos管导通来供电的情况)
+#define TCFG_EX_FLASH_POWER_IO				IO_PORT_LDO28   // 外置flash电源脚
+#define CONFIG_EX_FLASH_POWER_IO			LDO28   // 外置flash电源脚缩写: 普通IO(如PC08)/SDPG/LDO28/NULL(不接IO)，默认PC08供电
+#define CONFIG_EX_FLASH_POWER_IO_CTRL		31	// LDO28供电时=电压值(如3.1V对应31)；其他IO供电时=控制电平(0:低电平 1:高电平)
 
 // 双外挂 flash（第二个外挂 flash）使能开关
 #define TCFG_NORFLASH_SFC_DEV1_ENABLE		0
@@ -736,13 +736,6 @@
 #define TCFG_APP_VIDEO_EN               	1
 #endif
 
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_KID_CAMERA)
-#define TCFG_APP_VIDEO_REC_EN            1
-#define TCFG_APP_VIDEO_DEC_EN            1
-#define TCFG_APP_PHOTO_EN                1
-#define TCFG_APP_AI_TOOLS                1
-#endif
-
 // 视频流传输 (对讲/视频通话)
 #define TCFG_VSTREAM_TRANSFER           0   // 视频流传输总开关
 #define TCFG_JPEG_MAX_SIZE              (6*1024)  // JPEG 最大帧大小 6KB
@@ -773,10 +766,9 @@
 
 
 #define TCFG_PT_JL_TEST_ENABLE				DISABLE //JL生产部开发板测试
+#define TCFG_DASHBOARD_HARDWARE_TEST_ENABLE 0  // 仪表开发板测试
 
-#if TCFG_PT_JL_TEST_ENABLE
-
-
+#if TCFG_PT_JL_TEST_ENABLE || TCFG_DASHBOARD_HARDWARE_TEST_ENABLE
 
 #undef TCFG_SENSOR_HUB
 #define TCFG_SENSOR_HUB					1
@@ -796,6 +788,8 @@
 //                                 网络配置                                        //
 //*********************************************************************************//
 #define USER_SUPPORT_PROFILE_PAN    		TCFG_BT_NET_ENABLE //开启pan服务
+#define TCFG_NETWORK_ENABLE                 (TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE)  // 网络能力
+#define TCFG_WIFI_NET_ENABLE                (TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE)  // WIFI类型网络(外挂WIFI/UART网卡/SPI网卡)
 
 
 #define TCFG_AI_INTERACTION_ENABLE          DISABLE // APP版科大讯飞
@@ -811,12 +805,8 @@
 
 
 // 网络投屏
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_DASHBOARD)
 #define TCFG_NET_SCR_ENABLE                 1  // WiFi投屏
 #define TCFG_BT_H264_SCR_ENABLE             0  // 蓝牙H264投屏
-#else
-#define TCFG_NET_SCR_ENABLE                 0
-#endif
 
 #if TCFG_NET_SCR_ENABLE
 #define NET_SCR_PORT    	                2230
@@ -844,7 +834,7 @@
 
 // 网络配置检查
 #if TCFG_IFLYTEK_ENABLE || TCFG_PAY_TRANSITCODE_ENABLE || TCFG_NET_SCR_ENABLE
-#if (!USER_SUPPORT_PROFILE_PAN) && (!TCFG_EXT_WIFI_ENABLE) && (!TCFG_LTE_PHY_ENABLE)
+#if !TCFG_NETWORK_ENABLE
 #error "need NET"
 #endif
 #endif

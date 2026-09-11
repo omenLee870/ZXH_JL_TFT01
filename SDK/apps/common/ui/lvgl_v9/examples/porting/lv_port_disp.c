@@ -59,6 +59,10 @@
 
 #define LV_UI_TRIPLE_BUFFER_EN   0//ui 3buffer
 
+/* debug 耗时打印:gpu_run(GPU 渲染) 与 push(推屏) 耗时,
+ * 每秒汇总打印一次平均/最大耗时。置 1 打开, 调试完置回 0。 */
+#define LV_JLGPU_DISP_PROFILE    0
+
 #if (LV_COLOR_DEPTH == 16)
 #define LV_JLGPU_OUT_FORMAT JLGPU_FORMAT_RGB565
 #elif (LV_COLOR_DEPTH == 24)
@@ -103,7 +107,7 @@ static void disp_init(void);
 
 static void disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map);
 
-static int __lv_gpulist_flush_framerate_calc(void);
+static int __lv_gpulist_flush_framerate_calc(u32 gpu_us, u32 push_us);
 
 #if LV_USE_DRAW_JLGPU_LIST
 static void lv_jlgpu_link_dbi_draw_full_buf(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t *unit, uint8_t *px_map, const lv_draw_buf_t *src, const lv_area_t *src_area);
@@ -550,16 +554,47 @@ void lv_port_disp_init(void)
  *   STATIC FUNCTIONS
  **********************/
 extern uint32_t get_system_ms(void);
-static int __lv_gpulist_flush_framerate_calc(void)
+#if LV_JLGPU_DISP_PROFILE
+extern int64_t get_system_us(void);
+#endif
+
+/* 帧率统计: 每秒打印一次 fps。
+ * LV_JLGPU_DISP_PROFILE 打开时, 同时统计 gpu_run(GPU 渲染合成) 与 push(推屏/LCD 传输)
+ * 耗时并每秒追加打印平均/最大耗时。gpu_us = jlgpu_task_list_disp_run + task_list_free;
+ * push_us = 推屏链路(set_draw_area + draw)及其前准备(wait_or_recover 等)的耗时。 */
+static int __lv_gpulist_flush_framerate_calc(u32 gpu_us, u32 push_us)
 {
     static u32 time = 0;
     static u16 frames = 0;
     u32 cur_time = 0;
 
+#if LV_JLGPU_DISP_PROFILE
+    static u32 gpu_sum = 0, gpu_max = 0;
+    static u32 push_sum = 0, push_max = 0;
+
+    gpu_sum += gpu_us;
+    push_sum += push_us;
+    if (gpu_us > gpu_max) {
+        gpu_max = gpu_us;
+    }
+    if (push_us > push_max) {
+        push_max = push_us;
+    }
+#endif
+
     frames++;
     cur_time = get_system_ms();
     if (time_after(cur_time, time)) {
         printf("gpulist flush: %dfps\n", frames * 1000 / (1000 + (cur_time - time)));
+#if LV_JLGPU_DISP_PROFILE
+        printf("[jlgpu profile] gpu_avg=%u.%u ms  gpu_max=%u.%u ms  push_avg=%u.%u ms  push_max=%u.%u ms\n",
+               gpu_sum / frames / 1000, gpu_sum / frames % 1000 / 100,
+               gpu_max / 1000, gpu_max % 1000 / 100,
+               push_sum / frames / 1000, push_sum / frames % 1000 / 100,
+               push_max / 1000, push_max % 1000 / 100);
+        gpu_sum = gpu_max = 0;
+        push_sum = push_max = 0;
+#endif
         time = get_system_ms() + 1000;
         frames = 0;
     }
@@ -774,6 +809,25 @@ void disp_flush_post_msg(void)
 #endif
 
 }
+
+#if LV_USE_DRAW_JLGPU_LIST == 2
+/* 等待异步渲染线程排空: LIST==2 下 disp_flush 在 flushing_last 时只把渲染任务
+ * os_taskq_post 给 _jlgpu_run_disp_cb, GPU 渲染 + 显示写入在该线程异步完成,
+ * 而 lv_display_flush_ready 会提前返回。若调用方紧接着释放渲染引用过的显示
+ * buffer, 会与异步渲染竞态, 触发 use-after-free。释放 buffer 前调用本函数,
+ * 阻塞到在飞渲染结束, 即可安全释放。
+ * 语义: jlgpu_run_disp_sem(初值1) 在 disp_flush pend、在 run_disp_cb post,
+ *       因此 sem==0 表示有任务在队列/在飞; pend 成功即表示渲染线程已空闲。 */
+void lv_jlgpu_run_disp_drain(void)
+{
+    if (os_sem_pend(&jlgpu_run_disp_sem, 300) == OS_ERR_NONE) {
+        os_sem_post(&jlgpu_run_disp_sem);
+    } else {
+        printf("lv_jlgpu_run_disp_drain: timeout\n");
+    }
+}
+#endif
+
 /*Flush the content of the internal buffer the specific area on the display.
  *`px_map` contains the rendered image as raw pixel map and it should be copied to `area` on the display.
  *You can use DMA or any hardware acceleration to do this operation in the background but
@@ -934,7 +988,17 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
 
 #if  LV_USE_DRAW_JLGPU_LIST == 2
 
-            if (os_sem_pend(&jlgpu_run_disp_sem, 300) != OS_ERR_NONE) {
+            /*
+             * 必须拿到 token 才允许投递下一帧，这里绝不能带超时后继续投递。
+             * 当 consumer 因在途帧 tgen_done 延迟(如插 SD 卡等长时间阻塞/关中断)
+             * 卡在 lcd->set_draw_area() 的 lcd_lock() 里时，若生产者超时后仍
+             * os_taskq_post + lv_draw_jlgpu_unit_swap()，会持续投递消息并反复
+             * swap 双 unit，把尚未被 consumer 消费的链表/显存覆盖，pipeline 永久
+             * 错乱而无法自愈。改成一直等 token，行为与 LIST==1 一致：阻塞就地
+             * 发生，lcd_sem 一旦释放(该帧 tgen_done 到来)即可自动恢复，且对所有
+             * 推屏通路(gpu_link_dbi/gxdma/jstc/普通)都成立。
+             */
+            if (os_sem_pend(&jlgpu_run_disp_sem, 0) != OS_ERR_NONE) {
                 printf("disp_flush: os_sem_pend failed\n");
             }
 
@@ -959,7 +1023,13 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
             // if (psram_cache_check(px_map)) {
             //     DcuInvalidRegion((unsigned int *)px_map, lv_jl_lcd.buffer_size); // FIXME
             // }
+#if LV_JLGPU_DISP_PROFILE
+            int64_t t0 = get_system_us();
+#endif
             jlgpu_task_list_disp_run(disp_drv, unit, &full_area, px_map);
+#if LV_JLGPU_DISP_PROFILE
+            int64_t t1 = get_system_us();
+#endif
 #elif !LV_USE_DRAW_JLGPU
             // run cpu
             DcuFlushRegion((unsigned int *)px_map, lv_jl_lcd.buffer_size);
@@ -987,6 +1057,16 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
 
             lv_jl_lcd.lcd->set_draw_area(full_area.x1, full_area.x2, full_area.y1, full_area.y2);
             lv_jl_lcd.lcd->draw((uint8_t *)px_map, full_area.x1, full_area.x2, full_area.y1, full_area.y2);
+
+#if LV_JLGPU_DISP_PROFILE
+#if LV_USE_DRAW_JLGPU_LIST
+            /* 单链表(LIST==1)同步渲染: 统计 gpu_run 与 push 耗时 */
+            __lv_gpulist_flush_framerate_calc((u32)(t1 - t0), (u32)(get_system_us() - t1));
+#else
+            /* 纯 CPU 渲染: 无 gpu run, 暂不统计 */
+            __lv_gpulist_flush_framerate_calc(0, 0);
+#endif
+#endif
 
             /* 在此处开背光可防止闪屏 */
             lvgl_try_open_backlight_after_first_frame(1);
@@ -1122,6 +1202,48 @@ static void lv_jlgpu_link_dbi_draw_full_buf(lv_display_t *disp_drv, lv_draw_jlgp
 
 
 #if LV_USE_DRAW_JLGPU_LIST == 2
+/* 等待上一帧 DBI 传输完成(tgen_done 中断清 dbi_busy)。
+ * dbi_busy 与 lcd_sem 同生共死：set_draw_area 里 lcd_lock() 拿锁后置 dbi_busy=1，
+ * tgen_done 中断里 lcd_unlock() 还锁后置 dbi_busy=0。因此这里 dbi_busy 长期为 1，
+ * 即代表该帧的 tgen_done 已丢失(如插 SD 卡等长时间阻塞/关中断)，lcd_sem 被卡死帧
+ * 永久占用，consumer 会永远卡在 lcd->set_draw_area() 的 lcd_lock() 里无法自愈。
+ * 这里做一次有界等待 + 强制恢复，行为与 LIST==1(同步推屏，阻塞就地发生可自愈)对齐，
+ * 且对所有推屏通路(gpu_link_dbi/gxdma/jstc/普通)都成立。 */
+static void lv_jl_lcd_wait_or_recover_stuck(void)
+{
+    extern int lcd_busy(void);
+    extern void lcd_unlock(void);
+    extern void dbi_link_gpu(u8 en);
+
+    if (!lcd_busy()) {
+        return;
+    }
+
+    uint32_t begin = get_system_ms();
+    while (lcd_busy()) {
+        /* 2s 阈值：足够覆盖插卡等瞬时阻塞(期间 tgen_done 迟来即可自愈)，
+         * 又不会误伤正常推屏；只有真正丢失 tgen_done 的永久卡死才会触发下面恢复。 */
+        if ((get_system_ms() - begin) > 2000) {
+            /* 断开 GPU 顶链路并清空 PND，使在途 GPU→DBI/GXDMA 传输失效，
+             * 再强制释放被卡死帧占用的 lcd_sem，最后恢复联动继续推屏 */
+            jlgpu_hw_set_sfr_top(NULL);
+            lv_jlgpu_pnd_sem_clr();
+            if (lv_jl_lcd_get_need_gpu_link_dbi()) {
+                dbi_link_gpu(0);
+                dbi_link_gpu(1);
+            }
+            if (lv_jl_lcd_get_need_gxdma()) {
+                JLGXDMA_link_gpu(0);
+                JLGXDMA_init();
+            }
+            lcd_unlock();
+            printf("[lvgl] lcd stuck, force recover\n");
+            return;
+        }
+        os_time_dly(1);
+    }
+}
+
 static void _jlgpu_run_disp_cb(void *ptr)
 {
     int res;
@@ -1169,10 +1291,16 @@ static void _jlgpu_run_disp_cb(void *ptr)
         full_area.x2 = lv_jl_lcd.lcd_align_width - 1;
         full_area.y2 = lv_jl_lcd.lcd_align_height - 1;
 
+#if LV_JLGPU_DISP_PROFILE
+        int64_t t0 = get_system_us();
+#endif
         jlgpu_task_list_disp_run(disp_drv, unit, &full_area, px_map);
 
         //处理完成后立刻释放当前unit链表内存
         lv_jlgpu_task_list_free(unit);
+#if LV_JLGPU_DISP_PROFILE
+        int64_t t1 = get_system_us();
+#endif
 
 #if LV_VIDEO_DISP_FB_MODE
 
@@ -1207,13 +1335,25 @@ static void _jlgpu_run_disp_cb(void *ptr)
         JLDMM_set_no_wait_vsync(1);
 #endif
 
+        /* 推屏前先检测上帧 DBI 是否卡死(如插 SD 卡致 tgen_done 丢失)，卡死则强制恢复，
+         * 避免 LIST==2 的 consumer 永久卡在下面 set_draw_area() 的 lcd_lock() 里 */
+        lv_jl_lcd_wait_or_recover_stuck();
+
         lv_jl_lcd.lcd->set_draw_area(full_area.x1, full_area.x2, full_area.y1, full_area.y2);
         lv_jl_lcd.lcd->draw((uint8_t *)px_map, full_area.x1, full_area.x2, full_area.y1, full_area.y2);
+#if LV_JLGPU_DISP_PROFILE
+        u32 gpu_us = (u32)(t1 - t0);
+        u32 push_us = (u32)(get_system_us() - t1);
+#endif
 
         /* 在所有硬件操作完成后开背光（LIST==2 专用） */
         lvgl_try_open_backlight_after_first_frame(1);
 
-        __lv_gpulist_flush_framerate_calc();
+#if LV_JLGPU_DISP_PROFILE
+        __lv_gpulist_flush_framerate_calc(gpu_us, push_us);
+#else
+        __lv_gpulist_flush_framerate_calc(0, 0);
+#endif
 
         os_sem_post(&jlgpu_run_disp_sem);
 

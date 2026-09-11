@@ -14,11 +14,12 @@
 #include "cdc_defs.h"  //need redefine __u8, __u16, __u32
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[USB]"
+#define LOG_TAG             "[CDC]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -306,7 +307,7 @@ static void cdc_endpoint_init(struct usb_device_t *usb_device, u32 itf)
 }
 static void cdc_reset(struct usb_device_t *usb_device, u32 itf)
 {
-    log_debug("cdc_reset");
+    log_info("cdc_reset");
     const usb_dev usb_id = usb_device2id(usb_device);
     cdc_endpoint_init(usb_device, itf);
 }
@@ -432,13 +433,13 @@ static u32 cdc_setup(struct usb_device_t *usb_device, struct usb_ctrlrequest *ct
             //cdc_endpoint_init(usb_device, (ctrl_req->wIndex & USB_RECIP_MASK));
             break;
         default:
-            log_error("unsupported class req");
+            log_warn("unsupported class req");
             usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
             break;
         }
         break;
     default:
-        log_error("unsupported req type");
+        log_warn("unsupported req type");
         usb_set_setup_phase(usb_device, USB_EP0_SET_STALL);
         break;
     }
@@ -495,14 +496,14 @@ u32 cdc_desc_config(const usb_dev usb_id, u8 *ptr, u32 *itf)
         tptr[9 + 7 + 5] = HIBYTE(CDC_BULK_MAXP_SIZE);
         tptr += sizeof(cdc_bulk_ep_desc);
 
-        log_debug("cdc%d_ctrl interface num:%d\n", num, *itf);
+        log_info("cdc%d_ctrl interface num:%d\n", num, *itf);
         if (usb_set_interface_hander(usb_id, *itf, cdc_setup) != *itf) {
             ASSERT(0, "cdc set interface_hander fail");
         }
         if (usb_set_reset_hander(usb_id, *itf, cdc_reset) != *itf) {
             ASSERT(0, "cdc set reset_hander fail");
         }
-        log_debug("cdc%d_data interface num:%d\n", num, *itf + 1);
+        log_info("cdc%d_data interface num:%d\n", num, *itf + 1);
 
         cdc_hdl[num]->itf_num = *itf;
 #if CDC_INTR_EP_ENABLE
@@ -550,8 +551,8 @@ void cdc_register(const usb_dev usb_id)
         cdc_hdl[num]->intr_ep_in_buf = usb_alloc_ep_dmabuffer(usb_id, cdc_intr_ep_in_table[num], CDC_INTR_MAXP_SIZE);
 #endif
 
-        log_info("cdc%d_bulk_ep_out_buf:0x%x\n", num, cdc_hdl[num]->bulk_ep_out_buf);
-        log_info("cdc%d_bulk_ep_in_buf:0x%x\n", num, cdc_hdl[num]->bulk_ep_in_buf);
+        log_debug("cdc%d_bulk_ep_out_buf:0x%x\n", num, cdc_hdl[num]->bulk_ep_out_buf);
+        log_debug("cdc%d_bulk_ep_in_buf:0x%x\n", num, cdc_hdl[num]->bulk_ep_in_buf);
     }
 }
 
@@ -581,4 +582,5 @@ void cdc_release(const usb_dev usb_id)
     }
 }
 
+USB_CLASS_REGISTER(cdc_desc_config, cdc_register, cdc_release, TCFG_USB_CDC_INDEX, CDC_CLASS, 0);
 #endif

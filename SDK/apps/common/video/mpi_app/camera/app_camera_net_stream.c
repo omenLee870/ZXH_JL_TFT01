@@ -1,6 +1,6 @@
 #include "app_config.h"
 
-#if TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE || TCFG_RTL8733BS_ENABLE
+#if TCFG_NETWORK_ENABLE
 #include "app_camera_mpi_priv.h"
 #include "rt_stream_pkg.h"
 #include "sock_api/sock_api.h"

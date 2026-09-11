@@ -1,6 +1,6 @@
 #include "app_config.h"
 
-#if TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE || TCFG_RTL8733BS_ENABLE
+#if TCFG_NETWORK_ENABLE
 #include "system/includes.h"
 #include "screen_mirror.h"
 #include "screen_mirror_bt_h264.h"
@@ -11,6 +11,7 @@
 #include "lcd_conf.h"
 #include "fs/fs.h"
 #include "lv_port_video_disp.h"
+#include "lvgl_video_init.h"
 
 #define LOG_TAG_CONST       SCREEN_MIRROR
 #define LOG_TAG             "[SCREEN_MIRROR]"
@@ -840,8 +841,9 @@ void lvgl_map_init(int32_t width, int32_t height, int32_t x, int32_t y)
 void lvgl_map_exit(void)
 {
     if (map_disp_handle) {
-        printf("mpi test lvgl_video_exit");
-        lvgl_rpc_post_func((void *)lvgl_destroy_map_disp, 1, map_disp_handle);
+        /* 同步退出: 删视频 img + 排空双链表(LIST==2)异步渲染, 返回后再由
+         * screen_mpi_close() 释放 playback buffer 才安全。 */
+        lvgl_video_exit_drain(map_disp_handle);
         map_disp_handle = NULL;
     }
 }

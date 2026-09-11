@@ -1,5 +1,7 @@
 #include "system/includes.h"
 #include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 #include "ai_audio_url_player.h"
 #include "ai_internal.h"
 #include "audio_def.h"
@@ -559,3 +561,5 @@ int ai_audio_url_player_is_running(void)
 {
     return g_url_player.task_running ? 1 : 0;
 }
+
+#endif

@@ -167,8 +167,8 @@ static int _uac_control_parser(const u8 *pBuf)
     /* } */
     len += USB_DT_INTERFACE_SIZE; //加上audio_control的interface描述符长度
 
-    put_buf((u8 *)uac.spk_id, sizeof(UAC_ID_INFO));
-    put_buf((u8 *)uac.mic_id, sizeof(UAC_ID_INFO));
+    log_debug_hexdump((u8 *)uac.spk_id, sizeof(UAC_ID_INFO));
+    log_debug_hexdump((u8 *)uac.mic_id, sizeof(UAC_ID_INFO));
     return (int)len;
 }
 static int _uac_streaming_parser(const u8 *pBuf)
@@ -297,7 +297,7 @@ void uac_host_info_dump()
 {
     log_info("func:uac_host_info_dump, line:%d\n", __LINE__);
 
-    log_info("-------------------- uac.spk_info --------------------\n");
+    log_info("uac.spk_info\n");
     log_info("|   intr_num:%d\n", uac.spk_info->intr_num);
     log_info("|   feature_id:%d\n", uac.spk_info->feature_id);
     log_info("|   controls[0]:0x%x, controls[1]:0x%x, controls[2]:0x%x\n", uac.spk_info->controls[0], uac.spk_info->controls[1], uac.spk_info->controls[2]);
@@ -317,9 +317,7 @@ void uac_host_info_dump()
             }
         }
     }
-    log_info("--------------------------------------------------\n");
-
-    log_info("-------------------- uac.mic_info --------------------\n");
+    log_info("uac.mic_info\n");
     log_info("|   intr_num:%d\n", uac.mic_info->intr_num);
     log_info("|   feature_id:%d\n", uac.mic_info->feature_id);
     log_info("|   controls[0]:0x%x, controls[1]:0x%x, controls[2]:0x%x\n", uac.mic_info->controls[0], uac.mic_info->controls[1], uac.mic_info->controls[2]);
@@ -339,7 +337,6 @@ void uac_host_info_dump()
             }
         }
     }
-    log_info("--------------------------------------------------\n");
 }
 
 #ifdef UAC_HOST_TEST_MODE
@@ -498,6 +495,10 @@ void uac_host_mount(u32 usb_id)
     uac_host_query_infomation(usb_id);
     uac_host_info_dump();
 #ifdef UAC_HOST_TEST_MODE
+    /* set handlers BEFORE open so isr_hanlder is valid when uac_tx_isr fires */
+    uac_host_set_spk_hanlder(spk_isr_hanlder, NULL);
+    uac_host_set_mic_hanlder(mic_isr_hanlder, NULL);
+
     u32 ret;
     ret = uac_host_open_spk(usb_id, 2, 48000, 16);
     if (ret != DEV_ERR_NONE) {
@@ -508,14 +509,17 @@ void uac_host_mount(u32 usb_id)
         uac_host_open_mic(usb_id, 2, 48000, 16);
     }
     /* usr_timer_add(NULL, uac_host_test_func, 1, 1); */
-    uac_host_set_spk_hanlder(spk_isr_hanlder, NULL);
-    uac_host_set_mic_hanlder(mic_isr_hanlder, NULL);
 #endif
 }
 
 void uac_host_unmount(u32 usb_id)
 {
     log_info("func:uac_host_unmount, line:%d\n", __LINE__);
+    struct usb_host_device *host_dev = (struct usb_host_device *)host_id2device(usb_id);
+    if (host_dev->private_data.status == 0) {
+        log_info("host already unmounted, skip uac cleanup");
+        return;
+    }
 #ifdef UAC_HOST_TEST_MODE
     uac_host_close_spk(usb_id);
     uac_host_close_mic(usb_id);
@@ -674,6 +678,8 @@ u32 uac_host_open_spk(usb_dev usb_id, u32 ch, u32 sample_freq, u32 bit_res)
         log_warn("func:uac_host_open_spk, line:%d, uac.spk_info not init\n", __LINE__);
         return -1;
     }
+    /* 复位当前配置, 避免多次调用(例如回退重试不同位宽)时复用上一次的残留状态 */
+    spk_info->cur_alterseting = 0;
     for (u8 alt = 1; alt < UAC_MAX_CFG; alt++) {
         if ((uac.spk_info->as_cfg[alt].ch == ch) && (uac.spk_info->as_cfg[alt].bit_res == bit_res)) {
             for (u8 i = 0; i < 6; i++) {
@@ -684,6 +690,9 @@ u32 uac_host_open_spk(usb_dev usb_id, u32 ch, u32 sample_freq, u32 bit_res)
                     break;
                 }
             }
+        }
+        if (spk_info->cur_alterseting != 0) {
+            break;
         }
     }
     if (uac.spk_info->cur_alterseting == 0) {

@@ -1,3 +1,4 @@
+
 /**
  * @brief  KWT Video — Camera → JPEG encode → vstream sender bridge.
  *
@@ -20,14 +21,14 @@
 #include "mpi_venc.h"
 #include "vstream_common.h"
 #include "kid_wt_video.h"
-#include "app_playback_mpi.h"
 #include "lvgl_video_init.h"
 #include "lv_port_video_disp.h"   /* lv_port_video_disp_get_instance_by_fb_index() */
 #include "asm/dcache.h"   /* DcuFlushinvRegion — flush CPU-written fb before putmap */
 #include "fb.h"           /* fb_draw_open/getmap/putmap/close */
+#include "tjpgd.h"        /* software JPEG decode (recv path, JPEG branch) */
+#include "mpi_vo.h"     /* VO hardware producer: fb5 (H264 recv) / fb6 PIP (JPEG send) */
 #if KWT_USE_H264
 #include "mpi_vdec.h"   /* SOFT_H264 VDEC (replaces video_1 decode) */
-#include "mpi_vo.h"     /* VO hardware producer for fb5 */
 #endif
 
 #define LOG_TAG             "[KWT_VIDEO]"
@@ -46,12 +47,15 @@
 typedef struct {
     app_camera_handle_t cam_handle;     /* camera context from app_camera_open() */
     mpi_vpss_grp_t      vpss_grp;       /* cached VPSS group for worker thread */
-    mpi_vpss_chn_t      vpss_chn;       /* VPSS output channel → VENC */
+    mpi_vpss_chn_t      vpss_chn;       /* VPSS output channel → VENC (ONLINE) */
+    mpi_vpss_chn_t      pip_chn;        /* VPSS 2nd channel, sink-frame 80x60 → VO → fb6 */
     mpi_venc_chn_t      venc_chn;       /* JPEG encoder channel */
+    mpi_vo_chn_t        vo_chn;         /* JPEG: VO channel producing fb6 (local PIP) */
+    u8                  pip_vo_bound;   /* JPEG: pip_chn → VO bind succeeded */
+    void               *pip_fb_draw;    /* H264: fb_draw producer handle for PIP (fb6) */
+    u8                  pip_fb_opened;  /* H264: fb_draw_open() succeeded */
     u8                  exit_flag;      /* signal worker thread to stop */
     int                 thread_pid;     /* worker thread handle */
-    void               *pip_fb_draw;        /* fb_draw producer handle for PIP (fb6) */
-    u8                  pip_fb_opened;       /* fb_draw_open() succeeded */
 } kwt_xsmt_ctx_t;
 
 static kwt_xsmt_ctx_t g_xsmt_ctx;
@@ -61,7 +65,6 @@ static int g_xsmt_last_width  = KWT_CAMERA_WIDTH;
 static int g_xsmt_last_height = KWT_CAMERA_HEIGHT;
 static int g_xsmt_last_fps    = KWT_CAMERA_FPS;
 static int g_xsmt_last_abr    = KWT_CAMERA_ABR_KBPS;
-static OS_SEM g_frames_held;
 
 /* ============================================================================
  * Internal: VPSS output channel for VENC
@@ -73,17 +76,21 @@ static OS_SEM g_frames_held;
 static int kwt_xsmt_vpss_venc_open(app_camera_handle_t ctx)
 {
     int ret;
+    u8 pip_created  = 0;   /* JPEG: 80x60 PIP chn created+enabled */
+    u8 chn0_enabled = 0;   /* chn0 passed mpi_vpss_enable_chn */
+    u8 venc_started = 0;   /* VENC passed mpi_venc_start_chn */
+#if !KWT_USE_H264
+    u8 chn0_bound   = 0;   /* chn0 -> VENC bind succeeded */
+    u8 vo_started   = 0;   /* VO chn passed mpi_vo_start_chn */
+#endif
 
-    /* --- find a free VPSS channel in the camera's VPSS group --- */
+    /* --- 1. find + create VPSS chn0 (JPEG: ONLINE; H264: OFFLINE) --- */
     ret = mpi_vpss_find_free_chn(ctx->vpss_grp, &g_xsmt_ctx.vpss_chn);
     if (ret != MPI_SUCCESS) {
         log_error("%s: no free VPSS channel (ret=%d)\n", __func__, ret);
         return -1;
     }
 
-    /* --- configure VPSS channel (OFFLINE: app reads frames, manual encode) ---
-     * buf_size must be > 0 for local-queue mode; sink-frame mode (size=0)
-     * cannot serve mpi_vpss_get_chn_frame().  2× for double-buffering. */
     mpi_vpss_chn_attr_t vpss_attr = {
         .width       = KWT_CAMERA_WIDTH,
         .height      = KWT_CAMERA_HEIGHT,
@@ -96,12 +103,15 @@ static int kwt_xsmt_vpss_venc_open(app_camera_handle_t ctx)
         .buf_addr    = NULL,
         .buf_size    = (u32)KWT_CAMERA_WIDTH * KWT_CAMERA_HEIGHT * 3u / 2u * 2u + 1024u,
 #else
+        /* ONLINE: VPSS DMA-feeds VENC over the vbus (imc->jpg), no offline
+         * queue. buf_size is only the small line buffer (width × LINE_NUM rows),
+         * freeing the old 300 KB offline queue. See app_camera_vpss_venc_net_open(). */
         .format      = MPI_PIXEL_FMT_YUV422_PACKED,
         .yuv_order   = MPI_YUV_ORDER_YUYV,
-        .output_mode = MPI_VPSS_OUTPUT_OFFLINE,
+        .output_mode = MPI_VPSS_OUTPUT_ONLINE,
         .hw_id       = MPI_VPSS_HW_AUTO,
         .buf_addr    = NULL,
-        .buf_size    = (u32)KWT_CAMERA_WIDTH * KWT_CAMERA_HEIGHT * 2u * 2u + 1024u,
+        .buf_size    = (u32)KWT_CAMERA_WIDTH * KWT_VPSS_LINE_NUM * 2u,
 #endif
     };
 
@@ -111,26 +121,68 @@ static int kwt_xsmt_vpss_venc_open(app_camera_handle_t ctx)
         return -1;
     }
 
+    /* --- 2. enable chn0. For ONLINE this only allocates the IMC DST and sets
+     * state.started (a prerequisite for the bind below); it does NOT start the
+     * online output — that only happens at bind (mpi_vpss_chn.c enable_chn
+     * ONLINE branch is gated on state.bound). --- */
     ret = mpi_vpss_enable_chn(ctx->vpss_grp, g_xsmt_ctx.vpss_chn);
     if (ret != MPI_SUCCESS) {
         log_error("%s: mpi_vpss_enable_chn failed (ret=%d)\n", __func__, ret);
-        mpi_vpss_destroy_chn(ctx->vpss_grp, g_xsmt_ctx.vpss_chn);
-        return -1;
+        goto err;
+    }
+    chn0_enabled = 1;
+
+    /* --- 3. JPEG: create+enable the 2nd sink-frame PIP chn (80x60, buf_size=0).
+     * With sink-frame the enable is a no-op (mpi_vpss_chn.c enable_chn sink
+     * branch is gated on state.bound), so it does NOT set active_chn_mask / link
+     * the SRC here — that happens at the pip→VO bind in step 5, which must run
+     * BEFORE the chn0→VENC bind (step 6) so the group SRC is linked before the
+     * ONLINE line DMA is armed (symptom of the inverse order: xsmt venc=0 pip=0).
+     * ONLINE 下无 CPU 可见帧, 故 PIP 走独立 sink-frame VPSS 通道(硬件下采样到
+     * 80x60)直接 DMA 进 VO 的 fb6, 占用第 2 个 IMC DST。 --- */
+#if !KWT_USE_H264
+    ret = mpi_vpss_find_free_chn(ctx->vpss_grp, &g_xsmt_ctx.pip_chn);
+    if (ret != MPI_SUCCESS) {
+        log_error("%s: no free VPSS channel for PIP (ret=%d)\n", __func__, ret);
+        goto err;
     }
 
-    /* --- find a free VENC channel --- */
+    mpi_vpss_chn_attr_t pip_attr = {
+        .width       = KWT_PIP_WIDTH,
+        .height      = KWT_PIP_HEIGHT,
+        .format      = MPI_PIXEL_FMT_YUV420SP,   /* NV12 → fb6 (YUV420P) */
+        .output_mode = MPI_VPSS_OUTPUT_OFFLINE,  /* buf_size=0 → sink-frame, VO supplies DMA target */
+        .hw_id       = MPI_VPSS_HW_AUTO,
+        .buf_addr    = NULL,
+        .buf_size    = 0,   /* sink-frame: no VPSS local queue, zero CPU copy */
+    };
+    ret = mpi_vpss_create_chn(ctx->vpss_grp, g_xsmt_ctx.pip_chn, &pip_attr);
+    if (ret != MPI_SUCCESS) {
+        log_error("%s: mpi_vpss_create_chn(pip) failed (ret=%d)\n", __func__, ret);
+        goto err;
+    }
+    ret = mpi_vpss_enable_chn(ctx->vpss_grp, g_xsmt_ctx.pip_chn);
+    if (ret != MPI_SUCCESS) {
+        log_error("%s: mpi_vpss_enable_chn(pip) failed (ret=%d)\n", __func__, ret);
+        mpi_vpss_destroy_chn(ctx->vpss_grp, g_xsmt_ctx.pip_chn);
+        goto err;
+    }
+    pip_created = 1;
+#endif
+
+    /* --- 4. find + create + start VENC --- */
     ret = mpi_venc_find_free_chn(&g_xsmt_ctx.venc_chn);
     if (ret != MPI_SUCCESS) {
         log_error("%s: no free VENC channel (ret=%d)\n", __func__, ret);
-        goto err_vpss;
+        goto err;
     }
 
-    /* --- configure VENC (JPEG encoder, OFFLINE / MANU mode) ---
-     * OFFLINE uses JPEG_CODEC_ENC_MANU: semaphore acquired+released per
-     * frame, allowing VDEC decoder to interleave for full-duplex on the
-     * single JPEG hardware block.  See mpi_video_net.c UVC path for the
-     * canonical time-division multiplex pattern.
-     */
+    /* --- configure VENC (JPEG encoder) ---
+     * H264: OFFLINE / MANU (app feeds frames, per-frame codec token handoff).
+     * JPEG: INPUT_ONLINE — the ONLINE VPSS chn feeds VENC over the bind, no
+     * mpi_venc_send_frame. The encoder opens JPEG_CODEC_ENC_AUTO at bind time
+     * and holds the codec token for the whole session; that is safe only because
+     * the recv path decodes in software (no hardware VDEC to contend with). */
     mpi_venc_chn_attr_t venc_attr = {
         .hw_dev          = 0,
 #if KWT_USE_H264
@@ -151,14 +203,12 @@ static int kwt_xsmt_vpss_venc_open(app_camera_handle_t ctx)
         .thread_prio     = KWT_CAMERA_H264_THREAD_PRIO,
 #else
         .type            = MPI_VENC_TYPE_JPEG,
-        .input_mode      = MPI_VENC_INPUT_OFFLINE,
+        .input_mode      = MPI_VENC_INPUT_ONLINE,
         .quality         = KWT_CAMERA_JPEG_QUALITY,
         .in_width        = KWT_CAMERA_WIDTH,
         .in_height       = KWT_CAMERA_HEIGHT,
         .in_format       = MPI_PIXEL_FMT_YUV422_PACKED,
         .in_yuv_order    = MPI_YUV_ORDER_YUYV,
-        .buf_addr        = NULL,
-        .buf_size        = KWT_CAMERA_STREAM_BUF_SZ,
         .fps             = KWT_CAMERA_FPS,
         .abr_kbps        = KWT_CAMERA_ABR_KBPS,
         .stream_buf_size = KWT_CAMERA_STREAM_BUF_SZ,
@@ -168,28 +218,124 @@ static int kwt_xsmt_vpss_venc_open(app_camera_handle_t ctx)
     ret = mpi_venc_create_chn(g_xsmt_ctx.venc_chn, &venc_attr);
     if (ret != MPI_SUCCESS) {
         log_error("%s: mpi_venc_create_chn failed (ret=%d)\n", __func__, ret);
-        goto err_vpss;
+        goto err;
     }
 
     ret = mpi_venc_start_chn(g_xsmt_ctx.venc_chn);
     if (ret != MPI_SUCCESS) {
         log_error("%s: mpi_venc_start_chn failed (ret=%d)\n", __func__, ret);
         mpi_venc_destroy_chn(g_xsmt_ctx.venc_chn);
-        goto err_vpss;
+        goto err;
     }
+    venc_started = 1;
+
+    /* --- 5. JPEG: create+start a VO chn (fb6) and bind the sink-frame PIP → VO
+     * FIRST, so this bind's sync_src_link links the group SRC to the camera
+     * before the ONLINE chn0 bind (step 6) arms its line DMA. --- */
+#if !KWT_USE_H264
+    ret = mpi_vo_find_free_chn(&g_xsmt_ctx.vo_chn);
+    if (ret != MPI_SUCCESS) {
+        log_error("%s: mpi_vo_find_free_chn failed (ret=%d)\n", __func__, ret);
+        goto err;
+    }
+
+    {
+        mpi_vo_chn_attr_t vo_attr = {0};
+        strncpy(vo_attr.fb_name, KWT_PIP_FB_NAME, sizeof(vo_attr.fb_name) - 1);
+        vo_attr.fb_num        = 2;
+        vo_attr.fb_width      = KWT_PIP_WIDTH;
+        vo_attr.fb_height     = KWT_PIP_HEIGHT;
+        vo_attr.window_width  = KWT_PIP_WIDTH;
+        vo_attr.window_height = KWT_PIP_HEIGHT;
+        vo_attr.fb_format     = FB_COLOR_FORMAT_YUV420P;   /* NV12, matches the fb6 LVGL widget */
+        vo_attr.combine       = 1;
+        ret = mpi_vo_create_chn(g_xsmt_ctx.vo_chn, &vo_attr);
+        if (ret != MPI_SUCCESS) {
+            log_error("%s: mpi_vo_create_chn failed (ret=%d)\n", __func__, ret);
+            goto err;
+        }
+        ret = mpi_vo_start_chn(g_xsmt_ctx.vo_chn);
+        if (ret != MPI_SUCCESS) {
+            log_error("%s: mpi_vo_start_chn failed (ret=%d)\n", __func__, ret);
+            mpi_vo_destroy_chn(g_xsmt_ctx.vo_chn);
+            goto err;
+        }
+        vo_started = 1;
+    }
+
+    {
+        mpi_chn_t pip_src = {.mod_id = MPI_MOD_ID_VPSS, .dev_id = ctx->vpss_grp, .chn_id = g_xsmt_ctx.pip_chn};
+        mpi_chn_t vo_dst  = {.mod_id = MPI_MOD_ID_VO,   .dev_id = 0,            .chn_id = g_xsmt_ctx.vo_chn};
+        ret = mpi_sys_bind(&pip_src, &vo_dst);
+        if (ret != MPI_SUCCESS) {
+            log_error("%s: mpi_sys_bind pip->vo failed (ret=%d)\n", __func__, ret);
+            goto err;
+        }
+        g_xsmt_ctx.pip_vo_bound = 1;
+    }
+#endif
+
+    /* --- 6. JPEG branch: bind VPSS chn0 → VENC. Runs AFTER the pip→VO bind,
+     * so src_linked is already set and this bind's sync_src_link no-ops. The
+     * bind callback sets active_chn_mask BIT(0) + re-runs try_start_online with
+     * state.bound=1, switching the DST into ONLINE (line) mode. --- */
+#if !KWT_USE_H264
+    {
+        mpi_chn_t vpss_src = {.mod_id = MPI_MOD_ID_VPSS, .dev_id = ctx->vpss_grp, .chn_id = g_xsmt_ctx.vpss_chn};
+        mpi_chn_t venc_dst = {.mod_id = MPI_MOD_ID_VENC, .dev_id = 0,            .chn_id = g_xsmt_ctx.venc_chn};
+        ret = mpi_sys_bind(&vpss_src, &venc_dst);
+        if (ret != MPI_SUCCESS) {
+            log_error("%s: mpi_sys_bind vpss->venc failed (ret=%d)\n", __func__, ret);
+            goto err;
+        }
+        chn0_bound = 1;
+    }
+#endif
 
     /* cache vpss_grp for worker thread use */
     g_xsmt_ctx.vpss_grp = ctx->vpss_grp;
 
+#if KWT_USE_H264
     log_info("%s: VPSS grp=%d chn=%d (OFFLINE) VENC chn=%d (OFFLINE/MANU) ok\n",
              __func__, ctx->vpss_grp, g_xsmt_ctx.vpss_chn, g_xsmt_ctx.venc_chn);
-
-    os_sem_create(&g_frames_held, 0);
+#else
+    log_info("%s: VPSS grp=%d chn=%d (ONLINE) pip chn=%d (sink->VO chn=%d) VENC chn=%d (ONLINE) ok\n",
+             __func__, ctx->vpss_grp, g_xsmt_ctx.vpss_chn, g_xsmt_ctx.pip_chn, g_xsmt_ctx.vo_chn, g_xsmt_ctx.venc_chn);
+#endif
 
     return 0;
 
-err_vpss:
-    mpi_vpss_disable_chn(ctx->vpss_grp, g_xsmt_ctx.vpss_chn);
+err:
+    /* reverse-order teardown */
+#if !KWT_USE_H264
+    if (g_xsmt_ctx.pip_vo_bound) {
+        mpi_chn_t pip_src = {.mod_id = MPI_MOD_ID_VPSS, .dev_id = ctx->vpss_grp, .chn_id = g_xsmt_ctx.pip_chn};
+        mpi_chn_t vo_dst  = {.mod_id = MPI_MOD_ID_VO,   .dev_id = 0,            .chn_id = g_xsmt_ctx.vo_chn};
+        (void)mpi_sys_unbind(&pip_src, &vo_dst);
+        g_xsmt_ctx.pip_vo_bound = 0;
+    }
+    if (vo_started) {
+        mpi_vo_stop_chn(g_xsmt_ctx.vo_chn);
+        mpi_vo_destroy_chn(g_xsmt_ctx.vo_chn);
+        vo_started = 0;
+    }
+    if (pip_created) {
+        mpi_vpss_disable_chn(ctx->vpss_grp, g_xsmt_ctx.pip_chn);
+        mpi_vpss_destroy_chn(ctx->vpss_grp, g_xsmt_ctx.pip_chn);
+    }
+    if (chn0_bound) {
+        mpi_chn_t vpss_src = {.mod_id = MPI_MOD_ID_VPSS, .dev_id = ctx->vpss_grp, .chn_id = g_xsmt_ctx.vpss_chn};
+        mpi_chn_t venc_dst = {.mod_id = MPI_MOD_ID_VENC, .dev_id = 0,            .chn_id = g_xsmt_ctx.venc_chn};
+        (void)mpi_sys_unbind(&vpss_src, &venc_dst);
+    }
+#endif
+    if (venc_started) {
+        mpi_venc_stop_chn(g_xsmt_ctx.venc_chn);
+        mpi_venc_destroy_chn(g_xsmt_ctx.venc_chn);
+    }
+    if (chn0_enabled) {
+        mpi_vpss_disable_chn(ctx->vpss_grp, g_xsmt_ctx.vpss_chn);
+    }
     mpi_vpss_destroy_chn(ctx->vpss_grp, g_xsmt_ctx.vpss_chn);
     return -1;
 }
@@ -200,7 +346,18 @@ err_vpss:
 
 static void kwt_xsmt_vpss_venc_close(app_camera_handle_t ctx)
 {
-    /* 排空 VENC 后再 stop: mpi_venc_stop_chn 在 offline_busy/frame_queue 非空时
+    /* 1. JPEG branch: unbind VPSS chn → VENC first (stops the ONLINE feed,
+     *    canonical order app_camera_vpss_venc_net_close). H264: no bind. */
+#if !KWT_USE_H264
+    {
+        mpi_chn_t vpss_src = {.mod_id = MPI_MOD_ID_VPSS, .dev_id = ctx->vpss_grp, .chn_id = g_xsmt_ctx.vpss_chn};
+        mpi_chn_t venc_dst = {.mod_id = MPI_MOD_ID_VENC, .dev_id = 0,            .chn_id = g_xsmt_ctx.venc_chn};
+        int unbind_ret = mpi_sys_unbind(&vpss_src, &venc_dst);
+        log_info("%s: vpss->venc unbind ret=%d\n", __func__, unbind_ret);
+    }
+#endif
+
+    /* 2. 排空 VENC 后再 stop: mpi_venc_stop_chn 在 offline_busy/frame_queue 非空时
      * 返回 MPI_ERR_BUSY 并跳过 jpeg codec close(泄漏 ENC_MANU 状态, 重连后解码器
      * 断言 mode err 3)。先等离线 worker 处理完残留帧、取回所有已编码 stream, 再
      * stop; 若仍 busy 则短暂等待重试, 避免静默泄漏。 */
@@ -246,8 +403,32 @@ static void kwt_xsmt_vpss_venc_close(app_camera_handle_t ctx)
         (void)mpi_sys_unbind(&vi_src, &vpss_dst);
     }
 
-    /* disable + destroy VPSS channel (source already stopped -> drains cleanly) */
+    /* disable + destroy VPSS channels (source already stopped -> drains cleanly).
+     * chn0 = send (ONLINE in JPEG mode), pip_chn = 80x60 sink-frame PIP (JPEG). */
     int vpss_ret = MPI_ERR_BUSY;
+#if !KWT_USE_H264
+    /* unbind pip→VO, then stop+destroy the VO chn (closes the fb6 producer).
+     * mpi_vpss_destroy_chn returns MPI_ERR_BUSY while the chn is bound, so the
+     * unbind MUST precede the pip disable/destroy (canonical
+     * app_camera_vpss_vo_bind_close). */
+    if (g_xsmt_ctx.pip_vo_bound) {
+        mpi_chn_t pip_src = {.mod_id = MPI_MOD_ID_VPSS, .dev_id = ctx->vpss_grp, .chn_id = g_xsmt_ctx.pip_chn};
+        mpi_chn_t vo_dst  = {.mod_id = MPI_MOD_ID_VO,   .dev_id = 0,            .chn_id = g_xsmt_ctx.vo_chn};
+        int unbind_ret = mpi_sys_unbind(&pip_src, &vo_dst);
+        log_info("%s: pip->vo unbind ret=%d\n", __func__, unbind_ret);
+        g_xsmt_ctx.pip_vo_bound = 0;
+    }
+    {
+        int vo_ret = mpi_vo_stop_chn(g_xsmt_ctx.vo_chn);
+        log_info("%s: vo stop ret=%d\n", __func__, vo_ret);
+        vo_ret = mpi_vo_destroy_chn(g_xsmt_ctx.vo_chn);
+        log_info("%s: vo destroy ret=%d\n", __func__, vo_ret);
+    }
+    vpss_ret = mpi_vpss_disable_chn(ctx->vpss_grp, g_xsmt_ctx.pip_chn);
+    log_info("%s: vpss pip disable ret=%d\n", __func__, vpss_ret);
+    vpss_ret = mpi_vpss_destroy_chn(ctx->vpss_grp, g_xsmt_ctx.pip_chn);
+    log_info("%s: vpss pip destroy ret=%d\n", __func__, vpss_ret);
+#endif
     vpss_ret = mpi_vpss_disable_chn(ctx->vpss_grp, g_xsmt_ctx.vpss_chn);
     log_info("%s: vpss disable ret=%d\n", __func__, vpss_ret);
     vpss_ret = mpi_vpss_destroy_chn(ctx->vpss_grp, g_xsmt_ctx.vpss_chn);
@@ -268,7 +449,16 @@ static void kwt_xsmt_vpss_venc_close(app_camera_handle_t ctx)
         ctx->vi_vpss_src_enabled = 0;
     }
 
-    os_sem_del(&g_frames_held, 0);
+#if !KWT_USE_H264
+    /* destroy the fb6 LVGL widget (PIP overlay); the fb6 producer (VO) is already
+     * closed above. H264 tears its fb6 widget down in kwt_xsmt_local_display_stop. */
+    {
+        lv_video_disp_handle_t *handle = lv_port_video_disp_get_instance_by_fb_index(6);
+        if (handle) {
+            lvgl_video_exit(handle);
+        }
+    }
+#endif
 
     log_info("%s: done\n", __func__);
 }
@@ -276,19 +466,21 @@ static void kwt_xsmt_vpss_venc_close(app_camera_handle_t ctx)
 /* ============================================================================
  * Internal: local camera preview PIP (fb6, overlaid in front of the spp fb5)
  *
- * Software producer: the sender cap thread already CPU-reads the VPSS OFFLINE
- * YUYV 320x240 frame for VENC; it also downscales that same frame to 80x60 NV12
- * and pushes it to fb6 via fb_draw_open/getmap/putmap.  No VPSS/VO channel is
- * created, so the sender still consumes only 1 IMC-dst (VENC) and the receiver
- * keeps its own VPSS — the 2-unit BR33 pool is not exceeded.  This runs in
- * kid_wt_video_xsmt_start().  The fb6 LVGL widget is created by
- * ui_action_video_intercom.c on the intercom screen LOAD; the two files
- * coordinate only via the shared fb name (dev_open is name-keyed/idempotent),
- * so this producer can open fb6 independently of the widget's create order.
+ * H264 branch ONLY.  The H264 sender reads the VPSS OFFLINE YUV420SP 320x240
+ * frame for VENC; this helper opens a software fb6 producer and the H264 cap
+ * thread downscales that frame to 80x60 NV12 via fb_draw_getmap/putmap.
+ *
+ * JPEG branch does NOT use this: the sink-frame VPSS chn1 -> VO hardware path
+ * (kwt_xsmt_vpss_venc_open step 5) writes fb6 directly with no CPU copy, so
+ * kwt_xsmt_local_display_start/stop are compile-time no-ops there.  The fb6 LVGL
+ * widget is created by ui_action_video_intercom.c on the intercom screen LOAD;
+ * the two files coordinate only via the shared fb name (dev_open is
+ * name-keyed/idempotent).
  * ============================================================================ */
 
 static int kwt_xsmt_local_display_start(app_camera_handle_t ctx)
 {
+#if KWT_USE_H264
     struct fb_draw_info info;
 
     (void)ctx;
@@ -315,10 +507,18 @@ static int kwt_xsmt_local_display_start(app_camera_handle_t ctx)
     log_info("%s: local PIP %s %dx%d@(%d,%d) ok (software)\n", __func__, KWT_PIP_FB_NAME,
              KWT_PIP_WIDTH, KWT_PIP_HEIGHT, KWT_PIP_LEFT, KWT_PIP_TOP);
     return 0;
+#else
+    /* JPEG: sink-frame PIP is produced by the VO chn (see kwt_xsmt_vpss_venc_open
+     * step 5). No software fb6 producer here — fb_draw_open(fb6) would double-produce
+     * the fb the VO already owns. */
+    (void)ctx;
+    return 0;
+#endif
 }
 
 static void kwt_xsmt_local_display_stop(app_camera_handle_t ctx)
 {
+#if KWT_USE_H264
     (void)ctx;
 
     /* close the fb6 software producer, then destroy the LVGL widget (by index) */
@@ -336,48 +536,17 @@ static void kwt_xsmt_local_display_stop(app_camera_handle_t ctx)
     }
 
     log_info("%s: done\n", __func__);
-}
-
-/* ============================================================================
- * Internal: YUYV 320x240 -> NV12 80x60 downscale (nearest-neighbor 4x decimation)
- *
- * Source is the packed YUYV frame the cap thread reads from the VPSS OFFLINE
- * channel (row pitch = src_stride bytes; 320/80 = 4, 240/60 = 4).  Output is
- * NV12 semi-planar: a Y plane (dst_w*dst_h) then the interleaved UV plane
- * (dst_w/2 * dst_h/2).  Each output pixel samples the top-left Y of a 4x4
- * source block; sx is always even so the Y0/U/V bytes line up.  U/V are already
- * 2x2-subsampled in YUYV, so sampling the block origin is a correct chroma
- * decimation.
- * ============================================================================ */
-static void kwt_yuyv_to_nv12_scale(const u8 *yuyv, u32 src_w, u32 src_h,
-                                   u32 src_stride,
-                                   u8 *dst_y, u8 *dst_uv,
-                                   u32 dst_w, u32 dst_h)
-{
-    u32 sx = src_w / dst_w;   /* 4 */
-    u32 sy = src_h / dst_h;   /* 4 */
-    u32 uv_w = dst_w / 2;
-    u32 dy, dx;
-
-    for (dy = 0; dy < dst_h; dy++) {
-        const u8 *row = yuyv + dy * sy * src_stride;
-        u8 *y_out = dst_y + dy * dst_w;
-        for (dx = 0; dx < dst_w; dx++) {
-            const u8 *p = row + dx * sx * 2;   /* YUYV: 2 bytes/px */
-            y_out[dx] = p[0];                  /* Y0 of the sampled pixel */
-            if ((dx & 1) == 0 && (dy & 1) == 0) {
-                u32 uv_off = (dy >> 1) * uv_w * 2 + (dx >> 1) * 2;
-                dst_uv[uv_off + 0] = p[1];     /* U */
-                dst_uv[uv_off + 1] = p[3];     /* V */
-            }
-        }
-    }
+#else
+    /* JPEG: fb6 producer (VO) is torn down in kwt_xsmt_vpss_venc_close; the fb6
+     * LVGL widget is destroyed there too. Nothing to do here. */
+    (void)ctx;
+#endif
 }
 
 /* ============================================================================
  * Internal: NV12 320x240 -> NV12 80x60 downscale (nearest-neighbor 4x decimation)
  *
- * H264 counterpart of kwt_yuyv_to_nv12_scale(): in H264 mode the VPSS OFFLINE
+ * H264-mode helper: the VPSS OFFLINE
  * channel emits semi-planar NV12 (YUV420SP) — a Y plane (stride x height)
  * followed by an interleaved UV plane (stride x height/2) at
  * c_addr = y_addr + y_len (mpi_vpss_fill_active_frame_info).  Output is NV12
@@ -418,8 +587,10 @@ static void kwt_nv12_to_nv12_scale(const u8 *src_y, const u8 *src_uv,
 }
 
 /* ============================================================================
- * Worker thread: polls VENC for encoded JPEG frames → vstream_send_frame()
+ * Worker thread (H264): polls VENC for encoded H264 frames → vstream_send_frame()
  * ============================================================================ */
+
+#if KWT_USE_H264
 
 static void kwt_xsmt_cap_thread(void *priv)
 {
@@ -452,15 +623,15 @@ static void kwt_xsmt_cap_thread(void *priv)
             mpi_vpss_release_chn_frame(g_xsmt_ctx.vpss_grp,
                                        g_xsmt_ctx.vpss_chn, &vpss_frame);
             os_time_dly(1);
+            log_info("flow control: drop frame");
             continue;
         }
         last_prod_ms = now_ms;
 
         /* 1.5. local camera PIP: downscale this frame to 80x60 NV12 and push it
          *      to fb6.  Must run BEFORE mpi_vpss_release_chn_frame() — the VPSS
-         *      buffer is recycled to the IMC on release. */
-#if KWT_USE_H264
-        /* H264: VPSS frame is NV12 (YUV420SP). Downscale NV12 -> NV12. */
+         *      buffer is recycled to the IMC on release.
+         *      H264: VPSS frame is NV12 (YUV420SP). Downscale NV12 -> NV12. */
         if (g_xsmt_ctx.pip_fb_draw) {
             struct fb_map_user map;
             memset(&map, 0, sizeof(map));
@@ -489,36 +660,6 @@ static void kwt_xsmt_cap_thread(void *priv)
                 fb_draw_putmap(g_xsmt_ctx.pip_fb_draw, &map);
             }
         }
-#else
-        if (g_xsmt_ctx.pip_fb_draw) {
-            struct fb_map_user map;
-            memset(&map, 0, sizeof(map));
-            if (fb_draw_getmap(g_xsmt_ctx.pip_fb_draw, &map) == 0) {
-                u8 *y_buf  = map.baddr;
-                u8 *uv_buf = map.uv_baddr ? map.uv_baddr
-                             : (map.baddr + KWT_PIP_WIDTH * KWT_PIP_HEIGHT);
-                if (y_buf && uv_buf) {
-                    kwt_yuyv_to_nv12_scale(vpss_frame.y_addr,
-                                           KWT_CAMERA_WIDTH, KWT_CAMERA_HEIGHT,
-                                           vpss_frame.stride,
-                                           y_buf, uv_buf,
-                                           KWT_PIP_WIDTH, KWT_PIP_HEIGHT);
-                    /* cacheable PSRAM: flush CPU writes so the display DMA
-                     * sees them (separate vs contiguous Y/UV buffers) */
-                    if (map.uv_baddr) {
-                        DcuFlushinvRegion((void *)map.baddr,
-                                          KWT_PIP_WIDTH * KWT_PIP_HEIGHT);
-                        DcuFlushinvRegion((void *)map.uv_baddr,
-                                          (KWT_PIP_WIDTH * KWT_PIP_HEIGHT) / 2);
-                    } else {
-                        DcuFlushinvRegion((void *)map.baddr,
-                                          (KWT_PIP_WIDTH * KWT_PIP_HEIGHT * 3) / 2);
-                    }
-                }
-                fb_draw_putmap(g_xsmt_ctx.pip_fb_draw, &map);
-            }
-        }
-#endif
 
         /* 2. Send YUV to VENC for manual JPEG encoding.
          *    mpi_venc_send_frame() 只是把 VPSS 帧浅拷贝进离线 worker 的 frame_queue,
@@ -592,6 +733,63 @@ static void kwt_xsmt_cap_thread(void *priv)
     log_info("%s: stopped\n", __func__);
 }
 
+#else /* !KWT_USE_H264 */
+
+/* ============================================================================
+ * Worker thread (JPEG): ONLINE drainer — VENC is driven by the VPSS hardware
+ * link at ~10fps; this thread only drains encoded streams (drop when TX full).
+ * The local PIP is produced by the sink-frame VPSS chn1 -> VO -> fb6 hardware
+ * path (see kwt_xsmt_vpss_venc_open step 5), so there is no CPU PIP poll here.
+ * ============================================================================ */
+
+static void kwt_xsmt_cap_thread(void *priv)
+{
+    mpi_stream_t stream;
+    int ret;
+    u32 venc_streams = 0;   /* 累计取到的已编码流数 */
+    u32 tx_drops     = 0;   /* TX 满被丢弃的已编码流数 */
+    extern u32 timer_get_ms(void);
+    u32 last_log = timer_get_ms();
+
+    log_info("%s: started\n", __func__);
+
+    while (!g_xsmt_ctx.exit_flag) {
+        int did_work = 0;
+
+        /* 1. drain encoded JPEG stream. ONLINE 编码无法节流(TX 满时丢弃已编码
+         *    帧, drop-at-stream 背压), 帧率由 VENC fps=10 决定。 */
+        ret = mpi_venc_get_stream(g_xsmt_ctx.venc_chn, &stream, 0);
+        if (ret == MPI_SUCCESS) {
+            did_work = 1;
+            if (stream.addr && stream.len > 0) {
+                extern u32 get_bredr_tx_remain_size(void);
+                if (get_bredr_tx_remain_size() >= (4 * 1024)) {
+                    vstream_send_frame((u8 *)stream.addr, stream.len,
+                                       VSTREAM_JPEG_TYPE_VIDEO);
+                } else {
+                    tx_drops++;
+                }
+            }
+            mpi_venc_release_stream(g_xsmt_ctx.venc_chn, &stream);
+            venc_streams++;
+        }
+
+        /* 每秒打印一次发送端健康度; PIP 由 VO 硬件路径驱动, 无 CPU 计数 */
+        if ((timer_get_ms() - last_log) >= 1000) {
+            log_info("xsmt: venc=%u txdrop=%u (pip=VO)\n", venc_streams, tx_drops);
+            last_log = timer_get_ms();
+        }
+
+        if (!did_work) {
+            os_time_dly(1);
+        }
+    }
+
+    log_info("%s: stopped (venc=%u txdrop=%u)\n", __func__, venc_streams, tx_drops);
+}
+
+#endif /* KWT_USE_H264 */
+
 /* ============================================================================
  * Public API
  * ============================================================================ */
@@ -624,6 +822,9 @@ void kid_wt_video_xsmt_get_last_params(int *w, int *h, int *fps, int *abr)
 
 int kid_wt_video_xsmt_start(void)
 {
+    extern void mem_stats(void);
+    mem_stats();
+
     int ret;
 
     log_info("%s: enter\n", __func__);
@@ -754,18 +955,19 @@ void kid_wt_video_xsmt_stop(void)
  * Receiver: vstream VIDEO_FRAME → JPEG decode → LVGL display
  *
  * Polls vstream_recv_acquire_frame(VIDEO_FRAME) for JPEG frames received
- * over SPP, decodes them via app_playback_one_image_data() (VDEC→VPSS→VO→fb5),
- * and displays them through the fb5 LVGL widget created by
- * ui_action_video_intercom.c (LVGL reads fb5 via FBIOGET_FBUFFER_IDLE).
+ * over SPP, decodes them via software TJpgDec → NV12 → fb5 (JPEG branch) or
+ * hardware VDEC→VPSS→VO→fb5 (H264 branch), and displays them through the fb5
+ * LVGL widget created by ui_action_video_intercom.c (LVGL reads fb5 via
+ * FBIOGET_FBUFFER_IDLE).
  * ============================================================================ */
 
 typedef struct {
-    app_playback_handle_t pb_handle;     /* handle from app_playback_open() */
+    void *fb5_draw;                      /* fb_draw producer handle for fb5 (software decode) */
     u8  exit_flag;                       /* signal worker thread to stop */
     int thread_pid;                      /* worker thread handle */
     u16 fps_tid;                         /* 1Hz FPS-printer sys_timer id (0 = not running) */
     u32 fps_count;                       /* received-frame count since last 1s print */
-    u8  pipeline_opened;                 /* app_playback_open() / H264 pipeline open succeeded */
+    u8  pipeline_opened;                 /* fb5 producer open / H264 pipeline open succeeded */
 #if KWT_USE_H264
     mpi_vdec_dev_t  vdec_dev;            /* 0 */
     mpi_vdec_chn_t  vdec_chn;            /* from mpi_vdec_find_free_chn */
@@ -1009,6 +1211,101 @@ static void kwt_recv_h264_pipeline_close(void)
 
 #endif /* KWT_USE_H264 */
 
+#if !KWT_USE_H264
+
+/* ============================================================================
+ * Software JPEG decode (recv path): TJpgDec → RGB888 → NV12 → fb5
+ *
+ * Replaces the hardware app_playback pipeline (VDEC→VPSS→VO) so the JPEG codec
+ * block and one IMC DST unit are freed for the send-side ONLINE VPSS→VENC.
+ * TJpgDec state is static: the JDEC struct (~100 B) + 4 KB pool never live on
+ * the 2048-B recv thread stack.
+ * ============================================================================ */
+
+static JDEC g_jd;
+/* u32[] so the pool base is 4-byte aligned: tjpgd stores int32_t qttbl tables
+ * at pool offsets verbatim (alloc_pool returns the base unaligned). */
+static u32   g_jd_pool[1024];              /* 4 KB: JD_SZBUF 512 + tables + MCU bufs */
+static struct fb_map_user *g_recv_fb5_map;    /* fb5 map during one decode */
+
+typedef struct {
+    const u8 *data;
+    size_t   len;
+    size_t   off;
+} kwt_jd_in_t;
+
+/* TJpgDec input function: serve bytes from the acquired SPP frame buffer.
+ * Return 0 at end of stream.
+ * CONTRACT (see tjpgd.c): buf == NULL means "skip ndata bytes, do not copy"
+ * (used for unknown segments such as APP0/JFIF). Must still advance off.
+ * NOTE: byte-wise copy instead of memcpy() — sizes are at most JD_SZBUF
+ * (512), so the loop costs microseconds and avoids any ROM-memcpy
+ * alignment behavior on the unaligned SPP lbuf data (offset 6). */
+static size_t kwt_jd_infunc(JDEC *jd, u8 *buf, size_t want)
+{
+    kwt_jd_in_t *in = (kwt_jd_in_t *)jd->device;
+    size_t n = in->len - in->off;
+    size_t i;
+
+    if (n > want) {
+        n = want;
+    }
+    if (buf) {
+        for (i = 0; i < n; i++) {
+            buf[i] = in->data[in->off + i];
+        }
+    }
+    in->off += n;
+    return n;   /* 0 = end of stream */
+}
+
+/* TJpgDec output function: convert each MCU from packed RGB888 (tjpgd writes
+ * B,G,R byte order, jd_mcu_output tjpgd.c) into the fb5 NV12 buffer.
+ * rect.right/bottom are INCLUSIVE (jd_mcu_output rect calc). Chroma: NV12
+ * holds one U/V pair per 2x2 block — sample the even-position pixels. */
+static int kwt_jd_bgr_to_nv12_outfunc(JDEC *jd, void *bitmap, JRECT *rect)
+{
+    const u8 *bgr = (const u8 *)bitmap;
+    struct fb_map_user *map = g_recv_fb5_map;
+    u32 w = (u32)rect->right - rect->left + 1;
+    u32 h = (u32)rect->bottom - rect->top + 1;
+    u8 *y_plane;
+    u8 *uv_plane;
+    u32 x, y;
+
+    (void)jd;
+
+    /* fb5 map 无效时中止解码 (返回 0 -> jd_decomp 以 JDR_INTR 干净退出,
+     * 而不是向 NULL 写入触发与 infunc 同类别的硬件异常) */
+    if (!map || !map->baddr) {
+        return 0;
+    }
+    y_plane  = map->baddr;
+    uv_plane = map->uv_baddr ? map->uv_baddr
+               : (map->baddr + KWT_CAMERA_WIDTH * KWT_CAMERA_HEIGHT);
+
+    for (y = 0; y < h; y++) {
+        u32 img_y = rect->top + y;
+        const u8 *row = bgr + y * w * 3;
+        u8 *y_out = y_plane + img_y * KWT_CAMERA_WIDTH;
+        for (x = 0; x < w; x++) {
+            u32 img_x = rect->left + x;
+            const u8 *p = row + x * 3;
+            int b = p[0], g = p[1], r = p[2];   /* signed: BT.601 uses negative chroma coefficients */
+
+            y_out[img_x] = (u8)(((66 * r + 129 * g + 25 * b + 128) >> 8) + 16);
+            if ((img_x & 1) == 0 && (img_y & 1) == 0) {
+                u32 uv_off = (img_y >> 1) * KWT_CAMERA_WIDTH + (img_x >> 1) * 2;
+                uv_plane[uv_off]     = (u8)(((-38 * r - 74 * g + 112 * b + 128) >> 8) + 128);
+                uv_plane[uv_off + 1] = (u8)(((112 * r - 94 * g - 18 * b + 128) >> 8) + 128);
+            }
+        }
+    }
+    return 1;   /* 1 = continue decoding */
+}
+
+#endif /* !KWT_USE_H264 */
+
 static void kwt_video_recv_thread(void *priv)
 {
     u8 *buf = NULL;
@@ -1047,16 +1344,53 @@ static void kwt_video_recv_thread(void *priv)
                 log_info("vdec send_stream ret=%d\n", ret);
             }
 #else
-            ret = app_playback_one_image_data(g_recv_ctx.pb_handle,
-                                              buf, (u32)len);
-            log_info("decode ret=%d\n", ret);
-#endif
-            video_stream_recv_release_frame(buf);
-#if !KWT_USE_H264
-            if (ret == APP_PLAYBACK_ERR_BUSY) {
-                os_time_dly(1);
+            /* 软件 JPEG 解码: TJpgDec 内联解码 SPP 收到的帧并写入 fb5。
+             * 释放硬件 VDEC/VPSS/VO(JPEG codec + IMC DST)给发送端 ONLINE。 */
+            {
+                kwt_jd_in_t in = { .data = buf, .len = (size_t)len, .off = 0 };
+                struct fb_map_user map;
+                JRESULT jr;
+
+                memset(&g_jd, 0, sizeof(g_jd));
+                jr = jd_prepare(&g_jd, kwt_jd_infunc, g_jd_pool, sizeof(g_jd_pool), &in);
+                if (jr != JDR_OK) {
+                    log_error("jd_prepare failed r=%d len=%d\n", jr, len);
+                } else if (g_jd.width > KWT_CAMERA_WIDTH || g_jd.height > KWT_CAMERA_HEIGHT) {
+                    /* 收到的 JPEG SOF 尺寸超过 fb5(320x240): kwt_jd_bgr_to_nv12_outfunc
+                     * 以固定 320 步长写 Y/UV 平面, 不校验 jd->width/height, 越界会覆盖
+                     * fb5 之外的内存。解码前拒绝, 防止远程畸形 JPEG 触发 OOB 写。 */
+                    log_error("jd SOF dims out of bounds: %u x %u\n",
+                              g_jd.width, g_jd.height);
+                } else {
+                    memset(&map, 0, sizeof(map));
+                    if (fb_draw_getmap(g_recv_ctx.fb5_draw, &map) != 0) {
+                        log_error("fb5 getmap failed\n");
+                    } else {
+                        g_recv_fb5_map = &map;
+                        jr = jd_decomp(&g_jd, kwt_jd_bgr_to_nv12_outfunc, 0);
+                        g_recv_fb5_map = NULL;
+                        if (jr != JDR_OK) {
+                            log_error("jd_decomp failed r=%d\n", jr);
+                        }
+                        /* flush CPU 写入的 NV12 数据, 再 putmap 交给 LVGL 显示。
+                         * fb5 用 FB_COLOR_FORMAT_YUV420P 但 ysize=0 打开 => 连续分配
+                         * (map->uv_baddr == NULL), UV 平面紧跟 Y 之后 (baddr + W*H)。
+                         * 之前的 flush 只覆盖 Y 平面, UV 的脏 cache line 不会写回 PSRAM,
+                         * 显示 DMA 读到的是上一帧/清零的色度 -> 画面褪色/颜色不对。
+                         * 连续分配时须 flush 整个 W*H*3/2 (与 H264 PIP 下采样一致)。 */
+                        if (map.uv_baddr) {
+                            DcuFlushinvRegion((void *)map.baddr, KWT_CAMERA_WIDTH * KWT_CAMERA_HEIGHT);
+                            DcuFlushinvRegion((void *)map.uv_baddr, KWT_CAMERA_WIDTH * KWT_CAMERA_HEIGHT / 2);
+                        } else {
+                            DcuFlushinvRegion((void *)map.baddr, KWT_CAMERA_WIDTH * KWT_CAMERA_HEIGHT * 3 / 2);
+                        }
+                        fb_draw_putmap(g_recv_ctx.fb5_draw, &map);
+                    }
+                }
+                ret = 0;
             }
 #endif
+            video_stream_recv_release_frame(buf);
         } else {
             os_time_dly(1);
             if (++no_frame_ticks >= 1000) {
@@ -1106,7 +1440,7 @@ int kid_wt_video_recv_start(void)
     return 0;
 #endif
 
-    app_playback_ret_t ret;
+    int ret;
 
     /* idempotent */
     if (kid_wt_video_recv_is_running()) {
@@ -1122,17 +1456,19 @@ int kid_wt_video_recv_start(void)
         return -1;
     }
 #else
-    /* fb5 LVGL 控件由 ui_action_video_intercom.c 在 GUI_SCREEN_VIDEO_INTERCOM
-     * LOAD 时创建。此处只打开 playback 流水线; dev_open 按名字复用 fb5 设备。 */
-    app_playback_display_attr_t attr = {
-        .fb_name = KWT_RECV_FB_NAME,
-        .fb_num  = 2,
-        .width   = KWT_CAMERA_WIDTH,
-        .height  = KWT_CAMERA_HEIGHT,
-    };
-    ret = app_playback_open(&g_recv_ctx.pb_handle, &attr);
-    log_info("app_playback_open ret=%d\n", ret);
-    if (ret != APP_PLAYBACK_OK) {
+    /* JPEG: 软件解码。fb5 由 fb_draw 软件生产者打开(LVGL 控件按名字复用
+     * 同一设备, 幂等), 替代 app_playback 的硬件 VDEC→VPSS→VO 流水线。 */
+    struct fb_draw_info info;
+    memset(&info, 0, sizeof(info));
+    info.name    = KWT_RECV_FB_NAME;
+    info.width   = KWT_CAMERA_WIDTH;
+    info.height  = KWT_CAMERA_HEIGHT;
+    info.format  = FB_COLOR_FORMAT_YUV420P;   /* NV12, matches the LVGL widget */
+    info.fb_num  = 2;                         /* double buffering */
+    info.combine = 1;                         /* composite via fb_out */
+    g_recv_ctx.fb5_draw = fb_draw_open(&info);
+    if (!g_recv_ctx.fb5_draw) {
+        log_error("%s: fb_draw_open(%s) failed\n", __func__, KWT_RECV_FB_NAME);
         return -1;
     }
     g_recv_ctx.pipeline_opened = 1;
@@ -1152,7 +1488,8 @@ int kid_wt_video_recv_start(void)
 #if KWT_USE_H264
         kwt_recv_h264_pipeline_close();
 #else
-        app_playback_close(&g_recv_ctx.pb_handle);
+        fb_draw_close(g_recv_ctx.fb5_draw);
+        g_recv_ctx.fb5_draw = NULL;
         g_recv_ctx.pipeline_opened = 0;
 #endif
         return -1;
@@ -1192,12 +1529,13 @@ void kid_wt_video_recv_stop(void)
     /* 2. teardown the VDEC->VPSS->VO pipeline (fb5 hardware producer) */
     kwt_recv_h264_pipeline_close();
 #else
-    /* 2. close playback pipeline (VDEC/VPSS/VO teardown) */
-    if (g_recv_ctx.pipeline_opened && g_recv_ctx.pb_handle) {
-        app_playback_close(&g_recv_ctx.pb_handle);
-        g_recv_ctx.pipeline_opened = 0;
-        log_info("playback closed\n");
+    /* 2. close the fb5 software producer (fb_draw) */
+    if (g_recv_ctx.fb5_draw) {
+        fb_draw_close(g_recv_ctx.fb5_draw);
+        g_recv_ctx.fb5_draw = NULL;
+        log_info("fb5 software producer closed\n");
     }
+    g_recv_ctx.pipeline_opened = 0;
 #endif
 
     /* 2.5 清空接收端视频/音频 lbuf 队列 + 复位解析状态, 避免上一会话残帧

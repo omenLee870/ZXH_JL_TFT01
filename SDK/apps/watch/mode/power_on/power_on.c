@@ -35,10 +35,6 @@ void set_need_password(u8 flag)
     (void)flag;  /* 默认空实现: 当 jlui password UI 未编译时无操作 */
 }
 
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_KID_CAMERA)
-extern u8 app_get_kid_camera_boot_mode(void);
-#endif
-
 static void power_on_ui_enter()
 {
     UI_SHOW_WINDOW(ID_WINDOW_POWER_ON);
@@ -88,8 +84,7 @@ static void poweron_task_start()
 
 #if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_KID_CAMERA)
     /* 开机进 IDLE 待机/主界面, 不直接进任何功能模式;
-     * 由 UI 选择后再 app_send_message(APP_MSG_GOTO_MODE, APP_MODE_VIDEO_REC/PHOTO/VIDEO_DEC) 进入。
-     * (原 app_get_kid_camera_boot_mode() 会直接进 VIDEO_REC, 已废弃) */
+     * 由 UI 选择后再 app_send_message(APP_MSG_GOTO_MODE, APP_MODE_VIDEO_REC/PHOTO/VIDEO_DEC) 进入。*/
     if (app_goto_mode_consume_pending()) {
         /* 用户已提前选模式，不再发 IDLE 挤掉它 */
         return;

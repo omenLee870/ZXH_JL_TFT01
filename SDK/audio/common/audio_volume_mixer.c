@@ -67,7 +67,16 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#if (defined(TCFG_SUB_CASE_TYPE) && defined(SUB_CASE_TYPE_AI_GLASSES) && \
+     (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES))
+/* 智能眼镜(多通道调音): "系统音量(sys)"通道需要能独立设置, 放开提示音音量固定限制;
+ * 同时 audio_digital_vol_node_name_get 会让提示音数字音量节点走 Vol_SysTone,
+ * 与 RCSP 0x08 系统音量通道 clamp 用的 SysVol_TONE 上限保持一致 */
+#define WARNING_TONE_VOL_FIXED  0
+#else
+/* 其它子产品维持默认: 提示音音量固定 */
 #define WARNING_TONE_VOL_FIXED 	1
+#endif
 
 #ifdef	DVOL_2P1_CH_DVOL_ADJUST_NODE
 #if (DVOL_2P1_CH_DVOL_ADJUST_NODE == DVOL_2P1_CH_DVOL_ADJUST_LR)

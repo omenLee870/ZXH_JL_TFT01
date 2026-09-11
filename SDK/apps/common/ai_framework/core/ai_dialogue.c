@@ -1,5 +1,7 @@
 #include "ai_internal.h"
-#include "sdk_config.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -625,3 +627,5 @@ void ai_vision_result_free(struct ai_vision_result *result)
     ai_free_string(&result->text);
     ai_free_string(&result->raw_json);
 }
+
+#endif

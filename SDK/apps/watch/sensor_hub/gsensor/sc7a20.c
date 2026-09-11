@@ -23,8 +23,15 @@
 /***使用驱动前请根据实际接线情况配置（7bit）IIC地址******/
 /**SC7A20的SDO 脚接地：            0x18****************/
 /**SC7A20的SDO 脚接电源：           0x19****************/
-#define IIC_ADDR_W          (0x19U << 1 | 0x0)
-#define IIC_ADDR_R          (0x19U << 1 | 0x1)
+
+#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_DASHBOARD)
+static u8 sensor_iic_addr = 0x18U;
+#else
+static u8 sensor_iic_addr = 0x19U;
+#endif
+#define IIC_ADDR_W          (sensor_iic_addr << 1 | 0x0)
+#define IIC_ADDR_R          (sensor_iic_addr << 1 | 0x1)
+
 /*******************************************************/
 static u8 sleep_mode = 0;
 static sensor_info_t sensor_info = {

@@ -21,11 +21,12 @@
 #if TCFG_USB_SLAVE_HID_ENABLE
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[USB]"
+#define LOG_TAG             "[HID_DEV]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -156,7 +157,7 @@ static void *get_hid_report_desc(u32 index)
 
 static void hid_output_report_handler(u8 *buf, u32 len)
 {
-    log_info("hid output");
+    log_debug("hid output");
     log_debug_hexdump(buf, len);
 
 }
@@ -229,7 +230,7 @@ void hid_release(const usb_dev usb_id)
 static void hid_reset(struct usb_device_t *usb_device, u32 itf)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
-    log_debug("hid_reset");
+    log_info("hid_reset");
 #if USB_ROOT2
     usb_disable_ep(usb_id, HID_EP_IN);
 #else
@@ -360,7 +361,7 @@ static u32 hid_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreques
 
 u32 hid_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 {
-    log_debug("hid interface num:%d\n", *cur_itf_num);
+    log_info("hid interface num:%d\n", *cur_itf_num);
     struct usb_device_t *usb_device = usb_id2device(usb_id);
     u8 *_ptr = ptr;
     memcpy(ptr, sHIDDescriptor, sizeof(sHIDDescriptor));
@@ -389,8 +390,10 @@ void hid_key_handler(struct usb_device_t *usb_device, u32 hid_key)
     const usb_dev usb_id = usb_device2id(usb_device);
     u8 key_buf[4] = {0};
     if (usb_get_ep_status(usb_id, HID_EP_IN)) {
+        log_warn("hid ep not ready");
         return;
     }
+    log_debug("hid_key: %x", hid_key);
 
     if (usb_get_host_type(usb_id) == HOST_TYPE_IOS) {
         key_buf[0] = 0x01;  //report id
@@ -432,4 +435,5 @@ void hid_key_handler_send_one_packet(struct usb_device_t *usb_device, u32 hid_ke
     }
 }
 
+USB_CLASS_REGISTER(hid_desc_config, hid_register, hid_release, TCFG_USB_HID_INDEX, HID_CLASS, 0);
 #endif

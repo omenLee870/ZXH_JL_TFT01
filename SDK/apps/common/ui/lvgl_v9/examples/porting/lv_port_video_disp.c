@@ -24,6 +24,11 @@
 #include "fb.h"
 #include "os/os_api.h"
 
+#if LV_USE_DRAW_JLGPU_LIST == 2
+/* LIST==2 异步渲染线程排空(定义在 lv_port_disp.c): 归还视频 buffer 前调用 */
+extern void lv_jlgpu_run_disp_drain(void);
+#endif
+
 /*********************
  *      DEFINES
  *********************/
@@ -149,6 +154,19 @@ static int instance_registry_is_empty(void)
         }
     }
     return 1;
+}
+
+/* LVGL 的 STRETCH/TILE/CONTAIN/COVER 属"自动变换"align: 内部会霸占 scale,
+ * 并强制 rotation=0 / pivot=(0,0)(见 lv_image.c update_align)。本模块视频 obj 在
+ * create/set_effect 时被设成 STRETCH, 故其 pivot 恒为 (0,0) —— LVGL 默认的源中心
+ * LV_PCT(50) 早在进 STRETCH 那一刻就被覆写成像素 (0,0) 且不随 align 恢复。
+ * 本 helper 只负责把 align 切回手动组(CENTER)让 rotation 不被清零; 旋转中心不会
+ * 自动还原, 需要"绕视频中心"时由调用方显式 set_pivot(width/2, height/2)。 */
+static void video_disp_img_enable_manual_align(lv_obj_t *obj)
+{
+    if (obj && lv_image_get_inner_align(obj) >= _LV_IMAGE_ALIGN_AUTO_TRANSFORM) {
+        lv_image_set_inner_align(obj, LV_IMAGE_ALIGN_CENTER);
+    }
 }
 
 /**********************
@@ -453,6 +471,55 @@ void lv_port_video_disp_set_size(lv_video_disp_handle_t *handle, int32_t width, 
     if (ctx && ctx->img_obj[0]) {
         lv_obj_set_size(ctx->img_obj[0], width, height);
     }
+}
+
+/**
+ * @brief 设置视频旋转角度(仅作用于主视频 img_obj[0])
+ * @param handle 实例 handle
+ * @param angle  旋转角度, 单位 0.1°(900=90°), 内部按 0~360° 归一
+ *
+ * 注意:
+ * - 若此前 img 被设过 LV_IMAGE_ALIGN_STRETCH/CONTAIN/COVER(如 create/set_effect),
+ *   LVGL 会自动把 rotation 置 0, 本接口会先切回手动组 CENTER 再设旋转, 保证生效;
+ *   若要在 set_effect 之后保持旋转, 需在最后一次 set_effect 后再调用本接口。
+ * - 旋转绕 pivot 点进行, 而 pivot 不会自动还原: 视频 obj 建起来就被设为 STRETCH,
+ *   其默认旋转中心已被 update_align 清成 (0,0)(源图像左上角)。要绕视频中心旋转,
+ *   调用本接口后紧跟一次 lv_port_video_disp_set_pivot(width/2, height/2)。
+ * - 旋转后绘制区会扩展到控件原 w×h 之外(旋转 90° 后实际占 h×w), 超出部分是否
+ *   可见取决于父控件裁剪; 需要换布局时配合 set_pos/set_size 调整控件本身的位置与尺寸。
+ */
+void lv_port_video_disp_set_rotation(lv_video_disp_handle_t *handle, int32_t angle)
+{
+    lv_video_disp_ctx_t *ctx = (lv_video_disp_ctx_t *)handle;
+    if (ctx == NULL || ctx->img_obj[0] == NULL) {
+        return;
+    }
+    video_disp_img_enable_manual_align(ctx->img_obj[0]);
+    lv_image_set_rotation(ctx->img_obj[0], angle);
+}
+
+/**
+ * @brief 设置视频旋转中心 pivot(仅作用于主视频 img_obj[0])
+ * @param handle 实例 handle
+ * @param x      旋转中心 X, 相对视频源图像左上角(px); 视频中心 = width/2
+ * @param y      旋转中心 Y, 相对视频源图像左上角(px); 视频中心 = height/2
+ *
+ * 说明:
+ * - width/height 指视频帧尺寸(create/set_src 传入), 与旋转角度配套使用;
+ *   设置旋转时通常希望绕画面中心, 即传 (width/2, height/2)。
+ * - 若之前没调过本接口, 默认 pivot = (0,0)(视频 obj 出生即 STRETCH, update_align
+ *   把 LVGL 默认的源中心清成 0), 旋转会绕源图像左上角进行 —— 需要居中时务必显式调用。
+ * - STRETCH/CONTAIN/COVER(含 set_effect)会把 pivot 再次清 0, 故自定义中心应在
+ *   最后一次 set_effect / set_rotation 之后再调用本接口覆盖。
+ */
+void lv_port_video_disp_set_pivot(lv_video_disp_handle_t *handle, int32_t x, int32_t y)
+{
+    lv_video_disp_ctx_t *ctx = (lv_video_disp_ctx_t *)handle;
+    if (ctx == NULL || ctx->img_obj[0] == NULL) {
+        return;
+    }
+    video_disp_img_enable_manual_align(ctx->img_obj[0]);
+    lv_image_set_pivot(ctx->img_obj[0], x, y);
 }
 
 void lv_port_video_disp_show(lv_video_disp_handle_t *handle, uint8_t show)
@@ -1030,6 +1097,24 @@ static void video_disp_render_start_event_cb(lv_event_t *e)
 static void video_disp_render_ready_event_cb(lv_event_t *e)
 {
     (void)e;
+
+#if LV_USE_DRAW_JLGPU_LIST == 2
+    /* LIST==2 异步渲染: disp_flush 里 flush_ready 会提前返回, 若在此直接归还视频
+     * buffer(FBIOPUT_FBUFFER_IDLE), GPU 可能还在异步渲染线程里读该 buffer, 导致
+     * use-after-free(VO 复用该 buffer 后画面下半绿屏 / dma_video0 mmu 异常)。
+     * 归还前先排空异步渲染线程, 语义对齐 LIST==1(同步渲染完成后才归还)。 */
+    bool need_drain = false;
+    for (int i = 0; i < LV_VIDEO_DISP_MAX_INSTANCES; i++) {
+        lv_video_disp_ctx_t *ctx = g_instances[i];
+        if (ctx && ctx->fb_map.baddr != NULL) {
+            need_drain = true;
+            break;
+        }
+    }
+    if (need_drain) {
+        lv_jlgpu_run_disp_drain();
+    }
+#endif
 
     for (int i = 0; i < LV_VIDEO_DISP_MAX_INSTANCES; i++) {
         lv_video_disp_ctx_t *ctx = g_instances[i];

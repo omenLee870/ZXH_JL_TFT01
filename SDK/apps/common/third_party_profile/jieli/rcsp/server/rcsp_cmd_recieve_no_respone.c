@@ -9,6 +9,7 @@
 #include "rcsp_event.h"
 #include "rcsp_extra_flash_cmd.h"
 #include "sensor_log_notify.h"
+#include "rcsp_trace.h"
 
 #define LOG_TAG_CONST       RCSP
 #define LOG_TAG     		"[rcsp rx no resp]"
@@ -35,6 +36,10 @@
 
 void rcsp_cmd_recieve_no_respone(void *priv, u8 OpCode, u8 *data, u16 len, u16 ble_con_handle, u8 *spp_remote_addr)
 {
+#if RCSP_CMD_TRACE_EN
+    /* 抓包: 手机下发但无需设备回复的命令 (此回调无 SN 参数) */
+    rcsp_trace_frame("<--", "RX CMD_NO_RESP", OpCode, 0xff, 0, data, len);
+#endif
     rcsp_printf("cmd_recieve_no_respone, %x\n", OpCode);
     switch (OpCode) {
     default:

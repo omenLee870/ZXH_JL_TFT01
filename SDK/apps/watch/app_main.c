@@ -49,6 +49,7 @@
 #include "product_test.h"
 #include "chgbox_ctrl.h"
 #include "mix_record_api.h"
+#include "rcsp_mix_record.h"
 #if TCFG_UI_ENABLE
 #include "ui/ui_api.h"
 #include "ui_manage.h"
@@ -205,7 +206,7 @@ const struct task_info task_info_table[] = {
 #if (TCFG_SD0_ENABLE || TCFG_SD1_ENABLE)
     {"sdmmc",        	    1,     0,   512,   128 },
 #endif
-#if USER_SUPPORT_PROFILE_PAN || TCFG_EXT_WIFI_ENABLE || TCFG_LTE_PHY_ENABLE
+#if TCFG_NETWORK_ENABLE
     {"tcpip_thread",    11,  1,  1024,  256},
 #if TCFG_EXT_WIFI_ENABLE
     {"sdio_irq_thread",    8,  1,  1024,  256},
@@ -251,6 +252,9 @@ const struct task_info task_info_table[] = {
 #if TCFG_VSTREAM_TRANSFER
     {"vstream_pkg_send_task",   2,      0,  512,   64},
     {"vstream_recv_task",       2,      0,  512,   1024},
+#endif
+#if TCFG_DASHBOARD_HARDWARE_TEST_ENABLE
+    {"gps_test",            1 + TASK_PRIO_BASE,     0,  512,   128 },
 #endif
     {0, 0},
 };
@@ -397,22 +401,38 @@ static void app_version_check()
     puts("=======================================\n");
 }
 
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_KID_CAMERA)
-u8 app_get_kid_camera_boot_mode(void)
+
+#if TCFG_APP_RTC_EN
+static struct sys_time def_sys_time = {  //初始化系统时间
+    .year = 2025,
+    .month = 10,
+    .day = 1,
+    .hour = 0,
+    .min = 0,
+    .sec = 0,
+};
+
+void rtc_event_isr(const struct rtc_event_t *ev)    //闹钟回调函数测试
 {
-    u8 saved_mode = 0;
-    /* int r = syscfg_read(VM_ID_MODE_MEMORY, &saved_mode, sizeof(saved_mode)); */
-    /* if (r == sizeof(saved_mode)) { */
-    /* if (saved_mode == APP_MODE_VIDEO_REC || */
-    /* saved_mode == APP_MODE_PHOTO || */
-    /* saved_mode == APP_MODE_VIDEO_DEC) { */
-    /* log_info("[APP] boot from saved mode: %d\n", saved_mode); */
-    /* return saved_mode; */
-    /* } */
-    /* } */
-    log_info("[APP] boot mode fallback to APP_MODE_VIDEO_REC\n");
-    return APP_MODE_VIDEO_REC;
+    if (ev->event & BIT(RTC_ALARM_EVENT)) {
+        alm_wakeup_isr();
+    }
+
+    if (ev->event &  BIT(RTC_ALARM_EVENT)) {
+
+    }
+
+    if (ev->event == BIT(RTC_WKUP_EVENT)) {   //task 定时唤醒trim、仅触发定时trim事件才关机
+        printf("rtc_trim_clk and enter soff");
+        power_set_soft_poweroff();
+    }
 }
+
+struct rtc_dev_platform_data rtc_dev_config = {   //RTC初始化结构体
+    .default_sys_time = &def_sys_time,   //配置默认系统时钟
+    .cbfun = rtc_event_isr,
+    //rtc闹钟回调函数
+};
 #endif
 
 static struct app_mode *app_task_init()
@@ -455,6 +475,7 @@ static struct app_mode *app_task_init()
     dev_manager_init();
 
 #if TCFG_APP_RTC_EN
+    rtc_init(&rtc_dev_config);
     alarm_init();
 #endif
 
@@ -720,6 +741,9 @@ struct app_mode *app_mode_switch_handler(int *msg)
     //切换模式前关闭混合录音
     if (get_mix_recorder_status()) {
         mix_recorder_stop();
+    }
+    if (rcsp_mix_recorder_get_status()) {
+        rcsp_mix_recorder_stop();
     }
 #endif // TCFG_MIX_RECORD_ENABLE
     /*

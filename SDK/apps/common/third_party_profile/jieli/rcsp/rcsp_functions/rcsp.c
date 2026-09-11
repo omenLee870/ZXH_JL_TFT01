@@ -18,6 +18,9 @@
 #include "rcsp_manage.h"
 #include "rcsp_setting_opt.h"
 #include "adv_1t2_setting.h"
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+#include "app_ble_spp_api.h"
+#endif
 
 
 #if (RCSP_MODE)
@@ -25,6 +28,7 @@
 
 #define RCSP_SPP_INTERACTIVE_SUPPORT	1
 #define RCSP_BLE_INTERACTIVE_SUPPORT	1
+#define RCSP_SPP_TX_WAIT_TIMEOUT_TICKS  10
 
 #define RCSP_DEBUG_EN
 #ifdef RCSP_DEBUG_EN
@@ -38,6 +42,15 @@
 #endif
 
 static struct RcspModel *__this = NULL;
+
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+extern void *bt_rcsp_spp_hdl;
+
+static OS_SEM g_rcsp_spp_tx_sem;
+static volatile u32 g_rcsp_spp_tx_wakeup_count;
+static u8 g_rcsp_spp_tx_sem_inited;
+static u8 g_rcsp_spp_tx_flow_ctrl_ready;
+#endif
 
 #if RCSP_BLE_MASTER
 
@@ -80,6 +93,60 @@ void JL_rcsp_resume_do(void)
     os_sem_post(&__this->sem);
     JL_rcsp_recieve_resume();
 }
+
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+static void rcsp_spp_tx_wakeup_callback(void *hdl)
+{
+    (void)hdl;
+    if (!__this || !g_rcsp_spp_tx_sem_inited ||
+        !g_rcsp_spp_tx_flow_ctrl_ready) {
+        return;
+    }
+
+    g_rcsp_spp_tx_wakeup_count++;
+    rcsp_spp_tx_wait_wakeup();
+}
+
+void rcsp_spp_tx_wait_prepare(void)
+{
+    if (__this && g_rcsp_spp_tx_flow_ctrl_ready) {
+        os_sem_set(&g_rcsp_spp_tx_sem, 0);
+    }
+}
+
+int rcsp_spp_tx_wait(void)
+{
+    struct RcspModel *rcsp_model = __this;
+
+    if (!rcsp_model || !g_rcsp_spp_tx_flow_ctrl_ready) {
+        return -1;
+    }
+
+    int ret = os_sem_pend(&g_rcsp_spp_tx_sem,
+                          RCSP_SPP_TX_WAIT_TIMEOUT_TICKS);
+    if ((__this != rcsp_model) || !g_rcsp_spp_tx_flow_ctrl_ready) {
+        return -1;
+    }
+    return ret;
+}
+
+void rcsp_spp_tx_wait_wakeup(void)
+{
+    if (g_rcsp_spp_tx_sem_inited) {
+        os_sem_post(&g_rcsp_spp_tx_sem);
+    }
+}
+
+int rcsp_spp_tx_flow_ctrl_ready(void)
+{
+    return g_rcsp_spp_tx_flow_ctrl_ready;
+}
+
+u32 rcsp_spp_tx_wakeup_count_get(void)
+{
+    return g_rcsp_spp_tx_wakeup_count;
+}
+#endif
 
 bool JL_rcsp_protocol_can_send(void)
 {
@@ -210,6 +277,23 @@ void rcsp_init(void)
 
     os_sem_create(&__this->sem, 0);
 
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+    g_rcsp_spp_tx_wakeup_count = 0;
+    os_sem_create(&g_rcsp_spp_tx_sem, 0);
+    g_rcsp_spp_tx_sem_inited = 1;
+
+    int spp_wakeup_ret = -1;
+    if (bt_rcsp_spp_hdl) {
+        spp_wakeup_ret = app_spp_wakeup_callback_register(
+                             bt_rcsp_spp_hdl,
+                             rcsp_spp_tx_wakeup_callback);
+    }
+    g_rcsp_spp_tx_flow_ctrl_ready = (0 == spp_wakeup_ret);
+    printf("rcsp spp tx wakeup register: hdl=0x%x, ret=%d, ready=%d\n",
+           (u32)bt_rcsp_spp_hdl, spp_wakeup_ret,
+           g_rcsp_spp_tx_flow_ctrl_ready);
+#endif
+
     int err = task_create(rcsp_process, (void *)rcspModel, RCSP_TASK_NAME);
     if (err) {
         rcsp_printf("rcsp create fail %x\n", err);
@@ -218,10 +302,31 @@ void rcsp_init(void)
 
 static void rcsp_exit_in_app_core_task(void)
 {
+    if (!__this) {
+        return;
+    }
+
     if (rcsp_timer) {
         sys_s_hi_timer_del(rcsp_timer);
         rcsp_timer = 0;
     }
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+    g_rcsp_spp_tx_flow_ctrl_ready = 0;
+    rcsp_spp_tx_wait_wakeup();
+#endif
+#if TCFG_DEV_MANAGER_ENABLE
+    extern void rcsp_file_trans_back_close(void);
+    rcsp_file_trans_back_close();
+#endif
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+    if (bt_rcsp_spp_hdl && app_spp_check_hdl_vaild(bt_rcsp_spp_hdl)) {
+        app_spp_wakeup_callback_register(bt_rcsp_spp_hdl, NULL);
+    }
+    printf("rcsp spp tx wakeup unregister: count=%u\n",
+           g_rcsp_spp_tx_wakeup_count);
+    g_rcsp_spp_tx_flow_ctrl_ready = 0;
+    g_rcsp_spp_tx_sem_inited = 0;
+#endif
     JL_protocol_exit();
     task_kill(RCSP_TASK_NAME);
     if (__this->rcsp_buf) {

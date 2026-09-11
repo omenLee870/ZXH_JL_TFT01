@@ -9,6 +9,7 @@
 #include "stream_media_device_config.h"
 #include "JL_rcsp_attr.h"
 #include "btstack/third_party/common/app_ble_spp_api.h"
+#include "media_spp/media_spp.h"
 
 // ============================================================================
 // 一、设备基本信息填充
@@ -36,6 +37,10 @@ static u16 get_stream_mtu(void)
     u16 con_hdl = app_ble_get_hdl_con_handle(rcsp_server_ble_hdl);
     if (con_hdl) {
         return SM_CFG_STREAM_BLE_MTU;     // BLE 通道
+    }
+    /* 优先判断独立流媒体 SPP 通道(media_spp), 走新通道时用 SPP MTU */
+    if (media_spp_is_connected()) {
+        return SM_CFG_STREAM_SPP_MTU;    // SPP 通道
     }
     u8 *spp_addr = app_spp_get_hdl_remote_addr(bt_rcsp_spp_hdl);
     if (spp_addr) {

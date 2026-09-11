@@ -16,8 +16,6 @@
 
 #if TCFG_MIX_RECORD_ENABLE
 
-
-
 struct mix_recode_handle {
     void *recorder;
     FILE *old_file;
@@ -34,24 +32,20 @@ static struct mix_recode_handle g_rec_hdl = {
 int mix_record_device_msg_handler(int *msg)
 {
     const char *logo = NULL;
-    int err = 0;
+
     switch (msg[0]) {
     case DRIVER_EVENT_FROM_SD0:
     case DRIVER_EVENT_FROM_SD1:
     case DRIVER_EVENT_FROM_SD2:
         logo = (char *)msg[2];
+    /* fall through */
     case DEVICE_EVENT_FROM_USB_HOST:
         if (!strncmp((char *)msg[2], "udisk", 5)) {
             logo = (char *)msg[2];
         }
-
-        if (msg[1] == DEVICE_EVENT_IN) {
-        } else if (msg[1] == DEVICE_EVENT_OUT) {
-            if (g_rec_hdl.recorder) {
-                if (!strcmp(g_rec_hdl.logo, logo)) {
-                    mix_recorder_stop();
-                }
-            }
+        if (msg[1] == DEVICE_EVENT_OUT && logo && g_rec_hdl.recorder &&
+            !strcmp(g_rec_hdl.logo, logo)) {
+            mix_recorder_stop();
         }
         break;
     default:
@@ -60,33 +54,40 @@ int mix_record_device_msg_handler(int *msg)
     return false;
 }
 
-
-static FILE *mix_recorder_open_file()
+static FILE *mix_recorder_open_file(void)
 {
-    char folder[] = {TCFG_REC_FOLDER_NAME};         //录音文件夹名称
-    char filename[] = {TCFG_REC_FILE_NAME};     //录音文件名，不需要加后缀
+    FILE *file;
+    char folder[] = {TCFG_REC_FOLDER_NAME};
+    char filename[] = {TCFG_REC_FILE_NAME};
+    char path[64] = {0};
+    char *root_path;
 
 #if (TCFG_NOR_REC)
-    char logo[] = {"rec_nor"};		//外挂flash录音
+    char logo[] = {"rec_nor"};
 #elif (FLASH_INSIDE_REC_ENABLE)
-    char logo[] = {"rec_sdfile"};		//内置flash录音
+    char logo[] = {"rec_sdfile"};
 #else
-    char *logo = dev_manager_get_phy_logo(dev_manager_find_active(0));//普通设备录音，获取最后活动设备
-    /* char logo[] = {RECODER_DEVICE_LOGO};		//sd卡录音 */
+    char *logo = dev_manager_get_phy_logo(dev_manager_find_active(0));
 #endif
 
+    if (!logo) {
+        puts("recorder storage not found\n");
+        return NULL;
+    }
     snprintf(g_rec_hdl.logo, sizeof(g_rec_hdl.logo), "%s", logo);
+    root_path = dev_manager_get_root_path_by_logo(logo);
+    if (!root_path) {
+        printf("recorder root path not found: %s\n", logo);
+        return NULL;
+    }
 
-    char *root_path = dev_manager_get_root_path_by_logo(logo);
-    char path[64] = {};
-
-    snprintf(path, sizeof(path), "%s%s/%s.%s", root_path, folder, filename, g_rec_hdl.suffix);
-
-    FILE *file = fopen(path, "w+");
+    snprintf(path, sizeof(path), "%s%s/%s.%s", root_path, folder,
+             filename, g_rec_hdl.suffix);
+    file = fopen(path, "w+");
     if (!file) {
         printf("recorder_open_file_faild: %s\n", path);
     } else {
-        fget_name(file, (u8 *)path, 64);
+        fget_name(file, (u8 *)path, sizeof(path));
         printf("recorder_open_file_suss: %s\n", path);
     }
     return file;
@@ -110,15 +111,14 @@ static void file_ops_in_app_task(void *p)
     }
 }
 
-/*
- * 此回调函数在音频流任务中调用,不能执行耗时长的操作,否则可能导致音频播放卡顿
- */
+/* This callback runs in the audio stream task and must not block. */
 static int change_file_in_stream_task(void *priv, enum change_file_step step)
 {
-    int msg[4] = { (int)file_ops_in_app_task, 1, step};
+    int msg[4] = {(int)file_ops_in_app_task, 1, step};
 
     if (step == SEAMLESS_CHANGE_FILE) {
-        g_rec_hdl.old_file = file_recorder_change_file(g_rec_hdl.recorder, g_rec_hdl.new_file);
+        g_rec_hdl.old_file = file_recorder_change_file(g_rec_hdl.recorder,
+                             g_rec_hdl.new_file);
         if (g_rec_hdl.new_file) {
             g_rec_hdl.new_file = NULL;
         } else {
@@ -128,32 +128,35 @@ static int change_file_in_stream_task(void *priv, enum change_file_step step)
     return os_taskq_post_type("app_core", Q_CALLBACK, 3, msg);
 }
 
-
-void mix_recorder_start()
+void mix_recorder_start(void)
 {
     int err;
-    void *recorder;
-
-    u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mix_recorder");
+    u16 pipeline_uuid;
     u16 node_uuid = NODE_UUID_ADC;
+    FILE *file;
+    void *recorder;
+    struct stream_enc_fmt fmt;
+    struct seamless_recording seamless;
+
+    pipeline_uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID,
+                                          (int)"mix_recorder");
     if (bt_get_call_status() != BT_CALL_HANGUP) {
         node_uuid = NODE_UUID_ZERO_ACTIVE;
     }
-    recorder = file_recorder_open(uuid, node_uuid);
-    /* recorder = file_recorder_open(uuid, NODE_UUID_ADC); */
-    /* recorder = file_recorder_open(uuid, NODE_UUID_ZERO_ACTIVE); */
+    recorder = file_recorder_open(pipeline_uuid, node_uuid);
     if (!recorder) {
         puts("file_recorder_open_faild\n");
         return;
     }
 
-    struct stream_enc_fmt fmt;
     err = file_recorder_get_fmt(recorder, &fmt);
     if (err) {
         file_recorder_close(recorder, 0);
         return;
     }
-    printf("recorder_fmt: ch %d, sample rate %d\n", fmt.channel, fmt.sample_rate);
+
+    printf("recorder_fmt: ch %d, sample rate %d\n",
+           fmt.channel, fmt.sample_rate);
 
     switch (fmt.coding_type) {
     case AUDIO_CODING_PCM:
@@ -172,19 +175,19 @@ void mix_recorder_start()
         g_rec_hdl.suffix = "bin";
         break;
     }
-    FILE *file = mix_recorder_open_file();
+
+    file = mix_recorder_open_file();
     if (!file) {
         file_recorder_close(recorder, 0);
         return;
     }
     file_recorder_set_file(recorder, file, NULL);
 
-    struct seamless_recording seamless = {
-        .advance_time = 10, //提前10s创建新文件
-        .time = 3600,       //单个文件录音时长
-        .priv = recorder,
-        .change_file = change_file_in_stream_task,
-    };
+    memset(&seamless, 0, sizeof(seamless));
+    seamless.advance_time = 10;
+    seamless.time = 3600;
+    seamless.priv = recorder;
+    seamless.change_file = change_file_in_stream_task;
     file_recorder_seamless_set(recorder, &seamless);
 
     err = file_recorder_start(recorder);
@@ -198,11 +201,9 @@ void mix_recorder_start()
     mem_stats();
 }
 
-void mix_recorder_stop()
+void mix_recorder_stop(void)
 {
-    // 先停掉录音，会有淡出操作
     file_recorder_stop(g_rec_hdl.recorder, 1);
-    // 再关闭音源
     g_rec_hdl.status = 0;
     os_time_dly(1);
 
@@ -218,7 +219,7 @@ void mix_recorder_stop()
     g_rec_hdl.recorder = NULL;
 }
 
-int  get_mix_recorder_status(void)
+int get_mix_recorder_status(void)
 {
     return g_rec_hdl.status ? 1 : 0;
 }
@@ -233,5 +234,4 @@ REGISTER_LP_TARGET(mix_record_lp_target) = {
     .is_idle = mix_record_idle_query,
 };
 
-#endif // TCFG_MIX_RECORD_ENABLE
-
+#endif /* TCFG_MIX_RECORD_ENABLE */

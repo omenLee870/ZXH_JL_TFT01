@@ -1,6 +1,8 @@
 #include "system/includes.h"
 #include "ai_audio_sink.h"
 #include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 #include "audio_def.h"
 #include "ai_audio_player.h"
 
@@ -465,3 +467,5 @@ int ai_audio_sink_close(void)
     ai_audio_sink_is_open = 0;
     return ret;
 }
+
+#endif

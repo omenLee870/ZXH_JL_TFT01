@@ -13,8 +13,10 @@
 #if CONFIG_LVGL_UI_ENABLE
 #include "lvgl.h"
 #include "gui_guider.h"
+#include "lv_port_video_disp.h"
 extern void *lvgl_video_init(int32_t width, int32_t height, int32_t x, int32_t y, const char *fb_name);
 extern void lvgl_video_exit(void *handle);
+extern void lvgl_video_exit_drain(void *handle);
 extern u8 lvgl_ui_is_suspended(void);
 extern int lvgl_rpc_post_func(void (*rpc_func)(void *, ...), int argc, ...);
 
@@ -25,6 +27,44 @@ static lv_timer_t *s_rec_blink_timer = NULL;
 static lv_obj_t  *s_rec_alert = NULL;
 static lv_timer_t *s_rec_alert_timer = NULL;
 static void *g_vrec_video_handle = NULL;
+#endif
+
+/* 竖屏面板(240x320)上把 320x240 本地录像预览旋转 90° 铺满全屏(与对讲/拍照一致)。
+ * 仅当"控件尺寸 == 显示尺寸对调"时生效, 旋转在显示层由 JLGPU 完成。需 LVGL 线程调用。 */
+#if CONFIG_LVGL_UI_ENABLE
+static void video_rec_preview_rotate(lv_video_disp_handle_t *h)
+{
+    lv_obj_t *img;
+    lv_display_t *disp;
+    int32_t w, hh, dw, dh;
+
+    if (!h) {
+        return;
+    }
+    img = lv_port_video_disp_get_img_obj(h);
+    disp = lv_display_get_default();
+    if (!img || !disp) {
+        return;
+    }
+    w  = lv_obj_get_width(img);
+    hh = lv_obj_get_height(img);
+    dw = lv_display_get_horizontal_resolution(disp);
+    dh = lv_display_get_vertical_resolution(disp);
+    if (w == dh && hh == dw) {
+        lv_port_video_disp_set_rotation(h, 900);
+        lv_port_video_disp_set_pivot(h, w / 2, hh / 2);
+        lv_obj_set_pos(img, (dw - w) / 2, (dh - hh) / 2);
+    }
+}
+
+static void video_rec_preview_rotate_rpc(void *unused, ...)
+{
+    (void)unused;
+    lv_video_disp_handle_t *h = lv_port_video_disp_get_instance_by_fb_index(5);
+    if (h) {
+        video_rec_preview_rotate(h);
+    }
+}
 #endif
 
 void video_rec_ui_init(int width, int height, int show_video)
@@ -39,9 +79,12 @@ void video_rec_ui_init(int width, int height, int show_video)
             return;
         }
     }
-    /* UVC H264 直通不显示: 不创建 fb5 视频显示对象 */
+    /* UVC H264 直通不显示: 不创建 fb5 视频显示对象。
+     * 摄像头预览保持 320x240(width/height 同时决定 LVGL 对 fb5 NV12 帧的读取) */
     if (show_video) {
         g_vrec_video_handle = lvgl_video_init(width, height, 0, 0, "fb5");
+        /* create 在 UI 线程完成(经 RPC+信号量); 旋转也需回 UI 线程执行 */
+        lvgl_rpc_post_func((void *)video_rec_preview_rotate_rpc, 0);
     }
 #endif
 }
@@ -159,7 +202,9 @@ void video_rec_ui_deinit(void)
 #if CONFIG_LVGL_UI_ENABLE
     lvgl_rpc_post_func((void *)rec_ui_cleanup_all_rpc, 0);
     if (g_vrec_video_handle) {
-        lvgl_video_exit(g_vrec_video_handle);
+        /* 同步退出: 删视频 img + 排空双链表(LIST==2)异步渲染, 返回后再释放 buffer 才安全 */
+        lvgl_video_exit_drain(g_vrec_video_handle);
+        g_vrec_video_handle = NULL;
     }
 #endif
 }

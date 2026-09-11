@@ -1,4 +1,7 @@
 #include "ai_internal.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include "cJSON.h"
 
@@ -639,3 +642,5 @@ const struct ai_provider_ops ai_provider_volc_ark = {
     .parse_vision_http_response = volc_ark_parse_vision_http_response,
     .parse_vision_http_stream_event = volc_ark_parse_vision_http_stream_event,
 };
+
+#endif

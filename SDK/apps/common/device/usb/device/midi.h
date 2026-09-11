@@ -11,7 +11,4 @@ u32 midi_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num);
 void midi_register(const usb_dev usb_id);
 void midi_release(const usb_dev usb_id);
 
-//DEMO API
-void PlaySong(void);
-
 #endif

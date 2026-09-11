@@ -163,6 +163,9 @@
 
 
 #define     VM_ID_KIDCAM_SETTINGS                   220
+
+/*HTTP OTA预留区(UI资源,单备份)升级"进行中"标记; 掉电后开机直入升级页*/
+#define     VM_HTTP_OTA_INSTALL_FLAG                221
 //MAX255
 
 #endif /* #ifndef _USER_CFG_ID_H_ */

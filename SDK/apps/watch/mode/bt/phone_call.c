@@ -32,6 +32,7 @@
 #include "bt_slience_detect.h"
 #include "mic_effect.h"
 #include "mix_record_api.h"
+#include "rcsp_mix_record.h"
 #if TCFG_SMART_VOICE_ENABLE
 #include "asr/jl_kws.h"
 #include "smart_voice/smart_voice.h"
@@ -39,6 +40,9 @@
 #include "ui_api.h"
 #include "data_storage.h"
 #include "app_common.h"
+#include "common_music_ctrl.h"
+#include "video_api.h"
+#include "rcsp_device_status.h"
 
 #if(TCFG_USER_TWS_ENABLE == 0)
 
@@ -712,6 +716,16 @@ static int bt_phone_status_event_handler(int *msg)
             r_printf(">>> BT_STATUS_PHONE_INCOME, Stop recoder!\n");
             mix_recorder_stop();
         }
+        if (rcsp_mix_recorder_get_status()) {
+            rcsp_mix_recorder_stop();
+        }
+#endif
+#if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
+        // 来电，结束录像
+        if (get_camera_status() == CAMERA_STATE_VIDEO) {
+            r_printf(">>> BT_STATUS_PHONE_INCOME, Stop video record!\n");
+            camera_api_stop_rec_photo();
+        }
 #endif
         put_buf(bt->args, 6);
         phone_call_status = CMD_PHONE_INCOME;
@@ -741,6 +755,15 @@ static int bt_phone_status_event_handler(int *msg)
         break;
     case BT_STATUS_PHONE_OUT:
         log_info("BT_STATUS_PHONE_OUT\n");
+        /* 去电：暂停本地音乐，通话结束后恢复 */
+        music_ctrl_pause_for_call();
+#if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
+        // 去电，结束录像
+        if (get_camera_status() == CAMERA_STATE_VIDEO) {
+            r_printf(">>> BT_STATUS_PHONE_OUT, Stop video record!\n");
+            camera_api_stop_rec_photo();
+        }
+#endif
         put_buf(bt->args, 6);
         phone_call_status = CMD_PHONE_OUT;
         bt_phone_out(bt->args);
@@ -785,6 +808,9 @@ static int bt_phone_status_event_handler(int *msg)
             r_printf(">>> BT_STATUS_PHONE_ACTIVE, Stop recoder!\n");
             mix_recorder_stop();
         }
+        if (rcsp_mix_recorder_get_status()) {
+            rcsp_mix_recorder_stop();
+        }
 #endif
 
         if ((phone_call_status == CMD_PHONE_INCOME) || (phone_call_status == CMD_PHONE_OUT)) {
@@ -823,12 +849,17 @@ static int bt_phone_status_event_handler(int *msg)
         break;
     case BT_STATUS_PHONE_HANGUP:
         log_info("BT_STATUS_PHONE_HANGUP\n");
+        /* 通话结束：恢复因通话而暂停的本地音乐 */
+        music_ctrl_resume_after_call();
         put_buf(bt->args, 6);
 #if TCFG_MIX_RECORD_ENABLE
         // 挂断电话, 结束录音
         if (get_mix_recorder_status()) {
             printf(">>> BT_STATUS_PHONE_HANGUP, Stop recoder!\n");
             mix_recorder_stop();
+        }
+        if (rcsp_mix_recorder_get_status()) {
+            rcsp_mix_recorder_stop();
         }
 #endif
         phone_call_start = 0;
@@ -993,6 +1024,10 @@ static int bt_phone_status_event_handler(int *msg)
              */
             app_var.call_volume = volume;
         }
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+        /* 智能眼镜: 手机 HFP VGS 通话音量变化同步到设备后, 主动上报多通道音量 */
+        rcsp_ai_glasses_vol_update();
+#endif
         UI_MSG_POST("phone_volume:volume=%4", volume);
         break;
 

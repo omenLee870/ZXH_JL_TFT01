@@ -38,6 +38,11 @@
 
 #include "avilib.h"
 #include "platform.h"
+#include "system/malloc.h"
+
+//录像循环分段的 idx 池: close 时保留, 下次输出 open 复用, 免新段 64KB realloc 打爆碎片池
+static unsigned char(*g_idx_pool)[16];
+static long g_idx_pool_max;
 
 extern uint32_t timer_get_ms(void);
 
@@ -758,6 +763,14 @@ avi_t *AVI_open_output_file(const char *filename)
     //init
     AVI->anum = 0;
     AVI->aptr = 0;
+
+    //复用上一段留存的 idx 池, 免新段 64KB realloc
+    if (g_idx_pool) {
+        AVI->idx = g_idx_pool;
+        AVI->max_idx = g_idx_pool_max;
+        AVI->n_idx = 0;
+        g_idx_pool = NULL;
+    }
 
     return AVI;
 }
@@ -1920,17 +1933,8 @@ static int plat_write_data(avi_t *AVI, const char *data, unsigned long length,
                            int audio, int keyframe)
 {
     int n = 0;
-    uint32_t total_start_ms;
-    uint32_t index_start_ms;
-    uint32_t index_end_ms;
-    uint32_t chunk_start_ms;
-    uint32_t chunk_end_ms;
-    uint32_t total_elapsed_ms;
 
     unsigned char astr[5];
-
-    total_start_ms = timer_get_ms();
-    index_start_ms = total_start_ms;
 
     // transcode core itself checks for the size -- unneeded and
     // does harm to xvid 2pass encodes where the first pass can get
@@ -1966,26 +1970,12 @@ static int plat_write_data(avi_t *AVI, const char *data, unsigned long length,
         return -1;
     }
 
-    index_end_ms = timer_get_ms();
-    chunk_start_ms = index_end_ms;
-
     /* Output tag and data */
 
     if (audio) {
         n = avi_add_chunk(AVI, (unsigned char *)astr, data, length);
     } else {
         n = avi_add_chunk(AVI, (unsigned char *)"00dc", data, length);
-    }
-
-    chunk_end_ms = timer_get_ms();
-    total_elapsed_ms = chunk_end_ms - total_start_ms;
-    if (total_elapsed_ms >= 100) {
-        plat_log_send(PLAT_LOG_WARNING, __FILE__,
-                      "[AVI_IO] type=%s len=%lu index_ms=%u chunk_ms=%u total_ms=%u",
-                      audio ? "audio" : "video", length,
-                      index_end_ms - index_start_ms,
-                      chunk_end_ms - chunk_start_ms,
-                      total_elapsed_ms);
     }
 
     if (n) {
@@ -2192,7 +2182,12 @@ int AVI_close(avi_t *AVI)
     }
 
     if (AVI->idx) {
-        plat_free(AVI->idx);
+        if (g_idx_pool == NULL && AVI->max_idx >= 4096) {
+            g_idx_pool = AVI->idx;
+            g_idx_pool_max = AVI->max_idx;
+        } else {
+            plat_free(AVI->idx);
+        }
     }
     if (AVI->video_index) {
         plat_free(AVI->video_index);
@@ -2256,6 +2251,16 @@ int AVI_close(avi_t *AVI)
     AVI = NULL;
 
     return ret;
+}
+
+/* 录像整体停止时释放跨段缓存idx池(分段close只保存/接管, 不释放) */
+void AVI_release_idx_pool(void)
+{
+    if (g_idx_pool) {
+        plat_free(g_idx_pool);
+        g_idx_pool = NULL;
+        g_idx_pool_max = 0;
+    }
 }
 
 

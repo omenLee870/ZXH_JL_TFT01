@@ -128,8 +128,6 @@ enum PCONTROL_CMD {
 
 u32 power_control(enum PCONTROL_CMD cmd, u32 arg);
 
-void dvdd2_bypass_en(u8 mode);
-
 //
 //
 //                  lowpower

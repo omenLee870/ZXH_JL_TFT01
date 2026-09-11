@@ -21,6 +21,7 @@
 #define LOG_INFO_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
+#include "kid_mem_dbg.h"
 
 #if TCFG_VSTREAM_TRANSFER
 
@@ -263,6 +264,9 @@ void audio_app_open(void)
     log_info("%s \n", __func__);
 
     kid_aud = zalloc(sizeof(struct kid_audio_test));
+    if (!kid_aud) {
+        KWT_MEM_STATS("audio.open zalloc fail");
+    }
     ASSERT(kid_aud);
     cbuf_init(&kid_aud->cbuf, kid_aud->data, KID_AUDIO_BUF_LEN);
 #if KID_AUDIO_SEND_CBUF_EN
@@ -283,6 +287,7 @@ void audio_app_open(void)
     kid_audio_dec_open_internal(kid_aud);
 
     audio_app_volume_set(APP_AUDIO_STATE_MUSIC, 100, 1);
+    KWT_MEM_STATS("audio.open done");
 }
 
 void audio_app_stop(void)
@@ -299,6 +304,7 @@ void audio_app_stop(void)
 
     free(kid_aud);
     kid_aud = NULL;
+    KWT_MEM_STATS("audio.stop done");
 }
 
 void audio_app_rec_init(void)

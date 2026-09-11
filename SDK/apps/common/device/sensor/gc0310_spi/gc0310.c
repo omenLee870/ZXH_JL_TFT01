@@ -6,6 +6,8 @@
 #include "generic/jiffies.h"
 #include "device/device.h"
 #include "app_config.h"
+#include "asm/power/p33/p33_api.h"
+#include "device/sdmmc/sdmmc.h"
 
 #if TCFG_CAMERA_SPI_ENABLE
 
@@ -17,7 +19,7 @@
 
 #define CONFIG_INPUT_FPS 	12
 
-static hw_iic_dev iic_dev = HW_IIC_0;
+static hw_iic_dev iic_dev = HW_IIC_2;
 static enum iic_state_enum iic_init_state = -1;
 static u8 GC0310_reset_io = -1;
 static u8 GC0310_power_io = -1;
@@ -584,8 +586,40 @@ static s32 GC0310_set_output_size(u8 isp_dev, u16 *width, u16 *height, u8 *freq)
     return 0;
 }
 
+/* ========== 摄像头 VCC 电源控制 ========== */
+/* 按 TCFG_CAMERA_SPI_VCC 配置选择供电方式:
+ *   IO_PORT_LDO28  -> LDO28 供电 3.0V
+ *   SD_PWR_SDPG    -> SDPG 供电
+ *   普通 GPIO      -> GPIO 强驱供电(高/低电平使能见 TCFG_CAMERA_SPI_POWER_IO_CTRL)
+ */
+static void GC0310_vcc_power_set(u8 on_off)
+{
+#if (TCFG_CAMERA_SPI_VCC == IO_PORT_LDO28)
+    /* LDO28 供电 3.0V */
+    iovdd28_config(on_off, IOVDD28_VOL_3P0V);
+#elif (TCFG_CAMERA_SPI_VCC == SD_PWR_SDPG)
+    /* SDPG 供电 */
+    if (on_off) {
+        sdpg_config(SDPG_IO_OUTPUT_H_HD_HD0_SDPG_USER);
+    } else {
+        sdpg_config(SDPG_IO_HI_Z);
+    }
+#elif (TCFG_CAMERA_SPI_VCC != NO_CONFIG_PORT)
+    /* 普通 GPIO 强驱供电 */
+    if (on_off) {
+        gpio_set_drive_strength(IO_PORT_SPILT(TCFG_CAMERA_SPI_VCC), PORT_DRIVE_STRENGT_8p0mA);
+        gpio_set_mode(IO_PORT_SPILT(TCFG_CAMERA_SPI_VCC), TCFG_CAMERA_SPI_POWER_IO_CTRL);
+        udelay(200);
+        gpio_set_drive_strength(IO_PORT_SPILT(TCFG_CAMERA_SPI_VCC), PORT_DRIVE_STRENGT_64p0mA);
+    } else {
+        gpio_set_mode(IO_PORT_SPILT(TCFG_CAMERA_SPI_VCC), !TCFG_CAMERA_SPI_POWER_IO_CTRL);
+    }
+#endif
+}
+
 static s32 GC0310_power_ctl(u8 isp_dev, u8 is_work)
 {
+    GC0310_vcc_power_set(is_work);
     return 0;
 }
 
@@ -636,6 +670,9 @@ static void GC0310_reset(u8 isp_dev)
 s32 GC0310_check(u8 isp_dev, u32 _reset_gpio, u32 _power_gpio, char *iic_name)
 {
     if (iic_init_state == -1) {
+        /* 摄像头 VCC 上电 */
+        GC0310_vcc_power_set(1);
+
         struct iic_master_config iic_config = {
             .role = IIC_MASTER,
             .scl_io = TCFG_CAMERA_SPI_SCL,

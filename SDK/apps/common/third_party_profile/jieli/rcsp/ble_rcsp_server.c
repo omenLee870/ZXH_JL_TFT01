@@ -46,6 +46,7 @@
 #include "multi_protocol_main.h"
 #include "JL_rcsp_api.h"
 #include "JL_rcsp_protocol.h"
+#include "media_spp/media_spp.h"
 #include "adv_1t2_setting.h"
 #include "ble_fmy_fmna.h"
 #if TCFG_USER_TWS_ENABLE
@@ -1327,8 +1328,11 @@ void bt_rcsp_custom_recieve_callback(u16 ble_con_hdl, void *remote_addr,
         if (rcsp_protocol_head_check(buf, len)) {
             return;  // RCSP 协议数据，不处理
         }
+#if MEDIA_SPP_LEGACY_CH1_ROUTE
+        /* 旧 App 只连 0x1101 时, 流媒体数据仍从命令通道旁路解析(兼容模式) */
         extern void stream_media_on_spp_recv(const u8 * data, u16 len);
         stream_media_on_spp_recv(buf, len);
+#endif
     }
 }
 

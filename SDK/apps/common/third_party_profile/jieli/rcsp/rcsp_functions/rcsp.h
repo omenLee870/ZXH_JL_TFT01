@@ -15,4 +15,12 @@ void rcsp_exit(void);
 
 void rcsp_timer_contrl(u8 status);
 
+#if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+void rcsp_spp_tx_wait_prepare(void);
+int rcsp_spp_tx_wait(void);
+void rcsp_spp_tx_wait_wakeup(void);
+int rcsp_spp_tx_flow_ctrl_ready(void);
+u32 rcsp_spp_tx_wakeup_count_get(void);
+#endif
+
 #endif // __RCSP_H__

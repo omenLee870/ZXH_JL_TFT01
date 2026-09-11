@@ -1,4 +1,7 @@
 #include "ai_internal.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include "cJSON.h"
 
@@ -291,3 +294,5 @@ int ai_provider_selftest(void)
            provider_count, ws_count, http_count);
     return AI_OK;
 }
+
+#endif

@@ -77,9 +77,10 @@
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB_TASK]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -122,23 +123,17 @@ static void usb_cdc_wakeup(struct usb_device_t *usb_device, u32 num)
 {
     //回调函数在中断里，正式使用不要在这里加太多东西阻塞中断，
     //或者先post到任务，由任务调用cdc_read_data()读取再执行后续工作
-    /* const usb_dev usb_id = usb_device2id(usb_device); */
-    /* u8 buf[64] = {0}; */
-    /* u32 rlen; */
-
-    /* log_debug("cdc rx hook"); */
-    //cppcheck-suppress unreadVariable
-    /* rlen = cdc_read_data(usb_id, buf, 64); */
-
-    /* put_buf(buf, rlen);//固件三部测试使用 */
-    /* cdc_write_data(usb_id, buf, rlen);//固件三部测试使用 */
+    // int msg[2];
+    // msg[0] = usb_device2id(usb_device);;
+    // msg[1] = num;
+    // usb_message_to_stack(USBSTACK_CDC_DATA, msg, 0);
 
 #if TCFG_CFG_TOOL_ENABLE && (TCFG_COMM_TYPE == TCFG_USB_COMM)
     int msg[2] = {0};
     msg[0] = (u32)usb_device;
     msg[1] = num;
     if (OS_NO_ERR != os_taskq_post_type("app_core", MSG_FROM_CDC_DATA, 2, msg)) {
-        log_error("cdc_rx post error\n");
+        log_warn("cdc_rx post error\n");
     }
 #endif
 
@@ -188,6 +183,12 @@ int midi_rx_buffer_read(const usb_dev usb_id)
     rlen = midi_rx_data(usb_id, buf);
     log_debug("midi_rx_buffer_read() %d\n", usb_id);
     log_debug_hexdump((u8 *)buf, rlen);
+
+    /* echo received data back to host */
+    if (rlen > 0) {
+        midi_tx_data(usb_id, buf, rlen);
+    }
+
     return 0;
 }
 void midi_rx_handler(const usb_dev usb_id)
@@ -263,6 +264,9 @@ void usb_start(const usb_dev usbfd)
 #endif
 #if TCFG_USB_WEBUSB_ENABLE
     class |= WEBUSB_CLASS;
+#endif
+#if TCFG_USB_SLAVE_HCI_ENABLE
+    class |= HCI_CLASS;
 #endif
     g_printf("USB_DEVICE_CLASS_CONFIG:%x", class);
     usb_device_mode(usbfd, class);
@@ -464,7 +468,7 @@ int pc_device_event_handler(int *msg)
 
     int usb_id = usb_msg[2] - '0';
 
-    log_debug("usb event : %d DEVICE_EVENT_FROM_OTG %s", msg[1], usb_msg);
+    log_info("usb event : %d DEVICE_EVENT_FROM_OTG %s", msg[1], usb_msg);
 
     switch (msg[1]) {
 

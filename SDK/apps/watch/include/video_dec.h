@@ -30,6 +30,44 @@ typedef enum {
 #define VIDEO_DEC_VIDEO_DIR CONFIG_ROOT_PATH"DCIM/VIDEO/"
 #define VIDEO_DEC_VDEC_DEV 0
 #define VIDEO_DEC_VO_DEV 0
+/*==============================================================================
+ * 照片缩略图引擎契约(六宫格页共用): 阶段一=JPG 真解码; AVI 首帧阶段二, 本阶段保持占位。
+ * 内存纪律(1MB 收紧): 无全局常驻缓存(离开页全释放); 页内 LRU<=6 且 path 键;
+ * JPG 整读硬顶 128KB; 解码中间档仅 160x120(禁 320x240 档); 单张峰值预算约 210KB。
+ *==============================================================================*/
+#define VIDEO_DEC_THUMB_TILE_W        96   /* 格占位区 96x64 */
+#define VIDEO_DEC_THUMB_TILE_H        64
+/* RGB565 行宽/总字节(96x64x2); NV12 直显暂缓见 video_dec.c */
+#define VIDEO_DEC_THUMB_TILE_STRIDE   (VIDEO_DEC_THUMB_TILE_W * 2)
+#define VIDEO_DEC_THUMB_TILE_BYTES    (VIDEO_DEC_THUMB_TILE_W * VIDEO_DEC_THUMB_TILE_H * 2)
+#define VIDEO_DEC_THUMB_FULL_READ_MAX (128u * 1024u)  /* JPG 整读硬顶(不做 1/4 空闲上浮) */
+#define VIDEO_DEC_THUMB_VPSS_W_MAX    160            /* VPSS 中间档上限 */
+#define VIDEO_DEC_THUMB_VPSS_H_MAX    120
+#define VIDEO_DEC_THUMB_LRU_MAX       6              /* 页内 path 键 LRU 上限 */
+#define VIDEO_DEC_THUMB_SLOT_MAX      8              /* 请求快照槽上限(只拷 path/格子号) */
+#define VIDEO_DEC_THUMB_WORKER_PRIO   20             /* worker 低优先级 */
+#define VIDEO_DEC_THUMB_WORKER_STACK  1024           /* 4KB: thread_fork 栈参数单位=4字节 */
+/* AVI 首帧(阶段二)预留防护宏: 本阶段仅定义不参与逻辑 */
+#define VIDEO_DEC_AVI_FRAME_MAX       4096
+#define VIDEO_DEC_AVI_CHUNK_MAX       (256u * 1024u)
+/* 就绪回调: worker 线程调用; UI 侧只允许拷 path/gidx 后经 lvgl_rpc 归队 */
+typedef void (*video_dec_thumb_ready_cb_t)(void *priv, const char *path, int gidx);
+/* 页请求: 快照 [base, base+n) 的照片槽 (UI 线程, 非阻塞, 命中 LRU 不再解码) */
+int video_dec_thumb_request(int base, int n);
+/* LRU 命中返回 tile 指针(96x64 RGB565), 未命中返回 NULL; 供 UI 线程挂图 */
+const void *video_dec_thumb_peek(const char *path);
+/* 注册就绪回调(页面生命周期: LOAD 注册 / UNLOAD 摘除) */
+void video_dec_thumb_set_ready_cb(video_dec_thumb_ready_cb_t cb, void *priv);
+/* 置取消并等当前张解码结束(单张有界); 返回后不再处理旧快照 */
+int video_dec_thumb_cancel_wait(void);
+/* 异步取消(UI 线程路径用): 只置取消+清 WAIT 槽+唤醒, 不等待——防 UI 卡 */
+void video_dec_thumb_cancel_async(void);
+/* 全屏回放模式是否激活(激活期缩略图解码被禁, UI 侧据此延迟补发请求) */
+int video_dec_thumb_mode_active(void);
+/* 失效: 代际号++ + 清快照 + LRU 全部释放归零(删除确认/拔卡/DB_CHANGED/重进页兜底) */
+void video_dec_thumb_invalidate(void);
+/* 离开六宫格页全释放: 停 worker + 清 LRU/快照/回调(无全局常驻缓存) */
+void video_dec_thumb_release_all(void);
 #include "media_file_list.h"
 typedef flm_file_t video_dec_file_t;
 typedef struct {

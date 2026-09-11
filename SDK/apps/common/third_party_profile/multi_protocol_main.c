@@ -13,6 +13,7 @@
 #include "btstack_rcsp_user.h"
 #include "ble_rcsp_server.h"
 #include "ble_rcsp_multi_client.h"
+#include "media_spp/media_spp.h"
 
 #if TCFG_VSTREAM_TRANSFER
 #include "kid_wt_app.h"
@@ -451,6 +452,9 @@ void multi_protocol_bt_init(void)
     void rcsp_init(void);
     rcsp_init();
     rcsp_bt_ble_init();
+#if TCFG_BT_SUPPORT_SPP
+    media_spp_init();   // 流媒体独立 SPP 通道
+#endif
 #if RCSP_BLE_CLIENT_EN
     rcsp_bt_multi_client_init();
 #endif //#if RCSP_BLE_CLIENT_EN
@@ -503,6 +507,9 @@ void multi_protocol_bt_exit(void)
 #if (BT_AI_SEL_PROTOCOL & RCSP_MODE_EN)
     rcsp_bt_ble_exit();
     bt_rcsp_interface_exit();
+#if TCFG_BT_SUPPORT_SPP
+    media_spp_exit();   // 流媒体独立 SPP 通道
+#endif
 #endif
 #if (BT_AI_SEL_PROTOCOL & GFPS_EN)
     gfps_all_exit();

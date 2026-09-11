@@ -10,6 +10,8 @@
 #include "rcsp_event.h"
 #include "rcsp_update.h"
 #include "file_transfer.h"
+#include "audio_video_control.h"
+#include "rcsp_trace.h"
 #if	(defined CONFIG_DEBUG_RECORD_ENABLE && CONFIG_DEBUG_RECORD_ENABLE)
 #include "asm/debug_record.h"
 #endif
@@ -38,6 +40,10 @@
 ///>>>>>>>>>>>>>>>设备接收到上报给APP端命令的回复
 void rcsp_cmd_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len, u16 ble_con_handle, u8 *spp_remote_addr)
 {
+#if RCSP_CMD_TRACE_EN
+    /* 抓包: 手机对我们上行命令(如 0x09 自动上报)的应答 (此回调无 SN 参数) */
+    rcsp_trace_frame("<--", "RX CMD_RESP", OpCode, 0xff, status, data, len);
+#endif
     rcsp_printf("cmd_respone:%x\n", OpCode);
 #if RCSP_UPDATE_EN
     if (0 == JL_rcsp_update_cmd_receive_resp(priv, OpCode, status, data, len)) {
@@ -67,6 +73,9 @@ void rcsp_cmd_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len, u16 b
     case JL_OPCODE_MASS_DATA:
         extern void mass_data_respone(void *priv, u8 OpCode, u8 status, u8 * data, u16 len);
         mass_data_respone(priv, OpCode, status, data, len);
+        break;
+    case JL_OPCODE_AUDIO_VIDEO_CONTROL:
+        rcsp_audio_video_cmd_response(status, data, len);
         break;
     default:
         break;

@@ -25,18 +25,13 @@
 #define     SET_INTERRUPT   ___interrupt
 
 #if TCFG_USB_HOST_ENABLE
-#ifdef USB_HW_20
-#define     MAX_HOST_EP_RX  7
-#define     MAX_HOST_EP_TX  7
-#else
-#define     MAX_HOST_EP_RX  5
-#define     MAX_HOST_EP_TX  5
-#endif
+
 struct host_var_t {
     struct usb_ep_addr_t host_ep_addr ;
-    usb_h_interrupt usb_h_interrupt_rx[MAX_HOST_EP_RX] ;
-    usb_h_interrupt usb_h_interrupt_tx[MAX_HOST_EP_TX] ;
-    struct usb_host_device *dev_at_ep[MAX_HOST_EP_RX];
+    usb_h_interrupt usb_h_interrupt_rx[USB_MAX_HW_EPNUM] ;
+    usb_h_interrupt usb_h_interrupt_tx[USB_MAX_HW_EPNUM] ;
+    struct usb_host_device *dev_at_rxep[USB_MAX_HW_EPNUM];
+    struct usb_host_device *dev_at_txep[USB_MAX_HW_EPNUM];
 };
 static struct host_var_t *host_var[USB_MAX_HW_NUM];// SEC(.usb_h_bss);
 
@@ -74,24 +69,24 @@ void usb_h_isr(const usb_dev usb_id)
 
     if (intr_tx & BIT(0)) {
         if (host_var[usb_id]->usb_h_interrupt_tx[0]) {
-            host_dev = host_var[usb_id]->dev_at_ep[0];
+            host_dev = host_var[usb_id]->dev_at_txep[0];
             host_var[usb_id]->usb_h_interrupt_tx[0](host_dev, 0);
         }
     }
 
-    for (int i = 1; i < MAX_HOST_EP_TX; i++) {
+    for (int i = 1; i < USB_MAX_HW_EPNUM; i++) {
         if (intr_tx & BIT(i)) {
             if (host_var[usb_id]->usb_h_interrupt_tx[i]) {
-                host_dev = host_var[usb_id]->dev_at_ep[i];
+                host_dev = host_var[usb_id]->dev_at_txep[i];
                 host_var[usb_id]->usb_h_interrupt_tx[i](host_dev, i);
             }
         }
     }
 
-    for (int i = 1; i < MAX_HOST_EP_RX; i++) {
+    for (int i = 1; i < USB_MAX_HW_EPNUM; i++) {
         if (intr_rx & BIT(i)) {
             if (host_var[usb_id]->usb_h_interrupt_rx[i]) {
-                host_dev = host_var[usb_id]->dev_at_ep[i];
+                host_dev = host_var[usb_id]->dev_at_rxep[i];
                 host_var[usb_id]->usb_h_interrupt_rx[i](host_dev, i);
             }
         }
@@ -211,9 +206,11 @@ void usb_h_set_ep_isr(struct usb_host_device *host_dev, u32 ep, usb_h_interrupt 
         return;
     }
 
-    u32 ep_idx = ep & 0xF;
-
-    host_var[usb_id]->dev_at_ep[ep_idx] = p;
+    if (ep & USB_DIR_IN) {
+        host_var[usb_id]->dev_at_rxep[ep & 0xf] = p;
+    } else {
+        host_var[usb_id]->dev_at_txep[ep & 0xf] = p;
+    }
 
     usb_h_set_intr_hander(usb_id, ep, handler);
 }
@@ -232,8 +229,8 @@ void usb_host_free(usb_dev usb_id)
     g_printf("usb_host_free() %x", host_var[usb_id]);
     OS_ENTER_CRITICAL();
     if (host_var[usb_id]) {
-        memset(host_var[usb_id]->usb_h_interrupt_rx, 0, sizeof(usb_h_interrupt) * MAX_HOST_EP_RX);
-        memset(host_var[usb_id]->usb_h_interrupt_tx, 0, sizeof(usb_h_interrupt) * MAX_HOST_EP_TX);
+        memset(host_var[usb_id]->usb_h_interrupt_rx, 0, sizeof(usb_h_interrupt) * USB_MAX_HW_EPNUM);
+        memset(host_var[usb_id]->usb_h_interrupt_tx, 0, sizeof(usb_h_interrupt) * USB_MAX_HW_EPNUM);
         usb_var_release(usb_id);
         free(host_var[usb_id]);
         host_var[usb_id] = NULL;

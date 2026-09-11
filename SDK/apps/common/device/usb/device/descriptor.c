@@ -15,6 +15,7 @@
 #include "usb/device/usb_stack.h"
 #include "usb/device/descriptor.h"
 #include "usb/device/uac_audio.h"
+#include "tzflash_api.h"
 #if TCFG_USB_APPLE_DOCK_EN
 #include "apple_dock/iAP.h"
 #include "usb/device/iap.h"
@@ -23,11 +24,12 @@
 #include "app_config.h"
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[USB]"
+#define LOG_TAG             "[DESC]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -128,8 +130,7 @@ void get_chip_uuid_string(char *uuid_hex)
     memcpy(uuid_hex, root2_string, strlen(root2_string));
 #else
 
-    extern u8 *tzflash_get_uuid();
-    u8 *uuid_bin = tzflash_get_uuid();
+    u8 *uuid_bin = tzflash_get_flash_uuid();
 
     for (u32 i = 0; i < 16; i++) {
         uuid_hex[i * 2]     = hex_table[(uuid_bin[i] >> 4) & 0x0F];
@@ -196,6 +197,24 @@ static const string_desc_t string_desc_arr[] = {
 #if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE || TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
     { SPEAKER_STR_INDEX, USB_SPEAKER_DESC },   // Speaker
     { MIC_STR_INDEX,     USB_MIC_DESC     },   // Microphone
+
+    /* Stream 1: separate string indices for per-stream naming */
+#ifdef UAC_STREAM_1_SPEAKER_STR_INDEX
+#if UAC_STREAM_1_SPEAKER_STR_INDEX
+#ifndef UAC_STREAM_1_SPEAKER_DESC
+#define UAC_STREAM_1_SPEAKER_DESC  USB_SPEAKER_DESC  /* fallback */
+#endif
+    { UAC_STREAM_1_SPEAKER_STR_INDEX, UAC_STREAM_1_SPEAKER_DESC },
+#endif
+#endif
+#ifdef UAC_STREAM_1_MIC_STR_INDEX
+#if UAC_STREAM_1_MIC_STR_INDEX
+#ifndef UAC_STREAM_1_MIC_DESC
+#define UAC_STREAM_1_MIC_DESC  USB_MIC_DESC  /* fallback */
+#endif
+    { UAC_STREAM_1_MIC_STR_INDEX, UAC_STREAM_1_MIC_DESC },
+#endif
+#endif
 #endif
 
 #if TCFG_USB_APPLE_DOCK_EN
@@ -273,7 +292,7 @@ static u32 make_utf16le_string(const char *str, u8 *desc)
     u32 len = 0;
     u32 byte_pos = 2;
 
-    while (str[len] && len < MAX_UTF16_CHARS) {
+    while (len < MAX_UTF16_CHARS && str[len]) {
         desc[byte_pos++] = (u8)str[len];
         desc[byte_pos++] = 0x00;
         len++;
@@ -297,8 +316,8 @@ u32 descriptor_string_cb(u32 index, u16 langid, u8 *payload)
     const char *str = get_string_by_id(index);
 
     /* Serial 特殊处理 */
+    char uuid_hex[32 + 1];
     if (!str && index == 3) {
-        char uuid_hex[32 + 1];
         get_chip_uuid_string(uuid_hex);
         str = uuid_hex;
     }

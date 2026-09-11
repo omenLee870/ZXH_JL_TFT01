@@ -50,7 +50,7 @@ app_camera_ret_t app_camera_close(app_camera_handle_t *handle)
             return app_ret;
         }
     }
-#if TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE || TCFG_RTL8733BS_ENABLE
+#if TCFG_NETWORK_ENABLE
     if (app_camera_net_stream_is_started(ctx)) {
         printf("net stream is still started, stop it first\n");
         app_ret = app_camera_net_stream_stop(ctx);

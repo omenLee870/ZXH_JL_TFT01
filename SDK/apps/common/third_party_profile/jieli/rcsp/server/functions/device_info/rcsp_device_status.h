@@ -58,5 +58,10 @@ void function_change_inform(u8 app_mode, u8 ret);
 #define RCSP_UPDATE(...)
 #endif//RCSP_MODE
 
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+// 智能眼镜: 设备本地音量变化(按键/AVRCP/HFP VGS)后, 主动 0x09 上报多通道音量
+void rcsp_ai_glasses_vol_update(void);
+#endif//AI_GLASSES
+
 #endif//__RCSP_DEVICE_STATUS_H__
 

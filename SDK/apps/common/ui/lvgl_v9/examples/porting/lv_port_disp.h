@@ -51,6 +51,11 @@ u8 lv_jl_lcd_get_need_gpu_link_dbi(void);
 
 void lv_jlgpu_sync_full_area(lv_display_t *disp_refr);
 
+/* 等待 LIST==2 异步渲染线程(_jlgpu_run_disp_cb)排空在飞的渲染任务。
+ * 释放被渲染引用过的显示 buffer 前调用: 先删除/停用相关控件, 再调用本函数,
+ * 返回后不再有渲染引用, 可安全释放 buffer 或拆显示通路。 */
+void lv_jlgpu_run_disp_drain(void);
+
 /**********************
  *      MACROS
  **********************/

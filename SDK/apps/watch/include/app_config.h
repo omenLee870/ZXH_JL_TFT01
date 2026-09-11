@@ -212,6 +212,7 @@
 
 #define RTC_CLK_RES_SEL	            CLK_SEL_LRC
 
+#define RTC_TRIM_WKUP_TIME          0    //rtc 定时唤醒soff trim clk时间，单位ms
 
 //*********************************************************************************//
 //                                  AI配置                                       //

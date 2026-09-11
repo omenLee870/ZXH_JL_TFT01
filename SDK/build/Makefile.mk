@@ -81,6 +81,7 @@ c_SRC_FILES := \
 	apps/common/device/touch_panel/cst816d/cst816d.c \
 	apps/common/device/touch_panel/ft3x68/ft3x68.c \
 	apps/common/device/touch_panel/jd9165t/jd9165t.c \
+	apps/common/example/peripheral/can/can_test.c \
 	apps/common/fat_nor/cfg_private.c \
 	apps/common/fat_nor/virfat_flash.c \
 	apps/common/file_operate/file_bs_deal.c \
@@ -105,6 +106,14 @@ c_SRC_FILES := \
 	apps/common/net/lwip_2_2_0/port/spi_ethernetif.c \
 	apps/common/net/lwip_2_2_0/port/sys_arch.c \
 	apps/common/net/lwip_2_2_0/port/uart_ethernetif.c \
+	apps/common/netapps/iflytek/SparkDesk/sparkdesk_main.c \
+	apps/common/netapps/iflytek/authentication.c \
+	apps/common/netapps/iflytek/demo.c \
+	apps/common/netapps/iflytek/ifly_common.c \
+	apps/common/netapps/iflytek/ifly_socket.c \
+	apps/common/netapps/iflytek/tts/ifly_dec_file.c \
+	apps/common/netapps/iflytek/tts/tts_main.c \
+	apps/common/netapps/iflytek/vad/vad_main.c \
 	apps/common/pay/upay_t_head_v2/app/antchain/src/bot_adapter.c \
 	apps/common/pay/upay_t_head_v2/hal/csi/hsc32i1/hs_private.c \
 	apps/common/pay/upay_t_head_v2/hal/csi/softse/aes.c \
@@ -141,6 +150,7 @@ c_SRC_FILES := \
 	apps/common/ui/lcd/lcd_ui_api.c \
 	apps/common/ui/lcd/lcd_ui_return_page.c \
 	apps/common/update/ex_flash_file_download.c \
+	apps/common/update/http_db_passive_update_demo.c \
 	apps/common/update/lc_flash_ufw_update.c \
 	apps/common/update/nandflash_ufw_update.c \
 	apps/common/update/norflash_ufw_update.c \
@@ -157,6 +167,7 @@ c_SRC_FILES := \
 	apps/watch/app_main.c \
 	apps/watch/audio/jlstream_event_handler.c \
 	apps/watch/audio/mix_record_api.c \
+	apps/watch/audio/rcsp_mix_record.c \
 	apps/watch/audio/scene_switch.c \
 	apps/watch/audio/tone_table.c \
 	apps/watch/audio/vol_sync.c \
@@ -294,6 +305,7 @@ c_SRC_FILES := \
 	apps/watch/ui/ui_app_module/ui_global_msg/ui_global_msg.c \
 	apps/watch/ui/ui_key_remap.c \
 	apps/watch/user_cfg.c \
+	apps/watch/video/transfer/tjpgd.c \
 	apps/watch/video/video_api.c \
 	apps/watch/wifi/ctp/ctp_cmd.c \
 	apps/watch/wifi/ctp/ctp_cmd_handle.c \
@@ -368,6 +380,7 @@ c_SRC_FILES := \
 	cpu/br33/ui_driver/gpu_demo/img_data/img_data_type_rb_swap.c \
 	cpu/br33/ui_driver/gpu_demo/img_data/img_test.c \
 	cpu/br33/ui_driver/interface/gpu_draw.c \
+	cpu/br33/ui_driver/interface/gpu_exception.c \
 	cpu/br33/ui_driver/interface/gpu_task.c \
 	cpu/br33/ui_driver/interface/jpeg_manager.c \
 	cpu/br33/ui_driver/interface/jpeg_stream.c \

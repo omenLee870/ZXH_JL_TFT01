@@ -8,6 +8,8 @@
 #include "app_config.h"
 #include "norflash_sfc.h"
 #include "power/power_manage.h"
+#include "asm/power/p33/p33_api.h"
+#include "device/sdmmc/sdmmc.h"
 
 #if (defined(TCFG_NORFLASH_SFC_DEV_ENABLE) && TCFG_NORFLASH_SFC_DEV_ENABLE)
 
@@ -349,16 +351,25 @@ static void norflash_sfc_soft_reset(u32 delay_us)
 /* ========== 硬件电源 IO 控制 ========== */
 
 #if (TCFG_EX_FLASH_POWER_IO != NO_CONFIG_PORT)
+/* 外挂 flash 电源控制，按 TCFG_EX_FLASH_POWER_IO 配置选择供电方式:
+ *   IO_PORT_LDO28  -> LDO28 供电(电压固定 3.1V)
+ *   SD_PWR_SDPG    -> SDPG 供电
+ *   普通 GPIO      -> GPIO 强驱供电(高/低电平使能见 CONFIG_EX_FLASH_POWER_IO_CTRL)
+ */
 static void sfc_flash_power_set(u8 enable)
 {
-#if (TCFG_EX_FLASH_POWER_IO == IO_PORTP_02)
-    extern void sdpg_config(int power_level);
+#if (TCFG_EX_FLASH_POWER_IO == IO_PORT_LDO28)
+    /* LDO28 供电 3.1V */
+    iovdd28_config(enable, IOVDD28_VOL_3P1V);
+#elif (TCFG_EX_FLASH_POWER_IO == SD_PWR_SDPG)
+    /* SDPG 供电 */
     if (enable) {
         sdpg_config(SDPG_IO_OUTPUT_H_HD_HD0_SDPG_USER);
     } else {
         sdpg_config(SDPG_IO_HI_Z);
     }
-#else
+#elif (TCFG_EX_FLASH_POWER_IO != NO_CONFIG_PORT)
+    /* 普通 GPIO 强驱供电 */
     if (enable) {
         gpio_set_drive_strength(IO_PORT_SPILT(TCFG_EX_FLASH_POWER_IO), PORT_DRIVE_STRENGT_8p0mA);
         gpio_set_mode(IO_PORT_SPILT(TCFG_EX_FLASH_POWER_IO), CONFIG_EX_FLASH_POWER_IO_CTRL);

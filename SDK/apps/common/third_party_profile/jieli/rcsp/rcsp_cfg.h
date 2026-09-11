@@ -111,6 +111,7 @@ RCSP_BTMATE_EN
 
 #if TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES
 #define RCSP_ADV_EQ_SET_ENABLE          						1		// eq设置
+#define RCSP_ADV_DEVICE_CONFIG_GET                             1       // 支持通过0xD9读取设备配置
 #endif
 
 // 手表SDK RCSP功能配置
@@ -300,7 +301,7 @@ RCSP_BTMATE_EN
 #endif
 #elif (defined CONFIG_CPU_BR33)
 #if TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH
-#define		RCSP_SDK_TYPE		RCSP_SDK_TYPE_380N_WATCH
+#define		RCSP_SDK_TYPE		RCSP_SDK_TYPE_681N_WATCH
 #else
 #define		RCSP_SDK_TYPE		RCSP_SDK_TYPE_COMMON
 #endif
@@ -321,7 +322,7 @@ RCSP_BTMATE_EN
 #endif
 #elif (defined CONFIG_CPU_BR33)
 #if TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH
-#define		RCSP_SDK_TYPE		RCSP_SDK_TYPE_380N_WATCH
+#define		RCSP_SDK_TYPE		RCSP_SDK_TYPE_681N_WATCH
 #else
 #define		RCSP_SDK_TYPE		RCSP_SDK_TYPE_COMMON
 #endif
@@ -545,8 +546,34 @@ RCSP_BTMATE_EN
 #define RCSP_ADV_DEVICE_CONFIG_GET								0
 #endif
 
+/*
+ * RCSP 0x38 file-recording feature gate.
+ * Keep the protocol capability and the watch-side implementation in sync.
+ */
+#ifndef RCSP_MIX_RECORD_ENABLE
+#if defined(RCSP_MODE) && RCSP_MODE && \
+    defined(TCFG_MIX_RECORD_ENABLE) && TCFG_MIX_RECORD_ENABLE
+#define RCSP_MIX_RECORD_ENABLE                                  1
+#else
+#define RCSP_MIX_RECORD_ENABLE                                  0
+#endif
+#endif
 
+/*
+ * 0: recording state/resource notification first, then command response
+ * 1: command response first, then recording state/resource notification
+ */
+#ifndef RCSP_AUDIO_VIDEO_RESPONSE_FIRST
+#define RCSP_AUDIO_VIDEO_RESPONSE_FIRST                         1
+#endif
 
+/*
+ * Use the SPP send-wakeup callback to pace RCSP file transfer packets.
+ * Set to 0 to restore the SDK one-tick delay fallback.
+ */
+#ifndef RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
+#define RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL                    RCSP_MIX_RECORD_ENABLE
+#endif
 
 #endif // __RCSP_CFG_H__
 

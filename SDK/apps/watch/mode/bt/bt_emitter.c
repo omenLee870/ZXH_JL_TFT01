@@ -219,8 +219,12 @@ u8 emitter_search_result(char *name, u8 name_len, u8 *addr, u32 dev_class, char 
     }
 
     if (name) {
-        // extern void bt_menu_list_add(char *name, u8 * mac, u8 rssi);
-        // bt_menu_list_add(name, addr, rssi);
+#if (defined (CONFIG_UI_STYLE_JL_PUBLIC_MODLS_ENABLE))
+#if (TCFG_UI_ENABLE_BT_EMITTER && TCFG_USER_EMITTER_ENABLE)
+        extern void bt_menu_list_add(char *name, u8 * mac, u8 rssi);
+        bt_menu_list_add(name, addr, rssi);
+#endif
+#endif
         log_info("line:%d name:%s,len:%d,class %x ,rssi %d\n", __LINE__, name, name_len, dev_class, rssi);
 #if TCFG_VSTREAM_TRANSFER
         kid_bt_search_bd_name_filt(name, name_len, addr, rssi);

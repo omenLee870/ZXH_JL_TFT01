@@ -54,6 +54,9 @@
 void gpu_cache_set_alloc_cb(void *(*malloc)(int size, u32 ram_type, u32 module_type),
                             void (*free)(void *buf, u32 ram_type, u32 module_type));
 
+#include "ui_math/ui_prime.h"
+#define gpu_cache_hash_id(v, c) ui_prime_hash_int(v, c)
+
 /* ------------------------------------------------------------------------------------*/
 /**
  * @brief 初始化 gpu cache 模块
@@ -182,5 +185,8 @@ int gpu_cache_valid_sub(void);
  */
 /* ------------------------------------------------------------------------------------*/
 int gpu_cache_valid_add(u32 cache_addr);
+
+void gpu_cache_dump_all();
+
 
 #endif

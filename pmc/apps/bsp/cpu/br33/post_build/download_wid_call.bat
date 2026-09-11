@@ -9,4 +9,8 @@ if exist "..\..\..\..\..\..\sdk\cpu\br33\tools\" (
     copy ..\..\..\..\..\apps\bsp\cpu\br33\config\msys_pmc_app.h ..\..\..\..\..\..\sdk\cpu\br33\msys_pmc_app.h
 )
 
+if exist "..\..\..\..\..\..\sdk\cpu\br33\tools\download.bat" (
+    call ..\..\..\..\..\..\sdk\cpu\br33\tools\download.bat
+)
+
 ::pause

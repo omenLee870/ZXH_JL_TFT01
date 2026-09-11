@@ -19,6 +19,7 @@
 #include "JL_rcsp_api.h"
 #include "JL_rcsp_attr.h"
 #include "rcsp_functions/rcsp_config.h"
+#include "rcsp_trace.h"
 #include "adv_anc_voice.h"
 
 
@@ -34,6 +35,12 @@
 #include "adv_1t2_setting.h"
 
 #if RCSP_MODE && RCSP_DEVICE_STATUS_ENABLE
+
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+/* 智能眼镜: Bit1 音量按 3 通道(sys/media/call)独立处理 */
+#include "audio_config.h"
+#include "app_main.h"
+#endif
 
 #if (RCSP_MODE == RCSP_MODE_EARPHONE)
 #include "event.h"
@@ -150,12 +157,67 @@ static const func_get get_tab[FUNCTION_MASK_MAX] = {
 static u8 _OpCode = 0;
 static u8 _OpCode_SN = 0;
 
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+/* 智能眼镜: 三通道音量在"0x03 上报的 0~100 域(手机滑条)"与"本地节点档域
+ * (Vol_SysTone/Vol_BtcCall/Vol_BtmMusic 的 cfg_level_max, 实测 16/15/100)"之间归一化。
+ * 协议只向 App 提供一个最大音量(0x03, 取音乐节点=100), 无法表达三节点档位数不同,
+ * 故在 RCSP 边界做换算, 让 App 始终按 0~100 交互, 到顶即本通道满档(不再"拖到 100 被夹回 15")。 */
+static u8 rcsp_ai_glasses_vol_wire_to_local(u8 wire_vol, u16 local_max)
+{
+    u32 local;
+
+    if (local_max == 0) {
+        local_max = 1;
+    }
+    local = ((u32)wire_vol * local_max + 50) / 100; /* round */
+    if (local > local_max) {
+        local = local_max;
+    }
+    return (u8)local;
+}
+
+static u8 rcsp_ai_glasses_vol_local_to_wire(u16 local_vol, u16 local_max)
+{
+    u32 wire;
+
+    if (local_max == 0) {
+        local_max = 1;
+    }
+    if (local_vol > local_max) {
+        local_vol = local_max;
+    }
+    wire = ((u32)local_vol * 100 + local_max / 2) / local_max; /* round */
+    if (wire > 100) {
+        wire = 100;
+    }
+    return (u8)wire;
+}
+#endif
+
 static void common_function_attr_vol_set(void *priv, u8 attr, u8 *data, u16 len, u16 ble_con_handle, u8 *spp_remote_addr)
 {
     struct RcspModel *rcspModel = (struct RcspModel *)priv;
     if (rcspModel == NULL) {
         return;
     }
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+    /* 智能眼镜: Bit1 音量 LTV Value = [sys系统音][media音乐][call通话], 3 通道独立设置。
+     * 手机滑条按 0x03 上报的 0~100 域下发, 而 tone/call 节点本地满档只有
+     * cfg_level_max(16/15 等), 域不同不能直接截断, 否则 100% 只到 16 且被夹回;
+     * 这里把线上 0~100 按各通道本地满档换算后再写入(media 满档=100 退化为直通)。 */
+    ASSERT_SET_LEN_RETURN_NULL(len, 3);
+    u16 sys_max   = app_audio_volume_max_query(SysVol_TONE);
+    u16 media_max = app_audio_volume_max_query(AppVol_BT_MUSIC);
+    u16 call_max  = app_audio_volume_max_query(AppVol_BT_CALL);
+    u8 sys_vol   = rcsp_ai_glasses_vol_wire_to_local(data[0], sys_max);
+    u8 media_vol = rcsp_ai_glasses_vol_wire_to_local(data[1], media_max);
+    u8 call_vol  = rcsp_ai_glasses_vol_wire_to_local(data[2], call_max);
+    app_audio_set_volume(APP_AUDIO_STATE_WTONE, sys_vol, 1);
+    app_audio_set_volume(APP_AUDIO_STATE_MUSIC, media_vol, 1);
+    app_audio_set_volume(APP_AUDIO_STATE_CALL, call_vol, 1);
+    u32 mask = BIT(attr);
+    rcsp_msg_post(USER_MSG_RCSP_SET_VOL, 2, (int)priv, mask);
+#else
     if (BT_CALL_HANGUP != bt_get_call_status()) {
         rcspModel->err_code = -1;
         return;
@@ -167,6 +229,7 @@ static void common_function_attr_vol_set(void *priv, u8 attr, u8 *data, u16 len,
         u32 mask = BIT(attr);
         rcsp_msg_post(USER_MSG_RCSP_SET_VOL, 2, (int)priv, mask);
     }
+#endif
 }
 static void common_function_attr_eq_set(void *priv, u8 attr, u8 *data, u16 len, u16 ble_con_handle, u8 *spp_remote_addr)
 {
@@ -470,6 +533,19 @@ static u32 common_function_attr_battery_get(void *priv, u8 attr, u8 *buf, u16 bu
 static u32 common_function_attr_vol_get(void *priv, u8 attr, u8 *buf, u16 buf_size, u32 offset)
 {
     u32 rlen = 0;
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+    /* 智能眼镜: Bit1 音量 LTV Value = [sys系统音][media音乐][call通话], 3 字节一次上报。
+     * app_var 里存的是本地档域(媒体 0~100, tone/call 0~cfg_level_max), 需按各通道
+     * 本地满档换算回 0x03 上报的 0~100 域, App 才与滑条位置一致(media 退化为直通)。 */
+    u8 vol_buf[3];
+    u16 sys_max   = app_audio_volume_max_query(SysVol_TONE);
+    u16 media_max = app_audio_volume_max_query(AppVol_BT_MUSIC);
+    u16 call_max  = app_audio_volume_max_query(AppVol_BT_CALL);
+    vol_buf[0] = rcsp_ai_glasses_vol_local_to_wire(app_var.wtone_volume, sys_max);    /* 系统提示音音量 */
+    vol_buf[1] = rcsp_ai_glasses_vol_local_to_wire(app_var.music_volume, media_max);  /* 媒体(A2DP)音乐音量 */
+    vol_buf[2] = rcsp_ai_glasses_vol_local_to_wire(app_var.call_volume, call_max);    /* HFP 通话音量 */
+    rlen = add_one_attr(buf, buf_size, offset, attr, vol_buf, sizeof(vol_buf));
+#else
     if (BT_CALL_HANGUP != bt_get_call_status()) {
         return 0;
     }
@@ -479,6 +555,7 @@ static u32 common_function_attr_vol_get(void *priv, u8 attr, u8 *buf, u16 buf_si
         get_rcsp_opt_setting(setting_opt_hdl, (u8 *)&cur_vol);
         rlen = add_one_attr(buf, buf_size, offset, attr, &cur_vol, sizeof(cur_vol));
     }
+#endif
     return rlen;
 }
 static u32 common_function_attr_dev_info_get(void *priv, u8 attr, u8 *buf, u16 buf_size, u32 offset)
@@ -1061,10 +1138,22 @@ void rcsp_device_status_update(u8 function, u32 mask)
         }
     }
     if (rlen) {
+#if RCSP_CMD_TRACE_EN
+        /* 抓包: 设备主动 0x09 自动上报(音量/电量等状态变化)。buf[0]=function, 其后为各 attr LTV */
+        rcsp_trace_frame("-->", "TX SYSINFO_PUSH", JL_OPCODE_SYS_INFO_AUTO_UPDATE, 0, 0, buf, rlen + 1);
+#endif
         JL_CMD_send(JL_OPCODE_SYS_INFO_AUTO_UPDATE, buf, rlen + 1, JL_NOT_NEED_RESPOND, 0, NULL);
     }
     free(buf);
 }
+
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+// 智能眼镜: 设备本地音量变化(按键/AVRCP/HFP VGS)后, 主动 0x09 上报 3 通道音量
+void rcsp_ai_glasses_vol_update(void)
+{
+    rcsp_device_status_update(COMMON_FUNCTION, BIT(RCSP_DEVICE_STATUS_ATTR_TYPE_VOL));
+}
+#endif
 
 void rcsp_update_bt_emitter_connect_state(u8 state, u8 *addr)
 {

@@ -1,4 +1,7 @@
 #include "ai_internal.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include "libwebsockets.h"
 #include <mbedtls/certs.h>
@@ -1078,3 +1081,5 @@ int ai_dialogue_close(struct ai_client *client)
 
     return AI_OK;
 }
+
+#endif

@@ -42,6 +42,9 @@ int main(void)
 
     log_info("\n============ Hello BR33 PMC Q32F ============\n");
 
+#ifdef LOWPOWER_TEST_TMP
+    clk_set_api("sys", 48 * MHz);
+#endif
     clock_dump();
 
     debug_init(); //异常检测初始化

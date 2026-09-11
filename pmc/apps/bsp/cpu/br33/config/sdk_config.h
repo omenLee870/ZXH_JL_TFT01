@@ -7,7 +7,11 @@
 //==========================================================//
 //                      串口打印使能开关                    //
 //==========================================================//
+#ifdef CONFIG_RELEASE_ENABLE
+#define CONFIG_UART_DEBUG_ENABLE  				0
+#else
 #define CONFIG_UART_DEBUG_ENABLE  				1
+#endif
 #define CONFIG_DEBUG_UART_TX_PIN                IO_PORTD_01
 #define CONFIG_DEBUG_UART_BAUD    		        1000000L
 
@@ -26,7 +30,11 @@
 //==========================================================//
 //                      PMU 调试版本使能                    //
 //==========================================================//
+#ifdef CONFIG_RELEASE_ENABLE
+#define CONFIG_PMU_DEBUG_ENABLE					0
+#else
 #define CONFIG_PMU_DEBUG_ENABLE					1
+#endif
 
 
 //==========================================================//

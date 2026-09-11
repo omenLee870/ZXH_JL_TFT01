@@ -206,7 +206,7 @@ static void dev_update_param_private_handle(UPDATA_PARM *p)
         void *sd = NULL;
         sd = dev_update_get_parm(up_type);
         if (sd) {
-#if defined(TCFG_SD0_POWER_PORT)
+#if defined(TCFG_SD0_POWER_PORT) && TCFG_SD0_ENABLE && (TCFG_SD0_POWER_PORT != NO_CONFIG_PORT)
             sprintf((char *)&sd0_update.u.sd.io_det_func, "P%c%02d", TCFG_SD0_POWER_PORT / 16 + 'A', TCFG_SD0_POWER_PORT % 16);
             sd0_update.u.sd.power = 0;
             printf(">>>[test]:sd0_update.u.sd.io_det_func = %s, power = %d\n", (char *)&sd0_update.u.sd.io_det_func, sd0_update.u.sd.power);
@@ -216,33 +216,43 @@ static void dev_update_param_private_handle(UPDATA_PARM *p)
             memset((void *)sd_start, 0, UPDATE_PRIV_PARAM_LEN);
         }
 
+        u32 sd_port_clk = TCFG_SD0_PORT_CLK;
+        u32 sd_port_cmd = TCFG_SD0_PORT_CMD;
+        u32 sd_port_dat = TCFG_SD0_PORT_DA0;
+#ifdef TCFG_SD1_PORT_CMD
+        if (up_type == SD1_UPDATA) {
+            sd_port_clk = TCFG_SD1_PORT_CLK;
+            sd_port_cmd = TCFG_SD1_PORT_CMD;
+            sd_port_dat = TCFG_SD1_PORT_DA0;
+        }
+#endif
         char io_port_stirng[5 * 3 + 1] = {0};
         //CLK
-        sprintf(&io_port_stirng[0], "P%c%02d", TCFG_SD0_PORT_CLK / 16 + 'A', TCFG_SD0_PORT_CLK % 16);
-        if (TCFG_SD0_PORT_CLK == IO_PORT_DM) {
+        sprintf(&io_port_stirng[0], "P%c%02d", sd_port_clk / 16 + 'A', sd_port_clk % 16);
+        if (sd_port_clk == IO_PORT_DM) {
             memcpy(&io_port_stirng[0], "USBDM", 5);
         }
-        if (TCFG_SD0_PORT_CLK == IO_PORT_DP) {
+        if (sd_port_clk == IO_PORT_DP) {
             memcpy(&io_port_stirng[0], "USBDP", 5);
         }
         y_printf(">>>[test]:CLK = %s\n", &io_port_stirng[0]);
 
         //CMD
-        sprintf(&io_port_stirng[5], "P%c%02d", TCFG_SD0_PORT_CMD / 16 + 'A', TCFG_SD0_PORT_CMD % 16);
-        if (TCFG_SD0_PORT_CMD == IO_PORT_DM) {
+        sprintf(&io_port_stirng[5], "P%c%02d", sd_port_cmd / 16 + 'A', sd_port_cmd % 16);
+        if (sd_port_cmd == IO_PORT_DM) {
             memcpy(&io_port_stirng[5], "USBDM", 5);
         }
-        if (TCFG_SD0_PORT_CMD == IO_PORT_DP) {
+        if (sd_port_cmd == IO_PORT_DP) {
             memcpy(&io_port_stirng[5], "USBDP", 5);
         }
         y_printf(">>>[test]:CMD = %s\n", &io_port_stirng[5]);
 
         //DATA
-        sprintf(&io_port_stirng[10], "P%c%02d", TCFG_SD0_PORT_DA0 / 16 + 'A', TCFG_SD0_PORT_DA0 % 16);
-        if (TCFG_SD0_PORT_DA0 == IO_PORT_DM) {
+        sprintf(&io_port_stirng[10], "P%c%02d", sd_port_dat / 16 + 'A', sd_port_dat % 16);
+        if (sd_port_dat == IO_PORT_DM) {
             memcpy(&io_port_stirng[10], "USBDM", 5);
         }
-        if (TCFG_SD0_PORT_DA0 == IO_PORT_DP) {
+        if (sd_port_dat == IO_PORT_DP) {
             memcpy(&io_port_stirng[10], "USBDP", 5);
         }
         y_printf(">>>[test]:DATA = %s\n", &io_port_stirng[10]);
@@ -267,7 +277,7 @@ static void dev_update_param_private_handle(UPDATA_PARM *p)
     }
 #endif
 
-#ifdef CONFIG_UPDATE_JUMP_TO_MASK
+#if CONFIG_UPDATE_JUMP_TO_MASK
     memcpy(p->file_patch, STRCHANGE(CONFIG_SD_LATCH_IO), 32);
 #else
     memcpy(p->file_patch, updata_file_name, strlen(updata_file_name));
@@ -386,4 +396,3 @@ void *dev_update_get_parm(int type)
 }
 
 #endif // TCFG_dev_UPDATE_EN
-

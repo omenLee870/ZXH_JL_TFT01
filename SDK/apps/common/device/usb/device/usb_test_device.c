@@ -18,8 +18,11 @@
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB-TEST-D]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
+#define LOG_CLI_ENABLE
 #include "debug.h"
 
 /* ========== Channel state ========== */
@@ -38,7 +41,7 @@ struct test_ep_channel {
 static const struct test_ch_cfg ch_cfg[TEST_CHANNEL_MAX] = { TEST_CHANNEL_CONFIG };
 static struct test_ep_channel channels[TEST_CHANNEL_MAX];
 static u8 ch_itf_num[TEST_CHANNEL_MAX];
-
+static u8 g_test_ready = 0;
 #if TEST_EP_CTRL_ENABLE
 static struct test_ep_stats ctrl_in_stats;
 static struct test_ep_stats ctrl_out_stats;
@@ -76,6 +79,10 @@ static struct test_ep_channel *find_channel_by_ep(u8 ep)
 
 static void start_in_channel(const usb_dev usb_id, struct test_ep_channel *ch)
 {
+    if (g_test_ready == 0) {
+        log_error("start_in_channel error not ready:%x", ch->ep);
+        return;
+    }
     if (!ch->ep_in_dma) {
         log_error("ep%d in_dma NULL", ch->ep);
         return;
@@ -99,7 +106,11 @@ static void start_in_channel(const usb_dev usb_id, struct test_ep_channel *ch)
 static u32 test_ctrl_recv_handler(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
-    u32 len = MIN(req->wLength, TEST_CTRL_MAXP);
+
+    /* Use actual received count, not request wLength — the host may send
+     * fewer bytes per packet than the total requested (EP0 max packet size). */
+    u32 rx_count = usb_read_count0(usb_id);
+    u32 len = MIN(rx_count, TEST_CTRL_MAXP - ctrl_recv_offset);
 
     usb_read_ep0(usb_id, ctrl_buf + ctrl_recv_offset, len);
     ctrl_recv_offset += len;
@@ -244,10 +255,11 @@ static u32 test_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreque
 
     case TEST_VENDOR_REQ_START: {
         const usb_dev usb_id = usb_device2id(usb_device);
+        g_test_ready = 1;
         for (int i = 0; i < TEST_CHANNEL_MAX; i++) {
             if (ch_cfg[i].enable) {
-                start_in_channel(usb_id, &channels[i]);
                 log_info("CH%d IN : start ep %d", i, channels[i].ep);
+                start_in_channel(usb_id, &channels[i]);
             }
         }
         usb_set_setup_phase(usb_device, USB_EP0_STAGE_SETUP);
@@ -281,7 +293,7 @@ static u32 test_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreque
 
 /* ========== Stats timer ========== */
 
-#define TEST_STATS_INTERVAL 1000
+#define TEST_STATS_INTERVAL 1000*30
 
 static u16 test_stats_timer;
 
@@ -322,14 +334,11 @@ static void test_reset(struct usb_device_t *usb_device, u32 itf)
         ch->ep   = ch_cfg[i].ep;
         ch->maxp = ch_cfg[i].maxp;
         ch->type = ch_cfg[i].type;
-
-        usb_g_ep_config(usb_id, ch->ep | USB_DIR_IN, ch->type, 1, ch->ep_in_dma, ch->maxp);
         usb_g_set_intr_hander(usb_id, ch->ep | USB_DIR_IN, test_in_isr);
-        usb_set_intr_txe(usb_id, ch->ep);
+        usb_g_ep_config(usb_id, ch->ep | USB_DIR_IN, ch->type, 1, ch->ep_in_dma, ch->maxp);
 
-        usb_g_ep_config(usb_id, ch->ep, ch->type, 1, ch->ep_out_dma, ch->maxp);
         usb_g_set_intr_hander(usb_id, ch->ep, test_out_isr);
-        usb_set_intr_rxe(usb_id, ch->ep);
+        usb_g_ep_config(usb_id, ch->ep, ch->type, 1, ch->ep_out_dma, ch->maxp);
     }
 }
 
@@ -451,4 +460,5 @@ void test_release(const usb_dev usb_id)
     }
 }
 
+USB_CLASS_REGISTER(test_desc_config, test_register, test_release, TCFG_USB_TEST_INDEX, TEST_CLASS, 0);
 #endif /* TCFG_USB_TEST_ENABLE */

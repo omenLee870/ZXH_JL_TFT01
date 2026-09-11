@@ -1,4 +1,7 @@
 #include "ai_internal.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include "cJSON.h"
 #include "libwebsockets.h"
@@ -689,3 +692,5 @@ const struct ai_provider_ops ai_provider_ali_realtime = {
     .parse_ws_message = ali_realtime_parse_ws_message,
     .append_ws_headers = ali_realtime_append_ws_headers,
 };
+
+#endif

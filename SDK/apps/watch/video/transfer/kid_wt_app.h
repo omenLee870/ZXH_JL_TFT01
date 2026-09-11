@@ -6,7 +6,7 @@
 #define KID_WT_NAME "KID_WT"    //要去匹配的设备的名字
 
 #define KID_WT_FPS_TEST 0       //帧率检测
-#define KID_WT_VSTREAM_START_ON_CONNECT 1  //启动扫描连接时开始视频传输
+#define KID_WT_VSTREAM_START_ON_CONNECT 1  //连接成功后建立对讲会话(页面跳转/聊天); 实时媒体(双向语音+视频)由 VIDEO_INTERCOM 页面启停(kwt_video_session_start/stop_req)
 
 
 
@@ -27,15 +27,6 @@ void kwt_transfer_protocol_init(void);
  */
 /* ------------------------------------------------------------------------------------*/
 void kwt_transfer_protocol_deinit(void);
-
-/* ------------------------------------------------------------------------------------*/
-/**
- * @brief 蓝牙配置初始化: PA芯片等
- *
- * @return
- */
-/* ------------------------------------------------------------------------------------*/
-void kwt_bt_pa_init(void);
 
 /* ------------------------------------------------------------------------------------*/
 /**
@@ -193,6 +184,23 @@ u8 kid_bt_search_bd_name_filt(char *name_data, u8 name_len, u8 *addr, int rssi);
 void kwt_stream_start(void);
 void kwt_stream_stop(void);
 void kwt_reconn_stop(void);
+
+/* ------------------------------------------------------------------------------------*/
+/**
+ * @brief 请求开启/关闭"视频/对讲"实时会话: 双向语音(audio_app 对讲) + 视频
+ *        (相机编码 TX + 远端解码显示 RX)。
+ *
+ *        由 UI 层调用(VIDEO_INTERCOM 页面 LOAD/UNLOAD, 或断线重连停留在视频页时)。
+ *        CHAT 页(纯聊天)不调用, 因此聊天期间不占麦克风/SPP/相机。
+ *        内部会 marshal 到 app_core 线程执行(kid_wt_video_xsmt/recv_start/stop +
+ *        audio_app_open/stop), 不能在 btstack 线程直接调用。各接口自带幂等守卫,
+ *        重复请求安全; 媒体只在 SPP 连接期间允许启动(内部有连接守卫)。
+ *
+ * @return
+ */
+/* ------------------------------------------------------------------------------------*/
+void kwt_video_session_start_req(void);
+void kwt_video_session_stop_req(void);
 
 
 

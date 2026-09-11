@@ -1,4 +1,7 @@
 #include "ai_internal.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include <mbedtls/base64.h>
 
@@ -71,3 +74,5 @@ int ai_base64_decode(const char *text, unsigned char **out, unsigned int *out_le
     *out_len = (unsigned int)olen;
     return AI_OK;
 }
+
+#endif

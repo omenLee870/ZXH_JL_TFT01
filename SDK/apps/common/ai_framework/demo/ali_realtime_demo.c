@@ -1,5 +1,7 @@
 #include "system/includes.h"
 #include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 #include "ai_realtime.h"
 #include "ali_realtime_demo.h"
 #include "ai_audio_sink.h"
@@ -816,3 +818,5 @@ void ali_realtime_demo_stop(void)
 {
     ali_realtime_demo_stop_requested = 1;
 }
+
+#endif

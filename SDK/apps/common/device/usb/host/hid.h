@@ -26,6 +26,8 @@
 #include "usb_bulk_transfer.h"
 #include "usb/host/usb_host.h"
 
+#define MAX_CONSUMER_USAGES  16  ///<每个Input项的最大Consumer Usage数量
+
 /**@struct  report_info_t
   * @brief  报告描述符包含的信息结构体\n
   * 自定义一些私有数据信息存储在该结构体中
@@ -42,6 +44,11 @@ struct report_info_t {
 
     u8 wheel_start_bit; ///<鼠标滚轮数据起始位
     u8 wheel_width; ///<鼠标滚轮数据宽度
+
+    u8 consumer_bit_offset;   ///<Consumer报告数据的bit偏移
+    u8 consumer_bit_count;    ///<Consumer数据总bits数
+    u8 consumer_usage_count;  ///<consumer_usages[]有效条目数
+    u32 consumer_usages[MAX_CONSUMER_USAGES]; ///<Consumer Usage ID数组
 };
 
 #define     MAX_REPORT_COUNT    4
@@ -81,5 +88,26 @@ int usb_hid_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 
   * @endcode
   */
 void hid_process(u32 id);
+
+/* --------------------------------------------------------------------------*/
+/**@name   多媒体按键映射(Consumer Page 0x0C)
+  * @brief  consumer_route回调函数的键值掩码位定义
+  * @{
+  */
+#define CONSUMER_KEY_VOLUP         BIT(0)
+#define CONSUMER_KEY_VOLDOWN       BIT(1)
+#define CONSUMER_KEY_MUTE          BIT(2)
+#define CONSUMER_KEY_PLAYPAUSE     BIT(3)
+#define CONSUMER_KEY_NEXTTRACK     BIT(4)
+#define CONSUMER_KEY_PREVTRACK     BIT(5)
+#define CONSUMER_KEY_STOP          BIT(6)
+#define CONSUMER_KEY_STOPEJECT     BIT(7)
+/**@}*/
+
+/**@brief    Consumer按键回调函数(弱函数,应用层覆写)
+  * @param[in]  consumer_key_mask CONSUMER_KEY_*位掩码组合
+  * @return 无
+  */
+__attribute__((weak)) void consumer_route(u32 consumer_key_mask);
 
 #endif  /*HID_H*/

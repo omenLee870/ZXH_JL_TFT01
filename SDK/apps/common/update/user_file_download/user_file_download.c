@@ -8,6 +8,7 @@
 #include "ui/ui_api.h"
 #include "update_loader_download.h"
 
+
 #if (USER_FILE_UPDATE_V2_EN && TCFG_UPDATE_RESOURCE_EN)
 #define LOG_TAG "[UP_FILE_DNLD]"
 #define LOG_INFO_ENABLE
@@ -187,6 +188,11 @@ static void *user_file_passive_update_init(void *priv, u32 one_len, u8 type, u8 
 #if SMART_BOX_EN
             extern void app_smartbox_prepare_update_ex_flash(void);
             app_smartbox_prepare_update_ex_flash();
+#endif
+#if TCFG_HTTP_UPDATE_ENABLE
+            /* 预留区(UI资源)升级开始: 置状态标记, 供掉电后开机恢复 */
+            void app_user_file_http_update_begin(void);
+            app_user_file_http_update_begin();
 #endif
         }
         // 入链表

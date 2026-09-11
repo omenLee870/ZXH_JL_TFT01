@@ -17,6 +17,14 @@
 #include "msys_pmc_app.h"
 
 /*
+ * 拍照内存受限方案开关:
+ * 无 PSRAM 的方案内存受限, 大尺寸拍照走 "2K 阈值 + 整帧/分段 + 缩略" 三分支方案
+ * (见 apps/common/.../app_camera_photo.c); 有 PSRAM 的方案内存充足, 保持原有拍照逻辑。
+ * 按 TCFG_PSRAM_DEV_ENABLE 动态判定, 配置变更无需改代码。
+ */
+#define CONFIG_CAMERA_PHOTO_MEM_LIMIT  (!TCFG_PSRAM_DEV_ENABLE)
+
+/*
  *  板级配置选择 (根据 sdk_config.h 的子项目宏 TCFG_SUB_CASE_TYPE 区分)
  */
 

@@ -1,6 +1,6 @@
 #include "app_config.h"
 
-#if TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE
+#if TCFG_WIFI_NET_ENABLE
 #include "packet.h"
 #include "json_c/json.h"
 #include "json_c/json_tokener.h"

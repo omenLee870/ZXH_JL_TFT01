@@ -21,6 +21,7 @@ extern u8 video_rec_slowmo_get(void);
 extern void video_rec_ui_update_slowmo(u8 on);
 extern void video_rec_storage_recalc(void);
 extern void video_rec_ui_timer_sync(int new_state);
+extern int video_rec_flm_rebuild_done(void);
 
 int video_rec_app_msg_handler(int *msg)
 {
@@ -117,6 +118,11 @@ int video_rec_app_msg_handler(int *msg)
     case APP_MSG_VIDEO_REC_UI_TIMER_SYNC:
         /* UI 500ms 定时器统一在 app_core 线程启停 */
         video_rec_ui_timer_sync(msg[1]);
+        break;
+    case APP_MSG_FLM_DB_CHANGED:
+        /* 重建完成: 补做被挂起的 SD IN 自动开录(无 pending 时 no-op) */
+        printf("[REC_HANDLER] flm rebuild done");
+        video_rec_flm_rebuild_done();
         break;
     default:
         printf("[REC_HANDLER] unhandled msg=%d", msg_type);

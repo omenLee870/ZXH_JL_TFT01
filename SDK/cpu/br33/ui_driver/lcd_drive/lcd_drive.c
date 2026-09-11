@@ -335,13 +335,11 @@ static void lcd_reset(struct lcd_drive *lcd)
             return ;
         }
         gpio_set_mode(IO_PORT_SPILT(lcd_dat->pin_reset), PORT_OUTPUT_HIGH);
-        /* udelay(200); */
-        os_time_dly(1);
+        delay_ms(50);
         gpio_set_mode(IO_PORT_SPILT(lcd_dat->pin_reset), PORT_OUTPUT_LOW);
-        /* udelay(200); */
-        os_time_dly(1);
+        delay_ms(15);
         gpio_set_mode(IO_PORT_SPILT(lcd_dat->pin_reset), PORT_OUTPUT_HIGH);
-        os_time_dly(10);
+        delay_ms(120);
     }
 }
 
@@ -497,7 +495,7 @@ void lcd_drv_cmd_list(u8 *cmd_list, int cmd_cnt)
 
                 if (((p8[0] << 24) | (p8[1] << 16) | (p8[2] << 8) | p8[3]) == REGFLAG_DELAY_FLAG) {
                     printf("delay %d ms\n", p8[4]);
-                    os_time_dly(p8[4] / 10);
+                    delay_ms(p8[4]);
                 } else if (((p8[0] << 24) | (p8[1] << 16) | (p8[2] << 8) | p8[3]) == REGFLAG_CONFIRM_FLAG) {
                     u8 addr1 = p8[4];
                     u8 value = p8[5];
@@ -683,11 +681,6 @@ void lcd_drv_init(void *p)
     if (!(lcd_dat->dbi_hw.mipi.lcd_reset_enter && lcd_dat->dbi_hw.mipi.lcd_reset_exit)) {
         lcd_reset(__lcd);
     }
-    /* JL3806C封装仪表盘板子推2lane MIPI屏需将以下IO设为高阻 */
-    /* gpio_set_mode(PORTB, PORT_PIN_5 | PORT_PIN_6 | PORT_PIN_7 | PORT_PIN_8 | PORT_PIN_9 | PORT_PIN_10, PORT_HIGHZ); */
-
-    /* JL3806C封装仪表盘板子推24bit RGB屏需将以下IO设为高阻 */
-    /* gpio_set_mode(PORTG, PORT_PIN_0, PORT_HIGHZ); */
 
     /* 板级相关配置 */
     if (lcd_dat->board_pre_init) {
@@ -1175,19 +1168,33 @@ static void lcd_init_task(void *p)
         lcd_drv_power_ctrl(true);
     }
 
+    /* extern void eva_init_code(void); */
+    /* eva_init_code(); */
+
     /* lcd复位 */
-    lcd_reset(__lcd);
+    if (!(lcd_dat->dbi_hw.mipi.lcd_reset_enter && lcd_dat->dbi_hw.mipi.lcd_reset_exit)) {
+        lcd_reset(__lcd);
+    }
+
+    /* 板级相关配置 */
+    if (lcd_dat->board_pre_init) {
+        lcd_dat->board_pre_init();
+    }
+
+    lcd_init(__lcd->param, &lcd_dat->dbi_hw); /* 初始化lcd控制器 */
 
     if (lcd_dat && lcd_dat->pin_te != NO_CONFIG_PORT) {
         gpio_set_mode(IO_PORT_SPILT(lcd_dat->pin_te), PORT_INPUT_PULLUP_10K);
     }
 
-
-
     /* SPI发送屏幕初始化代码 */
     lcd_drv_cmd_list(__lcd->lcd_cmd, __lcd->cmd_cnt);
 
-    lcd_drv_clear_screen(0x0, 0, __this->lcd_width - 1,  0, __this->lcd_height - 1);
+#if (defined TCFG_LCD_TE_USED_PEND && TCFG_LCD_TE_USED_PEND)
+    lcd_te_signal_sync_init();
+#endif
+
+    lcd_drv_clear_screen(0x000000, 0, __this->lcd_width - 1,  0, __this->lcd_height - 1);
 
     os_sem_post(&__lcd_init->lcd_init_sem);
 
@@ -1524,16 +1531,18 @@ struct lcd_drive *lcd_drv_get_hdl_by_id()
 
     for (p = lcd_device_begin; p < lcd_device_end; p++) {
         struct dbi_param *this = (struct dbi_param *)p->param;
-        extern void dbi_reset();
 
         lcd_en_ctrl(true);
 
         lcd_set_ctrl_pin_func(spi_te_stat);
 
         lcd_reset(p); /* lcd复位 */
-        dbi_reset();
-        lcd_init(this, &lcd_dat->dbi_hw); /* 初始化lcd控制器 */
 
+        /* 板级相关配置 */
+        if (lcd_dat->board_pre_init) {
+            lcd_dat->board_pre_init();
+        }
+        lcd_init(this, &lcd_dat->dbi_hw); /* 初始化lcd控制器 */
 
         u32 lcd_read_id = 0;
         if (p->read_id) {

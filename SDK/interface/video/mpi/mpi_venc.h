@@ -33,6 +33,7 @@ typedef struct {
     uint32_t stream_buf_size;
     uint8_t photo_mode;
     const char *photo_path;
+    uint8_t whole_frame_flag;
     uint8_t thumbnail_create;
     uint8_t *head_app1;
     uint32_t head_app1_len;

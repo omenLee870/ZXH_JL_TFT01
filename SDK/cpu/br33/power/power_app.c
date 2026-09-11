@@ -41,13 +41,81 @@ void board_poweroff_uninit()
     //注册在板卡
 }
 
+static u32 pmc_pd_sel;
+static u32 pmc_pe_sel;
+static u32 pmc_ph_sel;
+static u32 pmc_pp_sel;
+
+/**
+ * @brief 将 msys 侧 IO 配置按 mask 迁移到 PMC 侧
+ * @param pmc_port PMC 侧端口寄存器
+ * @param sys_port msys 侧端口寄存器
+ * @param mask     需要迁移的引脚掩码
+ * @note SEL 最后置位，完成控制权交接
+ */
+static void pmc_io_port_migrate(JL_PORT_TypeDef *pmc_port, JL_PORT_TypeDef *sys_port, u32 mask)
+{
+    pmc_port->DIR  = (pmc_port->DIR  & ~mask) | (sys_port->DIR  & mask);
+    pmc_port->DIE  = (pmc_port->DIE  & ~mask) | (sys_port->DIE  & mask);
+    pmc_port->DIEH = (pmc_port->DIEH & ~mask) | (sys_port->DIEH & mask);
+    pmc_port->PU   = (pmc_port->PU   & ~mask) | (sys_port->PU   & mask);
+    pmc_port->PD   = (pmc_port->PD   & ~mask) | (sys_port->PD   & mask);
+    pmc_port->HD   = (pmc_port->HD   & ~mask) | (sys_port->HD   & mask);
+    pmc_port->OUT  = (pmc_port->OUT  & ~mask) | (sys_port->OUT  & mask);
+    pmc_port->SPL  = (pmc_port->SPL  & ~mask) | (sys_port->SPL  & mask);
+    pmc_port->SEL |= mask;
+    asm volatile("csync");
+}
+
+/**
+ * @brief 退出低功耗时归还 IO 控制权
+ * @param pmc_port PMC 侧端口寄存器
+ * @param mask     需要归还的引脚掩码
+ * @note msys 侧配置在进入时只读未写，无需回写
+ */
+static void pmc_io_port_restore(JL_PORT_TypeDef *pmc_port, u32 mask)
+{
+    pmc_port->SEL &= ~mask;
+}
+
+/**
+ * @brief PMC 与 msys 之间切换 PORTD/E/H 的 IO 控制权
+ * @param pmc_ctl 非 0：msys → PMC；0：PMC → msys
+ */
+void pmc_io_control_sw(u32 pmc_ctl)
+{
+    ipc_spin_lock(IPC_SPIN_LOCK_EVENT_P11_GPIO);
+
+    if (pmc_ctl) {
+        pmc_pd_sel = PMC_PORTD->SEL;
+        pmc_pe_sel = PMC_PORTE->SEL;
+        pmc_ph_sel = PMC_PORTH->SEL;
+        pmc_pp_sel = PMC_PORTP->SEL;
+
+        //进入低功耗，主系统控制的 IO 需要由 PMC 来控制
+        pmc_io_port_migrate(PMC_PORTD, JL_PORTD, ~pmc_pd_sel & IO_PORTD_MASK);
+        pmc_io_port_migrate(PMC_PORTE, JL_PORTE, ~pmc_pe_sel & IO_PORTE_MASK);
+        pmc_io_port_migrate(PMC_PORTH, JL_PORTH, ~pmc_ph_sel & IO_PORTH_MASK);
+        pmc_io_port_migrate(PMC_PORTP, JL_PORTP, ~pmc_pp_sel & IO_PORTP_MASK);
+    } else {
+        pmc_io_port_restore(PMC_PORTD, ~pmc_pd_sel & IO_PORTD_MASK);
+        pmc_io_port_restore(PMC_PORTE, ~pmc_pe_sel & IO_PORTE_MASK);
+        pmc_io_port_restore(PMC_PORTH, ~pmc_ph_sel & IO_PORTH_MASK);
+        pmc_io_port_restore(PMC_PORTP, ~pmc_pp_sel & IO_PORTP_MASK);
+    }
+
+    ipc_spin_unlock(IPC_SPIN_LOCK_EVENT_P11_GPIO);
+}
+
 void sleep_enter_callback()
 {
+    pmc_io_control_sw(1);
     board_sleep_enter_callback();
 }
 
 void sleep_exit_callback()
 {
+    pmc_io_control_sw(0);
     board_sleep_exit_callback();
 }
 
@@ -70,6 +138,11 @@ u8 power_soff_callback()
 {
 #if TCFG_APP_RTC_EN
     rtc_1hz_wkup_switch(0);
+
+#if RTC_TRIM_WKUP_TIME
+    rtc_lptmr_wakeup_enable(RTC_TRIM_WKUP_TIME);
+#endif
+
 #endif
 
     DO_PLATFORM_UNINITCALL();

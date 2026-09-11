@@ -1,4 +1,7 @@
 #include "ai_internal.h"
+#include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 
 #include <string.h>
 
@@ -112,3 +115,5 @@ int ai_provider_validate(const struct ai_provider_ops *provider, const char **re
     }
     return AI_OK;
 }
+
+#endif

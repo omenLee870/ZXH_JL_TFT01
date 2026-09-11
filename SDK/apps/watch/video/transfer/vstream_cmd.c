@@ -18,6 +18,7 @@
 #define LOG_WARN_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
+#include "kid_mem_dbg.h"
 
 /* #define log_error printf */
 /* #define log_warn printf — use debug.h LOG_WARN_ENABLE instead */
@@ -259,6 +260,7 @@ int vstream_cmd_send_with_adk_sn(u8 cmd, u8 *cmd_sn, u8 *data, int data_len)
     u8 *send_data = malloc(send_len);
     if (!send_data) {
         log_error("%s malloc(%d) failed\n", __func__, send_len);
+        KWT_MEM_STATS("cmd.send_with_adk malloc fail");
         return -VSTREAM_CMD_SEND_ERR;
     }
     struct packet_head *send_head = (struct packet_head *)send_data;
@@ -316,6 +318,7 @@ int vstream_cmd_send_recv(u8 cmd, u8 cmd_sn, u8 *data, u8 data_len)
     u8 *send_data = malloc(send_len);
     if (!send_data) {
         log_error("%s malloc(%d) failed\n", __func__, send_len);
+        KWT_MEM_STATS("cmd.send_recv malloc fail");
         return -VSTREAM_CMD_SEND_ERR;
     }
     struct packet_head *send_head = (struct packet_head *)send_data;

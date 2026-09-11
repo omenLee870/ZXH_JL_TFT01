@@ -14,11 +14,12 @@
 #include "app_config.h"
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[USB]"
+#define LOG_TAG             "[CUSTOM_HID]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -160,7 +161,7 @@ static void custom_hid_reset(struct usb_device_t *usb_device, u32 itf)
 {
     //cppcheck-suppress unreadVariable
     const usb_dev usb_id = usb_device2id(usb_device);
-    log_debug("custom_hid_reset");
+    log_info("custom_hid_reset");
 #if USB_ROOT2
     usb_disable_ep(usb_id, HID_EP_OUT);
 #else
@@ -270,7 +271,7 @@ u32 custom_hid_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 {
     //cppcheck-suppress unreadVariable
     struct usb_device_t *usb_device = usb_id2device(usb_id);
-    log_debug("custom hid interface num:%d\n", *cur_itf_num);
+    log_info("custom hid interface num:%d\n", *cur_itf_num);
     memcpy(ptr, sHIDDescriptor, sizeof(sHIDDescriptor));
     ptr[2] = *cur_itf_num;
     ptr[USB_DT_INTERFACE_SIZE + 7] = LOBYTE(get_hid_report_desc_len(0));
@@ -316,6 +317,7 @@ void custom_hid_release(usb_dev usb_id)
     free(hid_info);
     hid_info = NULL;
 }
+USB_CLASS_REGISTER(custom_hid_desc_config, custom_hid_register, custom_hid_release, TCFG_USB_CUSTOM_HID_INDEX, CUSTOM_HID_CLASS, 0);
 
 
 

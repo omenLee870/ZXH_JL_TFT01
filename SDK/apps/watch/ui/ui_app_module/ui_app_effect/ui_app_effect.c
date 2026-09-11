@@ -60,8 +60,9 @@ struct page_move_preview {
 };
 // 以下页面id优先使用图片作为页面预览
 static const struct page_move_preview preview[] = {
-    {ID_WINDOW_CALENDAR, PAGE66_b35e_CALENDAR},
+    /* {ID_WINDOW_CALENDAR, PAGE66_b35e_CALENDAR}, */
     /* {ID_WINDOW_SLEEP, PAGE66_ebb4_SLEEP}, */
+    {-1, PAGE66_eb12_PAGE_ADD},
 };
 static int get_face_preview(int page_id)
 {
@@ -1142,8 +1143,7 @@ struct ui_page_switch_priv {
 
     u32 window;				//从该页面退出时将触发返回动画
     void *buf_addr;
-
-    u16  buf_size;
+    int  buf_size;
 };
 static struct  ui_page_switch_priv __ui_page_switch = {0};
 #define __this	(&__ui_page_switch)
@@ -1178,9 +1178,9 @@ static void menu_enter_app_anim_cb(int var, int v)
     //偏移到gpu中心（显示区域）
     gpu_matrix_translate(&matrix, -gpu_win.left, -gpu_win.top);
     //中心缩放（向缩放中心偏移）
-    /* gpu_matrix_translate(&matrix, -m_x, -m_y); */
+    gpu_matrix_translate(&matrix, -m_x, -m_y);
     //缩放
-    /* gpu_matrix_scale(&matrix, zoom, zoom); */
+    gpu_matrix_scale(&matrix, zoom, zoom);
     //将矩阵赋值给链表
     jlgpu_task_list_copy_mul_matrix_by_group(__this->head, &matrix, 2);
 

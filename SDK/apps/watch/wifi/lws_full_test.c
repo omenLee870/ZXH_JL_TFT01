@@ -1,6 +1,6 @@
 #include "system/includes.h"
 
-#if TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE
+#if TCFG_WIFI_NET_ENABLE
 #include "os/os_api.h"
 #include <libwebsockets.h>
 #include <mbedtls/certs.h>

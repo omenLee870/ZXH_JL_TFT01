@@ -25,6 +25,7 @@
 #include "asm/sdmmc.h"
 #include "record.h"
 #include "mix_record_api.h"
+#include "rcsp_mix_record.h"
 #include "common_api.h"
 #include "video_api.h"
 #include "video_rec.h"
@@ -177,6 +178,10 @@ void app_common_key_msg_handler(int *msg)
         }
 
         printf("\n APP_MSG_REC_PP \n");
+        if (rcsp_mix_recorder_get_status()) {
+            printf("RCSP recorder is busy\n");
+            break;
+        }
         if (get_mix_recorder_status()) {
             mix_recorder_stop();
         } else {
@@ -289,6 +294,7 @@ void app_common_device_event_handler(int *msg)
 #endif
 #if TCFG_MIX_RECORD_ENABLE
         mix_record_device_msg_handler(msg);
+        rcsp_mix_record_device_msg_handler(msg);
 #endif // TCFG_MIX_RECORD_ENABLE
 #if (TCFG_APP_VIDEO_REC_EN || TCFG_APP_VIDEO_DEC_EN || TCFG_APP_PHOTO_EN)
         /* 挂载成功(ret==true)才重建, 重复上线/失败跳过防写半死卡 */

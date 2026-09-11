@@ -16,9 +16,10 @@
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[WEBUSB]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -62,6 +63,13 @@ struct webusb_handle_t {
     void (*wakeup_handle)(struct usb_device_t *usb_device);
     void *priv_hdl;
     webusb_rx_handle_t rx_hook;
+    u8 echo_enable;       /* Echo 模式状态 */
+    u32 ctrl_file_total;  /* Control Transfer 文件传输状态 */
+    u32 ctrl_file_seq;
+    u8 ctrl_echo_buf[CTRL_MAX_PAYLOAD]; /* Control Transfer Echo 缓冲 */
+    u8 ctrl_echo_len;
+    u32 bulk_tx_remaining; /* Bulk TX 状态（固件主动发数据） */
+    u32 bulk_tx_seq;
 };
 
 static struct webusb_handle_t *webusb_handle = NULL;
@@ -70,20 +78,6 @@ static u8 webusb_interface_num;
 static void webusb_epout_isr(struct usb_device_t *usb_device, u32 ep);
 static void webusb_epin_isr(struct usb_device_t *usb_device, u32 ep);
 
-/* ---- Echo 模式状态 ---- */
-static u8 webusb_echo_enable = 1;       /* 默认开启 */
-
-/* ---- Control Transfer 文件传输状态 ---- */
-static u32 ctrl_file_total = 0;
-static u32 ctrl_file_seq = 0;
-
-/* ---- Control Transfer Echo 缓冲 ---- */
-static u8 ctrl_echo_buf[CTRL_MAX_PAYLOAD];
-static u8 ctrl_echo_len = 0;
-
-/* ---- Bulk TX 状态（固件主动发数据） ---- */
-static u32 bulk_tx_remaining = 0;
-static u32 bulk_tx_seq = 0;
 /* ======================== USB 描述符 ======================== */
 
 static const u8 sWebUSBDescriptor[] = {
@@ -307,9 +301,9 @@ static void webusb_epout_isr(struct usb_device_t *usb_device, u32 ep)
     if (webusb_handle->rx_hook) {
         webusb_handle->rx_hook(webusb_handle->priv_hdl, buf, len);
     } else {
-        log_info("webusb_recv: len = %d\n", len);
+        log_debug("webusb_recv: len = %d\n", len);
         /* Echo 模式：将收到的数据原样通过 IN 端点回传 */
-        if (webusb_echo_enable && len > 0) {
+        if (webusb_handle->echo_enable && len > 0) {
             usb_g_bulk_write(usb_id, WEBUSB_EP_IN, buf, len);
         }
     }
@@ -317,16 +311,16 @@ static void webusb_epout_isr(struct usb_device_t *usb_device, u32 ep)
 /* ---- Bulk TX 发一包，返回包长度 ---- */
 static u32 bulk_tx_send_packet(const usb_dev usb_id)
 {
-    if (bulk_tx_remaining == 0) {
+    if (webusb_handle->bulk_tx_remaining == 0) {
         return 0;
     }
     u8 buf[MAXP_SIZE_WEBUSBIN];
-    u32 len = bulk_tx_remaining > MAXP_SIZE_WEBUSBIN ? MAXP_SIZE_WEBUSBIN : bulk_tx_remaining;
-    memset(buf, bulk_tx_seq, len);
-    bulk_tx_seq += len;
-    bulk_tx_remaining -= len;
+    u32 len = webusb_handle->bulk_tx_remaining > MAXP_SIZE_WEBUSBIN ? MAXP_SIZE_WEBUSBIN : webusb_handle->bulk_tx_remaining;
+    memset(buf, webusb_handle->bulk_tx_seq, len);
+    webusb_handle->bulk_tx_seq += len;
+    webusb_handle->bulk_tx_remaining -= len;
     usb_g_bulk_write(usb_id, WEBUSB_EP_IN, buf, len);
-    if (bulk_tx_remaining == 0 && len == MAXP_SIZE_WEBUSBIN) {
+    if (webusb_handle->bulk_tx_remaining == 0 && len == MAXP_SIZE_WEBUSBIN) {
         usb_g_bulk_write(usb_id, WEBUSB_EP_IN, buf, 0);
     }
     return len;
@@ -345,10 +339,10 @@ static void webusb_epin_isr(struct usb_device_t *usb_device, u32 ep)
 static u32 webusb_vendor_echo_out_cb(struct usb_device_t *usb_device, struct usb_ctrlrequest *setup)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
-    u32 len = MIN(setup->wLength, sizeof(ctrl_echo_buf));
-    usb_read_ep0(usb_id, ctrl_echo_buf, len);
-    ctrl_echo_len = (u8)len;
-    log_info("vendor echo out: len=%d\n", len);
+    u32 len = MIN(setup->wLength, sizeof(webusb_handle->ctrl_echo_buf));
+    usb_read_ep0(usb_id, webusb_handle->ctrl_echo_buf, len);
+    webusb_handle->ctrl_echo_len = (u8)len;
+    log_debug("vendor echo out: len=%d\n", len);
 
     setup->wLength -= len;
     if (setup->wLength) {
@@ -363,8 +357,8 @@ static u32 webusb_ctrl_file_recv_cb(struct usb_device_t *usb_device, struct usb_
     u8 discard[CTRL_MAX_PAYLOAD];
     u32 len = MIN(setup->wLength, sizeof(discard));
     usb_read_ep0(usb_id, discard, len);
-    ctrl_file_total += len;
-    log_info("ctrl file recv: len=%d, total=%d\n", len, ctrl_file_total);
+    webusb_handle->ctrl_file_total += len;
+    log_debug("ctrl file recv: len=%d, total=%d\n", len, webusb_handle->ctrl_file_total);
 
     setup->wLength -= len;
     if (setup->wLength) {
@@ -383,11 +377,11 @@ static u32 webusb_vendor_bulk_tx_cb(struct usb_device_t *usb_device, struct usb_
     usb_read_ep0(usb_id, param, len);
 
     u32 total = param[0] | ((u32)param[1] << 8) | ((u32)param[2] << 16) | ((u32)param[3] << 24);
-    bulk_tx_remaining = total;
-    bulk_tx_seq = 0;
+    webusb_handle->bulk_tx_remaining = total;
+    webusb_handle->bulk_tx_seq = 0;
     log_info("bulk tx cmd: total=%d\n", total);
 
-    if (bulk_tx_remaining > 0) {
+    if (webusb_handle->bulk_tx_remaining > 0) {
         bulk_tx_send_packet(usb_id);
     }
 
@@ -458,16 +452,16 @@ static u32 webusb_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
         case WEBUSB_VENDOR_ECHO_CTRL:
             if (req->bRequestType & USB_DIR_IN) {
                 /* 主机读取 → 返回之前存储的数据 */
-                if (ctrl_echo_len > 0) {
-                    tx_len = MIN(req->wLength, ctrl_echo_len);
-                    usb_set_data_payload(usb_device, req, ctrl_echo_buf, tx_len);
+                if (webusb_handle->ctrl_echo_len > 0) {
+                    tx_len = MIN(req->wLength, webusb_handle->ctrl_echo_len);
+                    usb_set_data_payload(usb_device, req, webusb_handle->ctrl_echo_buf, tx_len);
                 } else {
                     /* 未存储过数据，返回请求长度的填充字节 */
                     tx_len = MIN(req->wLength, CTRL_MAX_PAYLOAD);
                     memset(tx_payload, 0, tx_len);
                     usb_set_data_payload(usb_device, req, tx_payload, tx_len);
                 }
-                log_info("echo ctrl IN: len=%d\n", tx_len);
+                log_debug("echo ctrl IN: len=%d\n", tx_len);
             } else {
                 /* 主机写入 → 存储数据 */
                 usb_set_setup_recv(usb_device, webusb_vendor_echo_out_cb);
@@ -476,16 +470,16 @@ static u32 webusb_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
 
         /* 0x21: 设置 Bulk Echo 模式（wValue: 0=关闭, 1=开启）*/
         case WEBUSB_VENDOR_SET_ECHO:
-            webusb_echo_enable = LOBYTE(req->wValue) ? 1 : 0;
+            webusb_handle->echo_enable = LOBYTE(req->wValue) ? 1 : 0;
             usb_set_setup_phase(usb_device, USB_EP0_STAGE_SETUP);
-            log_info("set echo: %d\n", webusb_echo_enable);
+            log_debug("set echo: %d\n", webusb_handle->echo_enable);
             break;
 
         /* 0x22: 查询 Bulk Echo 模式状态 */
         case WEBUSB_VENDOR_GET_ECHO:
-            tx_payload[0] = webusb_echo_enable;
+            tx_payload[0] = webusb_handle->echo_enable;
             usb_set_data_payload(usb_device, req, tx_payload, 1);
-            log_info("get echo: %d\n", webusb_echo_enable);
+            log_debug("get echo: %d\n", webusb_handle->echo_enable);
             break;
 
         /* 0x23: 自定义测试数据（wValue=模式, wLength=字节数）*/
@@ -515,7 +509,7 @@ static u32 webusb_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
                 }
             }
             usb_set_data_payload(usb_device, req, tx_payload, tx_len);
-            log_info("custom cmd: pattern=%d, len=%d\n", pattern, tx_len);
+            log_debug("custom cmd: pattern=%d, len=%d\n", pattern, tx_len);
             break;
         }
 
@@ -527,14 +521,14 @@ static u32 webusb_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
         /* 0x25: Control Transfer 文件接收（OUT → 丢弃数据，只计数）*/
         case 0x25:
             if (req->bRequestType & USB_DIR_IN) {
-                tx_payload[0] = ctrl_file_total & 0xFF;
-                tx_payload[1] = (ctrl_file_total >> 8) & 0xFF;
-                tx_payload[2] = (ctrl_file_total >> 16) & 0xFF;
-                tx_payload[3] = (ctrl_file_total >> 24) & 0xFF;
+                tx_payload[0] = webusb_handle->ctrl_file_total & 0xFF;
+                tx_payload[1] = (webusb_handle->ctrl_file_total >> 8) & 0xFF;
+                tx_payload[2] = (webusb_handle->ctrl_file_total >> 16) & 0xFF;
+                tx_payload[3] = (webusb_handle->ctrl_file_total >> 24) & 0xFF;
                 usb_set_data_payload(usb_device, req, tx_payload, 4);
-                log_info("ctrl file recv total: %d\n", ctrl_file_total);
+                log_debug("ctrl file recv total: %d\n", webusb_handle->ctrl_file_total);
             } else {
-                ctrl_file_total = 0;
+                webusb_handle->ctrl_file_total = 0;
                 usb_set_setup_recv(usb_device, webusb_ctrl_file_recv_cb);
             }
             break;
@@ -547,13 +541,13 @@ static u32 webusb_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
                     tx_len = CTRL_MAX_PAYLOAD;
                 }
                 for (u32 i = 0; i < tx_len; i++) {
-                    tx_payload[i] = (ctrl_file_seq + i) & 0xFF;
+                    tx_payload[i] = (webusb_handle->ctrl_file_seq + i) & 0xFF;
                 }
-                ctrl_file_seq += tx_len;
+                webusb_handle->ctrl_file_seq += tx_len;
                 usb_set_data_payload(usb_device, req, tx_payload, tx_len);
-                log_info("ctrl file send: seq=%d, len=%d\n", ctrl_file_seq, tx_len);
+                log_debug("ctrl file send: seq=%d, len=%d\n", webusb_handle->ctrl_file_seq, tx_len);
             } else {
-                ctrl_file_seq = 0;
+                webusb_handle->ctrl_file_seq = 0;
                 usb_set_setup_phase(usb_device, USB_EP0_STAGE_SETUP);
             }
             break;
@@ -576,7 +570,7 @@ static u32 webusb_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreq
 u32 webusb_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 {
     struct usb_device_t *usb_device = usb_id2device(usb_id);
-    log_debug("webusb interface num:%d\n", *cur_itf_num);
+    log_info("webusb interface num:%d\n", *cur_itf_num);
     memcpy(ptr, sWebUSBDescriptor, sizeof(sWebUSBDescriptor));
     ptr[2] = *cur_itf_num;
 
@@ -624,6 +618,7 @@ u32 webusb_release(usb_dev usb_id)
     return 0;
 }
 
+USB_CLASS_REGISTER(webusb_desc_config, webusb_register, webusb_release, TCFG_USB_WEBUSB_INDEX, WEBUSB_CLASS, 0);
 #endif /* TCFG_USB_WEBUSB_ENABLE */
 
 

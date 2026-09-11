@@ -1,6 +1,6 @@
 #include "app_config.h"
 
-#if TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE || TCFG_RTL8733BS_ENABLE
+#if TCFG_NETWORK_ENABLE
 #include "system/includes.h"
 #include "stream_media_core.h"
 #include "video_1_decode_api.h"
@@ -1036,7 +1036,7 @@ static void screen_mirror_bt_h264_recv_task(void *priv)
             if (ctx->running) {
                 if (!ctx->decoder_inited &&
                     screen_mirror_bt_h264_decoder_init(ctx) != 0) {
-                    free(pkt);
+                    free_psram(pkt);
                     break;
                 }
 
@@ -1047,7 +1047,7 @@ static void screen_mirror_bt_h264_recv_task(void *priv)
                 screen_mirror_bt_h264_stats_report(ctx);
             }
 
-            free(pkt);
+            free_psram(pkt);
             wdt_clear();
             break;
         }
@@ -1056,7 +1056,7 @@ static void screen_mirror_bt_h264_recv_task(void *priv)
             OS_SEM *kill_sem = (OS_SEM *)msg[1];
             while (os_taskq_accept(ARRAY_SIZE(msg), msg) == OS_TASKQ) {
                 if (msg[0] == Q_BT_H264_DATA && msg[1]) {
-                    free((void *)msg[1]);
+                    free_psram((void *)msg[1]);
                 }
             }
             screen_mirror_bt_h264_decoder_deinit(ctx);
@@ -1168,7 +1168,7 @@ static void screen_mirror_bt_h264_data_cb(const u8 *data, u16 len,
         return;
     }
 
-    msg = malloc(sizeof(*msg) + len);
+    msg = malloc_psram(sizeof(*msg) + len);
     if (!msg) {
         log_error("fragment message alloc fail");
         return;
@@ -1185,7 +1185,7 @@ static void screen_mirror_bt_h264_data_cb(const u8 *data, u16 len,
 
     arg = (int)msg;
     if (os_taskq_post_type(BT_H264_TASK_NAME, Q_BT_H264_DATA, 1, &arg)) {
-        free(msg);
+        free_psram(msg);
     }
 }
 #if LV_USE_DEMO_MAP

@@ -21,11 +21,12 @@
 #if TCFG_USB_SLAVE_MSD_ENABLE
 
 #define LOG_TAG_CONST       USB
-#define LOG_TAG             "[USB]"
+#define LOG_TAG             "[MSD_DEV]"
 #define LOG_ERROR_ENABLE
-#define LOG_DEBUG_ENABLE
+#define LOG_WARN_ENABLE
 #define LOG_INFO_ENABLE
-/* #define LOG_DUMP_ENABLE */
+#define LOG_DEBUG_ENABLE
+#define LOG_DUMP_ENABLE
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
@@ -91,6 +92,8 @@ static const u8 sMassDescriptor[] = {  //<Interface & Endpoint Descriptor
 #define     DISK_NAME    'B','R','3','3'
 #elif defined(CONFIG_CPU_BR67)
 #define     DISK_NAME    'B','R','6','7'
+#elif defined(CONFIG_CPU_BR63)
+#define     DISK_NAME    'B','R','6','3'
 #else
 #define     DISK_NAME    'U','K','N','W'
 #error "not define cpu name"
@@ -150,14 +153,6 @@ struct usb_msd_handle {
     u8 *ep_out_dmabuffer;
 };
 struct usb_msd_handle *msd_handle;
-#if USB_MALLOC_ENABLE
-#else
-#if USB_MSD_BULK_DEV_USE_ASYNC
-static u8 msd_buf[MSD_BUFFER_SIZE * 2]  SEC(.usb.data.bss.exchange) __attribute__((aligned(64)));
-#else
-static u8 msd_buf[MSD_BUFFER_SIZE] SEC(.usb.data.bss.exchange) __attribute__((aligned(64)));
-#endif
-#endif
 
 inline static u8 __get_max_msd_dev()
 {
@@ -254,6 +249,7 @@ static void msd_endpoint_init(struct usb_device_t *usb_device, u32 itf)
 }
 static void msd_reset_wakeup(struct usb_device_t *usb_device, u32 itf_num)
 {
+    log_info("msd_reset_wakeup");
     if (msd_handle && msd_handle->info.msd_reset_wakeup_handle) {
         msd_handle->info.msd_reset_wakeup_handle(usb_device, itf_num);
     }
@@ -268,7 +264,7 @@ void msd_reset(struct usb_device_t *usb_device, u32 itf_num)
 {
     //cppcheck-suppress unreadVariable
     const usb_dev usb_id = usb_device2id(usb_device);
-    log_debug("msd_reset");
+    log_info("msd_reset");
 
 #if USB_ROOT2
     usb_disable_ep(usb_id, MSD_BULK_EP_OUT);
@@ -397,7 +393,7 @@ static u32 msd_itf_hander(struct usb_device_t *usb_device, struct usb_ctrlreques
 }
 u32 msd_desc_config(const usb_dev usb_id, u8 *ptr, u32 *cur_itf_num)
 {
-    log_debug("msd_desc_config() %d", *cur_itf_num);
+    log_info("msd_desc_config interface: %d", *cur_itf_num);
     //cppcheck-suppress unreadVariable
     struct usb_device_t *usb_device = usb_id2device(usb_id);
     memcpy(ptr, sMassDescriptor, sizeof(sMassDescriptor));
@@ -429,7 +425,7 @@ u32 msd_mcu2usb(const struct usb_device_t *usb_device, const u8 *buffer, u32 len
     usb_dev usb_id = usb_device2id(usb_device);
     u32 r = usb_g_bulk_write(usb_id, MSD_BULK_EP_IN, buffer, len);
     if (r != len) {
-        log_error("usb write error %d != %d", r, len);
+        log_warn("usb write error %d != %d", r, len);
     }
     return r;
 }
@@ -459,7 +455,7 @@ static void inquiry(const struct usb_device_t *usb_device)
     memcpy(scsiinquirydata, SCSIInquiryData, sizeof(SCSIInquiryData));
     err = msd_mcu2usb(usb_device, (const u8 *)scsiinquirydata, len);
     if (err != len) {
-        log_error("write usb err %d %d", __LINE__, err);
+        log_warn("write usb err %d %d", __LINE__, err);
     }
     msd_handle->csw.uCSWDataResidue -= len;
     msd_handle->csw.bCSWStatus = 0;
@@ -470,7 +466,7 @@ static void send_csw(const struct usb_device_t *usb_device)
     msd_handle->csw.dCSWSignature = CSW_SIGNATURE;
     err = msd_mcu2usb(usb_device, (u8 *) & (msd_handle->csw), sizeof(struct usb_scsi_csw));
     if (err != sizeof(struct usb_scsi_csw)) {
-        log_error("write usb err %d %d", __LINE__, err);
+        log_warn("write usb err %d %d", __LINE__, err);
     }
 }
 
@@ -573,7 +569,7 @@ static void request_sense(const struct usb_device_t *usb_device)
         sense_data[7] = 0x0a;
         err = msd_mcu2usb(usb_device, sense_data, len);
         if (err != len) {
-            log_error("write usb err %d %d", __LINE__, err);
+            log_warn("write usb err %d %d", __LINE__, err);
         }
     }
     msd_handle->csw.uCSWDataResidue -= len;
@@ -601,7 +597,7 @@ static void mode_sense(const struct usb_device_t *usb_device)
     }
     err = msd_mcu2usb(usb_device, (u8 *)scsi_mode_sense, sizeof(scsi_mode_sense));
     if (err != sizeof(scsi_mode_sense)) {
-        log_error("write usb err %d %d", __LINE__, err);
+        log_warn("write usb err %d %d", __LINE__, err);
     }
     msd_handle->csw.uCSWDataResidue = 0;
     msd_handle->csw.bCSWStatus = 0;
@@ -632,7 +628,7 @@ static void msd_write_10_async(const struct usb_device_t *usb_device, u8 cur_lun
         }
         err = msd_usb2mcu(usb_device, msd_handle->msd_buf + buf_idx * MSD_BUFFER_SIZE, num * 0x200);
         if (err != num * 0x200) {
-            log_error("read usb_err %d, lba = %d", __LINE__, lba);
+            log_warn("read usb_err %d, lba = %d", __LINE__, lba);
             stall_error(usb_device, 1, MEDIUM_ERROR);
             have_send_stall = TRUE;
             break;
@@ -642,13 +638,13 @@ static void msd_write_10_async(const struct usb_device_t *usb_device, u8 cur_lun
             dev_ioctl(dev_fd, IOCTL_SET_ASYNC_MODE, 0);
             err = dev_bulk_write(dev_fd, msd_handle->msd_buf + buf_idx * MSD_BUFFER_SIZE, lba, num);
             if (err != num) {
-                log_error("write_10 write fail, %d, lba = %d", err, lba);
+                log_warn("write_10 write fail, %d, lba = %d", err, lba);
                 stall_error(usb_device, 1, MEDIUM_ERROR);
                 have_send_stall = TRUE;
                 break;
             }
         } else {
-            log_error("write_10 disk offline, lba = %d", lba);
+            log_warn("write_10 disk offline, lba = %d", lba);
             stall_error(usb_device, 1, MEDIUM_ERROR);
             have_send_stall = TRUE;
             break;
@@ -663,7 +659,7 @@ static void msd_write_10_async(const struct usb_device_t *usb_device, u8 cur_lun
         dev_ioctl(dev_fd, IOCTL_FLUSH, 0);
     } else {
         if (have_send_stall == FALSE) {
-            log_error("write_10 disk offline while sync, lba = %d", lba);
+            log_warn("write_10 disk offline while sync, lba = %d", lba);
             stall_error(usb_device, 1, MEDIUM_ERROR);
         }
     }
@@ -679,7 +675,7 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
     void *dev_fd = NULL;
 
     if (lba_num == 0) {
-        log_error("lba_num == 0\n");
+        log_warn("lba_num == 0\n");
         stall_error(usb_device, 0, 0x02);
         return;
     }
@@ -689,12 +685,12 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
         dev_ioctl(dev_fd, IOCTL_SET_ASYNC_MODE, 0);
         err = dev_bulk_read(dev_fd, msd_handle->msd_buf + buf_idx * MSD_BUFFER_SIZE, lba, num);
         if (err != num) {
-            log_error("read disk error0 = %d, lba = %d\n", err, lba);
+            log_warn("read disk error0 = %d, lba = %d\n", err, lba);
             stall_error(usb_device, 0, MEDIUM_ERROR);
             return;
         }
     } else {
-        log_error("read_10 disk offline, lba = %d\n", lba);
+        log_warn("read_10 disk offline, lba = %d\n", lba);
         stall_error(usb_device, 0, MEDIUM_ERROR);
         return;
     }
@@ -720,8 +716,8 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
                 dev_ioctl(dev_fd, IOCTL_SET_ASYNC_MODE, 0);
                 err = dev_bulk_read(dev_fd, msd_handle->msd_buf + buf_idx * MSD_BUFFER_SIZE, lba, num);
                 if (err != num) {
-                    log_error("read disk error1 = %d, lba= %d",
-                              err, lba);
+                    log_warn("read disk error1 = %d, lba= %d",
+                             err, lba);
                     stall_error(usb_device, 0, MEDIUM_ERROR);
                     break;
                 }
@@ -730,7 +726,7 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
                 dev_ioctl(dev_fd, IOCTL_FLUSH, 0);
             }
         } else {
-            log_error("read_10 disk offline, lba = %d", lba);
+            log_warn("read_10 disk offline, lba = %d", lba);
             stall_error(usb_device, 0, MEDIUM_ERROR);
             break;
         }
@@ -743,8 +739,8 @@ static void msd_read_10_async(const struct usb_device_t *usb_device, u8 cur_lun,
         err = msd_mcu2usb(usb_device, msd_handle->msd_buf + !buf_idx * MSD_BUFFER_SIZE, last_num * 0x200);
 
         if (err != last_num * 0x200) {
-            log_error("read_10 data transfer err %d, lba = %d",
-                      __LINE__, lba);
+            log_warn("read_10 data transfer err %d, lba = %d",
+                     __LINE__, lba);
             stall_error(usb_device, 0, 0x05);
             if (num) {
                 dev_ioctl(dev_fd, IOCTL_FLUSH, 0);
@@ -773,7 +769,7 @@ static void msd_rw_10_sync(const struct usb_device_t *usb_device,
 
     dev_fd = check_disk_status(lun);
     if (!dev_fd) {
-        log_error("disk offline, dev = %s", msd_handle->info.dev_name[lun]);
+        log_warn("disk offline, dev = %s", msd_handle->info.dev_name[lun]);
         stall_error(usb_device, dir == MSD_DIR_WRITE, MEDIUM_ERROR);
         return;
     }
@@ -796,15 +792,15 @@ static void msd_rw_10_sync(const struct usb_device_t *usb_device,
             /* USB -> MCU */
             err = msd_usb2mcu(usb_device, msd_handle->msd_buf, xfer_bytes);
             if (err != xfer_bytes) {
-                log_error("usb read err, dev = %s", msd_handle->info.dev_name[lun]);
+                log_warn("usb read err, dev = %s", msd_handle->info.dev_name[lun]);
                 stall_error(usb_device, 1, MEDIUM_ERROR);
                 break;
             }
 
             err = dev_bulk_write(dev_fd, msd_handle->msd_buf, lba, num);
             if (err != num) {
-                log_error("disk write err = %d, dev = %s",
-                          err, msd_handle->info.dev_name[lun]);
+                log_warn("disk write err = %d, dev = %s",
+                         err, msd_handle->info.dev_name[lun]);
                 stall_error(usb_device, 1, MEDIUM_ERROR);
                 break;
             }
@@ -812,15 +808,15 @@ static void msd_rw_10_sync(const struct usb_device_t *usb_device,
             /* MCU -> USB */
             err = dev_bulk_read(dev_fd, msd_handle->msd_buf, lba, num);
             if (err != num) {
-                log_error("disk read err = %d, dev = %s",
-                          err, msd_handle->info.dev_name[lun]);
+                log_warn("disk read err = %d, dev = %s",
+                         err, msd_handle->info.dev_name[lun]);
                 stall_error(usb_device, 0, MEDIUM_ERROR);
                 break;
             }
 
             err = msd_mcu2usb(usb_device, msd_handle->msd_buf, xfer_bytes);
             if (err != xfer_bytes) {
-                log_error("usb write err, dev = %s", msd_handle->info.dev_name[lun]);
+                log_warn("usb write err, dev = %s", msd_handle->info.dev_name[lun]);
                 stall_error(usb_device, 0, MEDIUM_ERROR);
                 break;
             }
@@ -891,7 +887,7 @@ static void read_capacity(const struct usb_device_t *usb_device)
     memcpy(&capacity[4], &capacity_temp, 4);
     err = msd_mcu2usb(usb_device, capacity, 8);
     if (err != 8) {
-        log_error("write usb err %d", __LINE__);
+        log_warn("write usb err %d", __LINE__);
     }
     msd_handle->csw.uCSWDataResidue = 0;
     msd_handle->csw.bCSWStatus = 0;
@@ -921,7 +917,7 @@ static void read_format_capacity(const struct usb_device_t *usb_device)
     capacity[8] = 0x02;
     err = msd_mcu2usb(usb_device, capacity, 12);
     if (err != 12) {
-        log_error("write usb err %d", __LINE__);
+        log_warn("write usb err %d", __LINE__);
     }
     msd_handle->csw.uCSWDataResidue -= 12;
     msd_handle->csw.bCSWStatus = 0;
@@ -1012,7 +1008,7 @@ void USB_MassStorage(const struct usb_device_t *usb_device)
             break;
 
         default:
-            log_error("opcode %x", msd_handle->cbw.operationCode);
+            log_warn("opcode %x", msd_handle->cbw.operationCode);
             if (msd_handle->cbw.dCBWDataTransferLength) {
                 stall_error(usb_device, !(msd_handle->cbw.bmCBWFlags & 0x80), 2);
             } else {
@@ -1120,14 +1116,10 @@ u32 msd_register(const usb_dev usb_id)
     msd_handle = (struct usb_msd_handle *)zalloc(sizeof(struct usb_msd_handle));
     assert_d(msd_handle != NULL);
 
-#if USB_MALLOC_ENABLE
 #if USB_MSD_BULK_DEV_USE_ASYNC
     msd_handle->msd_buf = (u8 *)dma_malloc(MSD_BUFFER_SIZE * 2);
 #else
     msd_handle->msd_buf = (u8 *)malloc(MSD_BUFFER_SIZE);
-#endif
-#else
-    msd_handle->msd_buf = msd_buf;
 #endif
     log_info("msd_handle = %x", msd_handle);
 
@@ -1155,7 +1147,6 @@ u32 msd_release(usb_dev usb_id)
             msd_handle->ep_out_dmabuffer = NULL;
         }
 
-#if USB_MALLOC_ENABLE
         if (msd_handle->msd_buf) {
 
 #if USB_MSD_BULK_DEV_USE_ASYNC
@@ -1165,11 +1156,11 @@ u32 msd_release(usb_dev usb_id)
 #endif
             msd_handle->msd_buf = NULL;
         }
-#endif
         free(msd_handle);
         msd_handle = NULL;
     }
     return 0;
 }
 
+USB_CLASS_REGISTER(msd_desc_config, msd_register, msd_release, TCFG_USB_MSD_INDEX, MASSSTORAGE_CLASS, 0);
 #endif

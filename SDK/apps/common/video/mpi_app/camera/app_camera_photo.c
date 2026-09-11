@@ -30,6 +30,27 @@ extern void lv_jlgpu_mutex_post(void);
 #define APP_CAMERA_PHOTO_THUMB_WIDTH        320u
 #define APP_CAMERA_PHOTO_THUMB_HEIGHT       240u
 #define APP_CAMERA_PHOTO_THUMB_BUF_SIZE     (64 * 1024u)
+/* 2K 阈值: 宽高都 ≤ 时走 small (整帧) 分支 */
+#define APP_CAMERA_PHOTO_MAX_SMALL_WIDTH    2560u
+#define APP_CAMERA_PHOTO_MAX_SMALL_HEIGHT   1440u
+/* >2K 时第一段先缩到 QVGA 抓整帧, 第二段 replay 放大回目标尺寸 */
+#define APP_CAMERA_PHOTO_QVGA_WIDTH         320u
+#define APP_CAMERA_PHOTO_QVGA_HEIGHT        240u
+
+/*
+ * 拍照内存受限方案(无 PSRAM)走三分支方案, 有 PSRAM 方案保持原逻辑。
+ * 判定见 board_config.h CONFIG_CAMERA_PHOTO_MEM_LIMIT。
+ */
+#ifndef CONFIG_CAMERA_PHOTO_MEM_LIMIT
+#define CONFIG_CAMERA_PHOTO_MEM_LIMIT   0
+#endif
+#if CONFIG_CAMERA_PHOTO_MEM_LIMIT
+#define APP_CAMERA_PHOTO_SMALL_WHOLE_FRAME     1   /* small 分支整帧输出 */
+#define APP_CAMERA_PHOTO_GRAB_OVERSIZE_QVGA    1   /* >2K 第一段抓 QVGA */
+#else
+#define APP_CAMERA_PHOTO_SMALL_WHOLE_FRAME     0   /* 保持原逻辑(可分段) */
+#define APP_CAMERA_PHOTO_GRAB_OVERSIZE_QVGA    0
+#endif
 
 
 #ifdef CONFIG_LVGL_UI_ENABLE
@@ -403,6 +424,7 @@ static app_camera_ret_t app_camera_replay_encode_once(app_camera_handle_t ctx,
     venc_attr.in_yuv_order = chn_attr.yuv_order;
     venc_attr.stream_buf_size = attr->stream_buf_size ? attr->stream_buf_size : APP_CAMERA_PHOTO_STREAM_BUF_SIZE;
     venc_attr.photo_mode = jpeg_buf ? 0 : 1;
+    venc_attr.whole_frame_flag = 0;
     venc_attr.photo_path = jpeg_buf ? NULL : attr->path;
     venc_attr.photo_file_cb = app_camera_photo_file_created;
     venc_attr.photo_file_cb_priv = ctx;
@@ -554,6 +576,7 @@ static app_camera_ret_t app_camera_take_small_photo(app_camera_handle_t ctx,
     venc_attr.in_yuv_order = chn_attr.yuv_order;
     venc_attr.stream_buf_size = attr->stream_buf_size ? attr->stream_buf_size : APP_CAMERA_PHOTO_STREAM_BUF_SIZE;
     venc_attr.photo_mode = attr->jpeg_buf ? 0 : 1;
+    venc_attr.whole_frame_flag = APP_CAMERA_PHOTO_SMALL_WHOLE_FRAME;
     venc_attr.photo_path = attr->jpeg_buf ? NULL : attr->path;
     venc_attr.photo_file_cb = app_camera_photo_file_created;
     venc_attr.photo_file_cb_priv = ctx;
@@ -648,8 +671,20 @@ static app_camera_ret_t app_camera_take_large_photo(app_camera_handle_t ctx,
         return APP_CAMERA_ERR_NOT_FOUND;
     }
 
-    src_chn_attr.width = attr->jpeg_buf ? attr->width : src_grp_attr.src_width;
-    src_chn_attr.height = attr->jpeg_buf ? attr->height : src_grp_attr.src_height;
+    if (attr->jpeg_buf) {
+        /* jpeg_buf 路径: 直接离线编码抓到的帧, 无 replay 放大, 需按目标尺寸抓帧 */
+        src_chn_attr.width = attr->width;
+        src_chn_attr.height = attr->height;
+    } else if (APP_CAMERA_PHOTO_GRAB_OVERSIZE_QVGA &&
+               (attr->width > APP_CAMERA_PHOTO_MAX_SMALL_WIDTH ||
+                attr->height > APP_CAMERA_PHOTO_MAX_SMALL_HEIGHT)) {
+        /* >2K: 第一段先缩到 QVGA 抓整帧, 第二段 replay 放大回目标尺寸 */
+        src_chn_attr.width = APP_CAMERA_PHOTO_QVGA_WIDTH;
+        src_chn_attr.height = APP_CAMERA_PHOTO_QVGA_HEIGHT;
+    } else {
+        src_chn_attr.width = src_grp_attr.src_width;
+        src_chn_attr.height = src_grp_attr.src_height;
+    }
     src_chn_attr.format = attr->yuv420 ? MPI_PIXEL_FMT_YUV420SP : APP_CAMERA_PHOTO_FORMAT;
     src_chn_attr.yuv_order = APP_CAMERA_PHOTO_YUV_ORDER;
     src_chn_attr.mirror = 0;
@@ -861,6 +896,27 @@ err_destroy_src_chn:
     return APP_CAMERA_ERR_IO;
 }
 
+/*
+ * 是否走 small 直编路径:
+ * 无特殊处理(jpeg_buf/缩略图/特效) 且 尺寸在阈值内。
+ * 有 PSRAM 方案(内存充足)按 sensor 源尺寸判定(原逻辑);
+ * 无 PSRAM 方案按 2K 阈值判定。
+ */
+static int app_camera_photo_can_small(const app_camera_photo_attr_t *attr,
+                                      const mpi_vpss_grp_attr_t *grp_attr)
+{
+    if (attr->jpeg_buf || attr->thumbnail_enable || attr->effect != 0) {
+        return 0;
+    }
+#if CONFIG_CAMERA_PHOTO_MEM_LIMIT
+    return attr->width <= APP_CAMERA_PHOTO_MAX_SMALL_WIDTH &&
+           attr->height <= APP_CAMERA_PHOTO_MAX_SMALL_HEIGHT;
+#else
+    return attr->width <= grp_attr->src_width &&
+           attr->height <= grp_attr->src_height;
+#endif
+}
+
 app_camera_ret_t app_camera_take_photo(app_camera_handle_t handle,
                                        const app_camera_photo_attr_t *attr)
 {
@@ -921,7 +977,7 @@ app_camera_ret_t app_camera_take_photo(app_camera_handle_t handle,
         goto out;
     }
 
-    if (!attr->jpeg_buf && !attr->thumbnail_enable && attr->effect == 0 && attr->width <= grp_attr.src_width && attr->height <= grp_attr.src_height) {
+    if (app_camera_photo_can_small(attr, &grp_attr)) {
         app_ret = app_camera_take_small_photo(handle, attr);
     } else {
         app_ret = app_camera_take_large_photo(handle, attr);

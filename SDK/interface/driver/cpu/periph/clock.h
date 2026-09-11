@@ -206,4 +206,28 @@ void clock_voltage_rising_step_max();
 void clock_voltage_falling_step_min();
 
 void update_vdd_table(u8 val);
+
+
+void usb_auto_trim_init(u32 ie);
+void usb_auto_trim_deinit();
+/**
+ * @brief 获取最近一次 USB auto trim 测量到的 STD_48M 实际频率
+ * @return STD_48M 频率（Hz），未测量过返回 0
+ */
+u32 usb_auto_trim_get_freq(void);
+/**
+ * @brief 设置是否将 USB auto trim 校准结果写入 SYSPLL 寄存器
+ * @param enable 1=写入寄存器（默认），0=只计算不写入
+ */
+void usb_auto_trim_set_update(u8 enable);
+/**
+ * @brief 根据分析后的频率值手动校准 SYSPLL
+ * @param freq_hz usb_auto_trim_get_freq() 返回的 STD_48M 实际频率（Hz）
+ */
+void usb_auto_trim_apply_freq(u32 freq_hz);
+/**
+ * @brief 查询 USB auto trim 是否处于工作状态
+ * @return 1=工作中，0=已停止/未初始化
+ */
+u32 usb_auto_trim_is_working(void);
 #endif  /*CLOCK_H*/

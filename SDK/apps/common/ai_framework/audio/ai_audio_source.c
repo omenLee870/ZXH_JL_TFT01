@@ -1,6 +1,8 @@
 #include "system/includes.h"
 #include "ai_audio_source.h"
 #include "app_config.h"
+
+#if TCFG_NETWORK_ENABLE
 #include "audio_def.h"
 #include "ai_voice_recoder.h"
 
@@ -521,3 +523,5 @@ int ai_audio_source_get_drop_stats(struct ai_audio_source_drop_stats *out)
     out->events = ai_audio_source_default.drop_events;
     return 0;
 }
+
+#endif

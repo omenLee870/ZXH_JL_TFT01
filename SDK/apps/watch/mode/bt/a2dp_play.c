@@ -18,6 +18,7 @@
 #include "bt.h"
 #include "effect/effects_default_param.h"
 #include "scene_switch.h"
+#include "rcsp_device_status.h"
 
 #if TCFG_APP_BT_EN
 #if(TCFG_USER_TWS_ENABLE == 0)
@@ -118,6 +119,10 @@ static void a2dp_play_in_task(u8 *data)
     case CMD_SET_A2DP_VOL:
         dev_vol = data[8];
         set_music_device_volume(dev_vol);
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+        /* 智能眼镜: 手机 AVRCP 音量变化同步到设备后, 主动上报多通道音量 */
+        rcsp_ai_glasses_vol_update();
+#endif
         break;
     }
 }
@@ -190,6 +195,11 @@ static int a2dp_bt_status_event_handler(int *event)
 #if (TCFG_PITCH_SPEED_NODE_ENABLE && A2DP_PLAYBACK_PITCH_KEEP)
         audio_pitch_default_parm_set(app_var.pitch_mode);
         a2dp_file_pitch_mode_init(app_var.pitch_mode);
+#endif
+#if ((TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES) && TCFG_APP_PC_EN)
+        if (app_in_mode(APP_MODE_PC)) {
+            bt_cmd_prepare(USER_CTRL_DISCONN_A2DP, 0, NULL);
+        }
 #endif
         break;
     case BT_STATUS_A2DP_MEDIA_STOP:

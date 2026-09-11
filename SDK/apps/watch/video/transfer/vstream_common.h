@@ -68,8 +68,8 @@ void vsteam_frame_head_dump(struct frm_head *head, const char *func, int line);
 //音频1帧512
 //图片1帧不超过6k
 //这里预留3*6+2
-#define VIDEO_STREAM_PACKET_NUM 	8
-#define AUDIO_STREAM_PACKET_NUM		8
+#define VIDEO_STREAM_PACKET_NUM 	4
+#define AUDIO_STREAM_PACKET_NUM		4
 #define CMD_STREAM_PACKET_NUM		(4)
 #define FILE_STREAM_PACKET_NUM		(6)
 #if KWT_USE_H264
