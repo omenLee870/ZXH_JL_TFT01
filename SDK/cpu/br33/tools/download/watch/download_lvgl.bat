@@ -67,6 +67,12 @@ if %FORMAT_ALL_ENABLE%A==1A set FORMAT=-format all
 copy /B lvgl mode.bin
 ..\..\packres.exe -n resfs -o resfs.bin -keep-suffix-case watch -aligned 4096 -normal
 
+if %EXT_FLASH_ENABLE%A==1A (
+    ..\..\fat_comm.exe -pad-backup2 -force-align-fat -out ex_res.bin -image-size 16 -filelist dyn1 -remove-empty -remove-bpb -mark-bad-after 0x400000 -address 0
+	..\..\packres.exe -n res -o res.bin ex_res.bin 0 mode.bin 0x400000 -normal
+    set EX_FLASH_CMD=-ex_flash res.bin
+)
+
 ::set CHIP_CMD=-tonorflash -dev br33 -boot 0x7f02600 -div8 -wait 300 -uboot uboot.boot -app app.bin
 set CHIP_CMD=-tonorflash -dev br33 -div8 -wait 300 -uboot uboot.boot -app app.bin
 set RES_FILE_CMD=-res cfg_tool.bin p11_code.bin stream.bin config.dat
