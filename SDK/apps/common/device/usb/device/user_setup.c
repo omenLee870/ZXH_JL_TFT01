@@ -59,11 +59,31 @@ u32 webusb_setup_device_hook(struct usb_device_t *usb_device, struct usb_ctrlreq
 {
     return 0;
 }
+
+_WEAK_
+u32 xbox360_setup_device_hook(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
+{
+    return 0;
+}
+
+_WEAK_
+u8 xbox360_usb_mode_active(void)
+{
+    return 0;
+}
+
 static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest *req)
 {
     const usb_dev usb_id = usb_device2id(usb_device);
     u32 ret = 0;
     u8 *tx_payload = usb_get_setup_buffer(usb_device);
+
+#if TCFG_USB_SLAVE_XBOX360_ENABLE
+    ret = xbox360_setup_device_hook(usb_device, req);
+    if (ret) {
+        return ret;
+    }
+#endif
 
 #if TCFG_USB_WEBUSB_ENABLE
     ret =  webusb_setup_device_hook(usb_device, req);
@@ -91,6 +111,14 @@ static u32 setup_device(struct usb_device_t *usb_device, struct usb_ctrlrequest 
             }
 #endif
             get_device_descriptor(tx_payload);
+            /* Xbox360 手柄要求 device class/subclass/protocol 全为 0，
+             * 不能被下面的 MIF 覆写覆盖，否则主机不会加载 xusb22.sys。
+             * 注意不能用 wDeviceClass 判断：该字段是 u8，装不下 bit12 的类位。 */
+            if (xbox360_usb_mode_active()) {
+                usb_set_data_payload(usb_device, req, tx_payload, tx_payload[0]);
+                ret = 1;
+                break;
+            }
             for (int i = 0; i < 8; i++) {
                 //为了兼容windows7等老电脑，配置成不同类时应该使用不同pid
                 if (usb_device->wDeviceClass & BIT(i)) {

@@ -99,6 +99,8 @@
 #define	FTS_MAX_POINTS_SUPPORT						1
 
 #define TP_FPS			60
+#define TP_HOLD_MOVE_TOLERANCE	5	/*! HOLD 事件判定: 允许的抖动像素容差 */
+
 
 #define VK_MIN			(VK_X < VK_Y ? VK_X : VK_Y)
 #define VK_MAX			(VK_X > VK_Y ? VK_X : VK_Y)
@@ -392,7 +394,13 @@ static void tpd_down(int raw_x, int raw_y, int x, int y, int p)
     y = VK_Y - y - 1;
 #endif
 
-    if ((tp_last_staus == ELM_EVENT_TOUCH_DOWN) && (x == first_x) && (y == first_y)) {
+    /*
+     * X、Y 在容差范围内视为未移动。
+     * 若要求严格相等, 466 屏因采样抖动很难连续命中, 导致 HOLD 事件无法触发。
+     */
+    if ((tp_last_staus == ELM_EVENT_TOUCH_DOWN) &&
+        (x >= first_x - TP_HOLD_MOVE_TOLERANCE && x <= first_x + TP_HOLD_MOVE_TOLERANCE) &&
+        (y >= first_y - TP_HOLD_MOVE_TOLERANCE && y <= first_y + TP_HOLD_MOVE_TOLERANCE)) {
         tp_down_cnt++;
         if (tp_down_cnt < 30) {
             return;

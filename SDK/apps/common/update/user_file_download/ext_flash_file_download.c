@@ -16,7 +16,6 @@
 #define LOG_INFO_ENABLE
 #define LOG_ERROR_ENABLE
 #include "debug.h"
-
 typedef struct _user_file_base_info_t {
     struct list_head 	entry;
     user_chip_update_info_t *(*get_res_base_info)(void *priv,
@@ -30,7 +29,7 @@ typedef struct _user_file_base_info_t {
 typedef struct _res_bin_file_update_info_t {
     user_chip_update_info_t info;
     void *dev_hdl;
-    void *dev_hdl_noenc;
+    void *dev_hdl_mode;
 } res_bin_file_update_info_t;
 
 #define RES_BIN_FILE_NAME		"res.bin"
@@ -48,9 +47,9 @@ static int norflash_f_open(u32 file_len)
 
     if (__this) {
         __this->dev_hdl = dev_open("res_nor", NULL);
-        __this->dev_hdl_noenc = dev_open("update_noenc", NULL);
-        if (__this->dev_hdl && __this->dev_hdl_noenc) {
-            log_info("open dev succ 0x%x, 0x%x\n", __this->dev_hdl, __this->dev_hdl_noenc);
+        __this->dev_hdl_mode = dev_open("res_nor_mode", NULL);
+        if (__this->dev_hdl && __this->dev_hdl_mode) {
+            log_info("open dev succ 0x%x  0x%x\n", __this->dev_hdl, __this->dev_hdl_mode);
         } else {
             log_error("open dev fail");
             ret = -1;
@@ -66,7 +65,7 @@ static u32 norflash_f_read(void *buf, u32 addr, u32 len)
 {
     int rlen = 0;
 
-    if (__this && __this->dev_hdl && __this->dev_hdl_noenc) {
+    if (__this && __this->dev_hdl && __this->dev_hdl_mode) {
         wdt_clear();
         //log_info("%s: addr = 0x%x, rlen = 0x%x", __func__, addr, len);
         if (g_res_nor_unencry_start_addr > addr) {
@@ -80,7 +79,7 @@ static u32 norflash_f_read(void *buf, u32 addr, u32 len)
 #endif
             //put_buf(buff, 128);
         } else {
-            rlen = dev_bulk_read(__this->dev_hdl_noenc, buf, addr - g_res_nor_unencry_start_addr, len);
+            rlen = dev_bulk_read(__this->dev_hdl_mode, buf, addr - g_res_nor_unencry_start_addr, len);
         }
     }
 
@@ -91,7 +90,7 @@ static u32 norflash_f_write(void *buf, u32 addr, u32 len)
 {
     int rlen = 0;
 
-    if (__this && __this->dev_hdl && __this->dev_hdl_noenc) {
+    if (__this && __this->dev_hdl && __this->dev_hdl_mode) {
         wdt_clear();
         if (g_res_nor_unencry_start_addr > addr) {
 #if TCFG_SFC_ENCRY_ENABLE
@@ -105,7 +104,7 @@ static u32 norflash_f_write(void *buf, u32 addr, u32 len)
 #endif
             //put_buf(buff, 128);
         } else {
-            rlen = dev_bulk_write(__this->dev_hdl_noenc, buf, addr - g_res_nor_unencry_start_addr, len);
+            rlen = dev_bulk_write(__this->dev_hdl_mode, buf, addr - g_res_nor_unencry_start_addr, len);
         }
     }
 
@@ -136,12 +135,12 @@ static u16 norflash_f_erase(u32 cmd, u32 addr)
     }
 
     if (__this && type) {
-        if (__this->dev_hdl && __this->dev_hdl_noenc) {
+        if (__this->dev_hdl && __this->dev_hdl_mode) {
             wdt_clear();
             if (g_res_nor_unencry_start_addr > addr) {
                 dev_ioctl(__this->dev_hdl, type, addr);
             } else {
-                dev_ioctl(__this->dev_hdl_noenc, type, addr - g_res_nor_unencry_start_addr);
+                dev_ioctl(__this->dev_hdl_mode, type, addr - g_res_nor_unencry_start_addr);
             }
         }
     } else {

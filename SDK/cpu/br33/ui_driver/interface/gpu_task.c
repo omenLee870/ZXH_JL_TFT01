@@ -1218,7 +1218,8 @@ static int jlgpu_scheduler_kick_start(pJLGPUMultTaskList_t mult_list, struct dra
             u8 *idle_buf = get_idle_buffer_by_handler(buffer_hdl, &__this->buf_idle_sem, 500, 0);
 
             /* 清空缓存buf */
-            memset(idle_buf, 0, draw_rect.width * draw_rect.height * 2);
+            int out_bpp = gpu_get_format_bpp(jlgpu_chain_head_out_format(gpu_task_head)) / 8;
+            memset(idle_buf, 0, draw_rect.width * draw_rect.height * out_bpp);
 
 
             if (JLUI_MULTI_PAGE_OVERLAY_SUPPORT) {
@@ -1298,11 +1299,10 @@ static int jlgpu_scheduler_kick_start(pJLGPUMultTaskList_t mult_list, struct dra
         } else if (dc->draw_state == GPU_SYNTHESIS) {
             /* 划屏时合成并刷新 */
             u8 *idle_buf = get_idle_buffer_by_handler(buffer_hdl, &__this->buf_idle_sem, 500, 0);
-            memset(idle_buf, 0, draw_rect.width * draw_rect.height * 2);
-
             pJLGPUTaskHead_t dc_head = gpu_task_head;
             /* int out_bpp = gpu_get_format_bpp(dc_head->out_param.format) / 8; */
             int out_bpp = gpu_get_format_bpp(jlgpu_chain_head_out_format(dc_head)) / 8;
+            memset(idle_buf, 0, draw_rect.width * draw_rect.height * out_bpp);
             int out_stride = width * out_bpp;
             if (page_draw.new_task_list) { //重排链表
                 int bottom_page_exist = 0;
@@ -1883,7 +1883,8 @@ void *jlgpu_task_list_dump_to_psram(pJLGPUTaskHead_t head, int w, int h, void *d
 
         /* 获取空闲buf */
         u8 *idle_buf = get_idle_buffer_by_handler(buf_hdl, &__this->buf_idle_sem, 500, 0);
-        memset(idle_buf, 0, draw_rect.width * draw_rect.height * 2);
+        int out_bpp = gpu_get_format_bpp(jlgpu_chain_head_out_format(head)) / 8;
+        memset(idle_buf, 0, draw_rect.width * draw_rect.height * out_bpp);
         jlgpu_set_task_list_out_buf(head, idle_buf, &draw_rect, 0, 0);
         jlgpu_task_list_run(head);
 

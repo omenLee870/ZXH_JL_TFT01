@@ -23,9 +23,9 @@ int  kid_wt_video_recv_get_status(void);
 #define KWT_CAMERA_WIDTH            320
 #define KWT_CAMERA_HEIGHT           240
 #define KWT_CAMERA_JPEG_QUALITY     40
-#define KWT_CAMERA_ABR_KBPS         (50 * 8)    /* match s_info.abr_kbps */
+#define KWT_CAMERA_ABR_KBPS         (60 * 8)    /* match s_info.abr_kbps */
 #define KWT_CAMERA_STREAM_BUF_SZ    (64 * 1024)
-#define KWT_CAMERA_FPS              10          /* match s_info.fps */
+#define KWT_CAMERA_FPS              15          /* match s_info.fps */
 #define KWT_VPSS_LINE_NUM           16u         /* rows buffered in VPSS chn */
 
 /* ============================================================================

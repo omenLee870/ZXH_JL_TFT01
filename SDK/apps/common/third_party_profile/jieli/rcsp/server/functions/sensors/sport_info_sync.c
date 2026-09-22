@@ -506,5 +506,10 @@ int sport_info_sync_pause_exercise_rcsp(void)
 {
     return 0;
 }
+
+int rcsp_register_sport_info_sync_interface(struct rcsp_watch_execise *sport_info_sync_interface)
+{
+    return 0;
+}
 #endif
 

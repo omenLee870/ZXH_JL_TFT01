@@ -728,7 +728,7 @@ static int rcsp_extra_flash_opt_dial_set(u8 *file_path, u16 *data_len)
     result = watch_set_style_by_name(watch);
 
 
-#if  (TCFG_UI_ENABLE )
+#if (TCFG_UI_ENABLE && CONFIG_JL_UI_ENABLE)
     if (UI_GET_WINDOW_ID() ==  ID_WINDOW_DIAL) {
         UI_HIDE_CURR_WINDOW();
         UI_SHOW_WINDOW(ID_WINDOW_DIAL);
@@ -776,7 +776,7 @@ static int rcsp_extra_flash_opt_dial_backgroud_set(u8 *file_path, u16 *data_len)
     }
 
 
-#if  (TCFG_UI_ENABLE )
+#if (TCFG_UI_ENABLE && CONFIG_JL_UI_ENABLE)
     if (UI_GET_WINDOW_ID() == DIAL_PAGE_0) {
         UI_HIDE_CURR_WINDOW();
         UI_SHOW_WINDOW(DIAL_PAGE_0);
@@ -852,11 +852,20 @@ static int rcsp_extra_flash_opt_dial_version_get(u8 **resp_buf, u8 *file_path, u
     char watch[64] = {0};
     ASSERT(((strlen((const char *)root_path) + strlen((const char *)file_path) + 2) < sizeof(watch)), "err name2, (strlen(root_path) + strlen(file_path) + 2) : %d, sizeof(watch) : %d\n\n", (int)(strlen((const char *)root_path) + strlen((const char *)file_path) + 2), (int)sizeof(watch));
     ASCII_ToLower(file_path, strlen((const char *)file_path));
+#if CONFIG_LVGL_UI_ENABLE
+    /* LVGL：表盘 .dyn 位于 RES_PATH 根目录，同名 .json（version_id/prj_uuid）与其同级。
+     * watch_get_version/watch_get_uuid 内部会把 .dyn 转 .json 读取元数据。 */
+    strcpy(watch, root_path);
+    strcpy(&watch[strlen(root_path)], (const char *)&file_path[1]);
+    strcat(watch, ".dyn");
+#else
+    /* JLUI：表盘 .sty 位于 RES_PATH/表盘名/ 子目录 */
     strcpy(watch, root_path);
     /* strcpy(watch + strlen(watch), "watch"); */
     strcpy(watch + strlen(watch), (const char *)file_path + 1);
     strcpy(watch + strlen(watch), (const char *)file_path);
     strcpy(watch + strlen(watch), ".sty");
+#endif
 
     u32 offset = 0;
 

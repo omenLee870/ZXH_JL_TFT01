@@ -135,6 +135,7 @@ struct uac_spk_ctx_t {
 
     u16  halt_check_timer_id;
     u16  close_delay_tid;
+    u16  sof_cnt;                  /* HS 模式下 SOF 8 分频计数(每 8 个微帧=1ms 处理一次) */
 
     u8   fill_stream_always_keep;      /* keep stream open even on alt setting 0 */
 };
@@ -585,6 +586,19 @@ static void usb_sof_spk_write_callback(struct usb_device_t *usb_device,
     if (spk->state == SPK_STATE_CLOSED) {
         return;
     }
+
+#if USB_IS_HS_MODE
+    /* HS 模式 SOF 每 125us 一次，但 UAC bInterval=4，主机每 8 个微帧(1ms)
+     * 才发一包。8 分频让下游维持 1ms 节拍：音频层 pc_spk_file.c 把 NULL/0
+     * 通知按丢包处理(写静音帧、lost_cnt>=3 挂起数据流)，不分频会静音灌流
+     * 并反复挂起。frame 参数是 1ms 帧号(非微帧号)，故用私有计数器，
+     * 与 mic 路径 mic_drop_data_when_upstream_halt(uac1.c) 一致 */
+    if (usb_device->bSpeed == USB_SPEED_HIGH) {
+        if ((++spk->sof_cnt % 8) != 0) {
+            return;
+        }
+    }
+#endif
 
     const usb_dev usb_id = usb_device2id(usb_device);
 

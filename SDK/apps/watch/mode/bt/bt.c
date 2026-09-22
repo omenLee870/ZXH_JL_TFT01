@@ -448,6 +448,24 @@ static void pan_conn_handler(void *priv)
 }
 #endif
 
+#ifdef BR33_FPGA_CODE_VERIFY
+#include "power_manage.h"
+u32 test_idle = 0;
+void test_func(void *priv)
+{
+    test_idle = 1;
+}
+static u8 test_idle_query(void)
+{
+    return test_idle;
+}
+/* REGISTER_LP_TARGET(test_f_target) = { */
+/* .name = "test_f", */
+/* .is_idle = test_idle_query, */
+/* }; */
+#endif
+
+
 /*
  * 对应原来的状态处理函数，连接，电话状态等
  */
@@ -473,6 +491,9 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
     case BT_STATUS_SECOND_CONNECTED:
         bt_clear_current_poweron_memory_search_index(0);
     case BT_STATUS_FIRST_CONNECTED:
+#ifdef BR33_FPGA_CODE_VERIFY
+        sys_timeout_add(NULL, test_func, 30000);
+#endif
         log_info("BT_STATUS_CONNECTED\n");
 
 #if((RCSP_MODE == RCSP_MODE_EARPHONE) && RCSP_UPDATE_EN)
@@ -491,6 +512,9 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         break;
     case BT_STATUS_FIRST_DISCONNECT:
     case BT_STATUS_SECOND_DISCONNECT:
+#ifdef BR33_FPGA_CODE_VERIFY
+        test_idle = 0;
+#endif
         log_info("BT_STATUS_DISCONNECT\n");
         if (app_var.goto_poweroff_flag) {
             break;

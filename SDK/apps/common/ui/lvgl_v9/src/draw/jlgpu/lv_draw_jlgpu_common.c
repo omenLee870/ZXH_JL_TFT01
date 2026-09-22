@@ -580,6 +580,10 @@ void lv_jlgpu_draw_buf_copy(lv_draw_buf_t *dest, const lv_area_t *dest_area, con
         lv_draw_jlgpu_unit_t *unit = lv_get_draw_jlgpu_unit();
         int task_len = jlgpu_draw_img_task_len(unit->jlgpu_ctx->ctx, &draw_img_params, &mask_params);
         uint8_t *task = lv_jlgpu_mem_pool_get_buf(unit, NULL, task_len);
+        if (task == NULL) {
+            LV_LOG_ERROR("draw_img task malloc fail");
+            return;
+        }
         lv_memset(task, 0, task_len);
         jlgpu_set_task(unit->jlgpu_ctx->ctx, task, task_len);
         jlgpu_draw_img(unit->jlgpu_ctx->ctx, &render_params, &draw_img_params, &mask_params);

@@ -1167,10 +1167,10 @@ static void lcd_init_task(void *p)
         /* lcd上电 */
         lcd_drv_power_ctrl(true);
     }
-
-    /* extern void eva_init_code(void); */
-    /* eva_init_code(); */
-
+#if 0
+    extern void eva_init_code(void);
+    eva_init_code();
+#endif
     /* lcd复位 */
     if (!(lcd_dat->dbi_hw.mipi.lcd_reset_enter && lcd_dat->dbi_hw.mipi.lcd_reset_exit)) {
         lcd_reset(__lcd);
@@ -1182,7 +1182,12 @@ static void lcd_init_task(void *p)
     }
 
     lcd_init(__lcd->param, &lcd_dat->dbi_hw); /* 初始化lcd控制器 */
-
+#if 0
+    extern void jlgpu_pnd_sem_init();
+    jlgpu_pnd_sem_init();
+    extern void gpu_hw_sfr_init();
+    gpu_hw_sfr_init();
+#endif
     if (lcd_dat && lcd_dat->pin_te != NO_CONFIG_PORT) {
         gpio_set_mode(IO_PORT_SPILT(lcd_dat->pin_te), PORT_INPUT_PULLUP_10K);
     }

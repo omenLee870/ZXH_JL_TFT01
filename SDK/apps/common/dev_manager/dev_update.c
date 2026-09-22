@@ -20,8 +20,6 @@
 #define DEV_UPDATE_EN		0
 #endif
 
-#define STR(x)  #x
-#define STRCHANGE(x) STR(x)
 
 
 extern bool uart_update_send_update_ready(char *file_path);

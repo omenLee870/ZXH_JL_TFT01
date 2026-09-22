@@ -1077,6 +1077,11 @@ int jlgpu_wait_done(void);
  */
 int jlgpu_pnd_sem_clr(void);
 
+/**
+ * @brief 初始化GPU信号量
+ */
+void jlgpu_pnd_sem_init(void);
+
 /** @} */
 
 

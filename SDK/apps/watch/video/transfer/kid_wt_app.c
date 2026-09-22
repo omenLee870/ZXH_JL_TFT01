@@ -413,7 +413,8 @@ void kwt_stream_start(void)
     }
 
 #if KID_WT_VSTREAM_START_ON_CONNECT
-    /* 重连成功: 停止断线重连定时器, 恢复远端画面(清除白屏)。 */
+    /* 重连成功: 停止断线重连定时器。远端(fb5)画面控件由
+     * walkie_talkie_unblank_remote 重建(断线时被 recv_stop 拆除)。 */
     kwt_reconn_stop();
 
     /* 复位 vstream 发送端序号, 使重连后与首次上电一致(避免断线期间残留的
@@ -433,6 +434,8 @@ void kwt_stream_start(void)
      * 实时媒体(双向语音+视频); 若断线重连停留在视频页(LOAD 不再触发), 由
      * wt_video_enter_rpc 的"已在目标页"分支补启。 */
     walkie_talkie_video_enter();
+    /* 断线时 recv_stop 拆除了远端(fb5)画面控件, 这里重建(fb6 本地 PIP 常驻,
+     * 重建幂等)。原白屏 overlay 已移除: 断线期间本地 PIP 仍显示, 无需置白。 */
     walkie_talkie_unblank_remote();
 #endif
 }
@@ -440,14 +443,15 @@ void kwt_stream_start(void)
 /* ============================================================================
  * 视频/对讲会话启停请求(供 UI 层调用)。
  *
- * 双向语音(audio_app 对讲)与视频(xsmt/recv)的 start/stop 涉及 thread_fork/
+ * 双向语音(audio_app 对讲)与远端解码显示(recv)的 start/stop 涉及 thread_fork/
  * KILL_WAIT、MPI 相机/VENC/VO 拆除、stream_dev_media_clear 与音频 ADC/DAC, 只能
  * 在 app_core 上下文执行(不能跑在 btstack 线程, 见 spp_transfer.c
  * spp_state_callback 注释); 页面 LOAD/UNLOAD 回调跑在 LVGL "ui" 线程。故这里只
  * 负责把请求 marshal 到 app_core, UI 任意线程直接调用即可。
- * xsmt/recv/audio_app 各自带幂等守卫(重复 start/未 start 就 stop 都是 no-op),
- * post 顺序即执行顺序, 页面反复进出安全。媒体只在 SPP 连接期间允许启动
- * (kwt_stream_stop 兜底)。
+ * recv/audio_app 各自带幂等守卫(重复 start/未 start 就 stop 都是 no-op),
+ * post 顺序即执行顺序, 页面反复进出安全。远端媒体只在 SPP 连接期间允许启动
+ * (kwt_stream_stop 兜底)。本地 PIP(xsmt)已由 kwt_transfer_protocol_init 常驻,
+ * 不在此启停。
  * ============================================================================ */
 static void kwt_video_session_start_inner(void)
 {
@@ -456,7 +460,6 @@ static void kwt_video_session_start_inner(void)
         return;
     }
     extern void audio_app_open(void);
-    kid_wt_video_xsmt_start();
     kid_wt_video_recv_start();
     audio_app_open();
 }
@@ -465,7 +468,6 @@ static void kwt_video_session_stop_inner(void)
 {
     extern void audio_app_stop(void);
     kid_wt_video_recv_stop();
-    kid_wt_video_xsmt_stop();
     audio_app_stop();
 }
 
@@ -491,12 +493,12 @@ void kwt_stream_stop(void)
 {
     KWT_MEM_STATS("stream.stop enter");
     /* Disconnect (对端意外掉线/断电/超距): 不再跳回配对页, 而是
-     * (1) 隐藏语音 overlay + 把远端画面置白(停留在对讲页);
+     * (1) 隐藏语音 overlay(停留在对讲页); 本地 PIP(fb6) 常驻, 远端(fb5)由
+     *     recv_stop 拆除, 无需置白(原白屏 overlay 已移除);
      * (2) 进入可被发现/可连接状态, 接受对端回连;
      * (3) 主叫方启动定时重连, 被叫方仅等待接受(仲裁, 避免双方同时 page)。
      * 三者都经异步接口立即返回, 再做可能阻塞的媒体拆除。 */
     walkie_talkie_talk_voice_pic_hide();
-    walkie_talkie_blank_remote();
 
     /* 断线后进入可被发现+可连接状态(接受对端按正常流程回连)。
      * 用 bt_cmd_prepare 排队命令(不直接写控制器, 可从 app_core 安全调用),
@@ -510,8 +512,6 @@ void kwt_stream_stop(void)
 
 #if KID_WT_VSTREAM_START_ON_CONNECT
     kid_wt_video_recv_stop();
-    kid_wt_video_xsmt_stop();
-
     extern void audio_app_stop(void);
     audio_app_stop();
     KWT_MEM_STATS("stream.stop media done");
@@ -662,11 +662,41 @@ void kwt_transfer_protocol_init(void)
     vstream_receiver_open();
     clock_add_set(VIDEO_TRANSFER_CLK);
 
+    /* 本地 PIP(fb6) 常显: 相机→VENC→PIP 管线与 SPP 连接状态无关, 在协议初始化时
+     * 即启动并保持(不再由页面 LOAD 启停)。发送线程内部按 kwt_get_spp_connect() 守卫,
+     * 未连接时丢弃编码帧、不断流 VENC; 连接后自动恢复发送, 无需重启相机。
+     * 因此移除 kwt_video_session_start_inner 里 PAGE_BY_UART_ENABLE 对视频路径的守卫,
+     * 行为与编译开关无关。 */
+    kid_wt_video_xsmt_start();
+
+#if TCFG_KID_PAGE_BY_UART_ENABLE
+    /* 已有配对记录 -> 协议初始化完成即发起回连, 不等按键/UI 触发。
+     * kwt_connect_addr_rec_get 会过滤全 0 的无效记录, 返回 6 才是真地址。
+     * 发起后 edr_connect() 内部置主叫标志并 kwt_outbound_pending, 与点击
+     * "连接"按钮走的是同一条路径; 断线后由 kwt_reconn_start 接管重连。 */
+    u8 saved_addr[6];
+    if (kwt_connect_addr_rec_get(saved_addr) == 6) {
+        log_info("%s: paired addr found, auto connect\n", __func__);
+        kwt_set_connet_addr_with_conn(saved_addr);
+    } else {
+        /* 无配对记录: 才进入产线串口配对流程。 */
+        extern void kid_uart_page_start(void);
+        kid_uart_page_start();
+    }
+    extern void kid_page_start_intercom(void);
+    kid_page_start_intercom();
+#endif
+
 }
 
 void kwt_transfer_protocol_deinit(void)
 {
     log_info("%s", __func__);
+
+    /* 常驻的本地 PIP(xsmt) 只在 BT 模式彻底退出时拆除(与 init 的 xsmt_start 对称)。
+     * 必须先停 xsmt 再关 sender: 先杀 producer 线程(kwt_video_cap), 避免它在
+     * vstream_sender_close() free 掉 stream_info/video lbuf 之后仍写入(UAF)。 */
+    kid_wt_video_xsmt_stop();
 
     vstream_receiver_close();
     vstream_sender_close();

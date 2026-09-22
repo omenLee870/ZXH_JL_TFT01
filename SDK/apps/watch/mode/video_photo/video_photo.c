@@ -1893,6 +1893,9 @@ struct app_mode *app_enter_photo_mode(int arg)
 static int photo_mode_try_enter(int arg)
 {
     log_info("photo_mode_try_enter\n");
+    /* 进拍照(吃内存模式)前释放回放遗留的全库名字缓存(87.8KB): 该缓存跨"多宫格↔全屏"
+     * 保持是为了避免每次进回放重建(实测重建 2.3s), 但不能带进拍照/录像这类模式。 */
+    flm_names_cache_release();
     return 0;
 }
 static int photo_mode_try_exit(void)

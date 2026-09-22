@@ -80,7 +80,7 @@ static void power_off_ui_exit()
 #include "usb/otg.h"
 #include "usb/host/usb_host.h"
 #include "usb/device/usb_stack.h"
-#include "asm/power/p33.h"
+#include "usb/usb_task.h"
 #include "asm/sdmmc.h"
 #include "dev_manager/dev_manager.h"
 
@@ -181,7 +181,7 @@ static void idle_app_close_module()
     if (usb_otg_online(0) == HOST_MODE) {
 #if TCFG_UDISK_ENABLE
         dev_manager_del("udisk0");
-        usb_host_unmount(0);
+        usb_host_unmount(0, 0);
         usb_h_sie_close(0);
 
         /*

@@ -385,13 +385,13 @@ static int kws_event_music_deal(u16 event, u32 id)
     } else if (cur_task == APP_MUSIC_TASK) {
         switch (event) {
         case KWS_EVENT_PLAY_MUSIC:
-            if (music_player_get_play_status() != FILE_DEC_STATUS_PLAY) {
+            if (music_player_get_play_status() != FILE_PLAYER_START) {
                 app_send_message(APP_MSG_MUSIC_PP, 0);
             }
             break;
         case KWS_EVENT_STOP_MUSIC:
         case KWS_EVENT_PAUSE_MUSIC:
-            if (music_player_get_play_status() == FILE_DEC_STATUS_PLAY) {
+            if (music_player_get_play_status() == FILE_PLAYER_START) {
                 app_send_message(APP_MSG_MUSIC_PP, 0);
             }
             break;
@@ -682,13 +682,13 @@ static int kws_event_ai_glasses_music_deal(u16 event, u32 id)
     } else if (cur_task == APP_MUSIC_TASK) {
         switch (event) {
         case KWS_EVENT_PLAY_MUSIC:
-            if (music_player_get_play_status() != FILE_DEC_STATUS_PLAY) {
+            if (music_player_get_play_status() != FILE_PLAYER_START) {
                 app_send_message(APP_MSG_MUSIC_PP, 0);
             }
             break;
         case KWS_EVENT_STOP_MUSIC:
         case KWS_EVENT_PAUSE_MUSIC:
-            if (music_player_get_play_status() == FILE_DEC_STATUS_PLAY) {
+            if (music_player_get_play_status() == FILE_PLAYER_START) {
                 app_send_message(APP_MSG_MUSIC_PP, 0);
             }
             break;

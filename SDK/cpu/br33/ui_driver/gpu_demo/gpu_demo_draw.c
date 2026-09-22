@@ -72,7 +72,8 @@ static pJLGPUChainHead_t gpu_demo_head_init(void)
     ASSERT(head);
 
     /* 设置链表输出格式 */
-    jlgpu_set_task_list_out_format(head, JLGPU_OUT_FORMAT_RGB565);
+    int out_format = (__this->info.color_format == LCD_COLOR_RGB888) ? GPU_FORMAT_RGB888 : GPU_FORMAT_RGB565;
+    jlgpu_set_task_list_out_format(head, out_format);
     return head;
 }
 
@@ -326,7 +327,8 @@ void gpu_demo_start_draw(struct rect draw, pJLGPUTaskHead_t head)
                 buffer_manager_status_dump(__this->buffer_hdl);
             }
         } while (!idle_buf);
-        memset(idle_buf, 0x00, rect_width(&draw_rect) * rect_height(&draw_rect) * 2);
+        int out_bpp = gpu_get_format_bpp(jlgpu_chain_head_out_format(head)) / 8;
+        memset(idle_buf, 0x00, rect_width(&draw_rect) * rect_height(&draw_rect) * out_bpp);
 
         /* 设置GPU任务链输出buf和绘制区域 */
         jlgpu_set_task_list_out_buf(head, idle_buf, &draw_rect, 0, 0);

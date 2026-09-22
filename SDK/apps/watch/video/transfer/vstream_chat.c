@@ -35,6 +35,16 @@
 #ifndef UI_WINDOW_PREEMPTION_POP_DELAY
 #define UI_WINDOW_PREEMPTION_POP_DELAY(id, ms)  /* stub — no-op when preemption framework unavailable */
 #endif
+/* 聊天页 / 空间不足提示页当前尚未实现: JLUI 的 ID_WINDOW_* 表中无对应项。
+ * 未实现时这两页不能作为抢占目标, 故用 0 作哨兵值(PAGE_x 均自 0x800 起,
+ * 不会与真实页面碰撞; 也不可用 -1, 那是 PAGE_NULL)。
+ * 待 UI 侧补齐页面后删除本段兜底, 并补齐 ID_WINDOW_CHAT / ID_WINDOW_NOT_SPACE。 */
+#ifndef ID_WINDOW_CHAT
+#define ID_WINDOW_CHAT                  0
+#endif
+#ifndef ID_WINDOW_NOT_SPACE
+#define ID_WINDOW_NOT_SPACE             0
+#endif
 //添加记录
 struct chat_data_config {
     u8 type;

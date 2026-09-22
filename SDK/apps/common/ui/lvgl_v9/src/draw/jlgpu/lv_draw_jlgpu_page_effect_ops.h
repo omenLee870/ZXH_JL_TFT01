@@ -13,10 +13,13 @@ typedef struct sticky_effect_ops {
     int (*get_face_scr_id)(int x, int y);
     int (*get_face_index)(int x, int y);
     void (*get_page_id)(uint32_t *page_id_arr);
-    /* 可选后置钩子: 在 manager 重放完所有槽(全局矩阵/窗口 SFR 已落到最后一槽)之后、
-     * 该 busy 帧结束前被调用。用于在已绘画面上再叠一层合成(如 LRB 倒影纵向渐隐)。
-     * cube/hexagon 不实现则保持 NULL, 行为与原来完全一致。 */
-    void (*overlay)(lv_draw_jlgpu_unit_t *unit, uint8_t *px_map, const lv_area_t *screen_window);
+    /* 可选: manager 在每个槽重放前调用, 用于按槽位设置 GPU 全局透明度(即 app 层
+     * global_alpha_tab + jlgpu_task_list_copy_group_global_alpha_reset 那套阴影机制)。
+     * ctx_index 为该槽的 ctx 下标(即 draw_order), page_num 为槽总数;
+     * 返回 0~128 则该槽任务链被设为该 alpha(128=不透明), 返回 <0 表示保持任务自带值。
+     * 倒影类特效用它把镜像槽压暗成阴影(hexagon_reflection / lrb_mirror); 不实现(NULL)
+     * 时各槽均不透明, 行为不变。 */
+    int (*slot_alpha)(int ctx_index, int page_num);
 } sticky_effect_ops_t;
 
 #endif

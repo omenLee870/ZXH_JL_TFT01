@@ -55,7 +55,9 @@ app_playback_ret_t app_playback_close(app_playback_handle_t *handle)
 
     if ((*handle)->video_started) {
         app_ret = app_playback_video_stop(*handle);
-    } else if ((*handle)->pipeline_started) {
+    }
+    // video_started 与 pipeline_started 可同时为真, 两处关闭各自独立
+    if ((*handle)->pipeline_started) {
         app_ret = app_playback_image_pipeline_close(*handle);
     }
 

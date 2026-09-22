@@ -34,7 +34,19 @@ struct ui_devices_cfg {
 #define UI_SHOW_MENU(...)
 #define UI_MSG_POST(...)
 #define UI_REFLASH_WINDOW(a)
+#if CONFIG_LVGL_UI_ENABLE
+/* 手表 LVGL 侧马达震动生效：映射到 watch_settings 驱动的 ui_moto_run（见
+ * watch_320x385_v1/custom/ui_action_moto.c）。其它 LVGL 子项目(如儿童相机)未移植
+ * 该马达驱动, 保持空宏, 避免 mode/rtc、mode/bt 等公共代码引用不存在的符号。 */
+#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH)
+extern void ui_moto_run(u8 run_mode);
+#define UI_MOTO_RUN(a)       ui_moto_run(a)
+#else
 #define UI_MOTO_RUN(...)
+#endif
+#else
+#define UI_MOTO_RUN(...)
+#endif
 
 #define UI_WINDOW_BACK_PUSH(a)
 #define UI_WINDOW_BACK_SHOW(a)                  (-1)

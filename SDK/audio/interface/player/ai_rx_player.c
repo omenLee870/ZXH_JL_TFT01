@@ -22,25 +22,50 @@ struct ai_rx_player {
     u8 source;
     struct list_head entry;
     u8 type;
+    void (*event_callback)(void *, int);
+    void *event_priv;
+    u32 callback_id;
     int channel; //记录当前是tws左声道还是右声道
 };
 
 extern int CONFIG_BTCTLER_TWS_ENABLE;
 
 static struct list_head g_ai_rx_player_list = LIST_HEAD_INIT(g_ai_rx_player_list);
+static u32 g_ai_rx_callback_id;
 
 #define list_for_each_ai_rx_player(p) \
     list_for_each_entry(p, &g_ai_rx_player_list, entry)
 
 static void ai_rx_player_callback(void *private_data, int event)
 {
-    struct ai_rx_player *player = (struct ai_rx_player *)private_data;
+    struct ai_rx_player *player;
+    u32 id = (u32)private_data;
+    void (*callback)(void *, int);
+    void *event_priv;
+    u8 source;
+
+    /* Queued events can outlive release, including reuse of the same heap
+     * address. Resolve an instance ID before reading any player fields. */
+    list_for_each_ai_rx_player(player) {
+        if (id && player->callback_id == id) {
+            goto found;
+        }
+    }
+    printf("ai_rx_player stale callback, id:%u event:%d\n", id, event);
+    return;
+found:
+    callback = player->event_callback;
+    event_priv = player->event_priv;
+    source = player->source;
 
     printf("ai_rx_player_callback, event: %d\n", event);
+    if (callback) {
+        callback(event_priv, event);
+    }
     switch (event) {
     case STREAM_EVENT_START:
 #if RCSP_MODE && RCSP_ADV_TRANSLATOR
-        JL_rcsp_translator_update_play_volume((u8)player->source);
+        JL_rcsp_translator_update_play_volume(source);
 #endif
         break;
     }
@@ -94,12 +119,18 @@ int ai_rx_player_open(u8 *bt_addr, u8 source, struct ai_rx_player_param *param, 
         goto __exit0;
     }
 
-    list_add_tail(&player->entry, &g_ai_rx_player_list);
     player->bt_addr = bt_addr;
     player->source = source;
     player->type = type;
+    player->event_callback = NULL;
+    player->event_priv = NULL;
+    if (!++g_ai_rx_callback_id) {
+        ++g_ai_rx_callback_id;
+    }
+    player->callback_id = g_ai_rx_callback_id;
+    list_add_tail(&player->entry, &g_ai_rx_player_list);
 
-    jlstream_set_callback(player->stream, player, ai_rx_player_callback);
+    jlstream_set_callback(player->stream, (void *)player->callback_id, ai_rx_player_callback);
     if (type == AI_SERVICE_CALL_DOWNSTREAM || type == AI_SERVICE_CALL_UPSTREAM) {
         jlstream_set_scene(player->stream, STREAM_SCENE_ESCO);
     } else if (type == AI_SERVICE_MEDIA) {
@@ -131,10 +162,36 @@ int ai_rx_player_open(u8 *bt_addr, u8 source, struct ai_rx_player_param *param, 
     return 0;
 
 __exit1:
+    player->callback_id = 0;
+    player->event_callback = NULL;
+    player->event_priv = NULL;
     jlstream_release(player->stream);
+    list_del(&player->entry);
 __exit0:
     free(player);
     return err;
+}
+
+void ai_rx_player_set_event_callback(u8 source,
+                                     void (*callback)(void *, int), void *priv)
+{
+    struct ai_rx_player *player;
+    list_for_each_ai_rx_player(player) {
+        if (player->source == source) {
+            if (callback) {
+                player->event_priv = priv;
+                player->event_callback = callback;
+            } else {
+                player->event_callback = NULL;
+            }
+            break;
+        }
+    }
+}
+
+bool ai_rx_player_any_running(void)
+{
+    return !list_empty(&g_ai_rx_player_list);
 }
 
 bool ai_rx_player_runing(u8 source)
@@ -171,6 +228,10 @@ void ai_rx_player_close(u8 source)
     } else {
         pipeline = "ai_voice";
     }
+    /* Invalidate before stop/release can dispatch queued stream events. */
+    player->callback_id = 0;
+    player->event_callback = NULL;
+    player->event_priv = NULL;
     jlstream_stop(player->stream, 0);
     jlstream_release(player->stream);
 

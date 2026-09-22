@@ -1,4 +1,4 @@
 .section .sys.version, "ax"
 
-.long 337505550 
-.asciz "-@20260911-$028a891"
+.long 338436579 
+.asciz "JL380N_V1.0.0-@20260922-$6dfc9ad"

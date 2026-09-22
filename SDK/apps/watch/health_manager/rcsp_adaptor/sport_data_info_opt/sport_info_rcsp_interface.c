@@ -7,6 +7,7 @@
 #include "sport_info_continuous_heart_rate.h"
 #include "sport_info_exercise_heart_rate.h"
 #include "sport_info_fall_detection.h"
+#include "sport_info_mense.h"
 #include "sport_info_personal_info.h"
 #include "sport_info_pressure_detection.h"
 #include "sport_info_raise_wrist.h"
@@ -15,7 +16,9 @@
 #include "sport_info_sleep_detection.h"
 
 
-#if JL_RCSP_SENSORS_DATA_OPT
+/* 运动健康数据 RCSP 通道仅在手表产品使能; 儿童相机等子项目
+ * (JL_RCSP_SENSORS_DATA_OPT 默认关)不注册, 避免引用未编译的 *_attr_set/get */
+#if JL_RCSP_SENSORS_DATA_OPT && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH)
 
 static const attr_get_func target_common_sport_info_get_tab[SPORTS_INFO_OPT_FUNC_ATTR_TYPE_MAX] = {
     [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_RESERVE] = NULL,
@@ -29,6 +32,7 @@ static const attr_get_func target_common_sport_info_get_tab[SPORTS_INFO_OPT_FUNC
     [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_RAISE_WRIST] = sport_info_raise_wrist_attr_get,
     [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_PERSONAL_INFO] = sport_info_personal_info_attr_get,
     [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_BT_DISCONN] = sport_info_bt_disconn_attr_get,
+    [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_MENSE] = sport_info_mense_attr_get,
 };
 
 static const attr_set_func target_common_sport_info_set_tab[SPORTS_INFO_OPT_FUNC_ATTR_TYPE_MAX] = {
@@ -43,6 +47,7 @@ static const attr_set_func target_common_sport_info_set_tab[SPORTS_INFO_OPT_FUNC
     [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_RAISE_WRIST] = sport_info_raise_wrist_attr_set,
     [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_PERSONAL_INFO] = sport_info_personal_info_attr_set,
     [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_BT_DISCONN] = sport_info_bt_disconn_attr_set,
+    [SPORTS_INFO_OPT_FUNC_ATTR_TYPE_MENSE] = sport_info_mense_attr_set,
 };
 
 static const rcsp_sport_info_opt_t rcsp_sport_info_opt = {

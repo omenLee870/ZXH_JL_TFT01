@@ -83,6 +83,11 @@ static void poweron_task_start()
     power_on_ui_exit();
 
 #if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_KID_CAMERA)
+#if TCFG_KID_PAGE_BY_UART_ENABLE
+    /* 产线串口配对模式: 开机直接进 BT 模式, 由 app_main 在 BT 进入后跳视频对讲页
+     * (跳过 gui_guider 首页)。 */
+    app_send_message(APP_MSG_GOTO_MODE, APP_MODE_BT);
+#else
     /* 开机进 IDLE 待机/主界面, 不直接进任何功能模式;
      * 由 UI 选择后再 app_send_message(APP_MSG_GOTO_MODE, APP_MODE_VIDEO_REC/PHOTO/VIDEO_DEC) 进入。*/
     if (app_goto_mode_consume_pending()) {
@@ -90,6 +95,7 @@ static void poweron_task_start()
         return;
     }
     app_send_message(APP_MSG_GOTO_MODE, APP_MODE_IDLE);
+#endif
 #elif TCFG_APP_BT_EN
     app_send_message(APP_MSG_GOTO_MODE, APP_MODE_BT);
 #elif (TCFG_APP_MUSIC_EN || TCFG_APP_LINEIN_EN || TCFG_APP_FM_EN || TCFG_APP_PC_EN || TCFG_APP_RECORD_EN)

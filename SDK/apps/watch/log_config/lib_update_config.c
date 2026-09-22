@@ -1,38 +1,58 @@
-#ifdef SUPPORT_MS_EXTENSIONS
-#pragma bss_seg(".lib_update_config.data.bss")
-#pragma data_seg(".lib_update_config.data")
-#pragma const_seg(".lib_update_config.text.const")
-#pragma code_seg(".lib_update_config.text")
-#endif
-
 #include "app_config.h"
-#include "debug.h"
 #include "system/includes.h"
 #include "update_loader_download.h"
+#include "debug.h"
 
 /* #ifdef CONFIG_256K_FLASH */
 /* const int config_update_mode = UPDATE_UART_EN; */
 /* #else */
 /* const int config_update_mode = UPDATE_BT_LMP_EN \ */
-/*                                | UPDATE_STORAGE_DEV_EN | UPDATE_BLE_TEST_EN | UPDATE_UART_EN | UPDATE_UART_IO_EN; */
+/*                                | UPDATE_STORAGE_DEV_EN | UPDATE_BLE_TEST_EN | UPDATE_APP_EN | UPDATE_UART_EN; */
 /* #endif */
 
-#if TCFG_BT_AI_ENABLE == 0
 //是否采用双备份升级方案:0-单备份;1-双备份
 #if CONFIG_DOUBLE_BANK_ENABLE
 const int support_dual_bank_update_en = 1;
 #else
 const int support_dual_bank_update_en = 0;
 #endif  //CONFIG_DOUBLE_BANK_ENABLE
-#else // TCFG_BT_AI_ENABLE
 
-//是否采用双备份升级方案:0-单备份;1-双备份
-#if CONFIG_DOUBLE_BANK_ENABLE
-const int support_dual_bank_update_en = 1;
+//是否双备份升级方案，但appcore1的区域相比appcore0更小
+#if CONFIG_DOUBLE_BANK_LESS
+const int support_dual_bank_less_en = 1;
 #else
-const int support_dual_bank_update_en = 0;
+const int support_dual_bank_less_en = 0;
 #endif  //CONFIG_DOUBLE_BANK_ENABLE
+
+//是否双备份升级方案，使用另外的小ota包,一般适用于tws升级
+#if CONFIG_DB_UPDATE_SMALL
+const int support_db_update_small_package = 1;
+#else
+const int support_db_update_small_package = 0;
+#endif  //CONFIG_DOUBLE_BANK_ENABLE
+
+// 是否支持双备份升级前和升级失败对升级区域全擦，升级过程只写的功能
+// 即允许边升级边播歌
+#ifdef TCFG_DUAL_BANK_UPDATE_NO_ERASE
+const int support_dual_bank_update_no_erase = TCFG_DUAL_BANK_UPDATE_NO_ERASE;
+#else
+const int support_dual_bank_update_no_erase = 0;
 #endif
+
+const int support_jlota_ext_param_len = 256;
+
+
+// 是否支持双备份断点续传升级
+const int support_dual_bank_update_breakpoint = 0;
+
+// 是否支持tws双备份升级，从机收错包重发机制
+const int support_dual_bank_slave_recv_again = 1;
+
+// 双备份主动升级模式下不升级资源区(设置为1则不升级资源区)
+const int support_dual_bank_not_update_reserve = 0;
+
+// 双备份tws升级主从同步校验使能
+const int support_dual_bank_sync_verify_en = 1;
 
 #if OTA_TWS_SAME_TIME_NEW       //使用新的同步升级流程
 const int support_ota_tws_same_time_new =  1;
@@ -70,11 +90,18 @@ const int support_nandflash_ufw_update_en = 1;
 const int support_nandflash_ufw_update_en = 0;
 #endif
 
+// 单备份升级时是否支持检查升级文件是否一致(BIT(0))
+const int support_config_update_features = 0;
+
+// 双备份压缩升级速度优化
+const int support_speed_optimization_en = 0;//BIT(UPDATE_SPEED_WRITE_REQ_ASYNC) | BIT(UPDATE_SPEED_CACHE_EN);
+
+
 //支持计算推loader数据时的进度
 const int support_update_loader_precent = 0;
 
 //支持对btif区域中的蓝牙地址升级前备份，升级后还原的操作
-const int support_update_backup_btif_addr = 1;
+const int support_update_backup_btif_addr = 0;
 
 //支持根据外挂flash完整的ota.bin文件，直接走推送loader的流程
 const int support_norflash_update_loader_only = 0;
@@ -100,4 +127,4 @@ u32 config_update_features = 0;
 const int support_reusable_special_update = 0;
 
 //               verb   debug   info  warn  error char
-REGISTER_LOG_TAG(FALSE, TRUE, FALSE, TRUE, TRUE, FALSE, UPDATE)
+REGISTER_LOG_TAG(FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, UPDATE)

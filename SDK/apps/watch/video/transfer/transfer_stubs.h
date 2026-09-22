@@ -15,12 +15,11 @@
 
 /* ============================================================================
  * Walkie-Talkie UI — 弱符号桩声明; 真实实现在 kid_camera UI 模块
- * (walkie_talkie_ui.c) 以强符号覆盖本弱符号, 此处仅在非 kid_camera 配置下生效
+ * (ui_action_video_intercom.c) 以强符号覆盖本弱符号, 此处仅在非 kid_camera 配置下生效
  * ============================================================================ */
 
 void walkie_talkie_talk_sel_show(void);
 void walkie_talkie_hangup_show(void);
-void walkie_talkie_blank_remote(void);
 void walkie_talkie_unblank_remote(void);
 void walkie_talkie_page_return(void);
 int walkie_talkie_get_effect(void);

@@ -33,6 +33,7 @@
 #include "mic_effect.h"
 #include "mix_record_api.h"
 #include "rcsp_mix_record.h"
+#include "record.h"
 #if TCFG_SMART_VOICE_ENABLE
 #include "asr/jl_kws.h"
 #include "smart_voice/smart_voice.h"
@@ -78,6 +79,18 @@ static void phone_income_num_check(void *priv);
 static void phone_call_send_cmd(u8 cmd, u8 *btaddr, u8 bt_value, u8 tx_do_action);
 #if (defined(CONFIG_UI_STYLE_JL_PUBLIC_MODLS_ENABLE))
 extern void ui_phone_call_end_status_check(void);
+#endif
+
+#if CONFIG_LVGL_UI_ENABLE
+/*
+ * LVGL 通话状态变化通知弱符号：强实现位于
+ * apps/watch/ui/lvgl_ui_app/lvgl_v9/watch_320x385_v1/custom/ui_action_phone.c，
+ * 经 lvgl_rpc_post_func 投递到 ui 线程刷新来电/去电/通话中页面。
+ * 未导出 LVGL 界面时（如纯 JLUI / 无 UI 编译）回落到空实现，不影响链接。
+ */
+__attribute__((weak)) void lvgl_phone_call_notify(void)
+{
+}
 #endif
 
 static u8 g_play_addr[6];
@@ -720,6 +733,13 @@ static int bt_phone_status_event_handler(int *msg)
             rcsp_mix_recorder_stop();
         }
 #endif
+#if TCFG_APP_RECORD_EN
+        // 来电，结束录音
+        if (is_recorder_runing()) {
+            r_printf(">>> BT_STATUS_PHONE_INCOME, Stop app recorder!\n");
+            app_recorder_stop_public();
+        }
+#endif
 #if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
         // 来电，结束录像
         if (get_camera_status() == CAMERA_STATE_VIDEO) {
@@ -751,6 +771,9 @@ static int bt_phone_status_event_handler(int *msg)
         } else {
             UI_WINDOW_PREEMPTION_POSH(ID_WINDOW_PHONE_CALL_STATUS, NULL, NULL, UI_WINDOW_PREEMPTION_TYPE_PHONE);
         }
+#endif
+#if CONFIG_LVGL_UI_ENABLE
+        lvgl_phone_call_notify();
 #endif
         break;
     case BT_STATUS_PHONE_OUT:
@@ -790,6 +813,9 @@ static int bt_phone_status_event_handler(int *msg)
         small_file_call_log_set_sel(CALL_SEL_BT);
         small_file_call_log_set_type(CALL_OUT);
 #endif
+#if CONFIG_LVGL_UI_ENABLE
+        lvgl_phone_call_notify();
+#endif
 
 #if (defined(CONFIG_UI_STYLE_JL_PUBLIC_MODLS_ENABLE))
         if (UI_GET_WINDOW_ID() == ID_WINDOW_PHONE_CALL_STATUS) {
@@ -810,6 +836,13 @@ static int bt_phone_status_event_handler(int *msg)
         }
         if (rcsp_mix_recorder_get_status()) {
             rcsp_mix_recorder_stop();
+        }
+#endif
+#if TCFG_APP_RECORD_EN
+        // 来电接通，结束录音
+        if (is_recorder_runing()) {
+            r_printf(">>> BT_STATUS_PHONE_ACTIVE, Stop app recorder!\n");
+            app_recorder_stop_public();
         }
 #endif
 
@@ -846,6 +879,9 @@ static int bt_phone_status_event_handler(int *msg)
         small_file_call_log_set_date();
 #endif
         UI_MSG_POST("phone_active:status=%4", 1);
+#if CONFIG_LVGL_UI_ENABLE
+        lvgl_phone_call_notify();
+#endif
         break;
     case BT_STATUS_PHONE_HANGUP:
         log_info("BT_STATUS_PHONE_HANGUP\n");
@@ -876,6 +912,9 @@ static int bt_phone_status_event_handler(int *msg)
             small_file_call_log_set_date();
         }
         small_file_call_log_save();
+#endif
+#if CONFIG_LVGL_UI_ENABLE
+        lvgl_phone_call_notify();
 #endif
         if (UI_GET_WINDOW_ID() == ID_WINDOW_PHONE_CALL_STATUS) {
             UI_MSG_POST("phone_hangup:status=%4", 1);
@@ -918,6 +957,9 @@ static int bt_phone_status_event_handler(int *msg)
             small_file_call_log_set_number((char *)&g_bt_hdl.income_phone_num, sizeof(g_bt_hdl.income_phone_num));
 #endif
             UI_MSG_POST("phone_num:status=%4", 1);
+#if CONFIG_LVGL_UI_ENABLE
+            lvgl_phone_call_notify();
+#endif
         } else {
             log_info("PHONE_NUMBER len err\n");
         }

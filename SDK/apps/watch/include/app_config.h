@@ -88,6 +88,16 @@
 #define CONFIG_NET_UDP_ENABLE
 #define CONFIG_ENABLE_VLIST
 
+/* KWT video codec select (apps/watch/buildFile.watch.c #if KWT_USE_H264):
+ * 1 = H264 (soft264 VENC / soft-H264 VDEC), 0 = JPEG (default).  Defined here
+ * (not just in vstream_common.h) because buildFile.watch.c is preprocessed with
+ * only `#include "app_config.h"` prepended, so the switch must be visible
+ * before any transfer header is included.  vstream_common.h's
+ * `#ifndef KWT_USE_H264` then becomes a no-op. */
+#ifndef KWT_USE_H264
+#define KWT_USE_H264            0
+#endif
+
 /*-------------网络端口----------------*/
 #define CTP_CTRL_PORT   	3333
 #define CDP_CTRL_PORT   	2228
@@ -265,7 +275,7 @@
 #if TCFG_BT_AI_ENABLE
 #if TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH
 #if (!TCFG_UI_ENABLE) && (!TCFG_EARPHONE_PROTOCOL)
-#define AI_SEL_TRANS				TRANS_DATA_EN
+#define AI_SEL_TRANS				CUSTOM_DEMO_EN
 #else
 #define AI_SEL_TRANS				0
 #endif

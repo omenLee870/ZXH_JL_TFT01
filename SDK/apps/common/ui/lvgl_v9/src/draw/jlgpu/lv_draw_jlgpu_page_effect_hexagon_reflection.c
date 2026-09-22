@@ -62,6 +62,12 @@ static struct hexagon_reflection_priv hexagon_reflection_priv_t = {0};
 #define W_SCALE     1.285f
 #define H_SCALE     1.195f
 
+/* 阴影: 倒影(镜像)面按 app 层同款方案压暗。
+ * 与 ui_hexagon_reflection.c 的 global_alpha_tab = {32..., 128...} 一致:
+ * 镜像槽组设 32, 本体槽组保持 128(不透明), 由 GPU 全局透明度混合完成,
+ * 形状与倒影逐像素重合, 且无每帧 CPU 开销。 */
+#define HEX_REFL_SHADOW_ALPHA 32
+
 
 #if LV_USE_DRAW_JLGPU_LIST
 
@@ -211,6 +217,15 @@ int lv_ui_hexagon_reflection_move(lv_draw_jlgpu_unit_t *unit, int xoffset, int y
     return 0;
 }
 
+/* 槽位全局透明度: 镜像(倒影)槽组压暗成阴影, 本体槽组保持不透明。
+ * 闭源库 lv_hexagon_reflection.c 的 draw_order 约定: 镜像面 ctx 下标 = f (0..polytope_type-1),
+ * 本体面 ctx 下标 = f + polytope_type; 与 app 层 global_alpha_tab 的 32/128 分组一致。 */
+static int hexagon_reflection_slot_alpha(int ctx_index, int page_num)
+{
+    (void)page_num;
+    return (ctx_index < __this->polytope_type) ? HEX_REFL_SHADOW_ALPHA : 128;
+}
+
 static const sticky_effect_ops_t hexagon_reflection_effect_ops = {
     .init            = lv_hexagon_reflection_effect_init,
     .uninit          = lv_hexagon_reflection_effect_uninit,
@@ -218,6 +233,7 @@ static const sticky_effect_ops_t hexagon_reflection_effect_ops = {
     .get_face_scr_id = lv_hexagon_reflection_effect_get_face_scr_id,
     .get_face_index  = lv_hexagon_reflection_get_face_index,
     .get_page_id     = lv_hexagon_reflection_effect_get_page_id,
+    .slot_alpha      = hexagon_reflection_slot_alpha,
 };
 
 const sticky_effect_ops_t *lv_hexagon_reflection_effect_get_ops(void)

@@ -417,7 +417,10 @@ static void vdec_alert_rpc(int type)
         txt = "请插入SD卡";
         break;
     default:
-        txt = "系统错误";
+        /* 原为"系统错误": "错/误"不在 LVGL 字体子集内(子集只含生成 UI 出现过的字),
+         * 真机表现为红底白框无字。"文件损坏"同样不可用("损"零命中, "坏"仅出现在注释里),
+         * 故用"文件打开失败"——六字均可在生成 UI 串里找到出处 */
+        txt = "文件打开失败";
         break;
     }
     if (s_vdec_alert && lv_obj_is_valid(s_vdec_alert)) {
@@ -426,7 +429,8 @@ static void vdec_alert_rpc(int type)
     s_vdec_alert = lv_label_create(ui_scr->video_dec);
     lv_label_set_text(s_vdec_alert, txt);
     lv_obj_set_style_text_color(s_vdec_alert, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_set_style_text_font(s_vdec_alert, &lv_font_FangZhengKaiTiJianTi_1_20, 0);
+    /* 用回放屏其它 label 同款字体(1_18): 1_20 的字形子集与生成 UI 不一致, 会出白框 */
+    lv_obj_set_style_text_font(s_vdec_alert, &lv_font_FangZhengKaiTiJianTi_1_18, 0);
     lv_obj_set_style_bg_color(s_vdec_alert, lv_color_hex(0xCC0000), 0);
     lv_obj_set_style_bg_opa(s_vdec_alert, LV_OPA_80, 0);
     lv_obj_set_style_pad_all(s_vdec_alert, 12, 0);

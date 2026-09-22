@@ -112,7 +112,7 @@ struct dial_store {
     u8 standby_cur_style;
 };
 const char *WATCH_VERSION_LIST = {
-    "W003"
+    "W004"
 };
 
 typedef enum {

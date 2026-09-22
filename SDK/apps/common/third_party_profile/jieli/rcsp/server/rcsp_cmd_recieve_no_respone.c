@@ -10,6 +10,7 @@
 #include "rcsp_extra_flash_cmd.h"
 #include "sensor_log_notify.h"
 #include "rcsp_trace.h"
+#include "translator/rcsp_translator.h"
 
 #define LOG_TAG_CONST       RCSP
 #define LOG_TAG     		"[rcsp rx no resp]"
@@ -42,6 +43,12 @@ void rcsp_cmd_recieve_no_respone(void *priv, u8 OpCode, u8 *data, u16 len, u16 b
 #endif
     rcsp_printf("cmd_recieve_no_respone, %x\n", OpCode);
     switch (OpCode) {
+#if RCSP_TRANSLATOR_ENABLE
+    case JL_OPCODE_TRANSLATOR:
+        rcsp_translator_cmd_deal(0, data, len, 0,
+                                 ble_con_handle, spp_remote_addr);
+        break;
+#endif
     default:
 #if JL_RCSP_EXTRA_FLASH_OPT
         if (0 == JL_rcsp_extra_flash_cmd_no_resp(priv, OpCode, data, len)) {
@@ -54,5 +61,4 @@ void rcsp_cmd_recieve_no_respone(void *priv, u8 OpCode, u8 *data, u16 len, u16 b
     }
 }
 #endif//RCSP_MODE
-
 

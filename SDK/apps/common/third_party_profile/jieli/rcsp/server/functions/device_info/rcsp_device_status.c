@@ -9,6 +9,7 @@
 #include "rcsp.h"
 #include "rcsp_event.h"
 #include "rcsp_device_info_func_common.h"
+#include "rcsp_pc_func.h"
 #include "ble_rcsp_server.h"
 #include "rcsp_setting_opt.h"
 #include "dev_manager.h"
@@ -135,6 +136,9 @@ static const func_set set_tab[FUNCTION_MASK_MAX] = {
     [FM_FUNCTION_MASK] = rcsp_fm_func_set,
     [FMTX_FUNCTION_MASK] = NULL,
 #endif
+#if (TCFG_APP_PC_EN)
+    [PC_FUNCTION_MASK] = rcsp_pc_func_set,
+#endif
 };
 
 static const func_get get_tab[FUNCTION_MASK_MAX] = {
@@ -151,6 +155,9 @@ static const func_get get_tab[FUNCTION_MASK_MAX] = {
 #if (TCFG_APP_FM_EN)
     [FM_FUNCTION_MASK] = rcsp_fm_func_get,
     [FMTX_FUNCTION_MASK] = NULL,
+#endif
+#if (TCFG_APP_PC_EN)
+    [PC_FUNCTION_MASK] = rcsp_pc_func_get,
 #endif
 };
 
@@ -1155,6 +1162,12 @@ void rcsp_ai_glasses_vol_update(void)
 }
 #endif
 
+// PC从机模式在线状态推送(3.3.1.8 Bit2): 进入/退出 PC 模式时上报
+void rcsp_pc_online_status_update(void)
+{
+    rcsp_device_status_update(PC_FUNCTION_MASK, BIT(PC_INFO_ATTR_ONLINE_STATUS));
+}
+
 void rcsp_update_bt_emitter_connect_state(u8 state, u8 *addr)
 {
     struct RcspModel *rcspModel = rcsp_handle_get();
@@ -1203,6 +1216,11 @@ u8 rcsp_get_cur_mode(u8 app_mode)
     case APP_FM_TASK:
         current_mode = FM_FUNCTION;
         break;
+#if (TCFG_APP_PC_EN)
+    case APP_PC_TASK:
+        current_mode = PC_FUNCTION;
+        break;
+#endif
     case APP_BT_TASK:
     default:
         current_mode = BT_FUNCTION;
@@ -1261,6 +1279,9 @@ void rcsp_device_status_setting_stop(void)
     case FMTX_FUNCTION:
         log_info("FMTX_FUNCTION STOP\n");
         break;
+    case PC_FUNCTION:
+        log_info("PC_FUNCTION STOP\n");
+        break;
     }
     // 调用各种设置的release函数
     rcsp_opt_release();
@@ -1269,6 +1290,10 @@ void rcsp_device_status_setting_stop(void)
 #else
 
 void rcsp_device_status_update(u8 function, u32 mask)
+{
+}
+
+void rcsp_pc_online_status_update(void)
 {
 }
 

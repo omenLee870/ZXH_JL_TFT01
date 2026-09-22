@@ -6,6 +6,10 @@
 
 // extern const int config_update_mode;
 extern const int support_dual_bank_update_en;
+extern const int support_dual_bank_less_en;
+extern const int support_db_update_small_package;
+extern const int support_dual_bank_not_update_reserve;
+extern const int support_user_file_update_v2_en;
 extern const int support_vm_data_keep;
 extern const int support_jlota_force_push_loader;
 extern const int __attribute__((weak)) support_user_file_update_v2_en;
@@ -15,6 +19,7 @@ extern const int CONFIG_UPDATE_ENABLE;
 extern const int CONFIG_UPDATE_STORAGE_DEV_EN;
 extern const int CONFIG_UPDATE_BLE_TEST_EN;
 extern const int CONFIG_UPDATE_BT_LMP_EN;
+extern const int CONFIG_UPDATE_MUTIL_CPU_MASTER;
 
 // #define UPDATE_MODULE_IS_SUPPORT(x) 		(config_update_mode & x)
 // #define UPDATE_SUPPORT_DEV_IS_NULL()		(config_update_mode == UPDATE_DEV_NULL)
@@ -34,6 +39,17 @@ struct __tws_ota_para {
     u32 fm_size;
     u32 fm_crc;
     u16 max_pkt_len;
+    u32 param_len;
+    void *param;
+};
+
+struct userfile_info {
+    u32 file_len;
+    u32 file_crc;
+    u32 addr;
+    u16 max_pkt_len;
+    u8 file_type;
+    u8 file_name[16];
 };
 
 typedef struct _ret_code {
@@ -54,6 +70,8 @@ typedef struct _update_op_api_tws {
     int (*tws_ota_data_send_pend)(void);
     //for user chip update
     int (*tws_ota_user_chip_update_send)(u8 cmd, u8 *buf, u16 len);
+    int (*tws_ota_user_chip_update_send_data)(u8 *buf, u16 len, u16 pack_crc, void *priv);
+    u32(*tws_ota_request_peer_crc_info_hdl)(void);
 } update_op_tws_api_t;  //给tws同步升级用的接口
 
 update_op_tws_api_t *get_tws_update_api(void);
@@ -208,12 +226,14 @@ typedef struct _user_chip_info_t {
         u16 files_info_len;
     };
     u32 dev_addr;
+    u8 type;
+    u8 name[16];
     void *priv;
 } user_chip_update_info_t;
 
 typedef struct _user_chip_update_v2_t {
     u32 retry_cnt;
-    int (*update_init)(void *priv, update_op_api_t *file_ops, u8 type, u8 *file_name, int (*update_info_get)(u8 type, user_chip_update_info_t *info, void *priv));
+    int (*update_init)(void *priv, const update_op_api_t *file_ops, u8 type, u8 *file_name, int (*update_info_get)(u8 type, user_chip_update_info_t *info, void *priv));
     int (*update_get_len)(void);
     int (*update_loop)(void *priv);
     int (*update_release)(void *priv);
@@ -221,6 +241,9 @@ typedef struct _user_chip_update_v2_t {
     int (*update_passive_write_init)(void *priv, void *node);
     int (*update_passive_write)(void *priv, void *node, u8 *buff, u32 len);
     int (*update_passive_verify)(void *priv, void *node);
+    /* 断点续传(模型A): 重建写上下文并把写指针/擦除水位定位到文件内偏移offset,
+     * offset由适配层保证为对齐回退点(器件地址4K对齐), 返回非0表示无法续传 */
+    int (*update_passive_resume)(void *priv, void *node, u32 offset);
 } user_chip_update_v2_t;
 
 typedef struct _update_size_t {
@@ -233,6 +256,12 @@ enum UPDATE_SIZE_TYPE {
     UPDATE_LEN_TYPE_EX_IC,
 };
 
+enum UPDATE_SPEED_OPTIMIZE_TPYE {
+    UPDATE_SPEED_WRITE_REQ_ASYNC,
+    UPDATE_SPEED_CACHE_EN,
+};
+
+#define UPDATE_SPEED_OPTIMIZE_EN	1
 #define USER_FILE_UPDATE_V2_EN		1
 #define TCFG_SFC_ENCRY_ENABLE               0 // 是否加密写和解密读 //temp, todo...
 #define FLASH_PROTECT_OPT_BEFORE_UPDATE		1 // 写保护 //temp, todo...
@@ -240,14 +269,21 @@ enum UPDATE_SIZE_TYPE {
 #if USER_FILE_UPDATE_V2_EN
 void register_user_chip_update_v2_handle(const user_chip_update_v2_t *user_update_v2_ins);
 void register_user_chip_passive_update_v2_handle(const user_chip_update_v2_t *user_update_v2_ins);
+int pupdate_user_chip_init(struct userfile_info *pinfo);
+int pupdate_user_chip_release(void);
+int pupdate_user_chip_write(u8 *buff, u32 len);
+int pupdate_user_chip_verify(void);
 #endif
 void register_user_chip_update_handle(const user_chip_update_t *user_update_ins);
 void rcsp_update_loader_download_init(int update_type, void (*result_cbk)(void *priv, u8 type, u8 cmd));
 
-int exflash_move_loader_task_init(update_mode_info_t *info);
 int app_active_update_task_init(update_mode_info_t *info);
 int update_file_verify(u32 ufw_addr, s32(*ufw_read)(void *buf, u32 addr, u32 len));
 
+u32 dual_bank_curr_write_offset_get(void);
+int dual_bank_curr_write_offset_set(u32 offset);
+int update_write_req_async(void);
+int update_write_cache_len_set(u32 cache_len);
 //==========================================================//
 //  		           获取升级进度信息                     //
 //注意: 只有双备份升级可以获取该信息                        //
@@ -263,6 +299,16 @@ void register_update_percent_info_callback_handle(void (*handle)(update_percent_
 
 //查询当前升级进度信息:
 void update_percent_info_query(update_percent_info *info);
+
+typedef struct _MUTIL_UFW_INFO {
+    u16 ufw_crc;
+    u32 ufw_addr;
+    u32 ufw_len;
+    char name[16];
+} mutil_ufw_info;
+
+u32 update_target_check(void *fd, void *info);
+void bt_update_set_offset_addr(u32 offset);
 
 enum {
     CONFIG_UPDATE_FEATRUES_CONTENT_COMPARE_EN = 0,

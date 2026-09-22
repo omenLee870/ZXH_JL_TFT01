@@ -230,6 +230,10 @@ static void rcsp_common_event_deal(int msg, int argc, int *argv)
 #endif
             break;
         case FMTX_FUNCTION_MASK:
+            /* 协议 func_sub_tab: 0x06 = 切到PC从机模式 (FMTX_FUNCTION_MASK 同值 6, 此处无 FMTX 模式切换) */
+#if TCFG_APP_PC_EN
+            ret = app_task_switch_to(APP_PC_TASK, NULL_VALUE);
+#endif
             break;
         }
 #if RCSP_DEVICE_STATUS_ENABLE

@@ -4,6 +4,7 @@
 #pragma const_seg(".rcsp_cmd_recieve.text.const")
 #pragma code_seg(".rcsp_cmd_recieve.text")
 #endif
+#include "system/includes.h"
 #include "app_config.h"
 #include "rcsp_config.h"
 #include "rcsp_functions/rcsp_config.h"
@@ -36,6 +37,13 @@
 #include "rcsp_watch_info.h"
 #include "audio_video_control.h"
 #include "rcsp_trace.h"
+#include "app_msg.h"
+#include "ai_dialogue_control.h"
+#include "translator/rcsp_translator.h"
+#include "mix_record_api.h"
+#include "rcsp_mix_record.h"
+#include "jlstream.h"
+#include "ai_voice_recoder.h"
 
 
 #if TCFG_USER_TWS_ENABLE
@@ -103,27 +111,281 @@ static void get_target_feature(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u1
 }
 
 #if (BT_MIC_EN)
-extern int mic_rec_pram_init(u32 enc_type, u8 opus_type, u16(*speech_send)(u8 *buf, u16 len), u16 frame_num, u16 cbuf_size);
-extern int ai_mic_rec_start(void);
-extern int ai_mic_rec_close(void);
-#define AUDIO_CODING_PCM          0x00000100
-#define AUDIO_CODING_OPUS         0x00100000
-#define AUDIO_CODING_SPEEX        0x00200000
+#include "app_protocol_common.h"
 
 /*speex同步字*/
 #define SPEEX_SYNCWORD            0xACBDEAAA
 
+enum app_record_owner {
+    APP_RECORD_OWNER_LEGACY,
+    APP_RECORD_OWNER_AI_DIALOGUE,
+    APP_RECORD_OWNER_TRANSLATOR,
+};
+
 struct app_record_handle {
     u16 record_ble_con_handle;
-    u8 *record_spp_remote_addr;
+    u8 record_spp_remote_addr[6];
+    u8 record_spp_addr_valid;
+    u8 owner;
     u32 enc_type;
     u16 frame_size;
     u32 sample_rate;
     u8 *send_buf;
     int send_len;
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+    u8 stop_pending;
+    u16 generation;
+#endif
+#if RCSP_AI_DIALOGUE_RECORD_DUMP_ENABLE
+    FILE *dump_file;
+    u32 dump_bytes;
+#endif
 };
 
 static struct app_record_handle *g_app_rec_hdl = NULL;
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+static u16 g_app_rec_generation;
+#endif
+#if RCSP_TRANSLATOR_ENABLE
+static volatile u32 g_app_rec_failed_event;
+#endif
+
+static void app_record_start_result(u8 owner, u8 success)
+{
+#if RCSP_TRANSLATOR_ENABLE
+    if (owner == APP_RECORD_OWNER_TRANSLATOR) {
+        if (success) {
+            rcsp_translator_record_cancel_request();
+        }
+        rcsp_translator_record_result(success);
+        return;
+    }
+#endif
+#if RCSP_AI_DIALOGUE_ENABLE
+    if (owner == APP_RECORD_OWNER_AI_DIALOGUE) {
+        rcsp_ai_dialogue_record_start_result(success);
+    }
+#endif
+    (void)owner;
+    (void)success;
+}
+
+static void app_record_stop_result(u8 owner, u8 success)
+{
+#if RCSP_TRANSLATOR_ENABLE
+    if (owner == APP_RECORD_OWNER_TRANSLATOR) {
+        rcsp_translator_record_result(success);
+        return;
+    }
+#endif
+#if RCSP_AI_DIALOGUE_ENABLE
+    if (owner == APP_RECORD_OWNER_AI_DIALOGUE) {
+        rcsp_ai_dialogue_record_stop_result(success);
+    }
+#endif
+    (void)owner;
+    (void)success;
+}
+
+#if RCSP_AI_DIALOGUE_RECORD_DUMP_ENABLE
+/* 落盘目录跟随实际使能的 SD 卡: 眼镜方案只用 sd0。 */
+#if defined(TCFG_SD0_ENABLE) && (TCFG_SD0_ENABLE == 1)
+#define RCSP_AI_RECORD_DUMP_DIR             "storage/sd0/C/"
+#elif defined(TCFG_SD1_ENABLE) && (TCFG_SD1_ENABLE == 1)
+#define RCSP_AI_RECORD_DUMP_DIR             "storage/sd1/C/"
+#else
+#error "Please enable sd0 or sd1 !!!"
+#endif
+#define RCSP_AI_RECORD_DUMP_OPUS_PATH       RCSP_AI_RECORD_DUMP_DIR"AIREC***.OPS"
+#define RCSP_AI_RECORD_DUMP_SPEEX_PATH      RCSP_AI_RECORD_DUMP_DIR"AIREC***.SPX"
+#define RCSP_AI_RECORD_DUMP_PCM_PATH        RCSP_AI_RECORD_DUMP_DIR"AIREC***.PCM"
+
+static void app_record_dump_close(struct app_record_handle *hdl)
+{
+    if (!hdl || !hdl->dump_file) {
+        return;
+    }
+
+    fclose(hdl->dump_file);
+    hdl->dump_file = NULL;
+    printf("[AI_DIALOGUE] realtime record dump close, bytes=%u\n",
+           hdl->dump_bytes);
+}
+
+static void app_record_dump_open(struct app_record_handle *hdl)
+{
+    const char *path;
+    u8 file_name[32] = {0};
+
+    if (!hdl) {
+        return;
+    }
+
+    switch (hdl->enc_type) {
+    case AUDIO_CODING_PCM:
+        path = RCSP_AI_RECORD_DUMP_PCM_PATH;
+        break;
+    case AUDIO_CODING_SPEEX:
+        path = RCSP_AI_RECORD_DUMP_SPEEX_PATH;
+        break;
+    case AUDIO_CODING_OPUS:
+    default:
+        path = RCSP_AI_RECORD_DUMP_OPUS_PATH;
+        break;
+    }
+
+    hdl->dump_file = fopen(path, "w+");
+    hdl->dump_bytes = 0;
+    if (!hdl->dump_file) {
+        printf("[AI_DIALOGUE] realtime record dump open failed: %s\n", path);
+        return;
+    }
+
+    fget_name(hdl->dump_file, file_name, sizeof(file_name));
+    printf("[AI_DIALOGUE] realtime record dump open: %s\n", file_name);
+}
+
+static void app_record_dump_write(struct app_record_handle *hdl,
+                                  const u8 *buf, u16 len)
+{
+    int wlen;
+
+    if (!hdl || !hdl->dump_file || !buf || !len) {
+        return;
+    }
+
+    wlen = fwrite((void *)buf, len, 1, hdl->dump_file);
+    if (wlen != len) {
+        printf("[AI_DIALOGUE] realtime record dump write failed: %d/%u\n",
+               wlen, len);
+        app_record_dump_close(hdl);
+        return;
+    }
+    hdl->dump_bytes += len;
+}
+#endif
+
+static int app_record_close_handle(void)
+{
+    struct app_record_handle *hdl = g_app_rec_hdl;
+    int ret;
+
+    if (!hdl) {
+        return 0;
+    }
+
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+    hdl->stop_pending = 1;
+#endif
+    ret = ai_mic_rec_close();
+    if (ret) {
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+        hdl->stop_pending = 0;
+#endif
+        return ret;
+    }
+
+#if RCSP_AI_DIALOGUE_RECORD_DUMP_ENABLE
+    app_record_dump_close(hdl);
+#endif
+
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+    ai_voice_recoder_set_event_callback(NULL);
+#endif
+    if (hdl->send_buf) {
+        free(hdl->send_buf);
+        hdl->send_buf = NULL;
+    }
+    free(hdl);
+    g_app_rec_hdl = NULL;
+    return 0;
+}
+
+#if RCSP_AI_DIALOGUE_ENABLE
+int rcsp_ai_dialogue_record_force_stop(void)
+{
+    int ret;
+
+    if (!g_app_rec_hdl || g_app_rec_hdl->owner == APP_RECORD_OWNER_TRANSLATOR) {
+        return true;
+    }
+
+    ret = app_record_close_handle();
+    if (ret) {
+        printf("[AI_DIALOGUE] force stop realtime record failed:%d\n", ret);
+        return false;
+    }
+    printf("[AI_DIALOGUE] force stop realtime record\n");
+    return true;
+}
+#endif
+
+#if RCSP_TRANSLATOR_ENABLE
+int rcsp_realtime_record_is_busy(void)
+{
+    return g_app_rec_hdl != NULL;
+}
+
+int rcsp_translator_record_force_stop(void)
+{
+    if (!g_app_rec_hdl || g_app_rec_hdl->owner != APP_RECORD_OWNER_TRANSLATOR) {
+        return true;
+    }
+    return app_record_close_handle() == 0;
+}
+#endif
+
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+static void app_record_stream_fail_in_app_core(void *priv)
+{
+    struct app_record_handle *hdl = g_app_rec_hdl;
+    u32 param = (u32)(int)priv;
+    u16 generation = param >> 16;
+    u16 event = param & 0xffff;
+
+    if (!hdl || hdl->stop_pending || hdl->generation != generation) {
+        return;
+    }
+
+    printf("[RCSP_RECORD] stream failed, owner:%u, event:%d\n",
+           hdl->owner, event);
+    u8 owner = hdl->owner;
+    app_record_close_handle();
+    app_record_stop_result(owner, 0);
+}
+
+static void app_record_stream_event(int event)
+{
+    int msg[3];
+
+    msg[0] = (int)app_record_stream_fail_in_app_core;
+    msg[1] = 1;
+    msg[2] = ((u32)g_app_rec_generation << 16) | (event & 0xffff);
+    if (os_taskq_post_type("app_core", Q_CALLBACK, 3, msg)) {
+#if RCSP_TRANSLATOR_ENABLE
+        /* The translator service retries cleanup if app_core's queue is full. */
+        g_app_rec_failed_event = (u32)msg[2];
+#endif
+        printf("[AI_DIALOGUE] realtime record event post failed:%d\n",
+               event);
+    }
+}
+#endif
+
+#if RCSP_TRANSLATOR_ENABLE
+void rcsp_translator_record_poll_events(void)
+{
+    u32 param = g_app_rec_failed_event;
+    if (!param) {
+        return;
+    }
+    g_app_rec_failed_event = 0;
+    if (g_app_rec_hdl && g_app_rec_hdl->owner == APP_RECORD_OWNER_TRANSLATOR) {
+        app_record_stream_fail_in_app_core((void *)param);
+    }
+}
+#endif
+
 static u16 app_record_send_data(u8 *buf, u16 len)
 {
     int ret = 0;
@@ -155,58 +417,54 @@ static u16 app_record_send_data(u8 *buf, u16 len)
 
             buf = hdl->send_buf;
         }
-        ret = JL_DATA_send(JL_OPCODE_DATA, JL_OPCODE_APP_RECORDING, buf, len + syncword_len, JL_NOT_NEED_RESPOND, hdl->record_ble_con_handle, hdl->record_spp_remote_addr);
+        ret = JL_DATA_send(JL_OPCODE_DATA, JL_OPCODE_APP_RECORDING, buf,
+                           len + syncword_len, JL_NOT_NEED_RESPOND,
+                           hdl->record_ble_con_handle,
+                           hdl->record_spp_addr_valid ? hdl->record_spp_remote_addr : NULL);
         if (ret) {
             printf("send data err: %d, %d\n", ret, len);
+#if RCSP_AI_DIALOGUE_RECORD_DUMP_ENABLE
+        } else {
+            /* 落盘的就是 RCSP 实际接受的那份数据(含同步字) */
+            app_record_dump_write(hdl, buf, len + syncword_len);
+#endif
         }
     }
     return ret;
 }
 
-static void app_record_satrt(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len, u16 ble_con_handle, u8 *spp_remote_addr)
+/* Shared by APP 0x04 and device-initiated translation recording. */
+static int app_record_open_handle(u8 owner, u32 enc_type, u16 ble_con_handle,
+                                  const u8 *spp_remote_addr)
 {
-    printf("func:%s,line:%d", __func__, __LINE__);
-    int ret = 0;
-    u32 enc_type;
-    // 获取编码类型
-    switch (data[0]) {
-    case 0 :
-        enc_type = AUDIO_CODING_PCM;
-        break;
-    case 1 :
-        enc_type = AUDIO_CODING_SPEEX;
-        break;
-    case 2 :
-        enc_type = AUDIO_CODING_OPUS;
-        break;
-    default:
-        goto __exit0;
-        break;
+    int ret;
+    if (g_app_rec_hdl || ai_mic_is_busy() ||
+        bt_get_call_status() != BT_CALL_HANGUP) {
+        return -EBUSY;
     }
-    /*
-    // 获取采样率
-    u32 sample_rate;
-    switch (data[1]) {
-    case 0x08 :
-        sample_rate = 8000;
-        break;
-    case 0x10 :
-        sample_rate = 16000;
-        break;
-    default:
-        goto __exit0;
-        break;
-    }*/
-
-
     struct app_record_handle *hdl = zalloc(sizeof(struct app_record_handle));
     if (!hdl) {
         goto __exit0;
     }
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+    g_app_rec_generation++;
+    if (!g_app_rec_generation) {
+        g_app_rec_generation = 1;
+    }
+    hdl->generation = g_app_rec_generation;
+#endif
     /*记录发生数据需要的参数*/
     hdl->record_ble_con_handle = ble_con_handle;
-    hdl->record_spp_remote_addr = spp_remote_addr;
+    if (spp_remote_addr) {
+        memcpy(hdl->record_spp_remote_addr, spp_remote_addr,
+               sizeof(hdl->record_spp_remote_addr));
+        hdl->record_spp_addr_valid = 1;
+    }
+    hdl->owner = owner;
     hdl->enc_type = enc_type;
+#if RCSP_AI_DIALOGUE_RECORD_DUMP_ENABLE
+    app_record_dump_open(hdl);
+#endif
 
     /*注册发数回调*/
     if (enc_type == AUDIO_CODING_PCM) {
@@ -225,40 +483,187 @@ static void app_record_satrt(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 
         goto __exit1;
     }
     /*打开录音*/
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+    ai_voice_recoder_set_event_callback(app_record_stream_event);
+#endif
+#if RCSP_AI_DIALOGUE_ENABLE
+    rcsp_ai_dialogue_pause_a2dp_before_record();
+#endif
+#if RCSP_TRANSLATOR_ENABLE
+    if (owner == APP_RECORD_OWNER_TRANSLATOR &&
+        bt_a2dp_get_status() == BT_MUSIC_STATUS_STARTING) {
+        bt_cmd_prepare(USER_CTRL_AVCTP_OPID_PAUSE, 0, NULL);
+    }
+#endif
     ret = ai_mic_rec_start();
     if (ret) {
         goto __exit1;
     }
     g_app_rec_hdl = hdl;
     /*回复状态*/
-    JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0, ble_con_handle, spp_remote_addr);
-    return;
+    return 0;
 
 __exit1:
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+    ai_voice_recoder_set_event_callback(NULL);
+#endif
+#if RCSP_AI_DIALOGUE_RECORD_DUMP_ENABLE
+    app_record_dump_close(hdl);
+#endif
     free(hdl);
 __exit0:
-    JL_CMD_response_send(OpCode, JL_PRO_STATUS_FAIL, OpCode_SN, NULL, 0, ble_con_handle, spp_remote_addr);
+    return -EFAULT;
+}
+
+#if RCSP_TRANSLATOR_ENABLE
+int rcsp_translator_record_start(u16 handle, const u8 *addr)
+{
+    if (!rcsp_translator_is_busy()) {
+        return -EINVAL;
+    }
+    if (g_app_rec_hdl && g_app_rec_hdl->owner == APP_RECORD_OWNER_TRANSLATOR) {
+        return 0;
+    }
+#if TCFG_MIX_RECORD_ENABLE
+    if (get_mix_recorder_status()) {
+        return -EBUSY;
+    }
+#endif
+#if RCSP_MIX_RECORD_ENABLE
+    if (rcsp_mix_recorder_get_status()) {
+        return -EBUSY;
+    }
+#endif
+    return app_record_open_handle(APP_RECORD_OWNER_TRANSLATOR,
+                                  AUDIO_CODING_OPUS, handle, addr);
+}
+#endif
+
+static void app_record_satrt(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len, u16 ble_con_handle, u8 *spp_remote_addr)
+{
+    printf("func:%s,line:%d", __func__, __LINE__);
+    int ret = 0;
+    u32 enc_type;
+    u8 owner = APP_RECORD_OWNER_LEGACY;
+#if RCSP_AI_DIALOGUE_ENABLE
+    if (rcsp_ai_dialogue_is_busy()) {
+        owner = APP_RECORD_OWNER_AI_DIALOGUE;
+    }
+#endif
+#if RCSP_TRANSLATOR_ENABLE
+    if (rcsp_translator_is_busy()) {
+        owner = APP_RECORD_OWNER_TRANSLATOR;
+    }
+#endif
+    if (!data || len < 1) {
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR, OpCode_SN,
+                             NULL, 0, ble_con_handle, spp_remote_addr);
+        return;
+    }
+    /* Validate the command before applying any recording-failure policy. */
+#if RCSP_TRANSLATOR_ENABLE
+    if (owner == APP_RECORD_OWNER_TRANSLATOR &&
+        (len != 3 || data[0] != 2 || data[1] != 0x10 || data[2] > 1)) {
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR, OpCode_SN,
+                             NULL, 0, ble_con_handle, spp_remote_addr);
+        return;
+    }
+#endif
+    switch (data[0]) {
+    case 0:
+        enc_type = AUDIO_CODING_PCM;
+        break;
+    case 1:
+        enc_type = AUDIO_CODING_SPEEX;
+        break;
+    case 2:
+        enc_type = AUDIO_CODING_OPUS;
+        break;
+    default:
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR, OpCode_SN,
+                             NULL, 0, ble_con_handle, spp_remote_addr);
+        return;
+    }
+#if RCSP_AI_DIALOGUE_ENABLE
+    if (!rcsp_ai_dialogue_record_start_allowed()) {
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_BUSY, OpCode_SN,
+                             NULL, 0, ble_con_handle, spp_remote_addr);
+        return;
+    }
+#endif
+    if (BT_CALL_HANGUP != bt_get_call_status()) {
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_BUSY, OpCode_SN,
+                             NULL, 0, ble_con_handle, spp_remote_addr);
+        app_record_start_result(owner, 0);
+        return;
+    }
+    if (g_app_rec_hdl) {
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_BUSY, OpCode_SN,
+                             NULL, 0, ble_con_handle, spp_remote_addr);
+#if RCSP_AI_DIALOGUE_ENABLE
+        /* 起录被拒时让 AI 会话立刻收尾, 不等看门狗超时 */
+        rcsp_ai_dialogue_record_start_result(0);
+#endif
+        return;
+    }
+    /*
+    // 获取采样率
+    u32 sample_rate;
+    switch (data[1]) {
+    case 0x08 :
+        sample_rate = 8000;
+        break;
+    case 0x10 :
+        sample_rate = 16000;
+        break;
+    default:
+        goto __exit0;
+        break;
+    }*/
+
+
+    ret = app_record_open_handle(owner, enc_type, ble_con_handle, spp_remote_addr);
+    JL_CMD_response_send(OpCode, ret ? JL_PRO_STATUS_FAIL : JL_PRO_STATUS_SUCCESS,
+                         OpCode_SN, NULL, 0, ble_con_handle, spp_remote_addr);
+    app_record_start_result(owner, ret == 0);
 }
 
 static void app_record_stop(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len, u16 ble_con_handle, u8 *spp_remote_addr)
 {
     printf("func:%s,line:%d", __func__, __LINE__);
-    struct app_record_handle *hdl = g_app_rec_hdl;
-    if (hdl) {
+#if RCSP_TRANSLATOR_ENABLE
+    if (rcsp_translator_is_busy() &&
+        (!data || len != 1 || data[0] > 1)) {
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR, OpCode_SN,
+                             NULL, 0, ble_con_handle, spp_remote_addr);
+        return;
+    }
+    if (rcsp_translator_is_busy()) {
+        rcsp_translator_record_cancel_request();
+    }
+#endif
+    if (g_app_rec_hdl) {
+        u8 owner = g_app_rec_hdl->owner;
         /*关闭录音*/
-        int ret = ai_mic_rec_close();
+        int ret = app_record_close_handle();
         if (ret == 0) {
             JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0, ble_con_handle, spp_remote_addr);
+            app_record_stop_result(owner, 1);
         } else {
             JL_CMD_response_send(OpCode, JL_PRO_STATUS_FAIL, OpCode_SN, NULL, 0, ble_con_handle, spp_remote_addr);
+            app_record_stop_result(owner, 0);
         }
-        if (hdl->send_buf) {
-            free(hdl->send_buf);
-            hdl->send_buf = NULL;
-        }
-        free(hdl);
-        g_app_rec_hdl = NULL;
     }
+#if RCSP_AI_DIALOGUE_ENABLE || RCSP_TRANSLATOR_ENABLE
+    else {
+        /* 本地已中断录音时, APP 迟到的 0x05 按幂等处理 */
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN,
+                             NULL, 0, ble_con_handle, spp_remote_addr);
+#if RCSP_AI_DIALOGUE_ENABLE
+        rcsp_ai_dialogue_record_stop_result(1);
+#endif
+    }
+#endif
 }
 #endif
 
@@ -838,10 +1243,27 @@ void rcsp_cmd_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len, u1
         extern void mass_data_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 * data, u16 len);
         mass_data_recieve(priv, OpCode, OpCode_SN, data, len);
         break;
-#if TCFG_AI_INTERACTION_ENABLE
+        /*
+         * 0x32 AI 操作: 两套实现互斥, 按优先级取其一, 避免同一 opcode 出现重复 case。
+         *   1. RCSP_AI_DIALOGUE_ENABLE  : 统一 AI 对话状态机(语音对话 + 按键识图)
+         *   2. TCFG_AI_INTERACTION_ENABLE: 科大讯飞 APP 版路径
+         */
+#if RCSP_AI_DIALOGUE_ENABLE
+    case JL_OPCODE_AI_DIAL:
+        rcsp_ai_dialogue_cmd_deal(priv, OpCode, OpCode_SN, data, len,
+                                  ble_con_handle, spp_remote_addr);
+        break;
+#elif TCFG_AI_INTERACTION_ENABLE
     case JL_OPCODE_AI_DIAL:
         extern void put_aidial(void *priv, u8 OpCode, u8 OpCode_SN, u8 * data, u16 len);
         put_aidial(priv, OpCode, OpCode_SN, data, len);
+        break;
+#endif
+
+#if RCSP_TRANSLATOR_ENABLE
+    case JL_OPCODE_TRANSLATOR:
+        rcsp_translator_cmd_deal(OpCode_SN, data, len, 1,
+                                 ble_con_handle, spp_remote_addr);
         break;
 #endif
 
@@ -864,6 +1286,31 @@ void rcsp_cmd_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len, u1
         rcsp_audio_video_cmd_deal(priv, OpCode, OpCode_SN, data, len,
                                   ble_con_handle, spp_remote_addr);
         break;
+
+#if RCSP_MODE == RCSP_MODE_WATCH
+    case JL_OPCODE_SET_DEVICE_REBOOT: {
+        /* 强制设备重启(0xE7):
+         * data[0]: 0x00 主机强制设备重新启动 / 0x01 主机强制设备关机 / 0x02 主机恢复出厂设置。
+         * 该命令原本在 rcsp_update.c 中处理, 但 rcsp_update.c 的实现在
+         * TCFG_APP_UPDATE_EN==0(如 ai_glasses) 时被整体裁剪, 导致 0xE7 收到 UNKOWN_CMD。
+         * 此处按 RCSP_MODE_WATCH(含智能眼镜) 补充处理。 */
+        u8 reboot_type = (len >= 1) ? data[0] : 0x00;
+        u8 result = 0x00;   // 重启结果: 0x00 成功, 0x01 失败
+        rcsp_printf("JL_OPCODE_SET_DEVICE_REBOOT: type=%d\n", reboot_type);
+        if (0x02 == reboot_type) {  // 主机恢复出厂设置
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &result, 1, ble_con_handle, spp_remote_addr);
+            app_send_message(APP_MSG_DISCON_RESET_BT, 0);   // 断开所有连接+恢复出厂+复位
+        } else if (0x01 == reboot_type) {   // 主机强制设备关机
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &result, 1, ble_con_handle, spp_remote_addr);
+            app_send_message(APP_MSG_POWER_OFF, 0);
+        } else {    // 0x00 主机强制设备重新启动
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &result, 1, ble_con_handle, spp_remote_addr);
+            /* 复用 RCSP 层的重启流程(先回名字变更再延时复位), 保证应答能在复位前发出 */
+            JL_rcsp_event_to_user(DEVICE_EVENT_FROM_RCSP, MSG_JL_REBOOT_DEV, NULL, 0);
+        }
+        break;
+    }
+#endif // RCSP_MODE == RCSP_MODE_WATCH
 
     default:
 #if JL_RCSP_SENSORS_DATA_OPT

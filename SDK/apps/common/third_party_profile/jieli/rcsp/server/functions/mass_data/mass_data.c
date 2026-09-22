@@ -27,6 +27,7 @@
 
 #define MASS_DATA_OP_PARAM				0 // 参数
 #define MASS_DATA_OP_DATA				1 // 数据
+#define MASS_DATA_OP_CANCEL				2 // 取消传输
 
 #define MASS_DATA_WAY_READ				0 // 获取数据
 #define MASS_DATA_WAY_WRITE				1 // 发送数据
@@ -50,6 +51,7 @@
 #define MASS_DATA_DATA_LIMIT			200 // 数据长度限制
 
 #define MASS_DATA_SEND_TIMEOUT_MS		5000 // 发送超时
+#define MASS_DATA_CANCEL_TIMEOUT_MS		2000
 
 #if 0
 #define DEBUG_PUT_BUF					put_buf
@@ -133,27 +135,35 @@ struct _MASSDATA_RECV {
 struct _MASSDATA_SEND {
     u8  result;
     volatile u8 tx_flag : 1; // 1-发送中。0-完成
-        volatile u8 asyn : 1; // 1-异步
-        u16 send_limit;
-        u16 seq;
-        u16 tm;
-        u16 resend_tm;
-        void (*evt_cb)(void *priv, int event);
-        void *evt_cb_priv;
-        u8 *pkt_buf;
-        u16 pkt_len;
-        u16 offset;
-        u16 dat_len;
-        u8  dat[0];
-    };
+    volatile u8 asyn : 1; // 1-异步
+    u16 send_limit;
+    u16 seq;
+    u16 tm;
+    u16 resend_tm;
+    void (*evt_cb)(void *priv, int event);
+    void *evt_cb_priv;
+    u8 *pkt_buf;
+    u16 pkt_len;
+    u16 offset;
+    u16 dat_len;
+    u8  dat[0];
+};
 
 
-    static struct _MASSDATA_RECV *massdat_rx[MASS_DATA_TYPE_MAX] = {0};
+static struct _MASSDATA_RECV *massdat_rx[MASS_DATA_TYPE_MAX] = {0};
 static struct _MASSDATA_RECV_CB rx_cb[MASS_DATA_TYPE_MAX] = {0};
 
 static struct _MASSDATA_SEND *massdat_tx[MASS_DATA_TYPE_MAX] = {0};
+/* A packet token invalidates timeout/retry callbacks after advance or release. */
+static u16 mass_data_tx_generation[MASS_DATA_TYPE_MAX];
+static u8 mass_data_cancel_pending;
+static u8 mass_data_cancel_reason;
+static u16 mass_data_cancel_timer;
+static u16 mass_data_cancel_generation;
+static void *mass_data_cancel_cb_priv;
+static void (*mass_data_cancel_complete_cb)(void *priv, int result);
 
-static void mass_data_asyn_send_ready_data(u8 type);
+static int mass_data_asyn_send_ready_data(u8 type);
 static int mass_data_asyn_send_no_wait(u8 type);
 static void mass_data_asyn_send_release(u8 type, int event);
 
@@ -178,12 +188,97 @@ static inline void *MASS_ZALLOC(size_t size)
 #define MASS_FREE		free
 #endif
 
+static int mass_data_recv_cancel_all(u8 reason)
+{
+    int cancel_count = 0;
+
+    /* 协议取消参数没有数据类型，因此取消所有未完成的接收流程。 */
+    for (u8 type = 0; type < MASS_DATA_TYPE_MAX; type++) {
+        if (massdat_rx[type] == NULL) {
+            continue;
+        }
+
+        MASS_FREE(massdat_rx[type]);
+        massdat_rx[type] = NULL;
+        cancel_count++;
+
+        if (rx_cb[type].evt_cb) {
+            rx_cb[type].evt_cb(rx_cb[type].cb_priv, MASS_DATA_RECV_EVENT_CANCEL, &reason);
+        }
+    }
+
+    return cancel_count;
+}
+
+static void mass_data_cancel_complete(int result)
+{
+    void *cb_priv;
+    void (*complete_cb)(void *priv, int result);
+
+    if (!mass_data_cancel_pending) {
+        return;
+    }
+    if (mass_data_cancel_timer) {
+        sys_timeout_del(mass_data_cancel_timer);
+        mass_data_cancel_timer = 0;
+    }
+
+    /* Always discard the local old-session data, even if peer cancel failed. */
+    mass_data_recv_cancel_all(mass_data_cancel_reason);
+    mass_data_cancel_pending = 0;
+    mass_data_cancel_reason = 0;
+    mass_data_cancel_generation++;
+    cb_priv = mass_data_cancel_cb_priv;
+    complete_cb = mass_data_cancel_complete_cb;
+    mass_data_cancel_cb_priv = NULL;
+    mass_data_cancel_complete_cb = NULL;
+
+    if (complete_cb) {
+        complete_cb(cb_priv, result);
+    }
+}
+
+static void mass_data_cancel_timeout_in_app_core(void *priv)
+{
+    u16 generation = (u16)(int)priv;
+
+    if (!mass_data_cancel_pending ||
+        generation != mass_data_cancel_generation) {
+        return;
+    }
+    mass_data_cancel_timer = 0;
+    log_e("mass data active cancel timeout\n");
+    mass_data_cancel_complete(MASS_DATA_CANCEL_RESULT_TIMEOUT);
+}
+
+void mass_data_recv_reset(u8 reason)
+{
+    int cancel_count = mass_data_recv_cancel_all(reason);
+
+    if (mass_data_cancel_timer) {
+        sys_timeout_del(mass_data_cancel_timer);
+        mass_data_cancel_timer = 0;
+    }
+    mass_data_cancel_pending = 0;
+    mass_data_cancel_reason = 0;
+    mass_data_cancel_generation++;
+    mass_data_cancel_cb_priv = NULL;
+    mass_data_cancel_complete_cb = NULL;
+    log_i("mass data local reset, reason:%d, count:%d\n",
+          reason, cancel_count);
+}
+
 void mass_data_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
 {
     u8 *pkt_buf;
     u16 res_len;
     u8 result = 0;
     u8 offset = 0;
+    if ((data == NULL) || (len < 1)) {
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR, OpCode_SN, NULL, 0, 0, NULL);
+        return;
+    }
+
     u8 op = data[offset++];
     struct _MASSDATA_RECV *p_md_rx;
 
@@ -195,7 +290,16 @@ void mass_data_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
         struct _MASSDATA_OP_PARAM_RESPOND *p_respond;
         struct _MASSDATA_OP_PARAM_RESPOND_READ *p_respond_read;
         struct _MASSDATA_OP_PARAM_RESPOND_WRITE *p_respond_write;
+        /* Tiny response headers do not need a fallible heap allocation. */
+        u8 response_buf[1 + sizeof(struct _MASSDATA_OP_PARAM_RESPOND) +
+                        sizeof(struct _MASSDATA_OP_PARAM_RESPOND_READ) +
+                        sizeof(struct _MASSDATA_OP_PARAM_RESPOND_WRITE)] = {0};
 
+        if ((len - offset) < sizeof(struct _MASSDATA_OP_PARAM)) {
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR,
+                                 OpCode_SN, NULL, 0, 0, NULL);
+            return;
+        }
         memcpy(&op_param, &data[offset], sizeof(struct _MASSDATA_OP_PARAM));
         offset += sizeof(struct _MASSDATA_OP_PARAM);
 
@@ -216,6 +320,10 @@ void mass_data_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
             massdat_rx[op_param.type] = NULL;
         }
         struct _MASSDATA_OP_PARAM_WRITE op_w;
+        if ((len - offset) < sizeof(struct _MASSDATA_OP_PARAM_WRITE)) {
+            result = MASS_DATA_ERR_TOTAL_LEN;
+            goto __op_param_end;
+        }
         memcpy(&op_w, &data[offset], sizeof(struct _MASSDATA_OP_PARAM_WRITE));
         offset += sizeof(struct _MASSDATA_OP_PARAM_WRITE);
         op_w.data_len = READ_BIG_U32(&op_w.data_len);
@@ -225,12 +333,20 @@ void mass_data_recieve(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
 
         log_i("massdat_rx[%d]:%d, crc:0x%x \n", op_param.type, op_w.data_len, op_w.crc);
 
+        if (!rx_cb[op_param.type].part_cb &&
+            op_w.data_len > (0xffffffffu - sizeof(struct _MASSDATA_RECV))) {
+            result = MASS_DATA_ERR_TOTAL_LEN;
+            goto __op_param_end;
+        }
         if (rx_cb[op_param.type].part_cb) {
             massdat_rx[op_param.type] = MASS_ZALLOC(sizeof(struct _MASSDATA_RECV));
         } else {
             massdat_rx[op_param.type] = MASS_ZALLOC(sizeof(struct _MASSDATA_RECV) + op_w.data_len);
         }
-        ASSERT(massdat_rx[op_param.type]);
+        if (!massdat_rx[op_param.type]) {
+            result = MASS_DATA_ERR_WRITE;
+            goto __op_param_end;
+        }
         massdat_rx[op_param.type]->total_len = op_w.data_len;
         massdat_rx[op_param.type]->crc = op_w.crc;
 
@@ -241,8 +357,7 @@ __op_param_end:
         log_e("result:%d \n", result);
         if (op_param.way == MASS_DATA_WAY_READ) {
             res_len = 1 + sizeof(struct _MASSDATA_OP_PARAM_RESPOND) + sizeof(struct _MASSDATA_OP_PARAM_RESPOND_READ);
-            pkt_buf = MASS_ZALLOC(res_len);
-            ASSERT(pkt_buf);
+            pkt_buf = response_buf;
             p_respond = (struct _MASSDATA_OP_PARAM_RESPOND *)(pkt_buf + 1);
             p_respond_read = (struct _MASSDATA_OP_PARAM_RESPOND_READ *)p_respond->dat;
             p_respond_read->result = result;
@@ -250,8 +365,7 @@ __op_param_end:
             WRITE_BIG_U16(&p_respond_read->recv_data_limit, MASS_DATA_DATA_LIMIT);
         } else {
             res_len = 1 + sizeof(struct _MASSDATA_OP_PARAM_RESPOND) + sizeof(struct _MASSDATA_OP_PARAM_RESPOND_WRITE);
-            pkt_buf = MASS_ZALLOC(res_len);
-            ASSERT(pkt_buf);
+            pkt_buf = response_buf;
             p_respond = (struct _MASSDATA_OP_PARAM_RESPOND *)(pkt_buf + 1);
             p_respond_write = (struct _MASSDATA_OP_PARAM_RESPOND_WRITE *)p_respond->dat;
             p_respond_write->result = result;
@@ -264,17 +378,22 @@ __op_param_end:
         pkt_buf[0] = MASS_DATA_OP_PARAM;
 
         JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, (u8 *)pkt_buf, res_len, 0, NULL);
-        MASS_FREE(pkt_buf);
         return ;
     } else if (op == MASS_DATA_OP_DATA) {
         struct _MASSDATA_OP_DATA op_data;
         struct _MASSDATA_OP_DATA_RESPOND *p_data_respond;
+        u8 response_buf[1 + sizeof(struct _MASSDATA_OP_DATA_RESPOND) + 4] = {0};
 
+        if ((len - offset) < sizeof(struct _MASSDATA_OP_DATA)) {
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR,
+                                 OpCode_SN, NULL, 0, 0, NULL);
+            return;
+        }
         memcpy(&op_data, &data[offset], sizeof(struct _MASSDATA_OP_DATA));
         offset += sizeof(struct _MASSDATA_OP_DATA);
         op_data.seq = READ_BIG_U16(&op_data.seq);
         op_data.crc = READ_BIG_U16(&op_data.crc);
-        op_data.offset = READ_BIG_U16(&op_data.offset);
+        op_data.offset = READ_BIG_U32(&op_data.offset);
         op_data.len = READ_BIG_U16(&op_data.len);
 
         if (op_data.type >= MASS_DATA_TYPE_MAX) {
@@ -290,6 +409,10 @@ __op_param_end:
             goto __op_data_end;
         }
         p_md_rx = massdat_rx[op_data.type];
+        if (op_data.len > (len - offset)) {
+            result = MASS_DATA_ERR_TOTAL_LEN;
+            goto __op_data_end;
+        }
         u16 seq = op_data.seq & ~MASS_DATA_OP_DATA_SEQ_END;
         if (seq != p_md_rx->seq) {
             // 序列号错误
@@ -297,7 +420,13 @@ __op_param_end:
             result = MASS_DATA_ERR_SEQ;
             goto __op_data_end;
         }
-        if ((p_md_rx->w + op_data.len) > p_md_rx->total_len) {
+        if (op_data.offset != p_md_rx->w) {
+            log_e("err offset:%d, %d\n", op_data.offset, p_md_rx->w);
+            result = MASS_DATA_ERR_SEQ;
+            goto __op_data_end;
+        }
+        if ((p_md_rx->w > p_md_rx->total_len) ||
+            (op_data.len > (p_md_rx->total_len - p_md_rx->w))) {
             // 长度错误
             log_e("err len0:%d, %d, %d \n", p_md_rx->w, op_data.len, p_md_rx->total_len);
             result = MASS_DATA_ERR_TOTAL_LEN;
@@ -312,13 +441,19 @@ __op_param_end:
         }
         if (rx_cb[op_data.type].part_cb) {
             u8 *tmp_buf = (u8 *)MASS_ZALLOC(op_data.len + sizeof(op_data.len));
+            if (!tmp_buf) {
+                result = MASS_DATA_ERR_WRITE;
+                goto __op_data_end;
+            }
             memcpy(tmp_buf, &op_data.len, sizeof(op_data.len));
             memcpy(tmp_buf + sizeof(op_data.len), &data[offset], op_data.len);
 
             if (rx_cb[op_data.type].cb) {
                 rx_cb[op_data.type].cb(rx_cb[op_data.type].cb_priv, tmp_buf, p_md_rx->total_len);
-                if (((u8 *)(rx_cb[op_data.type].cb_priv))[0]) {
+                if (rx_cb[op_data.type].cb_priv &&
+                    ((u8 *)(rx_cb[op_data.type].cb_priv))[0]) {
                     result = MASS_DATA_ERR_WRITE;
+                    MASS_FREE(tmp_buf);
                     goto __op_data_end;
                 }
             }
@@ -364,7 +499,8 @@ __op_param_end:
 __op_data_end:
         log_e("result:%d \n", result);
 
-        if ((rx_cb[op_data.type].part_cb) && (rx_cb[op_data.type].evt_cb)) {
+        if ((op_data.type < MASS_DATA_TYPE_MAX) &&
+            rx_cb[op_data.type].part_cb && rx_cb[op_data.type].evt_cb) {
             // post 失败/成功消息
             if (op_data.seq & MASS_DATA_OP_DATA_SEQ_END) {
                 rx_cb[op_data.type].evt_cb(rx_cb[op_data.type].cb_priv, MASS_DATA_RECV_EVENT_OK, (void *)&result);
@@ -375,8 +511,7 @@ __op_data_end:
             }
         }
         res_len = 1 + sizeof(struct _MASSDATA_OP_DATA_RESPOND) + 4;
-        pkt_buf = MASS_ZALLOC(res_len);
-        ASSERT(pkt_buf);
+        pkt_buf = response_buf;
         p_data_respond = (struct _MASSDATA_OP_DATA_RESPOND *)(pkt_buf + 1);
         p_data_respond->type = op_data.type;
         p_data_respond->seq = op_data.seq;
@@ -385,14 +520,42 @@ __op_data_end:
         pkt_buf[0] = MASS_DATA_OP_DATA;
 
         JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, (u8 *)pkt_buf, res_len, 0, NULL);
-        MASS_FREE(pkt_buf);
         return ;
+    } else if (op == MASS_DATA_OP_CANCEL) {
+        if (len < 2) {
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR, OpCode_SN, NULL, 0, 0, NULL);
+            return;
+        }
+
+        u8 reason = data[offset];
+        int cancel_count = mass_data_recv_cancel_all(reason);
+        u8 respond = MASS_DATA_OP_CANCEL;
+
+        log_i("mass data cancel, reason:%d, count:%d\n", reason, cancel_count);
+        JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &respond, sizeof(respond), 0, NULL);
+        return;
     }
+
+    JL_CMD_response_send(OpCode, JL_PRO_STATUS_PARAM_ERR, OpCode_SN, NULL, 0, 0, NULL);
 }
 
 void mass_data_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len)
 {
     u8 offset = 0;
+
+    /* op=2协议响应无附加数据，兼容空响应和携带op的响应。 */
+    if (mass_data_cancel_pending && (len == 0)) {
+        log_i("mass data active cancel response, status:%d\n", status);
+        mass_data_cancel_complete(status == JL_PRO_STATUS_SUCCESS ?
+                                  MASS_DATA_CANCEL_RESULT_OK :
+                                  MASS_DATA_CANCEL_RESULT_RESP_ERR);
+        return;
+    }
+
+    if ((data == NULL) || (len < 1)) {
+        return;
+    }
+
     u8 op = data[offset++];
 
     log_i("%s, op:%d \n", __func__, op);
@@ -400,11 +563,19 @@ void mass_data_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len)
 
     if (op == MASS_DATA_OP_PARAM) {
         struct _MASSDATA_OP_PARAM_RESPOND op_param_respond;
+        if ((len - offset) < sizeof(struct _MASSDATA_OP_PARAM_RESPOND)) {
+            log_e("mass data param response too short:%d\n", len);
+            return;
+        }
         memcpy(&op_param_respond, &data[offset], sizeof(struct _MASSDATA_OP_PARAM_RESPOND));
         offset += sizeof(struct _MASSDATA_OP_PARAM_RESPOND);
 
         if (op_param_respond.way == MASS_DATA_WAY_WRITE) {
             struct _MASSDATA_OP_PARAM_RESPOND_WRITE op_w;
+            if ((len - offset) < sizeof(struct _MASSDATA_OP_PARAM_RESPOND_WRITE)) {
+                log_e("mass data write response too short:%d\n", len);
+                return;
+            }
             memcpy(&op_w, &data[offset], sizeof(struct _MASSDATA_OP_PARAM_RESPOND_WRITE));
             offset += sizeof(struct _MASSDATA_OP_PARAM_RESPOND_WRITE);
 
@@ -434,8 +605,10 @@ void mass_data_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len)
                 if (op_w.result) {
                     mass_data_asyn_send_release(op_param_respond.type, MASS_DATA_SEND_EVENT_RESPOND);
                 } else {
-                    mass_data_asyn_send_ready_data(op_param_respond.type);
-                    mass_data_asyn_send_no_wait(op_param_respond.type);
+                    if (!mass_data_asyn_send_ready_data(op_param_respond.type) ||
+                        !mass_data_asyn_send_no_wait(op_param_respond.type)) {
+                        mass_data_asyn_send_release(op_param_respond.type, MASS_DATA_SEND_EVENT_ERR);
+                    }
                 }
             }
         } else {
@@ -443,6 +616,10 @@ void mass_data_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len)
         }
     } else if (op == MASS_DATA_OP_DATA) {
         struct _MASSDATA_OP_DATA_RESPOND op_data_respond;
+        if ((len - offset) < sizeof(struct _MASSDATA_OP_DATA_RESPOND)) {
+            log_e("mass data data response too short:%d\n", len);
+            return;
+        }
         memcpy(&op_data_respond, &data[offset], sizeof(struct _MASSDATA_OP_DATA_RESPOND));
         offset += sizeof(struct _MASSDATA_OP_DATA_RESPOND);
 
@@ -473,12 +650,71 @@ void mass_data_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len)
                 if (massdat_tx[op_data_respond.type]->offset >= massdat_tx[op_data_respond.type]->dat_len) {
                     mass_data_asyn_send_release(op_data_respond.type, MASS_DATA_SEND_EVENT_OK);
                 } else {
-                    mass_data_asyn_send_ready_data(op_data_respond.type);
-                    mass_data_asyn_send_no_wait(op_data_respond.type);
+                    if (!mass_data_asyn_send_ready_data(op_data_respond.type) ||
+                        !mass_data_asyn_send_no_wait(op_data_respond.type)) {
+                        mass_data_asyn_send_release(op_data_respond.type, MASS_DATA_SEND_EVENT_ERR);
+                    }
                 }
             }
         }
+    } else if (op == MASS_DATA_OP_CANCEL) {
+        log_i("mass data active cancel response, status:%d\n", status);
+        mass_data_cancel_complete(status == JL_PRO_STATUS_SUCCESS ?
+                                  MASS_DATA_CANCEL_RESULT_OK :
+                                  MASS_DATA_CANCEL_RESULT_RESP_ERR);
     }
+}
+
+int mass_data_active_cancel_ex(u8 reason, void *cb_priv,
+                               void (*complete_cb)(void *priv, int result))
+{
+    u8 data[2] = {MASS_DATA_OP_CANCEL, reason};
+
+    if (mass_data_cancel_pending) {
+        log_i("mass data cancel already pending\n");
+        return false;
+    }
+
+    mass_data_cancel_reason = reason;
+    mass_data_cancel_pending = 1;
+    mass_data_cancel_generation++;
+    mass_data_cancel_cb_priv = cb_priv;
+    mass_data_cancel_complete_cb = complete_cb;
+
+    /* Reserve the timeout first; never send CANCEL without a completion bound. */
+    mass_data_cancel_timer = sys_timeout_add_2_task(
+                                 (void *)(int)mass_data_cancel_generation,
+                                 mass_data_cancel_timeout_in_app_core,
+                                 MASS_DATA_CANCEL_TIMEOUT_MS, "app_core");
+    if (!mass_data_cancel_timer) {
+        mass_data_cancel_pending = 0;
+        mass_data_cancel_reason = 0;
+        mass_data_cancel_cb_priv = NULL;
+        mass_data_cancel_complete_cb = NULL;
+        log_e("mass data cancel timer add failed\n");
+        return false;
+    }
+
+    int result = JL_CMD_send(JL_OPCODE_MASS_DATA, data, sizeof(data), JL_NEED_RESPOND, 0, NULL);
+    if (result) {
+        sys_timeout_del(mass_data_cancel_timer);
+        mass_data_cancel_timer = 0;
+        mass_data_cancel_generation++;
+        mass_data_cancel_pending = 0;
+        mass_data_cancel_reason = 0;
+        mass_data_cancel_cb_priv = NULL;
+        mass_data_cancel_complete_cb = NULL;
+        log_e("mass data active cancel send err:%d\n", result);
+        return false;
+    }
+
+    log_i("mass data active cancel, reason:%d\n", reason);
+    return true;
+}
+
+int mass_data_active_cancel(u8 reason)
+{
+    return mass_data_active_cancel_ex(reason, NULL, NULL);
 }
 
 static int mass_data_send_wait(u8 type, u8 *data, u16 len)
@@ -547,25 +783,31 @@ int mass_data_blocking_send(u8 type, u8 *data, u16 len)
     log_i("%s, task:%s, type:%d,len:%d \n", __func__, os_current_task(), type, len);
     DEBUG_PUT_BUF(data, len);
 
-    if (type >= MASS_DATA_TYPE_MAX) {
+    if (type >= MASS_DATA_TYPE_MAX || !data || !len) {
+        return false;
+    }
+    struct _MASSDATA_SEND *tx_hdl = MASS_ZALLOC(sizeof(struct _MASSDATA_SEND));
+    if (!tx_hdl) {
+        log_e("send[%d] allocation failed\n", type);
         return false;
     }
     local_irq_disable();
     if (massdat_tx[type]) {
         local_irq_enable();
+        MASS_FREE(tx_hdl);
         log_e("why massdat_tx[%d]:0x%x \n", type, massdat_tx[type]);
         return false;
     }
-    struct _MASSDATA_SEND *tx_hdl = MASS_ZALLOC(sizeof(struct _MASSDATA_SEND));
-    ASSERT(tx_hdl);
     massdat_tx[type] = tx_hdl;
     local_irq_enable();
 
-    int result;
+    int result = false;
     int offset = 0;
     u16 pkt_len = 1 + sizeof(struct _MASSDATA_OP_PARAM) + sizeof(struct _MASSDATA_OP_PARAM_WRITE);
     u8 *pkt_buf = MASS_ZALLOC(pkt_len);
-    ASSERT(pkt_buf);
+    if (!pkt_buf) {
+        goto __blocking_send_end;
+    }
     struct _MASSDATA_OP_PARAM *p_op_param = (struct _MASSDATA_OP_PARAM *)(pkt_buf + 1);
     struct _MASSDATA_OP_PARAM_WRITE *p_op_w;
     p_op_w = (struct _MASSDATA_OP_PARAM_WRITE *)p_op_param->dat;
@@ -585,18 +827,18 @@ int mass_data_blocking_send(u8 type, u8 *data, u16 len)
 
     result = mass_data_send_wait(type, pkt_buf, pkt_len);
     MASS_FREE(pkt_buf);
+    pkt_buf = NULL;
     if (result == false) {
-        local_irq_disable();
-        MASS_FREE(massdat_tx[type]);
-        massdat_tx[type] = NULL;
-        local_irq_enable();
-        return false;
+        goto __blocking_send_end;
     }
     u16 limit_len = massdat_tx[type]->send_limit;
 
     pkt_len = 1 + sizeof(struct _MASSDATA_OP_DATA) + limit_len;
     pkt_buf = MASS_ZALLOC(pkt_len);
-    ASSERT(pkt_buf);
+    if (!pkt_buf) {
+        result = false;
+        goto __blocking_send_end;
+    }
     struct _MASSDATA_OP_DATA *p_op_data = (struct _MASSDATA_OP_DATA *)(pkt_buf + 1);
 
     u16 seq = 0;
@@ -624,55 +866,79 @@ int mass_data_blocking_send(u8 type, u8 *data, u16 len)
         offset += send_len;
     }
 
-    MASS_FREE(pkt_buf);
-
+__blocking_send_end:
+    if (pkt_buf) {
+        MASS_FREE(pkt_buf);
+    }
     local_irq_disable();
-    MASS_FREE(massdat_tx[type]);
     massdat_tx[type] = NULL;
     local_irq_enable();
+    MASS_FREE(tx_hdl);
 
     return result;
 }
 
+static void mass_data_asyn_stop_timers(u8 type)
+{
+    mass_data_tx_generation[type]++;
+    if (massdat_tx[type]->resend_tm) {
+        sys_timeout_del(massdat_tx[type]->resend_tm);
+        massdat_tx[type]->resend_tm = 0;
+    }
+    if (massdat_tx[type]->tm) {
+        sys_timeout_del(massdat_tx[type]->tm);
+        massdat_tx[type]->tm = 0;
+    }
+}
+
+static void *mass_data_asyn_timer_token(u8 type)
+{
+    return (void *)(((u32)mass_data_tx_generation[type] << 8) | type);
+}
+
+static int mass_data_asyn_timer_valid(void *priv)
+{
+    u32 token = (u32)priv;
+    u8 type = token & 0xff;
+
+    return type < MASS_DATA_TYPE_MAX && massdat_tx[type] &&
+           massdat_tx[type]->asyn &&
+           (u16)(token >> 8) == mass_data_tx_generation[type];
+}
+
 static void mass_data_asyn_send_release(u8 type, int event)
 {
-    int evt_func = 0;
-    void *evt_priv;
-    local_irq_disable();
-    if (massdat_tx[type]) {
-        evt_func = (int)massdat_tx[type]->evt_cb;
-        evt_priv = massdat_tx[type]->evt_cb_priv;
-        if (massdat_tx[type]->resend_tm) {
-            sys_timeout_del(massdat_tx[type]->resend_tm);
-            massdat_tx[type]->resend_tm = 0;
-        }
-        if (massdat_tx[type]->tm) {
-            sys_timeout_del(massdat_tx[type]->tm);
-            massdat_tx[type]->tm = 0;
-        }
-        if (massdat_tx[type]->pkt_buf) {
-            MASS_FREE(massdat_tx[type]->pkt_buf);
-            massdat_tx[type]->pkt_buf = NULL;
-        }
-        MASS_FREE(massdat_tx[type]);
-        massdat_tx[type] = NULL;
+    struct _MASSDATA_SEND *tx_hdl;
+
+    if (type >= MASS_DATA_TYPE_MAX || !massdat_tx[type]) {
+        return;
     }
+    mass_data_asyn_stop_timers(type);
+    local_irq_disable();
+    tx_hdl = massdat_tx[type];
+    massdat_tx[type] = NULL;
     local_irq_enable();
 
-    log_i("send[%d] relese evt:%d \n", type, event);
+    void (*evt_cb)(void *, int) = tx_hdl->evt_cb;
+    void *evt_priv = tx_hdl->evt_cb_priv;
+    if (tx_hdl->pkt_buf) {
+        MASS_FREE(tx_hdl->pkt_buf);
+    }
+    MASS_FREE(tx_hdl);
 
-    if (evt_func) {
-        ((void (*)(void *, int))evt_func)(evt_priv, event);
+    log_i("send[%d] release evt:%d\n", type, event);
+    if (evt_cb) {
+        evt_cb(evt_priv, event);
     }
 }
 
 static void mass_data_asyn_send_to(void *priv)
 {
-    u8 *type_ptr = (u8 *)priv;
-    u8 type = *type_ptr;
-    if (type >= MASS_DATA_TYPE_MAX) {
+    u8 type = (u32)priv & 0xff;
+    if (!mass_data_asyn_timer_valid(priv)) {
         return ;
     }
+    massdat_tx[type]->tm = 0;
     log_e("send[%d] timeout\n", type);
 
     mass_data_asyn_send_release(type, MASS_DATA_SEND_EVENT_TO);
@@ -680,31 +946,31 @@ static void mass_data_asyn_send_to(void *priv)
 
 static void mass_data_asyn_resend_no_wait(void *priv)
 {
-    u8 *type_ptr = (u8 *)priv;
-    u8 type = *type_ptr;
-    if (type >= MASS_DATA_TYPE_MAX) {
+    u8 type = (u32)priv & 0xff;
+    if (!mass_data_asyn_timer_valid(priv)) {
         return ;
     }
     log_i("resend \n");
-    if (massdat_tx[type]->resend_tm) {
-        sys_timeout_del(massdat_tx[type]->resend_tm);
-        massdat_tx[type]->resend_tm = 0;
-    }
+    massdat_tx[type]->resend_tm = 0;
     int result = mass_data_asyn_send_no_wait(type);
     if (result == false) {
         mass_data_asyn_send_release(type, MASS_DATA_SEND_EVENT_ERR);
     }
 }
 
-static void mass_data_asyn_send_ready_param(u8 type)
+static int mass_data_asyn_send_ready_param(u8 type)
 {
+    mass_data_asyn_stop_timers(type);
     if (massdat_tx[type]->pkt_buf) {
         MASS_FREE(massdat_tx[type]->pkt_buf);
         massdat_tx[type]->pkt_buf = NULL;
     }
     massdat_tx[type]->pkt_len = 1 + sizeof(struct _MASSDATA_OP_PARAM) + sizeof(struct _MASSDATA_OP_PARAM_WRITE);
     massdat_tx[type]->pkt_buf = MASS_ZALLOC(massdat_tx[type]->pkt_len);
-    ASSERT(massdat_tx[type]->pkt_buf);
+    if (!massdat_tx[type]->pkt_buf) {
+        log_e("send[%d] param allocation failed\n", type);
+        return false;
+    }
     struct _MASSDATA_OP_PARAM *p_op_param = (struct _MASSDATA_OP_PARAM *)(massdat_tx[type]->pkt_buf + 1);
     struct _MASSDATA_OP_PARAM_WRITE *p_op_w;
     p_op_w = (struct _MASSDATA_OP_PARAM_WRITE *)p_op_param->dat;
@@ -722,11 +988,18 @@ static void mass_data_asyn_send_ready_param(u8 type)
 
     massdat_tx[type]->send_limit = MASS_DATA_DATA_LIMIT;
 
-    massdat_tx[type]->tm = sys_timeout_add((void *)&type, mass_data_asyn_send_to, MASS_DATA_SEND_TIMEOUT_MS);
+    massdat_tx[type]->tm = sys_timeout_add_2_task(mass_data_asyn_timer_token(type),
+                           mass_data_asyn_send_to, MASS_DATA_SEND_TIMEOUT_MS, "app_core");
+    if (!massdat_tx[type]->tm) {
+        log_e("send[%d] timeout timer add failed\n", type);
+        return false;
+    }
+    return true;
 }
 
-static void mass_data_asyn_send_ready_data(u8 type)
+static int mass_data_asyn_send_ready_data(u8 type)
 {
+    mass_data_asyn_stop_timers(type);
     if (massdat_tx[type]->pkt_buf) {
         MASS_FREE(massdat_tx[type]->pkt_buf);
         massdat_tx[type]->pkt_buf = NULL;
@@ -735,7 +1008,10 @@ static void mass_data_asyn_send_ready_data(u8 type)
 
     massdat_tx[type]->pkt_len = 1 + sizeof(struct _MASSDATA_OP_DATA) + limit_len;
     massdat_tx[type]->pkt_buf = MASS_ZALLOC(massdat_tx[type]->pkt_len);
-    ASSERT(massdat_tx[type]->pkt_buf);
+    if (!massdat_tx[type]->pkt_buf) {
+        log_e("send[%d] data allocation failed\n", type);
+        return false;
+    }
     struct _MASSDATA_OP_DATA *p_op_data = (struct _MASSDATA_OP_DATA *)(massdat_tx[type]->pkt_buf + 1);
 
     u16 seq = massdat_tx[type]->seq;
@@ -755,16 +1031,20 @@ static void mass_data_asyn_send_ready_data(u8 type)
     WRITE_BIG_U16(&p_op_data->len, send_len);
     massdat_tx[type]->pkt_len = 1 + sizeof(struct _MASSDATA_OP_DATA) + send_len;
 
-    if (massdat_tx[type]->tm) {
-        sys_timeout_del(massdat_tx[type]->tm);
-        massdat_tx[type]->tm = 0;
+    massdat_tx[type]->tm = sys_timeout_add_2_task(mass_data_asyn_timer_token(type),
+                           mass_data_asyn_send_to, MASS_DATA_SEND_TIMEOUT_MS, "app_core");
+    if (!massdat_tx[type]->tm) {
+        log_e("send[%d] timeout timer add failed\n", type);
+        return false;
     }
-    massdat_tx[type]->tm = sys_timeout_add((void *)&type, mass_data_asyn_send_to, MASS_DATA_SEND_TIMEOUT_MS);
+    return true;
 }
 
 static int mass_data_asyn_send_no_wait(u8 type)
 {
-    int to = 0;
+    if (type >= MASS_DATA_TYPE_MAX || !massdat_tx[type] || !massdat_tx[type]->tm) {
+        return false;
+    }
     massdat_tx[type]->tx_flag = 1;
 
     log_i("%s, type:%d, len:%d \n", __func__, type, massdat_tx[type]->pkt_len);
@@ -774,7 +1054,13 @@ static int mass_data_asyn_send_no_wait(u8 type)
     if (result) {
         if (result == JL_ERR_SEND_BUSY) {
             log_i("send busy \n");
-            massdat_tx[type]->resend_tm = sys_timeout_add((void *)&type, mass_data_asyn_resend_no_wait, 20);
+            massdat_tx[type]->resend_tm = sys_timeout_add_2_task(
+                                              mass_data_asyn_timer_token(type),
+                                              mass_data_asyn_resend_no_wait, 20, "app_core");
+            if (!massdat_tx[type]->resend_tm) {
+                log_e("send[%d] retry timer add failed\n", type);
+                return false;
+            }
             return true;
         }
         log_e("send err:%d \n", result);
@@ -788,10 +1074,16 @@ int mass_data_asyn_send_ex(u8 type, u8 *head, u16 head_len, u8 *data, u16 len, v
     log_i("%s, task:%s, type:%d,len:%d \n", __func__, os_current_task(), type, len);
     DEBUG_PUT_BUF(data, len);
 
-    if (type >= MASS_DATA_TYPE_MAX) {
+    size_t data_len = (size_t)head_len + len;
+    if (type >= MASS_DATA_TYPE_MAX || !data_len || data_len > 0xffffu ||
+        (head_len && !head) || (len && !data)) {
         return false;
     }
-    struct _MASSDATA_SEND *tx_hdl = MASS_ZALLOC(sizeof(struct _MASSDATA_SEND) + head_len + len);
+    struct _MASSDATA_SEND *tx_hdl = MASS_ZALLOC(sizeof(struct _MASSDATA_SEND) + data_len);
+    if (!tx_hdl) {
+        log_e("send[%d] allocation failed\n", type);
+        return false;
+    }
     local_irq_disable();
     if (massdat_tx[type]) {
         local_irq_enable();
@@ -799,10 +1091,9 @@ int mass_data_asyn_send_ex(u8 type, u8 *head, u16 head_len, u8 *data, u16 len, v
         log_e("why massdat_tx[%d]:0x%x \n", type, massdat_tx[type]);
         return false;
     }
-    ASSERT(tx_hdl);
     massdat_tx[type] = tx_hdl;
     massdat_tx[type]->asyn = 1;
-    massdat_tx[type]->dat_len = head_len + len;
+    massdat_tx[type]->dat_len = data_len;
     massdat_tx[type]->evt_cb = evt_cb;
     massdat_tx[type]->evt_cb_priv = evt_cb_priv;
     local_irq_enable();
@@ -812,11 +1103,14 @@ int mass_data_asyn_send_ex(u8 type, u8 *head, u16 head_len, u8 *data, u16 len, v
         memcpy(dat, head, head_len);
         dat += head_len;
     }
-    memcpy(dat, data, len);
+    if (len) {
+        memcpy(dat, data, len);
+    }
 
-    mass_data_asyn_send_ready_param(type);
-    int result = mass_data_asyn_send_no_wait(type);
-    if (result == false) {
+    if (!mass_data_asyn_send_ready_param(type) || !mass_data_asyn_send_no_wait(type)) {
+        /* Not accepted: release locally, without a completion callback. */
+        tx_hdl->evt_cb = NULL;
+        mass_data_asyn_send_release(type, MASS_DATA_SEND_EVENT_ERR);
         return false;
     }
 
@@ -974,5 +1268,3 @@ void aliyun_bt_test(void)
 #endif
 
 #endif//SMART_BOX_EN
-
-

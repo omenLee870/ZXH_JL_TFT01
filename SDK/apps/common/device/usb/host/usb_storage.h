@@ -94,7 +94,8 @@ struct mass_storage {
     u8 dev_status: 4; ///<设备状态
     u8 read_only: 1; ///<只读标志位
     u8 init_done: 1; ///<初始化完成标志位
-    u8 : 2;
+    u8 mutex_created: 1; ///<mutex是否已创建
+    u8 : 1;
     u8 suspend_cnt; ///<挂起状态计数器
 
     u32 remain_len; ///<剩余的包长度

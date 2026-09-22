@@ -101,7 +101,21 @@
 #define     PRINTER_DMA_SIZE        0
 #endif
 
-#define USB_DEVICE_DMA_BUF_MAX_SIZE (HID_DMA_SIZE + AUDIO_SPK_DMA_SIZE + AUDIO_MIC_DMA_SIZE + MSD_DMA_SIZE + CDC_DMA_SIZE  + CUSTOM_HID_DMA_SIZE + MIDI_DMA_SIZE + PRINTER_DMA_SIZE + MTP_DMA_SIZE)
+/* Xbox360 手柄：IF0 一对 32B 端点 + 两个厂商 HID 接口各一对 64B 端点。
+ * usb_epbuf_alloc() 还会给每个端点补 CRC/lbuf 头开销（见 _APPEND），这里按 8 个包算。 */
+#if TCFG_USB_SLAVE_XBOX360_ENABLE
+#define     XBOX360_DMA_SIZE        APPEND(32 * 2 + 64 * 6, 6)
+#else
+#define     XBOX360_DMA_SIZE        0
+#endif
+
+#if TCFG_USB_SLAVE_HID_KBMOUSE_ENABLE
+#define     HID_KBMOUSE_DMA_SIZE    APPEND(HID_KBMOUSE_MAXP * 2, 2)
+#else
+#define     HID_KBMOUSE_DMA_SIZE    0
+#endif
+
+#define USB_DEVICE_DMA_BUF_MAX_SIZE (HID_DMA_SIZE + AUDIO_SPK_DMA_SIZE + AUDIO_MIC_DMA_SIZE + MSD_DMA_SIZE + CDC_DMA_SIZE  + CUSTOM_HID_DMA_SIZE + MIDI_DMA_SIZE + PRINTER_DMA_SIZE + MTP_DMA_SIZE + XBOX360_DMA_SIZE + HID_KBMOUSE_DMA_SIZE)
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~ usb slave end      ~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~ usb host begin     ~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

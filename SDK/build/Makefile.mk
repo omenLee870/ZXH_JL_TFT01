@@ -204,6 +204,7 @@ c_SRC_FILES := \
 	apps/watch/health_manager/rcsp_adaptor/sport_data_info_opt/sport_info_continuous_heart_rate.c \
 	apps/watch/health_manager/rcsp_adaptor/sport_data_info_opt/sport_info_exercise_heart_rate.c \
 	apps/watch/health_manager/rcsp_adaptor/sport_data_info_opt/sport_info_fall_detection.c \
+	apps/watch/health_manager/rcsp_adaptor/sport_data_info_opt/sport_info_mense.c \
 	apps/watch/health_manager/rcsp_adaptor/sport_data_info_opt/sport_info_personal_info.c \
 	apps/watch/health_manager/rcsp_adaptor/sport_data_info_opt/sport_info_pressure_detection.c \
 	apps/watch/health_manager/rcsp_adaptor/sport_data_info_opt/sport_info_raise_wrist.c \
@@ -305,6 +306,7 @@ c_SRC_FILES := \
 	apps/watch/ui/ui_app_module/ui_global_msg/ui_global_msg.c \
 	apps/watch/ui/ui_key_remap.c \
 	apps/watch/user_cfg.c \
+	apps/watch/video/rcsp_photo_notify.c \
 	apps/watch/video/transfer/tjpgd.c \
 	apps/watch/video/video_api.c \
 	apps/watch/wifi/ctp/ctp_cmd.c \
@@ -572,6 +574,9 @@ LFLAGS := \
 	cpu/br33/liba/noisegate.a  \
 	cpu/br33/liba/lib_gain_mix.a \
 	cpu/br33/liba/lib_eq_design_coeff.a \
+	cpu/br33/liba/libanpu_api.a \
+	cpu/br33/liba/libanpu_driver.a \
+	cpu/br33/liba/libanpu_dmacopy.a \
 	cpu/br33/liba/lib_sbc_eng.a \
 	cpu/br33/liba/lib_mp3_enc.a \
 	cpu/br33/liba/qr_code.a \
@@ -678,6 +683,7 @@ LFLAGS := \
 	cpu/br33/liba/ui_draw_new.a \
 	cpu/br33/liba/ui_gif.a \
 	cpu/br33/liba/ui_lv9_fitter.a \
+	cpu/br33/liba/ui_amap_svg_demo.a \
 	cpu/br33/liba/video.a \
 	--start-group  \
 	cpu/br33/liba/opt.a \

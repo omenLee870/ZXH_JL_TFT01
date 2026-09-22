@@ -66,13 +66,20 @@
 #define CONSUMER_PAGE           0x0C
 #define CONSUMER_CONTROL        0x01
 #define GENERIC_DESKTOP_CTRLS   0x01
+#define KEYBOARD_PAGE           0x07
 
 /*Usage*/
 #define POINTER                 0x01
 #define MOUSE                   0x02
+#define KEYBOARD                0x06
 #define BUTTON                  0x09
 #define X_AXIS                  0x30
 #define Y_AXIS                  0x31
+#define WHEEL                   0x38
+
+/*Keyboard usage（Generic Desktop 的 Usage Minimum/Maximum 用）*/
+#define LEFT_CONTROL            0xE0
+#define RIGHT_GUI               0xE7
 
 //Collection
 #define PHYSICAL                0x00
@@ -80,9 +87,15 @@
 #define LOGICAL                 0x02
 #define REPORT                  0x03
 
+/* HID 描述符本身（0x21）的长度，规范固定 9 字节 */
+#define USB_HID_DESC_SIZE       9
 #define USB_HID_DT_HID   (USB_TYPE_CLASS | 0x01)
 #define USB_HID_DT_REPORT    (USB_TYPE_CLASS | 0x02)
 #define USB_HID_DT_PHYSICAL  (USB_TYPE_CLASS | 0x03)
+/* bNumDescriptors 之后跟的第一个子描述符类型，见 HID 1.11 §6.2.1 */
+#define USB_HID_SUBDESC_REPORT  0x01
+/* bcdHID: HID Class Specification release 1.11 */
+#define USB_HID_BCD_1_11        0x0111
 /*
  *           * HID requests
  *            */

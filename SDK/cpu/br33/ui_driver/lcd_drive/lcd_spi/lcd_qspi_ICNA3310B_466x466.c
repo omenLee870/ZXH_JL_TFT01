@@ -300,7 +300,7 @@ static struct dbi_param lcd_spi_ICNA3310B_param = {
     .lcd_type = LCD_TYPE_SPI,
 
     .buffer_num = BUF_NUM,
-    .buffer_size = LCD_BLOCK_W * LCD_BLOCK_H * 2,
+    .buffer_size = LCD_BLOCK_W * LCD_BLOCK_H * (LCD_FORMAT == OUTPUT_FORMAT_RGB888 ? 3 : 2),
 
     .fps = 63,
     .high_precision_freq_en = true,

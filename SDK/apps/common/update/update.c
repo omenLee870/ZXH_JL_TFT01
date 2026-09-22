@@ -17,12 +17,12 @@
 #include "btcontroller_modules.h"
 #include "system/includes.h"
 #include "uart_update.h"
-#include "dual_bank_updata_api.h"
 #include "btstack/avctp_user.h"
 #include "poweroff.h"
 #include "app_main.h"
 #include "vm.h"
 #include "bt_common.h"
+#include "dual_bank_updata_api_v2.h"
 #include "smart_voice/smart_voice.h"
 
 #if TCFG_UPDATE_ENABLE
@@ -64,6 +64,8 @@ extern void testbox_update_init(void);
 extern void ll_hci_destory(void);
 extern void hci_controller_destory(void);
 extern const int support_norflash_update_en;
+extern const int support_dual_bank_update_no_erase;
+extern const int support_dual_bank_less_en;
 extern void ram_protect_close(void);
 extern void hwi_all_close(void);
 extern void wifi_det_close();
@@ -83,7 +85,7 @@ extern void app_audio_set_wt_volume(s16 volume);
 extern u8 get_max_sys_vol(void);
 extern u8 get_bt_trim_info_for_update(u8 *res);
 extern u32 get_btosc_info_for_update(void *info);
-
+extern const int support_vm_data_keep;
 
 extern const int support_update_backup_btif_addr;
 extern const int support_norflash_update_en;
@@ -94,6 +96,10 @@ extern void user_file_flash_file_download_init(void);
 extern void ex_flash_file_download_init(void);
 extern int reusable_loader_region(loader_area_t *loader_area);
 extern int res_sdfile_update_loader_region(loader_area_t *loader_area);
+void norflash_set_write_protect_remove(void);
+void norflash_set_write_protect_en(void);
+u32 dual_bank_update_bp_info_get(void);
+int dual_bank_curr_write_offset_callback(u32 curr_write_offset, u32 remain_len, void *priv);
 
 const u8 loader_file_path[] = "mnt/norflash/C/"LOADER_NAME"";
 //升级文件路径必须是短文件名（8+3）结构，仅支持２层目录
@@ -123,19 +129,48 @@ bool is_testbox_ble_update_type(void)
     return (BLE_TEST_UPDATA == g_cur_update_type);
 }
 
+#ifndef LOADER_REC_LEN
+#define LOADER_REC_LEN	0x100
+#endif
+extern const int __attribute__((weak)) support_jlota_ext_param_len;
+static u32 loader_record_param_flash_total(void)
+{
+    u32 loader_rec_len = LOADER_REC_LEN;
+    if (&support_jlota_ext_param_len != NULL) {
+        loader_rec_len += support_jlota_ext_param_len;
+    }
+    return loader_rec_len;
+}
+
 int syscfg_write_update_check(u16 item_id, void *buf, u16 len)
 {
     return g_write_vm_flag;
 }
 
+
+void update_early_erase(void)
+{
+    extern void flash_w_protected_check_en(u8 en);
+    if (support_dual_bank_update_no_erase) {
+        if (0 == dual_bank_update_bp_info_get()) {
+            norflash_set_write_protect_remove();
+            flash_w_protected_check_en(0);
+            dual_bank_check_flash_update_area(0);
+            flash_w_protected_check_en(1);
+            norflash_set_write_protect_en();
+        }
+    }
+}
+
+
 bool vm_need_recover(void)
 {
-    if (support_update_backup_btif_addr) {
-        // 在这里面进行btif的还原，不然在vm初始哈后还原，对于的flash内容会被擦掉
-        after_update_btif_resume(g_updata_flag & 0xffff);
+    if (support_vm_data_keep) {
+        return true;
     }
-    return (((g_updata_flag & 0xffff) == UPDATA_SUCC) ? true : false
-            || ((g_updata_flag & 0xffff) == UPDATA_DEV_ERR) ? true : false);
+    return false;
+    /* printf(">>>[test]:g_updata_flag = 0x%x\n", g_updata_flag); */
+    /* return ((g_updata_flag & 0xffff) == UPDATA_SUCC) ? true : false; */
 }
 
 #if TCFG_FLASH_ERASE_WAIT_BLE
@@ -173,7 +208,11 @@ void update_result_set(u16 result)
 {
     if (CONFIG_UPDATE_ENABLE) {
         UPDATA_PARM *p = UPDATA_FLAG_ADDR;
-
+        if (p->parm_type == UPDIFF_FLASH_UPDATA || p->parm_type == COMBAK_FLASH_UPDATA \
+            || p->parm_type == SMCOM_FLASH_UPDATA) {
+            log_info("update updiff/combak\n");
+            return;
+        }
         memset(p, 0x00, sizeof(UPDATA_PARM));
         p->parm_result = result;
         p->parm_crc = CRC16(((u8 *)p) + 2, sizeof(UPDATA_PARM) - 2);
@@ -360,6 +399,13 @@ int update_result_deal()
         }
     }
 
+#ifndef ROM_SECURE_BOOT
+    if ((support_dual_bank_less_en) && \
+        (up_type == UPDIFF_FLASH_UPDATA || up_type == COMBAK_FLASH_UPDATA)) {
+        dual_bank_update_break_last_update_param_v2();
+    }
+#endif
+
     return 1;
 }
 
@@ -421,7 +467,7 @@ void update_param_ext_fill(UPDATA_PARM *p, u8 ext_type, u8 *ext_data, u8 ext_len
     ext_arg.len  = ext_len;
     ext_arg.data = ext_data;
 
-    ASSERT(((u32)p + sizeof(UPDATA_PARM) + p->ext_arg_len + ext_len + 2 - (u32)p) <= UPDATA_PARM_SIZE, "update param overflow!\n");
+    ASSERT(((u32)p + sizeof(UPDATA_PARM) + p->ext_arg_len + ext_len + 2 - (u32)p) <= loader_record_param_flash_total(), "update param overflow!\n");
     memcpy((u8 *)p + sizeof(UPDATA_PARM) + p->ext_arg_len, &ext_arg, 2);          //2byte:type + len
     memcpy((u8 *)p + sizeof(UPDATA_PARM) + p->ext_arg_len + 2, ext_arg.data, ext_arg.len);
     log_info("ext_fill :");
@@ -537,6 +583,9 @@ static void update_param_content_fill(int type, UPDATA_PARM *p, void (*priv_para
 static void update_param_ram_set(u8 *buf, u16 len)
 {
     u8 *update_ram = UPDATA_FLAG_ADDR;
+    if (len > (u32)(&UPDATA_SIZE) - (UPDATA_FLAG_ADDR - BOOT_STATUS_ADDR)) {
+        len = (u32)(&UPDATA_SIZE) - (UPDATA_FLAG_ADDR - BOOT_STATUS_ADDR);
+    }
     memcpy(update_ram, (u8 *)buf, len);
 }
 
@@ -548,7 +597,7 @@ void update_process_before_cpu_reset(void)
 
 void update_mode_api_v2(UPDATA_TYPE type, void (*priv_param_fill_hdl)(UPDATA_PARM *p), void (*priv_update_jump_handle)(int type))
 {
-    u16 update_param_len = UPDATA_PARM_SIZE;//sizeof(UPDATA_PARM) + UPDATE_PRIV_PARAM_LEN;
+    u16 update_param_len = loader_record_param_flash_total();//UPDATA_PARM_SIZE;//sizeof(UPDATA_PARM) + UPDATE_PRIV_PARAM_LEN;
 
     UPDATA_PARM *p = malloc(update_param_len);
 
@@ -556,14 +605,14 @@ void update_mode_api_v2(UPDATA_TYPE type, void (*priv_param_fill_hdl)(UPDATA_PAR
         update_param_content_fill(type, p, priv_param_fill_hdl);
 
         if (succ_report.update_param_write_hdl) {
-            succ_report.update_param_write_hdl(succ_report.priv_param, (u8 *)p, update_param_len);
+            succ_report.update_param_write_hdl(succ_report.priv_param, (u8 *)p, sizeof(UPDATA_PARM) + p->ext_arg_len);
         }
 
 #ifdef UPDATE_LED_REMIND
         led_update_start();
 #endif
 
-        update_param_ram_set((u8 *)p, update_param_len);
+        update_param_ram_set((u8 *)p, sizeof(UPDATA_PARM));
 
 #if TCFG_MIC_EFFECT_ENABLE
         if (mic_effect_player_runing()) {
@@ -645,10 +694,65 @@ REGISTER_LP_TARGET(ota_lp_target) = {
 extern void tws_sync_update_api_register(const update_op_tws_api_t *op);
 extern update_op_tws_api_t *get_tws_update_api(void);
 
+extern const int support_dual_bank_update_breakpoint;
 extern const int support_dual_bank_update_en;
 extern int tws_ota_init(void);
 extern void tws_api_auto_role_switch_disable();
 extern void tws_api_auto_role_switch_enable();
+extern void tws_dual_conn_state_handler();
+extern void bt_sniff_enable();
+
+#define DUAL_BANK_BREAKPOIONT_STEP		(64 * 1024)
+// 断点设置
+// 当前函数时双备份升级时会触发，仅双备份升级且开启了断点续传功能有效
+int dual_bank_curr_write_offset_callback(u32 curr_write_offset, u32 remain_len, void *priv)
+{
+    static u32 write_offset_recored = 0;
+    u32 offset_step = curr_write_offset / DUAL_BANK_BREAKPOIONT_STEP * DUAL_BANK_BREAKPOIONT_STEP;
+    if (remain_len) {
+        if (write_offset_recored != offset_step) {
+            write_offset_recored = offset_step;
+            // 64k记录一次，放入vm中
+            syscfg_write(DUAL_BANK_BP_STEP, &curr_write_offset, sizeof(curr_write_offset));
+        }
+    } else {
+        write_offset_recored = 0;
+        // 清除vm中的断点信息
+        syscfg_write(DUAL_BANK_BP_STEP, &write_offset_recored, sizeof(write_offset_recored));
+    }
+    return 0;
+}
+
+// 断点获取
+// 当前函数用于升级前或升级失败后全擦的情况，如果是使用断点续传，中途失败不擦，其他情况擦除
+// 如果有开断点续传功能，该函数返回0，则表示没有升级或升级完成，忽略校验是否成功
+u32 dual_bank_update_bp_info_get(void)
+{
+    if (support_dual_bank_update_breakpoint) {
+        u32 write_offset = 0;
+        // 从vm中获取断点信息
+        if (sizeof(write_offset) != syscfg_read(DUAL_BANK_BP_STEP, &write_offset, sizeof(write_offset))) {
+            return 0;
+        }
+        return write_offset;
+    }
+    return 0;
+}
+
+void norflash_set_write_protect_en(void)
+{
+    struct vm_info vm = {0};
+    void sdfile_get_vm_info(struct vm_info * arg);
+    sdfile_get_vm_info(&vm);
+    /* norflash_set_write_protect(1, vm.vm_saddr); */
+    tzflash_set_write_protect(1, 0, vm.vm_saddr);//保护0~vm_addr
+}
+
+void norflash_set_write_protect_remove(void)
+{
+    /* norflash_set_write_protect(0, 0); */
+    tzflash_set_write_protect(0, 0, 0xffffffff);//全解保护
+}
 
 static void update_init_common_handle(int type)
 {

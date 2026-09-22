@@ -20,16 +20,31 @@
 /* 智能眼镜设备能力(0xD9)的LTV定义 */
 #define DEV_CFG_PRODUCT_AI_GLASSES                    0x04
 #define DEV_CFG_AI_GLASSES_VERSION                    0x00
+#define DEV_CFG_TYPE_VIDEO                            0x05
+#define DEV_CFG_VIDEO_SUPPORT                         BIT(0)
+#define DEV_CFG_VIDEO_PHOTO                           BIT(1)     // Byte0 Bit1: 拍照(0x38 op:0x01)
+#define DEV_CFG_VIDEO_RECORD                          BIT(2)     // Byte0 Bit2: 录像(0x38 op:0x13)
+#define DEV_CFG_VIDEO_STREAM                          BIT(3)     // Byte0 Bit3: 流媒体(0x37)
+#define DEV_CFG_TYPE_TRANSLATOR                       0x03
+#define DEV_CFG_TRANSLATOR_SUPPORT                    BIT(0)
 #define DEV_CFG_TYPE_AUDIO                            0x06
 #define DEV_CFG_AUDIO_MORE_CONFIG                     BIT(7)
 #define DEV_CFG_AUDIO_SUPPORT                         BIT(0)
 #define DEV_CFG_AUDIO_EQ                              BIT(1)     // Byte0 Bit1: 音效调节(EQ)
+#define DEV_CFG_AUDIO_REALTIME_RECORD                 BIT(2)     // Byte0 Bit2: 实时录音(0x04/0x05)
 #define DEV_CFG_AUDIO_FILE_RECORD                     BIT(5)     // Byte1 Bit5: 录音文件(mix recorder, 0x38)
 #define DEV_CFG_AUDIO_MULTI_SCENE_TUNING              BIT(4)     // Byte1 Bit4: 多场景调音(公有模式3通道音量)
 #define DEV_CFG_TYPE_FILE_MANAGER                     0x07
 #define DEV_CFG_FILE_SUPPORT                          BIT(0)
 #define DEV_CFG_FILE_BROWSE                           BIT(1)
 #define DEV_CFG_FILE_LARGE_TRANSFER                   BIT(3)
+#define DEV_CFG_TYPE_MASS_DATA                        0x08
+#define DEV_CFG_MASS_DATA_SUPPORT                     BIT(0)
+#define DEV_CFG_TYPE_AI                               0x09
+#define DEV_CFG_AI_FUNC_SUPPORT                       BIT(0)     // Byte0 Bit0: 支持 AI 功能
+#define DEV_CFG_AI_FUNC_CLOUD                         BIT(1)     // Byte0 Bit1: AI 云服务
+#define DEV_CFG_AI_FUNC_DIAL                          BIT(2)     // Byte0 Bit2: AI 表盘
+#define DEV_CFG_AI_FUNC_DIALOG                        BIT(3)     // Byte0 Bit3: AI 对话
 
 // u16
 #define DEV_CFG_OTA					BIT(0) //OTA
@@ -100,11 +115,19 @@
 u32 rcsp_watch_get_device_config(void *priv, u8 *buf, u16 buf_size)
 {
     u16 wlen = 0;
+#if RCSP_TRANSLATOR_ENABLE
+    u8 translator_config = DEV_CFG_TRANSLATOR_SUPPORT;
+#endif
 #if ((defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE)|| RCSP_MIX_RECORD_ENABLE
     u8 audio_config[2] = {0};
 #endif
 #if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
     u8 file_config = 0;
+    u8 video_config = 0;
+    u8 ai_config = 0;
+#if RCSP_AI_DIALOGUE_ENABLE
+    u8 mass_data_config = 0;
+#endif
 #else
     u16 rlen;
     u8  u8val;
@@ -224,6 +247,12 @@ u32 rcsp_watch_get_device_config(void *priv, u8 *buf, u16 buf_size)
     wlen += rlen;
 #endif
 
+#if RCSP_TRANSLATOR_ENABLE
+    /* 仅声明当前翻译能力；译文走报文音频，不声明 A2DP、通话立体声或音视频翻译。 */
+    wlen += add_one_attr(buf, buf_size, wlen, DEV_CFG_TYPE_TRANSLATOR,
+                         &translator_config, sizeof(translator_config));
+#endif
+
 #if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
     /* 智能眼镜 0x06 音频能力恒上报(与 mix recorder 解耦)。
      * Byte0 Bit1(0x02) = 音效调节(EQ): App 依据该位开放 7 种音效模式设置
@@ -236,6 +265,14 @@ u32 rcsp_watch_get_device_config(void *priv, u8 *buf, u16 buf_size)
 #if RCSP_MIX_RECORD_ENABLE
     audio_config[1] |= DEV_CFG_AUDIO_FILE_RECORD;
 #endif
+#if RCSP_AI_DIALOGUE_ENABLE
+    /* Byte0 Bit2 = 实时录音(0x04/0x05): 场景 A 语音对话靠它上传麦克风音频。
+     * 场景 B(识图)不使用录音, 由 ai_dialogue_control 侧拒绝 0xC004,
+     * 与这一能力位无关 —— APP 是按状态序列判流程的。
+     * 0x30 大数据通道用于识别文本/TTS 下发。 */
+    audio_config[0] |= DEV_CFG_AUDIO_REALTIME_RECORD;
+    mass_data_config = DEV_CFG_MASS_DATA_SUPPORT;
+#endif
     if (audio_config[0] & DEV_CFG_AUDIO_SUPPORT) {
         wlen += add_one_attr(buf, buf_size, wlen, DEV_CFG_TYPE_AUDIO,
                              audio_config, sizeof(audio_config));
@@ -244,7 +281,6 @@ u32 rcsp_watch_get_device_config(void *priv, u8 *buf, u16 buf_size)
     /* 0x38录音文件流程只依赖mix recorder。 */
     audio_config[0] |= DEV_CFG_AUDIO_SUPPORT | DEV_CFG_AUDIO_MORE_CONFIG;
     audio_config[1] |= DEV_CFG_AUDIO_FILE_RECORD;
-
     if (audio_config[0] & DEV_CFG_AUDIO_SUPPORT) {
         wlen += add_one_attr(buf, buf_size, wlen, DEV_CFG_TYPE_AUDIO,
                              audio_config, sizeof(audio_config));
@@ -258,6 +294,29 @@ u32 rcsp_watch_get_device_config(void *priv, u8 *buf, u16 buf_size)
                   DEV_CFG_FILE_LARGE_TRANSFER;
     wlen += add_one_attr(buf, buf_size, wlen, DEV_CFG_TYPE_FILE_MANAGER,
                          &file_config, sizeof(file_config));
+#endif
+
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+    /* 0x05 视频能力：拍照/录像均通过 0x38 命令实现。
+     * 流媒体(Bit3)当前未启用 0x37 命令，故不置位。 */
+#if (TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE))
+    video_config = DEV_CFG_VIDEO_SUPPORT | DEV_CFG_VIDEO_PHOTO | DEV_CFG_VIDEO_RECORD;
+#endif
+    if (video_config & DEV_CFG_VIDEO_SUPPORT) {
+        wlen += add_one_attr(buf, buf_size, wlen, DEV_CFG_TYPE_VIDEO,
+                             &video_config, sizeof(video_config));
+    }
+
+    /* 0x09 AI 功能：Byte0 Bit0=支持 AI 功能，Bit3=支持 AI 对话。
+     * 识图流程(场景 B)依赖 APP 依据 Bit3 下发 0x32 ENTER。 */
+    ai_config = DEV_CFG_AI_FUNC_SUPPORT | DEV_CFG_AI_FUNC_DIALOG;
+    wlen += add_one_attr(buf, buf_size, wlen, DEV_CFG_TYPE_AI,
+                         &ai_config, sizeof(ai_config));
+
+#if RCSP_AI_DIALOGUE_ENABLE
+    wlen += add_one_attr(buf, buf_size, wlen, DEV_CFG_TYPE_MASS_DATA,
+                         &mass_data_config, sizeof(mass_data_config));
+#endif
 #endif
 
     return wlen;

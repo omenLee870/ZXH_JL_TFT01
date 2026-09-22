@@ -1,0 +1,894 @@
+
+rom.elf:	file format ELF32-pi32v2
+
+Disassembly of section .rom_code:
+_start:
+ 7eb8000:    c0 ea 62 32       	goto 0x64c4 <_startup : 7ebe4c8 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/startup.S:32:0
+
+
+exception_irq_handler:
+ 7eb8004:    58 e9 2f 38       	[--sp] = {ssp, usp, icfg, psr, rets, retx, rete, reti}			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/exception.S:6:0
+ 7eb8008:    d8 e8 ff ff       	[--sp] = {r15-r0}			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/exception.S:7:0
+ 7eb800c:    64 e0 00 0e       	r0 = sp			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/exception.S:8:0
+ 7eb8010:    80 ea cb 23       	call 0x4796 <exception_analyze : 7ebc7aa >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/exception.S:9:0
+ 7eb8014:    f7 9f             	goto -0x2 <exception_irq_handler+0x10 : 7eb8014 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/exception.S:11:0
+
+
+libc_code_begin:
+ 7eb8016:    00 00             	nop
+
+
+memchr:
+ 7eb8018:    74 04             	[--sp] = {rets, r4}
+ 7eb801a:    03 16             	r3 = r0
+ 7eb801c:    11 17             	r1 = r1.b0 (u)
+ 7eb801e:    30 16             	r0 = r3
+ 7eb8020:    02 45             	if (r2 == 0) goto 0xa <memchr+0x14 : 7eb802c >
+ 7eb8022:    34 07             	r4 = b[r3++=0x1] (u)
+ 7eb8024:    fa 3f             	r2 += -0x1
+ 7eb8026:    81 e8 fa 41       	if (r4 != r1) goto -0xc <memchr+0x6 : 7eb801e >
+ 7eb802a:    54 04             	{pc, r4} = [sp++]
+ 7eb802c:    40 20             	r0 = 0x0
+ 7eb802e:    54 04             	{pc, r4} = [sp++]
+
+
+memcmp:
+ 7eb8030:    74 04             	[--sp] = {rets, r4}
+ 7eb8032:    82 f9 05 08       	if (r2 < 0x4) goto 0xa <memcmp+0x10 : 7eb8040 >
+ 7eb8036:    90 e1 10 30       	r3 = r1 | r0
+ 7eb803a:    60 ff 03 30 0b 00 	if ((r3 & 0x3) == 0) goto 0x16 <memcmp+0x26 : 7eb8056 >
+ 7eb8040:    02 51             	if (r2 == 0) goto 0x22 <memcmp+0x34 : 7eb8064 >
+ 7eb8042:    13 07             	r3 = b[r1++=0x1] (u)
+ 7eb8044:    04 07             	r4 = b[r0++=0x1] (u)
+ 7eb8046:    fa 3f             	r2 += -0x1
+ 7eb8048:    03 e8 fa 41       	if (r4 == r3) goto -0xc <memcmp+0x10 : 7eb8040 >
+ 7eb804c:    c8 1e             	r0 = r4 - r3
+ 7eb804e:    54 04             	{pc, r4} = [sp++]
+ 7eb8050:    fa 3c             	r2 += -0x4
+ 7eb8052:    c1 24             	r1 += 0x4
+ 7eb8054:    c0 24             	r0 += 0x4
+ 7eb8056:    82 f9 f3 09       	if (r2 < 0x4) goto -0x1a <memcmp+0x10 : 7eb8040 >
+ 7eb805a:    13 60             	r3 = [r1+0x0] 
+ 7eb805c:    04 60             	r4 = [r0+0x0] 
+ 7eb805e:    03 e8 f7 41       	if (r4 == r3) goto -0x12 <memcmp+0x20 : 7eb8050 >
+ 7eb8062:    f7 8e             	goto -0x24 <memcmp+0x10 : 7eb8040 >
+ 7eb8064:    40 20             	r0 = 0x0
+ 7eb8066:    54 04             	{pc, r4} = [sp++]
+
+
+memmove:
+ 7eb8068:    76 04             	[--sp] = {rets, r6-r4}
+ 7eb806a:    00 ec 03 10       	if (r1 > r0) goto 0x6 <memmove+0xC : 7eb8074 >
+ 7eb806e:    93 1c             	r3 = r1 + r2
+ 7eb8070:    00 ec 29 30       	if (r3 > r0) goto 0x52 <memmove+0x5E : 7eb80c6 >
+ 7eb8074:    03 16             	r3 = r0
+ 7eb8076:    82 f9 14 10       	if (r2 < 0x8) goto 0x28 <memmove+0x3A : 7eb80a2 >
+ 7eb807a:    65 e1 03 10       	r5 = r1 & 0x3
+ 7eb807e:    64 e1 03 30       	r4 = r3 & 0x3
+ 7eb8082:    04 46             	if (r4 == 0) goto 0xc <memmove+0x28 : 7eb8090 >
+ 7eb8084:    a6 e0 04 40       	r6 = 0x4 - r4
+ 7eb8088:    a2 1f             	r2 = r2 - r6
+ 7eb808a:    16 03             	rep 0x4 r6 {
+ 7eb808c:    16 07             		r6 = b[r1++=0x1] (u)
+ 7eb808e:    b6 07             		b[r3++=0x1] = r6
+                               	}
+ 7eb8090:    5c 19             	r4 ^= r5
+ 7eb8092:    a5 a2             	r5 = r2 >> 0x2
+ 7eb8094:    84 4a             	if (r4 != 0) goto 0x14 <memmove+0x42 : 7eb80aa >
+ 7eb8096:    15 03             	rep 0x4 r5 {
+ 7eb8098:    16 05             		r6 = [r1++=0x4] 
+ 7eb809a:    b6 05             		[r3++=0x4] = r6
+                               	}
+ 7eb809c:    f5 5c             	if (r5 != 0) goto -0x8 <memmove+0x2E : 7eb8096 >
+ 7eb809e:    62 e1 03 20       	r2 = r2 & 0x3
+ 7eb80a2:    12 03             	rep 0x4 r2 {
+ 7eb80a4:    12 07             		r2 = b[r1++=0x1] (u)
+ 7eb80a6:    b2 07             		b[r3++=0x1] = r2
+                               	}
+ 7eb80a8:    56 04             	{pc, r6-r4} = [sp++]
+ 7eb80aa:    a5 03             	rep 0x16 r5 {
+ 7eb80ac:    16 07             		r6 = b[r1++=0x1] (u)
+ 7eb80ae:    14 07             		r4 = b[r1++=0x1] (u)
+ 7eb80b0:    a6 f1 20 44       		r6 <= insert(r4, p:0x8, l:0x8)  #
+ 7eb80b4:    14 07             			 r4 = b[r1++=0x1] (u)
+ 7eb80b6:    a6 f1 20 48       		r6 <= insert(r4, p:0x10, l:0x8)  #
+ 7eb80ba:    14 07             			 r4 = b[r1++=0x1] (u)
+ 7eb80bc:    a6 e1 20 4c       		r6 <= insert(r4, p:0x18, l:0x8)
+ 7eb80c0:    b6 05             		[r3++=0x4] = r6
+                               	}
+ 7eb80c2:    f5 53             	if (r5 != 0) goto -0x1a <memmove+0x42 : 7eb80aa >
+ 7eb80c4:    f7 8c             	goto -0x28 <memmove+0x36 : 7eb809e >
+ 7eb80c6:    83 1c             	r3 = r0 + r2
+ 7eb80c8:    91 1c             	r1 = r1 + r2
+ 7eb80ca:    82 f9 17 10       	if (r2 < 0x8) goto 0x2e <memmove+0x94 : 7eb80fc >
+ 7eb80ce:    65 e1 03 10       	r5 = r1 & 0x3
+ 7eb80d2:    64 e1 03 30       	r4 = r3 & 0x3
+ 7eb80d6:    04 47             	if (r4 == 0) goto 0xe <memmove+0x7E : 7eb80e6 >
+ 7eb80d8:    22 1f             	r2 = r2 - r4
+ 7eb80da:    46 16             	r6 = r4
+ 7eb80dc:    36 03             	rep 0x8 r6 {
+ 7eb80de:    59 ee 1f 6f       		r6 = b[++r1=-0x1] (u)
+ 7eb80e2:    5b ee 3f 6f       		b[++r3=-0x1] = r6
+                               	}
+ 7eb80e6:    5c 19             	r4 ^= r5
+ 7eb80e8:    a5 a2             	r5 = r2 >> 0x2
+ 7eb80ea:    84 4e             	if (r4 != 0) goto 0x1c <memmove+0xA0 : 7eb8108 >
+ 7eb80ec:    35 03             	rep 0x8 r5 {
+ 7eb80ee:    d7 ec 1e 6f       		r6 = [++r1=-0x4]
+ 7eb80f2:    d7 ec 3f 6f       		[++r3=-0x4] = r6
+                               	}
+ 7eb80f6:    f5 5a             	if (r5 != 0) goto -0xc <memmove+0x84 : 7eb80ec >
+ 7eb80f8:    62 e1 03 20       	r2 = r2 & 0x3
+ 7eb80fc:    32 03             	rep 0x8 r2 {
+ 7eb80fe:    59 ee 1f 6f       		r6 = b[++r1=-0x1] (u)
+ 7eb8102:    5b ee 3f 6f       		b[++r3=-0x1] = r6
+                               	}
+ 7eb8106:    56 04             	{pc, r6-r4} = [sp++]
+ 7eb8108:    f9 3f             	r1 += -0x1
+ 7eb810a:    b5 03             	rep 0x18 r5 {
+ 7eb810c:    1e 07             		r6 = b[r1++=-0x1] (u)
+ 7eb810e:    66 b8             		r6 = r6 << 0x18
+ 7eb8110:    1c 07             		r4 = b[r1++=-0x1] (u)
+ 7eb8112:    a6 f1 20 48       		r6 <= insert(r4, p:0x10, l:0x8)  #
+ 7eb8116:    1c 07             			 r4 = b[r1++=-0x1] (u)
+ 7eb8118:    a6 f1 20 44       		r6 <= insert(r4, p:0x8, l:0x8)  #
+ 7eb811c:    1c 07             			 r4 = b[r1++=-0x1] (u)
+ 7eb811e:    46 19             		r6 |= r4
+ 7eb8120:    d7 ec 3f 6f       		[++r3=-0x4] = r6
+                               	}
+ 7eb8124:    f5 52             	if (r5 != 0) goto -0x1c <memmove+0xA2 : 7eb810a >
+ 7eb8126:    19 81             	r1 = r1 + 0x1
+ 7eb8128:    f7 87             	goto -0x32 <memmove+0x90 : 7eb80f8 >
+ 7eb812a:    00 00             	nop
+
+
+memset:
+ 7eb812c:    74 04             	[--sp] = {rets, r4}
+ 7eb812e:    03 16             	r3 = r0
+ 7eb8130:    02 52             	if (r2 == 0) goto 0x24 <memset+0x2A : 7eb8156 >
+ 7eb8132:    33 ea 03 40       	if ((r3 & 0x3) != 0) {
+ 7eb8136:    f2 f0 01 20       		r2 = r2 - 0x1  #
+ 7eb813a:    b1 07             		  b[r3++=0x1] = r1
+ 7eb813c:    f7 99             		goto -0xe
+                               	} <memset+0x4 : 7eb8130 >
+ 7eb813e:    a4 a2             	r4 = r2 >> 0x2
+ 7eb8140:    a1 e1 20 14       	r1 <= insert(r1, p:0x8, l:0x8)
+ 7eb8144:    a1 e1 40 18       	r1 <= insert(r1, p:0x10, l:0x10)
+ 7eb8148:    04 03             	rep 0x2 r4 {
+ 7eb814a:    b1 05             		[r3++=0x4] = r1
+                               	}
+ 7eb814c:    f4 5d             	if (r4 != 0) goto -0x6 <memset+0x1C : 7eb8148 >
+ 7eb814e:    62 e1 03 20       	r2 = r2 & 0x3
+ 7eb8152:    02 03             	rep 0x2 r2 {
+ 7eb8154:    b1 07             		b[r3++=0x1] = r1
+                               	}
+ 7eb8156:    54 04             	{pc, r4} = [sp++]
+
+
+strcat:
+ 7eb8158:    75 04             	[--sp] = {rets, r5, r4}
+ 7eb815a:    02 16             	r2 = r0
+ 7eb815c:    23 07             	r3 = b[r2++=0x1] (u)
+ 7eb815e:    f3 5e             	if (r3 != 0) goto -0x4 <strcat+0x4 : 7eb815c >
+ 7eb8160:    43 20             	r3 = 0x0
+ 7eb8162:    d8 ee 10 43       	r4 = b[r1+r3] (u)
+ 7eb8166:    ad 1c             	r5 = r2 + r3
+ 7eb8168:    dc 5f             	b[r5+-0x1] = r4
+ 7eb816a:    c3 21             	r3 += 0x1
+ 7eb816c:    f4 5a             	if (r4 != 0) goto -0xc <strcat+0xA : 7eb8162 >
+ 7eb816e:    55 04             	{pc, r5, r4} = [sp++]
+
+
+strchr:
+ 7eb8170:    11 17             	r1 = r1.b0 (u)
+ 7eb8172:    02 07             	r2 = b[r0++=0x1] (u)
+ 7eb8174:    01 e8 01 20       	if (r2 == r1) goto 0x2 <strchr+0xA : 7eb817a >
+ 7eb8178:    f2 5c             	if (r2 != 0) goto -0x8 <strchr+0x2 : 7eb8172 >
+ 7eb817a:    f8 3f             	r0 += -0x1
+ 7eb817c:    92 e8 00 01       	if (r2 != r1) {
+ 7eb8180:    40 20             		r0 = 0x0
+                               	}
+ 7eb8182:    80 00             	rts
+
+
+strcmp:
+ 7eb8184:    77 04             	[--sp] = {rets, r7-r4}
+ 7eb8186:    64 e1 03 00       	r4 = r0 & 0x3
+ 7eb818a:    04 4b             	if (r4 == 0) goto 0x16 <strcmp+0x1E : 7eb81a2 >
+ 7eb818c:    a4 e0 04 40       	r4 = 0x4 - r4
+ 7eb8190:    0a 40             	r2 = b[r0+0x0] (u)
+ 7eb8192:    22 41             	if (r2 == 0) goto 0x82 <strcmp+0x92 : 7eb8216 >
+ 7eb8194:    1b 40             	r3 = b[r1+0x0] (u)
+ 7eb8196:    83 e8 3f 20       	if (r2 != r3) goto 0x7e <strcmp+0x94 : 7eb8218 >
+ 7eb819a:    08 81             	r0 = r0 + 0x1
+ 7eb819c:    19 81             	r1 = r1 + 0x1
+ 7eb819e:    04 ea f7 ff       	if (--r4 != 0) goto -0x12 <strcmp+0xC : 7eb8190 >
+ 7eb81a2:    90 e1 10 20       	r2 = r1 | r0
+ 7eb81a6:    c6 ff ff fe fe fe 	r6 = 0xfefefeff <_SFC_MEMORY_CACHE_SIZE+0xDEFEFEFF : fefefeff >
+ 7eb81ac:    61 ff 03 20 13 00 	if ((r2 & 0x3) != 0) goto 0x26 <strcmp+0x54 : 7eb81d8 >
+ 7eb81b2:    02 60             	r2 = [r0+0x0] 
+ 7eb81b4:    13 60             	r3 = [r1+0x0] 
+ 7eb81b6:    83 e8 26 20       	if (r2 != r3) goto 0x4c <strcmp+0x82 : 7eb8206 >
+ 7eb81ba:    14 16             	r4 = r1
+ 7eb81bc:    a1 1d             	r1 = r2 + r6
+ 7eb81be:    90 e1 13 12       	r1 = r1 & ~r2
+ 7eb81c2:    61 ff 80 13 2c 00 	if ((r1 & 0x80808080) != 0) goto 0x58 <strcmp+0x9C : 7eb8220 >
+ 7eb81c8:    02 61             	r2 = [r0+0x4] 
+ 7eb81ca:    45 61             	r5 = [r4+0x4] 
+ 7eb81cc:    49 84             	r1 = r4 + 0x4
+ 7eb81ce:    08 84             	r0 = r0 + 0x4
+ 7eb81d0:    14 16             	r4 = r1
+ 7eb81d2:    05 e8 f3 21       	if (r2 == r5) goto -0x1a <strcmp+0x38 : 7eb81bc >
+ 7eb81d6:    04 97             	goto 0x2e <strcmp+0x82 : 7eb8206 >
+ 7eb81d8:    14 16             	r4 = r1
+ 7eb81da:    02 60             	r2 = [r0+0x0] 
+ 7eb81dc:    43 07             	r3 = b[r4++=0x1] (u)
+ 7eb81de:    45 07             	r5 = b[r4++=0x1] (u)
+ 7eb81e0:    a3 e1 20 54       	r3 <= insert(r5, p:0x8, l:0x8)
+ 7eb81e4:    45 07             	r5 = b[r4++=0x1] (u)
+ 7eb81e6:    a3 e1 20 58       	r3 <= insert(r5, p:0x10, l:0x8)
+ 7eb81ea:    45 07             	r5 = b[r4++=0x1] (u)
+ 7eb81ec:    a3 e1 20 5c       	r3 <= insert(r5, p:0x18, l:0x8)
+ 7eb81f0:    83 e8 09 20       	if (r2 != r3) goto 0x12 <strcmp+0x82 : 7eb8206 >
+ 7eb81f4:    a5 1d             	r5 = r2 + r6
+ 7eb81f6:    90 e1 53 52       	r5 = r5 & ~r2
+ 7eb81fa:    61 ff 80 53 10 00 	if ((r5 & 0x80808080) != 0) goto 0x20 <strcmp+0x9C : 7eb8220 >
+ 7eb8200:    08 84             	r0 = r0 + 0x4
+ 7eb8202:    19 84             	r1 = r1 + 0x4
+ 7eb8204:    f7 89             	goto -0x2e <strcmp+0x54 : 7eb81d8 >
+ 7eb8206:    0a 40             	r2 = b[r0+0x0] (u)
+ 7eb8208:    02 46             	if (r2 == 0) goto 0xc <strcmp+0x92 : 7eb8216 >
+ 7eb820a:    1c 40             	r4 = b[r1+0x0] (u)
+ 7eb820c:    84 e8 04 20       	if (r2 != r4) goto 0x8 <strcmp+0x94 : 7eb8218 >
+ 7eb8210:    08 81             	r0 = r0 + 0x1
+ 7eb8212:    19 81             	r1 = r1 + 0x1
+ 7eb8214:    f7 98             	goto -0x10 <strcmp+0x82 : 7eb8206 >
+ 7eb8216:    42 20             	r2 = 0x0
+ 7eb8218:    13 16             	r3 = r1
+ 7eb821a:    38 40             	r0 = b[r3+0x0] (u)
+ 7eb821c:    20 1e             	r0 = r2 - r0
+ 7eb821e:    57 04             	{pc, r7-r4} = [sp++]
+ 7eb8220:    40 20             	r0 = 0x0
+ 7eb8222:    57 04             	{pc, r7-r4} = [sp++]
+
+
+strcpy:
+ 7eb8224:    77 04             	[--sp] = {rets, r7-r4}
+ 7eb8226:    07 16             	r7 = r0
+ 7eb8228:    64 e1 03 00       	r4 = r0 & 0x3
+ 7eb822c:    04 47             	if (r4 == 0) goto 0xe <strcpy+0x18 : 7eb823c >
+ 7eb822e:    a4 e0 04 40       	r4 = 0x4 - r4
+ 7eb8232:    12 07             	r2 = b[r1++=0x1] (u)
+ 7eb8234:    82 07             	b[r0++=0x1] = r2
+ 7eb8236:    12 4b             	if (r2 == 0) goto 0x56 <strcpy+0x6A : 7eb828e >
+ 7eb8238:    04 ea fb ff       	if (--r4 != 0) goto -0xa <strcpy+0xE : 7eb8232 >
+ 7eb823c:    90 e1 10 20       	r2 = r1 | r0
+ 7eb8240:    c6 ff ff fe fe fe 	r6 = 0xfefefeff <_SFC_MEMORY_CACHE_SIZE+0xDEFEFEFF : fefefeff >
+ 7eb8246:    61 ff 03 20 0a 00 	if ((r2 & 0x3) != 0) goto 0x14 <strcpy+0x3C : 7eb8260 >
+ 7eb824c:    12 60             	r2 = [r1+0x0] 
+ 7eb824e:    a3 1d             	r3 = r2 + r6
+ 7eb8250:    90 e1 33 32       	r3 = r3 & ~r2
+ 7eb8254:    61 ff 80 33 17 00 	if ((r3 & 0x80808080) != 0) goto 0x2e <strcpy+0x64 : 7eb8288 >
+ 7eb825a:    19 84             	r1 = r1 + 0x4
+ 7eb825c:    82 05             	[r0++=0x4] = r2
+ 7eb825e:    f7 96             	goto -0x14 <strcpy+0x28 : 7eb824c >
+ 7eb8260:    14 16             	r4 = r1
+ 7eb8262:    42 07             	r2 = b[r4++=0x1] (u)
+ 7eb8264:    45 07             	r5 = b[r4++=0x1] (u)
+ 7eb8266:    a2 e1 20 54       	r2 <= insert(r5, p:0x8, l:0x8)
+ 7eb826a:    45 07             	r5 = b[r4++=0x1] (u)
+ 7eb826c:    a2 e1 20 58       	r2 <= insert(r5, p:0x10, l:0x8)
+ 7eb8270:    45 07             	r5 = b[r4++=0x1] (u)
+ 7eb8272:    a2 e1 20 5c       	r2 <= insert(r5, p:0x18, l:0x8)
+ 7eb8276:    a5 1d             	r5 = r2 + r6
+ 7eb8278:    90 e1 53 52       	r5 = r5 & ~r2
+ 7eb827c:    61 ff 80 53 03 00 	if ((r5 & 0x80808080) != 0) goto 0x6 <strcpy+0x64 : 7eb8288 >
+ 7eb8282:    82 05             	[r0++=0x4] = r2
+ 7eb8284:    41 16             	r1 = r4
+ 7eb8286:    f7 8c             	goto -0x28 <strcpy+0x3C : 7eb8260 >
+ 7eb8288:    12 07             	r2 = b[r1++=0x1] (u)
+ 7eb828a:    82 07             	b[r0++=0x1] = r2
+ 7eb828c:    f2 5d             	if (r2 != 0) goto -0x6 <strcpy+0x64 : 7eb8288 >
+ 7eb828e:    70 16             	r0 = r7
+ 7eb8290:    57 04             	{pc, r7-r4} = [sp++]
+ 7eb8292:    00 00             	nop
+
+
+strlen:
+ 7eb8294:    01 16             	r1 = r0
+ 7eb8296:    12 07             	r2 = b[r1++=0x1] (u)
+ 7eb8298:    f2 5e             	if (r2 != 0) goto -0x4 <strlen+0x2 : 7eb8296 >
+ 7eb829a:    f9 3f             	r1 += -0x1
+ 7eb829c:    10 1e             	r0 = r1 - r0
+ 7eb829e:    80 00             	rts
+
+
+strncmp:
+ 7eb82a0:    74 04             	[--sp] = {rets, r4}
+ 7eb82a2:    02 4c             	if (r2 == 0) goto 0x18 <strncmp+0x1C : 7eb82bc >
+ 7eb82a4:    a2 e0 01 20       	r2 = 0x1 - r2
+ 7eb82a8:    04 84             	goto 0x8 <strncmp+0x12 : 7eb82b2 >
+ 7eb82aa:    02 46             	if (r2 == 0) goto 0xc <strncmp+0x18 : 7eb82b8 >
+ 7eb82ac:    83 e8 04 40       	if (r4 != r3) goto 0x8 <strncmp+0x18 : 7eb82b8 >
+ 7eb82b0:    c2 21             	r2 += 0x1
+ 7eb82b2:    13 07             	r3 = b[r1++=0x1] (u)
+ 7eb82b4:    04 07             	r4 = b[r0++=0x1] (u)
+ 7eb82b6:    f4 59             	if (r4 != 0) goto -0xe <strncmp+0xA : 7eb82aa >
+ 7eb82b8:    c8 1e             	r0 = r4 - r3
+ 7eb82ba:    54 04             	{pc, r4} = [sp++]
+ 7eb82bc:    40 20             	r0 = 0x0
+ 7eb82be:    54 04             	{pc, r4} = [sp++]
+
+
+strncpy:
+ 7eb82c0:    76 04             	[--sp] = {rets, r6-r4}
+ 7eb82c2:    43 20             	r3 = 0x0
+ 7eb82c4:    45 20             	r5 = 0x0
+ 7eb82c6:    04 16             	r4 = r0
+ 7eb82c8:    02 4c             	if (r2 == 0) goto 0x18 <strncpy+0x22 : 7eb82e2 >
+ 7eb82ca:    25 16             	r5 = r2
+ 7eb82cc:    56 d6             	r6 = r5  #
+ 7eb82ce:    12 07             		 r2 = b[r1++=0x1] (u)
+ 7eb82d0:    35 f1 ff 6f       	r5 = r6 + -0x1  #
+ 7eb82d4:    c2 07             		 b[r4++=0x1] = r2
+ 7eb82d6:    06 f8 04 02       	if (r6 == 0x1) goto 0x8 <strncpy+0x22 : 7eb82e2 >
+ 7eb82da:    f2 58             	if (r2 != 0) goto -0x10 <strncpy+0xC : 7eb82cc >
+ 7eb82dc:    04 82             	goto 0x4 <strncpy+0x22 : 7eb82e2 >
+ 7eb82de:    c3 07             	b[r4++=0x1] = r3
+ 7eb82e0:    fd 3f             	r5 += -0x1
+ 7eb82e2:    f5 5d             	if (r5 != 0) goto -0x6 <strncpy+0x1E : 7eb82de >
+ 7eb82e4:    56 04             	{pc, r6-r4} = [sp++]
+ 7eb82e6:    00 00             	nop
+
+
+strrchr:
+ 7eb82e8:    75 04             	[--sp] = {rets, r5, r4}
+ 7eb82ea:    14 16             	r4 = r1
+ 7eb82ec:    04 49             	if (r4 == 0) goto 0x12 <strrchr+0x18 : 7eb8300 >
+ 7eb82ee:    41 20             	r1 = 0x0
+ 7eb82f0:    15 16             	r5 = r1
+ 7eb82f2:    41 16             	r1 = r4
+ 7eb82f4:    bf ea 3c ff       	call -0x188 <strchr : 7eb8170 >
+ 7eb82f8:    01 16             	r1 = r0
+ 7eb82fa:    18 81             	r0 = r1 + 0x1
+ 7eb82fc:    f1 59             	if (r1 != 0) goto -0xe <strrchr+0x8 : 7eb82f0 >
+ 7eb82fe:    04 84             	goto 0x8 <strrchr+0x20 : 7eb8308 >
+ 7eb8300:    41 20             	r1 = 0x0
+ 7eb8302:    bf ea 35 ff       	call -0x196 <strchr : 7eb8170 >
+ 7eb8306:    05 16             	r5 = r0
+ 7eb8308:    50 16             	r0 = r5
+ 7eb830a:    55 04             	{pc, r5, r4} = [sp++]
+
+
+strstr:
+ 7eb830c:    74 04             	[--sp] = {rets, r4}
+ 7eb830e:    0a 40             	r2 = b[r0+0x0] (u)
+ 7eb8310:    82 4f             	if (r2 != 0) goto 0x1e <strstr+0x24 : 7eb8330 >
+ 7eb8312:    19 40             	r1 = b[r1+0x0] (u)
+ 7eb8314:    01 4f             	if (r1 == 0) goto 0x1e <strstr+0x28 : 7eb8334 >
+ 7eb8316:    40 20             	r0 = 0x0
+ 7eb8318:    54 04             	{pc, r4} = [sp++]
+ 7eb831a:    42 20             	r2 = 0x0
+ 7eb831c:    d8 ee 10 32       	r3 = b[r1+r2] (u)
+ 7eb8320:    03 49             	if (r3 == 0) goto 0x12 <strstr+0x28 : 7eb8334 >
+ 7eb8322:    d8 ee 00 42       	r4 = b[r0+r2] (u)
+ 7eb8326:    c2 21             	r2 += 0x1
+ 7eb8328:    04 e8 f8 31       	if (r3 == r4) goto -0x10 <strstr+0x10 : 7eb831c >
+ 7eb832c:    58 ee 01 20       	r2 = b[++r0=0x1] (u)
+ 7eb8330:    f2 54             	if (r2 != 0) goto -0x18 <strstr+0xE : 7eb831a >
+ 7eb8332:    f7 91             	goto -0x1e <strstr+0xA : 7eb8316 >
+ 7eb8334:    54 04             	{pc, r4} = [sp++]
+
+
+libc_code_end:
+ 7eb8336:    00 00             	nop
+ 7eb8338:    00 00             	nop
+ 7eb833a:    00 00             	nop
+ 7eb833c:    00 00             	nop
+ 7eb833e:    00 00             	nop
+ 7eb8340:    00 00             	nop
+ 7eb8342:    00 00             	nop
+ 7eb8344:    00 00             	nop
+ 7eb8346:    00 00             	nop
+ 7eb8348:    00 00             	nop
+ 7eb834a:    00 00             	nop
+ 7eb834c:    00 00             	nop
+ 7eb834e:    00 00             	nop
+ 7eb8350:    00 00             	nop
+ 7eb8352:    00 00             	nop
+ 7eb8354:    00 00             	nop
+ 7eb8356:    00 00             	nop
+ 7eb8358:    00 00             	nop
+ 7eb835a:    00 00             	nop
+ 7eb835c:    00 00             	nop
+ 7eb835e:    00 00             	nop
+ 7eb8360:    00 00             	nop
+ 7eb8362:    00 00             	nop
+ 7eb8364:    00 00             	nop
+ 7eb8366:    00 00             	nop
+ 7eb8368:    00 00             	nop
+ 7eb836a:    00 00             	nop
+ 7eb836c:    00 00             	nop
+ 7eb836e:    00 00             	nop
+ 7eb8370:    00 00             	nop
+ 7eb8372:    00 00             	nop
+ 7eb8374:    00 00             	nop
+ 7eb8376:    00 00             	nop
+ 7eb8378:    00 00             	nop
+ 7eb837a:    00 00             	nop
+ 7eb837c:    00 00             	nop
+ 7eb837e:    00 00             	nop
+
+
+wtgv2_code_end:
+ 7eb8380:    60 00             	cli			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:32:0
+ 7eb8382:    64 e0 00 06       	r0 = cnum			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/include_lib/asm_type.h:35:5
+ 7eb8386:    00 a2             	r0 = r0 << 0x2			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:34:5
+ 7eb8388:    c1 ff 9c ff e5 07 	r1 = 0x7e5ff9c <irq_lock_cnt : 7e5ff9c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:34:5
+ 7eb838e:    10 18             	r0 += r1			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:34:5
+ 7eb8390:    c0 eb 01 00       	[r0+0x0] += 0x1			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:34:35
+ 7eb8394:    80 00             	rts			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:35:1
+
+
+local_irq_disable:
+ 7eb8396:    c0 ff a4 ff e5 07 	r0 = 0x7e5ffa4 <sdk_hwi_api : 7e5ffa4 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:55:0
+ 7eb839c:    00 60             	r0 = [r0+0x0] 			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:57:9
+ 7eb839e:    30 e8 00 10       	if (r0 == 0x0) {			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:57:9
+ 7eb83a2:    f7 8e             		goto -0x24
+                               	} else { <wtgv2_code_end : 7eb8380 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:60:9
+ 7eb83a4:    00 61             		r0 = [r0+0x4] 
+                               	}			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:58:22
+ 7eb83a6:    d0 00             	goto r0			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:58:9
+
+
+__local_irq_enable:
+ 7eb83a8:    64 e0 00 06       	r0 = cnum			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:38:0
+ 7eb83ac:    c1 ff 9c ff e5 07 	r1 = 0x7e5ff9c <irq_lock_cnt : 7e5ff9c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:39:11
+ 7eb83b2:    d8 ec 1a 20       	r2 = [r1+r0<<2]			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:39:9
+ 7eb83b6:    fa 3f             	r2 += -0x1			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:39:9
+ 7eb83b8:    d8 ec 1b 20       	[r1+r0<<2] = r2			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:39:9
+ 7eb83bc:    82 41             	if (r2 != 0) goto 0x2 <__local_irq_enable+0x18 : 7eb83c0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:39:9
+ 7eb83be:    61 00             	sti			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:40:9
+ 7eb83c0:    80 00             	rts			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:42:1
+
+
+local_irq_enable:
+ 7eb83c2:    c0 ff a4 ff e5 07 	r0 = 0x7e5ffa4 <sdk_hwi_api : 7e5ffa4 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:45:0
+ 7eb83c8:    00 60             	r0 = [r0+0x0] 			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:47:9
+ 7eb83ca:    30 e8 00 10       	if (r0 == 0x0) {			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:47:9
+ 7eb83ce:    f7 8c             		goto -0x28
+                               	} else { <__local_irq_enable : 7eb83a8 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:50:9
+ 7eb83d0:    00 60             		r0 = [r0+0x0] 
+                               	}			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:48:22
+ 7eb83d2:    d0 00             	goto r0			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:48:9
+
+
+hwi_argv_init:
+ 7eb83d4:    c1 ff a8 ff e5 07 	r1 = 0x7e5ffa8 <l1i_lock : 7e5ffa8 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:107:0
+ 7eb83da:    42 20             	r2 = 0x0			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:93:14
+ 7eb83dc:    9a 40             	b[r1+0x0] = r2			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:93:14
+ 7eb83de:    c1 ff a9 ff e5 07 	r1 = 0x7e5ffa9 <dcu_lock : 7e5ffa9 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:95:14
+ 7eb83e4:    9a 40             	b[r1+0x0] = r2			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:95:14
+ 7eb83e6:    c1 ff 9c ff e5 07 	r1 = 0x7e5ff9c <irq_lock_cnt : 7e5ff9c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:98:5
+ 7eb83ec:    43 20             	r3 = 0x0			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:98:5
+ 7eb83ee:    50 ec 11 20       	d[r1+0x0] = r3_r2			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:98:5
+ 7eb83f2:    c1 ff a4 ff e5 07 	r1 = 0x7e5ffa4 <sdk_hwi_api : 7e5ffa4 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:110:17
+ 7eb83f8:    90 60             	[r1+0x0] = r0			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:110:17
+ 7eb83fa:    80 00             	rts			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/mask_export/hwi/hwi.c:131:1
+
+
+
+
+
+rom_api_entry:
+ 7ebfe7c:    ff ea 82 d0       	goto -0x5efc <tzflash_cpu2flash_addr : 7eb9f84 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:7:0
+
+
+__stub_tzflash_flash2cpu_addr:
+ 7ebfe80:    ff ea 76 d0       	goto -0x5f14 <tzflash_flash2cpu_addr : 7eb9f70 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:14:0
+
+
+__stub_tzflash_write_reg:
+ 7ebfe84:    ff ea 5f d1       	goto -0x5d42 <tzflash_write_reg : 7eba146 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:21:0
+
+
+__stub_tzflash_read_reg:
+ 7ebfe88:    ff ea 90 d1       	goto -0x5ce0 <tzflash_read_reg : 7eba1ac >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:28:0
+
+
+__stub_tzflash_update_reg:
+ 7ebfe8c:    ff ea c2 d1       	goto -0x5c7c <tzflash_update_reg : 7eba214 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:35:0
+
+
+__stub_tzflash_read:
+ 7ebfe90:    ff ea ba d3       	goto -0x588c <tzflash_read : 7eba608 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:42:0
+
+
+__stub_tzflash_write:
+ 7ebfe94:    ff ea 0e d3       	goto -0x59e4 <tzflash_write : 7eba4b4 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:49:0
+
+
+__stub_tzflash_erase:
+ 7ebfe98:    ff ea be d3       	goto -0x5884 <tzflash_erase : 7eba618 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:56:0
+
+
+__stub_tzflash_erase_zone:
+ 7ebfe9c:    ff ea 17 d4       	goto -0x57d2 <tzflash_erase_zone : 7eba6ce >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:63:0
+
+
+__stub_tzflash_spi_init:
+ 7ebfea0:    ff ea 68 d6       	goto -0x5330 <tzflash_spi_init : 7ebab74 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:70:0
+
+
+__stub_tzflash_sfc_init:
+ 7ebfea4:    ff ea b5 d7       	goto -0x5096 <tzflash_sfc_init : 7ebae12 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:77:0
+
+
+__stub_tzflash_ioctl:
+ 7ebfea8:    ff ea b7 d5       	goto -0x5492 <tzflash_ioctl : 7ebaa1a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:84:0
+
+
+__stub_tzflash_sfc_reinit:
+ 7ebfeac:    ff ea 51 d7       	goto -0x515e <tzflash_sfc_reinit : 7ebad52 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:91:0
+
+
+__stub_boot_mmu_init:
+ 7ebfeb0:    ff ea 24 d8       	goto -0x4fb8 <boot_mmu_init : 7ebaefc >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:98:0
+
+
+__stub_run_app:
+ 7ebfeb4:    ff ea 39 e1       	goto -0x3d8e <run_app : 7ebc12a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:105:0
+
+
+__stub_app_version_check:
+ 7ebfeb8:    ff ea 67 d9       	goto -0x4d32 <app_version_check : 7ebb18a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:112:0
+
+
+__stub_sdk_chip_key_verify_v2:
+ 7ebfebc:    ff ea bd fe       	goto -0x286 <sdk_chip_key_verify_v2 : 7ebfc3a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:119:0
+
+
+__stub_jl_sm_decrypt:
+ 7ebfec0:    ff ea 89 fe       	goto -0x2ee <jl_sm_decrypt : 7ebfbd6 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:126:0
+
+
+__stub_crc16_xmodem:
+ 7ebfec4:    ff ea 82 e1       	goto -0x3cfc <crc16_xmodem : 7ebc1cc >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:133:0
+
+
+__stub___local_irq_enable:
+ 7ebfec8:    ff ea 6e c2       	goto -0x7b24 <__local_irq_enable : 7eb83a8 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:140:0
+
+
+__stub___local_irq_disable:
+ 7ebfecc:    ff ea 58 c2       	goto -0x7b50 <wtgv2_code_end : 7eb8380 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:147:0
+
+
+__stub_request_irq:
+ 7ebfed0:    ff ea d8 cc       	goto -0x6650 <request_irq : 7eb9884 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:154:0
+
+
+__stub_lp_signature_set:
+ 7ebfed4:    ff ea 0c e4       	goto -0x37e8 <lp_signature_set : 7ebc6f0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:161:0
+
+
+__stub_memcpy:
+ 7ebfed8:    ff ea c6 c0       	goto -0x7e74 <memmove : 7eb8068 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:168:0
+
+
+__stub_memmove:
+ 7ebfedc:    ff ea c4 c0       	goto -0x7e78 <memmove : 7eb8068 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:175:0
+
+
+__stub_memcmp:
+ 7ebfee0:    ff ea a6 c0       	goto -0x7eb4 <memcmp : 7eb8030 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:182:0
+
+
+__stub_memset:
+ 7ebfee4:    ff ea 22 c1       	goto -0x7dbc <memset : 7eb812c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:189:0
+
+
+__stub_memchr:
+ 7ebfee8:    ff ea 96 c0       	goto -0x7ed4 <memchr : 7eb8018 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:196:0
+
+
+__stub_strcmp:
+ 7ebfeec:    ff ea 4a c1       	goto -0x7d6c <strcmp : 7eb8184 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:203:0
+
+
+__stub_strchr:
+ 7ebfef0:    ff ea 3e c1       	goto -0x7d84 <strchr : 7eb8170 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:210:0
+
+
+__stub_strncpy:
+ 7ebfef4:    ff ea e4 c1       	goto -0x7c38 <strncpy : 7eb82c0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:217:0
+
+
+__stub_strlen:
+ 7ebfef8:    ff ea cc c1       	goto -0x7c68 <strlen : 7eb8294 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:224:0
+
+
+__stub_strcpy:
+ 7ebfefc:    ff ea 92 c1       	goto -0x7cdc <strcpy : 7eb8224 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:231:0
+
+
+__stub_strncmp:
+ 7ebff00:    ff ea ce c1       	goto -0x7c64 <strncmp : 7eb82a0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:238:0
+
+
+__stub_strstr:
+ 7ebff04:    ff ea 02 c2       	goto -0x7bfc <strstr : 7eb830c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:245:0
+
+
+__stub_strrchr:
+ 7ebff08:    ff ea ee c1       	goto -0x7c24 <strrchr : 7eb82e8 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:252:0
+
+
+__stub_strcat:
+ 7ebff0c:    ff ea 24 c1       	goto -0x7db8 <strcat : 7eb8158 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:259:0
+
+
+__stub_msys_soar_ram_pdown_poff_enter:
+ 7ebff10:    ff ea 14 d8       	goto -0x4fd8 <msys_soar_ram_pdown_poff_enter : 7ebaf3c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:266:0
+
+
+__stub_msys_soar_ram_pdown_poff_exit:
+ 7ebff14:    ff ea 8f d8       	goto -0x4ee2 <msys_soar_ram_pdown_poff_exit : 7ebb036 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:273:0
+
+
+__stub_msys_ram_share_ctl:
+ 7ebff18:    ff ea d2 d8       	goto -0x4e5c <msys_ram_share_ctl : 7ebb0c0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:280:0
+
+
+__stub_msys_idle:
+ 7ebff1c:    ff ea f5 d8       	goto -0x4e16 <msys_idle : 7ebb10a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:287:0
+
+
+__stub_msys_standby:
+ 7ebff20:    ff ea f7 d8       	goto -0x4e12 <msys_standby : 7ebb112 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:294:0
+
+
+__stub_msys_sleep:
+ 7ebff24:    ff ea 02 d9       	goto -0x4dfc <msys_sleep : 7ebb12c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:301:0
+
+
+__stub_ic_usbpll_init:
+ 7ebff28:    ff ea b2 e2       	goto -0x3a9c <ic_usbpll_init : 7ebc490 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:308:0
+
+
+__stub_sfc_suspend:
+ 7ebff2c:    ff ea b7 cd       	goto -0x6492 <sfc_suspend : 7eb9a9e >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:315:0
+
+
+__stub_sfc_resume:
+ 7ebff30:    ff ea eb cd       	goto -0x642a <sfc_resume : 7eb9b0a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:322:0
+
+
+__stub_sfc_drop_cache:
+ 7ebff34:    ff ea 1a ce       	goto -0x63cc <sfc_drop_cache : 7eb9b6c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:329:0
+
+
+__stub_DcuEnable:
+ 7ebff38:    ff ea 52 ce       	goto -0x635c <DcuEnable : 7eb9be0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:336:0
+
+
+__stub_DcuInitial:
+ 7ebff3c:    ff ea 5f ce       	goto -0x6342 <DcuInitial : 7eb9bfe >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:343:0
+
+
+__stub_DcuFlushinvAll:
+ 7ebff40:    ff ea 86 ce       	goto -0x62f4 <DcuFlushinvAll : 7eb9c50 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:350:0
+
+
+__stub_DcuWaitIdle:
+ 7ebff44:    ff ea a3 cd       	goto -0x64ba <DcuWaitIdle : 7eb9a8e >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:357:0
+
+
+__stub_DcuSetWayNum:
+ 7ebff48:    ff ea 75 ce       	goto -0x6316 <DcuSetWayNum : 7eb9c36 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:364:0
+
+
+__stub_DcuDisable:
+ 7ebff4c:    ff ea 4e ce       	goto -0x6364 <DcuDisable : 7eb9bec >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:371:0
+
+
+__stub_DcuPfetchRegion:
+ 7ebff50:    ff ea 9b ce       	goto -0x62ca <DcuPfetchRegion : 7eb9c8a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:378:0
+
+
+__stub_IcuEnable:
+ 7ebff54:    ff ea 2d cc       	goto -0x67a6 <IcuEnable : 7eb97b2 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:385:0
+
+
+__stub_IcuInitial:
+ 7ebff58:    ff ea 5e cc       	goto -0x6744 <IcuInitial : 7eb9818 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:392:0
+
+
+__stub_IcuFlushinvAll:
+ 7ebff5c:    ff ea 7e cc       	goto -0x6704 <IcuFlushinvAll : 7eb985c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:399:0
+
+
+__stub_IcuWaitIdle:
+ 7ebff60:    ff ea 73 cc       	goto -0x671a <IcuWaitIdle : 7eb984a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:406:0
+
+
+__stub_IcuSetWayNum:
+ 7ebff64:    ff ea 5e cc       	goto -0x6744 <IcuSetWayNum : 7eb9824 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:413:0
+
+
+__stub_IcuDisable:
+ 7ebff68:    ff ea 37 cc       	goto -0x6792 <IcuDisable : 7eb97da >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:420:0
+
+
+__stub_IcuPfetchRegion:
+ 7ebff6c:    ff ea 1b cc       	goto -0x67ca <IcuPfetchRegion : 7eb97a6 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:427:0
+
+
+__stub_IcuLockRegion:
+ 7ebff70:    ff ea 13 cc       	goto -0x67da <IcuLockRegion : 7eb979a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:434:0
+
+
+__stub_chip_crc16:
+ 7ebff74:    ff ea 1c d7       	goto -0x51c8 <chip_crc16 : 7ebadb0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:441:0
+
+
+__stub_CrcDecode:
+ 7ebff78:    ff ea 1f f7       	goto -0x11c2 <CrcDecode : 7ebedba >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:448:0
+
+
+__stub_mask_init:
+ 7ebff7c:    ff ea 8c f3       	goto -0x18e8 <mask_init : 7ebe698 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:455:0
+
+
+__stub_mask_export_bss_ram_clear:
+ 7ebff80:    ff ea ac f3       	goto -0x18a8 <mask_export_bss_ram_clear : 7ebe6dc >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:462:0
+
+
+__stub_wdt_clear:
+ 7ebff84:    ff ea 79 e3       	goto -0x390e <wdt_clear : 7ebc67a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:469:0
+
+
+__stub_nvram_set_boot_param_with_args:
+ 7ebff88:    ff ea 7e e3       	goto -0x3904 <nvram_set_boot_param_with_args : 7ebc688 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:476:0
+
+
+__stub_set_app_version_select_rules:
+ 7ebff8c:    ff ea db d8       	goto -0x4e4a <set_app_version_select_rules : 7ebb146 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:483:0
+
+
+__stub_chip_reset:
+ 7ebff90:    ff ea ac e2       	goto -0x3aa8 <chip_reset : 7ebc4ec >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:490:0
+
+
+__stub_flash_poweron:
+ 7ebff94:    ff ea 14 e3       	goto -0x39d8 <flash_poweron : 7ebc5c0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:497:0
+
+
+__stub_flash_poweron_base:
+ 7ebff98:    ff ea de e2       	goto -0x3a44 <flash_poweron_base : 7ebc558 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:504:0
+
+
+__stub_flash_poweroff:
+ 7ebff9c:    ff ea 5f e3       	goto -0x3942 <flash_poweroff : 7ebc65e >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:511:0
+
+
+__stub_flash_poweroff_base:
+ 7ebffa0:    ff ea 1c e3       	goto -0x39c8 <flash_poweroff_base : 7ebc5dc >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:518:0
+
+
+__stub_spi_io_mount:
+ 7ebffa4:    ff ea 39 cf       	goto -0x618e <spi_io_mount : 7eb9e1a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:525:0
+
+
+__stub_spi_io_unmount:
+ 7ebffa8:    ff ea da cf       	goto -0x604c <spi_io_unmount : 7eb9f60 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:532:0
+
+
+__stub_get_sfc_data_width:
+ 7ebffac:    ff ea 00 ce       	goto -0x6400 <get_sfc_data_width : 7eb9bb0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:539:0
+
+
+__stub_spi_port_io_init:
+ 7ebffb0:    ff ea bf ce       	goto -0x6282 <spi_port_io_init : 7eb9d32 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:546:0
+
+
+__stub_spi_port_io_uninit:
+ 7ebffb4:    ff ea cf cf       	goto -0x6062 <spi_port_io_uninit : 7eb9f56 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:553:0
+
+
+__stub_usb_slave_mode:
+ 7ebffb8:    ff ea a8 c5       	goto -0x74b0 <usb_slave_mode : 7eb8b0c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:560:0
+
+
+__stub_set_vpwr_det_4p2v_en:
+ 7ebffbc:    ff ea 65 e0       	goto -0x3f36 <set_vpwr_det_4p2v_en : 7ebc08a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:567:0
+
+
+__stub_doe:
+ 7ebffc0:    ff ea ee f8       	goto -0xe24 <doe : 7ebf1a0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:574:0
+
+
+__stub_pvk_efuse_read:
+ 7ebffc4:    ff ea a8 f6       	goto -0x12b0 <pvk_efuse_read : 7ebed18 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:581:0
+
+
+__stub_ecc_secp256r1_verify:
+ 7ebffc8:    ff ea 7a f9       	goto -0xd0c <ecc_secp256r1_verify : 7ebf2c0 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:588:0
+
+
+__stub_ecc_verify_with_sha256:
+ 7ebffcc:    ff ea 7c f9       	goto -0xd08 <ecc_verify_with_sha256 : 7ebf2c8 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:595:0
+
+
+__stub_sha256_digest:
+ 7ebffd0:    ff ea dc da       	goto -0x4a48 <sha256_digest : 7ebb58c >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:602:0
+
+
+__stub_sha256_init:
+ 7ebffd4:    ff ea 51 f2       	goto -0x1b5e <sha256_init : 7ebe47a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:609:0
+
+
+__stub_sha256_update:
+ 7ebffd8:    ff ea 1d da       	goto -0x4bc6 <sha256_update : 7ebb416 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:616:0
+
+
+__stub_sha256_finish:
+ 7ebffdc:    ff ea 69 da       	goto -0x4b2e <sha256_finish : 7ebb4b2 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:623:0
+
+
+__stub_aes_set_encrypt_key:
+ 7ebffe0:    ff ea ab ef       	goto -0x20aa <aes_set_encrypt_key : 7ebdf3a >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:630:0
+
+
+__stub_aes_set_decrypt_key:
+ 7ebffe4:    ff ea f8 ef       	goto -0x2010 <aes_set_decrypt_key : 7ebdfd8 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:637:0
+
+
+__stub_aes_encrypt:
+ 7ebffe8:    ff ea 41 f0       	goto -0x1f7e <aes_encrypt : 7ebe06e >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:644:0
+
+
+__stub_aes_decrypt:
+ 7ebffec:    ff ea 34 f1       	goto -0x1d98 <aes_decrypt : 7ebe258 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:651:0
+
+
+__stub_aes_cbc_encrypt:
+ 7ebfff0:    ff ea 09 f2       	goto -0x1bee <aes_cbc_encrypt : 7ebe406 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:658:0
+
+
+__stub_aes_cbc_decrypt:
+ 7ebfff4:    ff ea 23 f2       	goto -0x1bba <aes_cbc_decrypt : 7ebe43e >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:665:0
+
+
+__stub_aes_safe_cbc_encrypt:
+ 7ebfff8:    ff ea 7e f9       	goto -0xd04 <aes_safe_cbc_encrypt : 7ebf2f8 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:672:0
+
+
+__stub_aes_safe_cbc_decrypt:
+ 7ebfffc:    ff ea 99 f9       	goto -0xcce <aes_safe_cbc_decrypt : 7ebf332 >			  ## /home/weijiabao/maskrom_commit_cp/br33_maskrom_secure_boot/cpu/entry_list.S:679:0
+
+Disassembly of section .nul_space:
+.nul_space:
+  895440:    00 00             	nop
+  895442:    00 08             	r0 = [r0++=r8] 
+  895444:    ff ff              <unknown instruction>
+  895446:    ff 0f             	h[r7++=r15] = r7
+  895448:    00 00             	nop
+  89544a:    00 06             	r0 = h[r0++=0x2] (u)
+  89544c:    00 00             	nop
+  89544e:    00 02             	pfetch [r0]
+  895450:    10 ff              <unknown instruction>
+  895452:    e5 07             	b[r6++=0x1] = r5
+  895454:    00 80             	rep 0x2 0x1 {
+  895456:    eb 07             		b[r6++=-0x1] = r3
+                               	}
+  895458:    00 00             	nop
+  89545a:    ec 07             	b[r6++=-0x1] = r4
+  89545c:    cc ff e5 07 70 ff 	r12 = 0xff7007e5 <_SFC_MEMORY_CACHE_SIZE+0xDF7007E5 : ff7007e5 >
+  895462:    e5 07             	b[r6++=0x1] = r5
+  895464:    0d ff e5 07 a8 ff 	ifs (r0 <= 0x7e5) goto -0xb0 <PHY_RAM_SIZE+0x7953BA : 8953ba >
+  89546a:    e5 07             	b[r6++=0x1] = r5
+  89546c:    a9                 <unknown instruction>
+  89546d:    ff                 <unknown instruction>
+  89546e:    e5 07             	b[r6++=0x1] = r5
+

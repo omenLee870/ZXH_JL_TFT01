@@ -31,4 +31,9 @@ bool rcsp_linein_func_set(void *priv, u8 *data, u16 len);
 u32 rcsp_linein_func_get(void *priv, u8 *buf, u16 buf_size, u32 mask);
 //停止linein功能
 void rcsp_linein_func_stop(void);
+
+//设置固件pc从机行为
+bool rcsp_pc_func_set(void *priv, u8 *data, u16 len);
+//获取固件pc从机信息
+u32 rcsp_pc_func_get(void *priv, u8 *buf, u16 buf_size, u32 mask);
 #endif

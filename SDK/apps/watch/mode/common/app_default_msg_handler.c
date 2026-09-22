@@ -30,6 +30,9 @@
 #include "video_api.h"
 #include "video_rec.h"
 #include "media_file_list.h"
+#if RCSP_AI_DIALOGUE_ENABLE
+#include "ai_dialogue_control.h"
+#endif
 
 static u32 input_number = 0;
 static u16 input_number_timer = 0;
@@ -223,6 +226,21 @@ void app_common_key_msg_handler(int *msg)
         camera_api_take_photo_or_stop_rec();
 #endif
         break;
+    case APP_MSG_AI_TAKE_PHOTO:
+        printf("[BT_KEY]:APP_MSG_AI_TAKE_PHOTO\n");
+#if RCSP_AI_DIALOGUE_ENABLE
+        /* AI 识图: 进入/复用 0x32 AI 对话会话, 收到 APP result==0 后才拍照 */
+        rcsp_ai_dialogue_photo_trigger();
+#endif
+        break;
+    case APP_MSG_AI_VOICE_TRIGGER:
+        printf("[BT_KEY]:APP_MSG_AI_VOICE_TRIGGER\n");
+#if RCSP_AI_DIALOGUE_ENABLE
+        /* AI 语音对话: 进入 0x32 会话后由 APP 下发录音/播报指令。
+         * 将来接入本地唤醒词后, 该入口改由唤醒事件调用。 */
+        rcsp_ai_dialogue_key_trigger();
+#endif
+        break;
     case APP_MSG_RECORD_START:
         printf("[BT_KEY]:APP_MSG_RECORD_START\n");
 #if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
@@ -299,6 +317,10 @@ void app_common_device_event_handler(int *msg)
 #if (TCFG_APP_VIDEO_REC_EN || TCFG_APP_VIDEO_DEC_EN || TCFG_APP_PHOTO_EN)
         /* 挂载成功(ret==true)才重建, 重复上线/失败跳过防写半死卡 */
         if (msg[1] == DEVICE_EVENT_IN && ret == true) {
+            // 卡在线期间禁低功耗: 低功耗后 CMD 探卡停摆, 拔卡无 OUT
+            if (!strncmp((char *)msg[2], "sd", 2)) {
+                sdmmc_dev_lowpower_disable((char *)msg[2], 1);
+            }
             flm_rebuild_async();
         }
         app_send_message(APP_MSG_SD_EVENT, msg[1]);

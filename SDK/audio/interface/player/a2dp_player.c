@@ -18,6 +18,10 @@
 #include "scene_switch.h"
 #include "audio_general_config.h"
 
+#if RCSP_AI_DIALOGUE_ENABLE
+#include "ai_dialogue_control.h"
+#endif
+
 #include "le_audio_recorder.h"
 
 #if TCFG_AUDIO_DUT_ENABLE
@@ -135,6 +139,9 @@ static void a2dp_player_callback(void *private_data, int event)
     printf("a2dp_callback: %d\n", event);
     switch (event) {
     case STREAM_EVENT_START:
+#if RCSP_AI_DIALOGUE_ENABLE
+        rcsp_ai_dialogue_a2dp_play_start();
+#endif
 #if AUDIO_VBASS_LINK_VOLUME
         vbass_link_volume();
 #endif
@@ -441,6 +448,9 @@ void a2dp_player_close(u8 *btaddr)
 #endif
 
     if (player->stream) {
+#if RCSP_AI_DIALOGUE_ENABLE
+        rcsp_ai_dialogue_a2dp_play_stop();
+#endif
         jlstream_stop(player->stream, 100);
         jlstream_release(player->stream);
     }

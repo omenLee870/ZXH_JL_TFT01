@@ -78,14 +78,15 @@ u32 clk_get(const char *name);
 
 
 /**
- * @brief clock_set_sfc_max_freq
+ * @brief clock_set_sfc_spi_max_freq
  * 使用前需要保证所使用的flash支持4bit 100Mhz 模式
  *
  * @param dual_max_freq for cmd 3BH BBH
  * @param quad_max_freq for cmd 6BH EBH
  */
 void clk_set_sfc_max_freq(u32 dual_max_freq, u32 quad_max_freq);
-void clock_set_sfc_max_freq(u32 max_freq);
+void clock_set_sfc_spi_max_freq(u32 max_freq);
+u32 clock_get_sfc_spi_max_freq(u32 dest_freq);
 
 
 enum clk_mode {

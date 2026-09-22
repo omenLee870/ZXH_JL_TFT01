@@ -100,6 +100,7 @@ DEFINES := \
 	-DCONFIG_BR33_FPGA_VERIFY \
 	-DCONFIG_UCOS_ENABLE \
 	-DBREDR_PMC_CODE \
+	-DPMC_APP_CASE_WATCH \
 	-DBT_PMC_BT_FUN_OVERWRITE \
 	-DBREDR_Q32F \
 	-DCONFIG_NEW_BREDR_ENABLE \
@@ -142,7 +143,6 @@ c_SRC_FILES := \
 	apps/bsp/cpu/br33/iic_api.c \
 	apps/bsp/cpu/br33/iic_soft.c \
 	apps/bsp/cpu/br33/ipc_spin_lock.c \
-	apps/bsp/cpu/br33/pmc_pmu_msg.c \
 	apps/bsp/cpu/br33/power/lib_power_config.c \
 	apps/bsp/cpu/br33/power/power_app.c \
 	apps/bsp/cpu/br33/power/power_config.c \
@@ -183,10 +183,12 @@ c_SRC_FILES := \
 	apps/sensor/service/sensor_service_motion.c \
 	apps/sensor/service/sensor_service_vc_hr_spo2.c \
 	apps/sensor/service/sensor_service_wrist_tilt.c \
+	apps/version.c \
 
 
 # 需要编译的 .S 文件
-S_SRC_FILES :=
+S_SRC_FILES := \
+	apps/sdk_version.z.S \
 
 
 # 需要编译的 .s 文件

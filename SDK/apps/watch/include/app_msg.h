@@ -319,6 +319,8 @@ enum {
     APP_MSG_FLM_DB_CHANGED,   /* 媒体库变更(重建/入库)完成, 通知 UI 刷新 */
     APP_MSG_VIDEO_REC_PAUSE_RESUME, /* 录像右键: 暂停/继续(同一文件续录); 中键走 PP 开始/停止 */
     APP_MSG_VIDEO_REC_UI_TIMER_SYNC, /* 录像 UI 500ms 定时器启停统一投递到 app_core 执行 */
+    APP_MSG_AI_TAKE_PHOTO,   /* AI 识图拍照: 独立于普通拍照, 先进入 0x32 AI 对话再拍 */
+    APP_MSG_AI_VOICE_TRIGGER, /* AI 语音对话: 进入 0x32 会话后走拾音/识别/播报 */
 };
 
 

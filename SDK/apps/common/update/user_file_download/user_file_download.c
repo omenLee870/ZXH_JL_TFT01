@@ -905,7 +905,7 @@ static int user_file_passive_update_release(void *priv)
 
 const static user_chip_update_v2_t user_file_update_ins = {
     .retry_cnt = 2,
-    .update_init = user_file_update_init,
+    .update_init = (void*)user_file_update_init,
     .update_get_len = user_file_update_get_len,
     .update_loop = user_file_download_loop,
     .update_release = user_file_update_release,

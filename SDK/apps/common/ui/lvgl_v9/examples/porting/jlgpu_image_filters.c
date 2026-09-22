@@ -969,6 +969,9 @@ jlgpu_filter_session_t *jlgpu_filter_session_init(int w, int h,
     sess->task_buf_size = 512;
     sess->task_buf = (uint8_t *)malloc(sess->task_buf_size);
     if (!sess->task_buf) {
+        /* 本文件用的是 jlgpu_ctx_buffer_init(不走 lv_jlgpu_ctx_init),
+         * 这里补占门以匹配 lv_jlgpu_ctx_uninit 内的 gate_leave,保持计数对称 */
+        jlgpu_gpu_gate_enter();
         lv_jlgpu_ctx_uninit(&sess->ctx);
         free(sess);
         return NULL;
@@ -1243,6 +1246,8 @@ void jlgpu_filter_session_uninit(jlgpu_filter_session_t *sess)
     if (sess->pp_buf1) {
         free(sess->pp_buf1);
     }
+    /* 同上:补占门,匹配 lv_jlgpu_ctx_uninit 内的 gate_leave */
+    jlgpu_gpu_gate_enter();
     lv_jlgpu_ctx_uninit(&sess->ctx);
     free(sess);
 }

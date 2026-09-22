@@ -769,7 +769,7 @@ static void refr_sync_areas(void)
     int8_t j;
     lv_area_t res[4] = {0};
     int8_t res_c;
-    lv_area_t *sync_area, * new_area, * next_area;
+    lv_area_t *sync_area, *new_area, *next_area;
     for (i = 0; i < disp_refr->inv_p; i++) {
         /*Skip joined areas*/
         if (disp_refr->inv_area_joined[i]) {
@@ -999,6 +999,20 @@ static void refr_area(const lv_area_t *area_p, int32_t y_offset)
         }
         layer_reshape_draw_buf(layer, disp_refr->stride_is_auto ? LV_STRIDE_AUTO : layer->draw_buf->header.stride);
     }
+
+#if LV_USE_DRAW_JLGPU
+    /* 页面特效期间：GPU 任务链在 effect_enter 时已经用
+     * lv_obj_redraw() 收集完毕，特效每帧直接从链表重放，不依赖本帧新收集的任务。
+     * 而本帧收集出来的任务在 _jlgpu_execute_drawing() 里会被 effect_busy 全部丢弃，
+     * 相当于每帧白做一次全屏的任务收集/评估/派发。这里直接跳过对象重绘与任务收集，
+     * 只保留后面的 draw_buf_flush() 触发 disp_flush 来渲染特效帧。 */
+    if (g_page_effect_state.effect_busy) {
+        layer->all_tasks_added = true;
+        disp_refr->refreshed_area = *area_p;
+        LV_PROFILER_REFR_END;
+        return;
+    }
+#endif
 
     /*Try to divide the area to smaller tiles*/
     uint32_t tile_cnt = 1;

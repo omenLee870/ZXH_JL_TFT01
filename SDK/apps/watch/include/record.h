@@ -36,6 +36,8 @@ bool is_recorder_file_play_runing(void);
 void app_recorder_del_cur_play_file(void);
 //是否正在录音
 u8 is_recorder_runing(void);
+//供外部模块(如录像)停止录音使用，保证录音文件正常封头保存
+void app_recorder_stop_public(void);
 
 //以下两个函数均是给UI调用的
 //获取正在解码的录音文件时间

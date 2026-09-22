@@ -120,6 +120,7 @@
 #define NODE_UUID_SPECTRUM_ADVANCE         0xF28A//频谱计算,使用eq加速的频谱计算
 #define NODE_UUID_AUTOTUNE                 0xc07a//电子音
 #define NODE_UUID_VOCAL_REMOVER            0x2F7A//人声消除，只支持立体声
+#define NODE_UUID_AI_VOCAL_REMOVER         0x77A4//AI人声消除
 #define NODE_UUID_SPEAKER_EQ               0x3BE6//喇叭频响矫正
 #define NODE_UUID_BASS_TREBLE              0xcc8c//高低音
 #define NODE_UUID_ZERO_ACTIVE              0x2FE1//零数据产生器

@@ -272,9 +272,16 @@ static int video_rec_delete_oldest_file(void)
 /*==============================================================================
  * 存储空间检查 (容量维度)
  *
- * 当 free < MIN_FREE_SPACE_MB*1024 KB 时, 循环删除最旧未加锁文件直到满足.
+ * 开录前: free < MIN_FREE_SPACE_MB*1024 KB 时, 循环删除最旧未加锁文件直到满足.
  *==============================================================================
  */
+#define DANGER_FREE_MB              100  /* 危险线: 低于此值且持续删不掉则停录 */
+#define VIDEO_DANGER_MAX_CHECKS     5    /* 危险线以下连续巡检次数(5s/次, 共25s) */
+
+volatile u8 g_rec_need_delete_old = 0;   /* 录像中容量不足, 待分段边界删除 */
+volatile u8 g_rec_cyc_boundary    = 0;   /* CYC_FILE 已过, 允许尝试删除 */
+static volatile u8 g_rec_danger_cnt = 0; /* 危险线以下连续巡检计数 */
+
 int video_rec_check_storage(void)
 {
     u32 total_kb = 0, free_kb = 0;
@@ -313,7 +320,105 @@ int video_rec_check_storage(void)
     g_rec_has_card_async = 1;
     g_rec_free_sec_async = video_rec_free_kb_to_sec(free_kb);
     g_rec_calc_done = 1;
+    /* 开录前删够了: 清录像中的待删标志与危险线计数, 防上次会话残留 */
+    g_rec_need_delete_old = 0;
+    g_rec_danger_cnt = 0;
     return 0;
+}
+
+/*==============================================================================
+ * 录像中巡检(不删) + 分段边界删除执行
+ *
+ * 录像期物理池被 VO fb/VDEC/VPSS 切碎, fdelete 要的连续物理页凑不出,
+ * 录像中删会触发 P_MEM 分配失败风暴(vmalloc.c:154 assert)。故录像中只置标志,
+ * 分段边界由 rec_worker 先停录像回收连续页再删, 见 video_rec_maint_pause_delete_resume()。
+ *==============================================================================
+ */
+/* 录像中巡检: 只更新共享缓存并置待删标志, 不做任何 FS 删除 */
+int video_rec_check_storage_no_delete(void)
+{
+    u32 total_kb = 0, free_kb = 0;
+    int ret = video_rec_get_storage_info(&total_kb, &free_kb);
+    if (ret == -2) {
+        log_error("[VREC] SD card not online\n");
+        g_rec_has_card_async = 0;
+        g_rec_free_sec_async = 0;
+        g_rec_calc_done = 1;
+        return -2;
+    }
+    if (ret != 0) {
+        return -1;
+    }
+
+    log_info("[VREC] storage: total=%uKB, free=%uKB\n", total_kb, free_kb);
+
+    g_rec_has_card_async = 1;
+    g_rec_free_sec_async = video_rec_free_kb_to_sec(free_kb);
+    g_rec_calc_done = 1;
+
+    if (free_kb >= (u32)MIN_FREE_SPACE_MB * 1024) {
+        g_rec_need_delete_old = 0;
+        g_rec_danger_cnt = 0;
+        return 0;
+    }
+
+    g_rec_need_delete_old = 1;
+    if (free_kb < (u32)DANGER_FREE_MB * 1024) {
+        if (++g_rec_danger_cnt >= VIDEO_DANGER_MAX_CHECKS) {
+            log_error("[VREC] free=%uKB below %dMB and undeletable for %d checks, stop rec\n",
+                      free_kb, DANGER_FREE_MB, VIDEO_DANGER_MAX_CHECKS);
+            return -1;
+        }
+    } else {
+        g_rec_danger_cnt = 0;   /* 危险线计数只统计连续低于危险线的巡检 */
+    }
+    return 0;
+}
+
+/* 分段边界后执行删除: 调用前录像已停(物理池已回收连续页), 这里只做容量删除.
+ * 返回删除个数; -1=删无可删(仍低于 MIN), -2=存储信息读取失败; out_free_kb 回传剩余容量 */
+int video_rec_try_delete_old(u32 *out_free_kb)
+{
+    int deleted = 0;
+    int no_file = 0;
+    u32 total_kb = 0, free_kb = 0;
+
+    g_rec_cyc_boundary = 0;
+
+    if (video_rec_get_storage_info(&total_kb, &free_kb) != 0) {
+        log_error("[VREC] delete: get storage info failed\n");
+        return -2;
+    }
+
+    int retries = VIDEO_DELETE_MAX_FILES;
+    while (free_kb < (u32)MIN_FREE_SPACE_MB * 1024 && retries-- > 0) {
+        if (video_rec_delete_oldest_file() != 0) {
+            log_error("[VREC] no more files to delete\n");
+            no_file = 1;
+            break;
+        }
+        deleted++;
+        video_rec_get_storage_info(&total_kb, &free_kb);
+    }
+
+    /* 边界后拿到的最新容量同步给 UI */
+    g_rec_has_card_async = 1;
+    g_rec_free_sec_async = video_rec_free_kb_to_sec(free_kb);
+    g_rec_calc_done = 1;
+
+    if (out_free_kb) {
+        *out_free_kb = free_kb;
+    }
+
+    if (free_kb >= (u32)MIN_FREE_SPACE_MB * 1024) {
+        g_rec_need_delete_old = 0;
+        g_rec_danger_cnt = 0;
+        log_info("[VREC] boundary delete done: deleted=%d, free=%uKB\n", deleted, free_kb);
+    } else {
+        log_error("[VREC] boundary delete insufficient: deleted=%d, free=%uKB\n", deleted, free_kb);
+    }
+
+    return no_file ? -1 : deleted;
 }
 
 /*==============================================================================
@@ -447,9 +552,12 @@ int video_rec_repair_avi(const char *path)
     long written = 0;
     long audio_written = 0;
     int copy_failed = 0;
+    long pos = 0;
     for (;;) {
         int key = 0;
-        long len = AVI_read_frame(src, buf, &key);
+        /* 先只取长度(vidbuf=NULL 时 avilib 直接回帧长, 不碰 buf): 索引损坏时 n 可能异常大,
+         * 直接读会按 n 越界写; 探长度也会推进 video_pos, 读前拨回 */
+        long len = AVI_read_frame(src, NULL, &key);
         if (len <= 0) {
             break;
         }
@@ -458,6 +566,15 @@ int video_rec_repair_avi(const char *path)
             copy_failed = 1;
             break;
         }
+        AVI_set_video_position(src, pos);
+        /* 第二遍带容量上限读: 索引在两次读之间变化也写不越界 */
+        len = AVI_read_video(src, buf, max_frame, &key);
+        if (len <= 0) {
+            log_error("[VREC] repair: reread frame %ld failed\n", pos);
+            copy_failed = 1;
+            break;
+        }
+        pos++;
         if (AVI_write_frame(fixed, buf, len, key) == 0) {
             written++;
         }

@@ -12,20 +12,6 @@
  * (其内再带 lv_conf_internal.h, 提供 LV_DEF_REFR_PERIOD; lv_obj.h 链则提供 lv_obj_invalidate)。 */
 #include "src/misc/lv_anim.h"
 
-/* overlay 渐变要用 lv_malloc/lv_free/lv_memset(倒影渐隐的 ov_clut/ov_task 逐帧懒分配)。
- * 与 lv_anim.h 同属纯 lvgl 内部头(只引 lv_conf_internal.h/lv_types.h), 需在
- * app_config.h 之前引入, 避免与 app 层的 bool 重定义冲突。 */
-#include "src/stdlib/lv_mem.h"
-
-/* 临时点按诊断开关: 1 = get_face 打一行 printf(仅 manager 点按松手触发, 量小), 验证后置 0 */
-#define LRB_TAP_DBG_EN 1
-
-#if LRB_TAP_DBG_EN
-/* 注意: 不能 #include <stdio.h>/"printf.h" —— 前者与 fs.h 的 FILE 冲突, 后者不在本
- * 模块 include 路径。直接按 SDK printf.h 的签名前向声明, 链接到平台自带 printf。 */
-int printf(const char *format, ...);
-#endif
-
 #include "app_config.h"
 
 #if CONFIG_LVGL_UI_ENABLE
@@ -81,29 +67,17 @@ int printf(const char *format, ...);
 #define LRB_MIR_SLOT_U   1.0f           /* 门限模式: 邻页静止槽 |a|(=1): 达到即无倒影 */
 #define LRB_MIR_GATE_EPS 0.02f          /* 门限模式容差(约 6px 拖动量, 防浮点) */
 
-/* ---- 真倒影: 倒影纵向渐隐(后置 overlay 钩子里画) ----
- * 本体实心镜像画完后, 在每个倒影四边形 bbox 上再叠一层竖直渐变, 让倒影像玻璃反射一样
- * 离接缝越远越淡, 而不是硬邦邦的同一份内容倒着画。
- * LRB_MIR_FADE_MODE 选渐隐实现, 编译期切换便于真机 A/B:
- *  0 = SRC_OVER 黑色 alpha 渐变覆盖(接缝 alpha0 -> 远边 alpha255 压黑): 实现最早, 但
- *      alpha 走低精度混合插值, 在 RGB565 上横纹明显, 开 dither/MSAA 改善有限;
- *  1 = MULTIPLY 灰度逐像素变暗(接缝白 255 -> 远边黑 0, 源恒不透明): 在色域内乘性变暗,
- *      不依赖 alpha 混合精度, 横纹更少, 还能保留倒影里的暗部细节。推荐。
- * 曲线由 LRB_MIR_FADE_BASE/HOLD/GAMMA 整形: BASE = 接缝起点的基础变暗量(0 = 接缝原样,
- * 越大整条倒影越深), HOLD = 顶部不渐隐占比, GAMMA = 淡出曲线指数(1 = 线性)。
- * RGB565 直写渐变要平滑, 需 fill.c 同款三件套: MSAA_8X(超采样查 clut, 摊平逐级跳变) +
- * dither(抖动量化) + 完整 257 级 clut。MSAA=0 时按最邻近取 clut -> 每行一级、呈可见横纹;
- * 若 MSAA 后仍有红/绿残留, 把 DITHER 拨 0 对比(彩色残留多来自抖动通道解耦)。 */
-#define LRB_MIR_FADE_MODE   1           /* 0 = SRC_OVER alpha 压黑; 1 = MULTIPLY 灰度变暗(推荐) */
-#define LRB_MIR_FADE_MSAA   1           /* 渐变渲染质量: 0 = NONANTIALIASED(最邻近, 会出横纹); 1 = MSAA_8X */
-#define LRB_MIR_FADE_DITHER 1           /* 渐变抖动: 1 = 开(摊平 565 量化); 0 = 关(出纯台阶, A/B 用) */
-#define LRB_MIR_FADE_LUT    8           /* 渐变 clut 分级: 2^8+1 = 257 级, 越高分层越不可见 */
-#define LRB_MIR_FADE_HOLD   0.0f        /* 顶部不渐隐占比(0..1): 0 = 从接缝就开始淡出 */
-#define LRB_MIR_FADE_BASE   0.35f       /* 接缝起点基础变暗量(0..1): 0 = 接缝处原样不变暗;
-                                         * >0 = 从接缝起就压深(整条倒影更暗), 远边仍到最黑。
-                                         * 观感"倒影起点就深一些"就调这个。 */
-#define LRB_MIR_FADE_GAMMA  1.0f        /* 淡出曲线指数: 1 = 线性; >1 顶部更亮、越到远边越急 */
-#define LRB_MIR_FADE_ALPHA  128         /* 全局 alpha: 与 lv_jlgpu 不透明约定一致(128 = 1.0) */
+/* ---- 真倒影: 倒影阴影(GPU 逐槽全局透明度) ----
+ * 复用 hexagon_reflection 同款硬件方案: manager 在每个槽重放前按 ops->slot_alpha 重设
+ * 该槽任务链的全局透明度。镜像槽(= p + LRB_POLYTOPE_SIX)与本体槽(p)共用同一条任务链,
+ * 故 manager 每槽重设一次、且画序恒为"先镜后体"(见 lrb_render_frame pass2), 每页最后
+ * 落到的都是不透明的本体槽, 不会把暗度残留给别页。
+ * 相比旧的逐镜 bbox 线性渐变 overlay(已删): 省掉每帧最多 6 次同步 jlgpu_run 的渐变
+ * pass 及 257 级 CLUT/任务缓冲; 代价是倒影变成整片均匀压暗, 失去"越远离接缝越淡"的
+ * 纵向渐变(接缝处不再有过渡)。
+ * LRB_MIR_SHADOW_ALPHA: 0~128, 128 = 不透明; 越小越暗(32 ≈ 25%, 与 app 层 hexagon
+ * 阴影同量级)。觉得倒影太暗/太亮就调这个。 */
+#define LRB_MIR_SHADOW_ALPHA 32
 
 /* ---- 驱动 ---- */
 #define LRB_PX_PER_PAGE_PX (__this->width)   /* 拖动/动画每页对应的像素(默认一屏一页) */
@@ -131,7 +105,6 @@ typedef struct {
 } lrb_quad_t;
 
 struct lrb_mirror_priv {
-    lv_draw_jlgpu_unit_t *unit;
     u8 init;
     int width;                       /* 屏分辨率 */
     int height;
@@ -152,8 +125,6 @@ struct lrb_mirror_priv {
     int base_x;
     int t_last;
     u8 frame_init;
-    int seq;                         /* render_frame 已跑次数(诊断: 命中缓存是否曾被刷新) */
-    int gen;                         /* init() 被调用次数(诊断: 是否经历 uninit->init 重入) */
 
     /* 上一帧命中缓存(manager 点按回调与 move 不同步, 用最近一帧姿态判点) */
     u8 drawn[LRB_POLYTOPE_SIX];      /* 本体本帧是否上屏 */
@@ -176,9 +147,6 @@ struct lrb_mirror_priv {
     float nav_delta;               /* 目标页相对 nav_c0 的带符号距离(页单位) */
     int nav_v0;                    /* 首个动画帧 touch_x; -1 = 未捕获 */
     int nav_v1;                    /* 动画终点 touch_x(= 屏宽, 与 a_old 0->W 一致) */
-    float enter_card_bottom;       /* 放大进入: 本帧目标卡底边屏幕 y(水平)。倒影随卡一起
-                                    * 放大并贴在该边下方; overlay 据此把渐隐起点夹到卡底以外,
-                                    * 避免把卡底内容一起压暗(见 lrb_mirror_fade_overlay)。 */
 
     /* 松手自动居中: manager 滑动松手(>10px)不做任何事也不重绘, coverflow 会停在拖动
      * 半途。LRB 用自有 lv_timer 逐帧把 C 缓动吸附到最近整页 —— 不动 touch_x, 每帧只
@@ -191,14 +159,6 @@ struct lrb_mirror_priv {
 
     float last_C;                  /* 最近一帧实际渲染的中心 C(命中/导航用真实姿态;
                                     * manager 按下会把 touch_x 直写 0, drive_C() 会失真) */
-
-    /* 真倒影纵向渐隐(后置 overlay): 复用管理器的 ctx 句柄编码"单节点渐变"画在每个倒影
-     * bbox 上, 不改动页 ctx 的任务链(不污染), 也不建自己的 ctx(避免重复初始化硬件)。
-     * 资源懒分配: ov_clut/ov_task 首帧分配, uninit 释放。 */
-    u8 ov_ready;                   /* 渐隐资源是否已就绪 */
-    uint32_t *ov_clut;             /* alpha 渐隐查找表: (1<<LUT)+1 项 ARGB8888(黑, alpha 0->255) */
-    uint8_t *ov_task;              /* 渐变任务节点缓冲(逐镜复用) */
-    u32 ov_task_cap;               /* 已分配缓冲字节数 */
 };
 
 /**********************
@@ -526,8 +486,6 @@ static void lrb_render_frame(float C)
     for (int i = 0; i < LRB_POLYTOPE_SIX * 2; i++) {
         do_[i] = (i < n) ? (uint8_t)ord[i] : 0xFF;
     }
-
-    __this->seq++;
 }
 
 /* 点中中央页的"进入"渲染: 背景保持静止封面(邻页竖条/倒影不动, 无跳变), 前景目标卡
@@ -573,191 +531,7 @@ static void lrb_render_enter(int page, float p, float C)
         mq.y[i] = 2.0f * yb - q.y[i];
     }
     __this->mir[page] = mq;
-    __this->enter_card_bottom = yb;
     lrb_slot_apply_matrix(page + LRB_POLYTOPE_SIX, &mq);
-}
-
-/* ========================== 真倒影纵向渐隐(后置 overlay) ========================== */
-
-/* 懒分配/填充渐隐查找表。索引 0 = 接缝(da.y1, 不淡), 大 index = 远边(da.y2, 最淡);
- * LRB_MIR_FADE_MODE=1(MULTIPLY): 不透明 白255 -> 黑0, 逐像素乘性变暗(推荐);
- * LRB_MIR_FADE_MODE=0(SRC_OVER): RGB 恒 0(黑), alpha 0 -> 255 压黑。 */
-static void lrb_overlay_ensure(void)
-{
-    uint32_t n = (1u << LRB_MIR_FADE_LUT);
-    uint32_t *c = lv_malloc(sizeof(uint32_t) * (n + 1u));
-    if (c == NULL) {
-        return;
-    }
-    for (uint32_t i = 0; i <= n; i++) {
-        float t = (float)i / (float)n;
-        float x = (t - LRB_MIR_FADE_HOLD) / (1.0f - LRB_MIR_FADE_HOLD);
-        if (x < 0.0f) {
-            x = 0.0f;
-        }
-        if (x > 1.0f) {
-            x = 1.0f;
-        }
-        float z = LRB_MIR_FADE_BASE
-                  + (1.0f - LRB_MIR_FADE_BASE) * powf(x, LRB_MIR_FADE_GAMMA); /* 0 = 不淡, 1 = 远边最淡 */
-        if (z < 0.0f) {
-            z = 0.0f;
-        }
-        if (z > 1.0f) {
-            z = 1.0f;
-        }
-#if LRB_MIR_FADE_MODE
-        uint32_t g = (uint32_t)((1.0f - z) * 255.0f + 0.5f);
-        c[i] = (255u << 24) | (g << 16) | (g << 8) | g;   /* ARGB8888 不透明灰: 白->黑 */
-#else
-        uint32_t ai = (uint32_t)(z * 255.0f + 0.5f);
-        if (ai > 255u) {
-            ai = 255u;
-        }
-        c[i] = (ai << 24);   /* ARGB8888: RGB 恒 0(黑), A 从接缝 0 渐增到远边 255 */
-#endif
-    }
-    __this->ov_clut = c;
-    __this->ov_ready = 1;
-}
-
-/* 在每个本帧已上屏的倒影四边形 bbox 上叠加竖直渐隐 -> 倒影像玻璃反射一样越远离接缝越
- * 淡, 到自身远边恰好消失(下方本就是黑地板)。与普通镜像本质区别: 普通镜像是"同一份内容
- * 再画一遍只是倒过来", 此层让远端内容被逐渐减淡, 形成"反射衰减"观感。逐镜 bbox 独立叠:
- * 矮倒影在自身远边就淡完, 不把下面的其它页一起压暗。
- * 实现见 LRB_MIR_FADE_MODE: 0 = SRC_OVER 黑色 alpha 压黑; 1 = MULTIPLY 不透明灰度乘性
- * 变暗(色域内操作, alpha 混合精度不再参与, 横纹更少)。
- *
- * 实现上复用 manager 的 ctx 句柄(不新建, 避免重复初始化硬件): 每镜把渐变编成"独立单节
- * 点"(不复用页 ctx 任务链, 不污染 12 槽共享 ctx), 窗口 sfr_set 到该镜 bbox、全局矩阵
- * 复位恒等后 jlgpu_run 立即出。
- */
-static void lrb_mirror_fade_overlay(lv_draw_jlgpu_unit_t *unit, uint8_t *px_map,
-                                    const lv_area_t *screen_window)
-{
-    if (!__this->init || unit == NULL || unit->jlgpu_ctx == NULL) {
-        return;
-    }
-    /* 中央页"放大进入"接管中: 目标卡逐帧铺满全屏。倒影已随本体一起放大并滑向屏底
-     * (见 lrb_render_enter), 渐隐照常叠 —— 否则倒影一进动画就丢掉暗部("阴影消失")。
-     * 但放大中的卡会盖过邻近页的倒影区, 若这些倒影仍从各自 seam(304) 起叠渐隐,
-     * 就会把卡底内容一起压暗。故进入期间把每个倒影的渐隐起始行夹到"当前卡底边"以外。
-     * p=0 时卡底边 = seam, 夹取等价于不夹 -> 起手与进入前完全一致, 不跳变。 */
-    int enter_clip = (__this->nav_active && __this->nav_enter);
-    int clip_top = enter_clip ? (int)(__this->enter_card_bottom + 0.999f) : 0;
-    if (!__this->ov_ready) {
-        lrb_overlay_ensure();
-        if (!__this->ov_ready) {
-            return;   /* 分配失败: 退化为原实心镜像(不淡出) */
-        }
-    }
-
-    int fbw = lv_area_get_width(screen_window);   /* 行跨距 = out_buf 偏移基准 */
-
-    for (int p = 0; p < LRB_POLYTOPE_SIX; p++) {
-        if (!__this->mir_drawn[p]) {
-            continue;
-        }
-        lv_area_t da = *g_page_effect_state.draw_area[p + LRB_POLYTOPE_SIX];
-        /* 与 manager 重放循环同一套屏幕内夹取(存储的 draw_area 可能带出屏部分):
-         * 保证 out_buf 指针与 sfr 窗口都不越界。 */
-        if (da.x1 < screen_window->x1) {
-            da.x1 = screen_window->x1;
-        }
-        if (da.y1 < screen_window->y1) {
-            da.y1 = screen_window->y1;
-        }
-        if (da.x2 > screen_window->x2) {
-            da.x2 = screen_window->x2;
-        }
-        if (da.y2 > screen_window->y2) {
-            da.y2 = screen_window->y2;
-        }
-        /* 放大进入: 渐隐只从"卡底边以下"起, 不压到卡内容(见上 clip_top 说明) */
-        if (enter_clip && da.y1 < clip_top) {
-            da.y1 = clip_top;
-        }
-        if (da.x1 > da.x2 || da.y1 > da.y2) {
-            continue;
-        }
-
-        jlgpu_lineargrad_param_t lineargrad_param;
-        lineargrad_param.point_start.x = da.x1;
-        lineargrad_param.point_start.y = da.y1;   /* 接缝: clut index 0, 不淡(alpha0 / 白 255) */
-        lineargrad_param.point_end.x = da.x1;
-        lineargrad_param.point_end.y = da.y2;     /* 远边: clut 末项, 最淡(alpha255 黑 / 黑 0) */
-        lineargrad_param.spread_mode = JLGPU_COLOR_RAMP_SPREAD_PAD;
-
-        jlgpu_matrix_t matrix;
-        jlgpu_computeLinearParameters(LRB_MIR_FADE_LUT, &lineargrad_param, &matrix);
-
-        jlgpu_draw_grad_t draw_grad = {0};
-        jlgpu_mask_param_t mask_params = {0};
-        jlgpu_render_param_t render_params = {0};
-        jlgpu_paint_inter_params_t inter_params;
-
-        draw_grad.clut_level = LRB_MIR_FADE_LUT;
-        draw_grad.grad_trans_mode = JLGPU_TRANS_MODE_AFFINE;
-        draw_grad.paint_info.premult = 1;
-        draw_grad.paint_info.pt_clip.x_min = -4096;
-        draw_grad.paint_info.pt_clip.x_max = 4095;
-        draw_grad.paint_info.pt_clip.y_min = -4096;
-        draw_grad.paint_info.pt_clip.y_max = 4095;
-        draw_grad.lineargrad_ptr = &lineargrad_param;
-        draw_grad.grad_mode = JLGPU_GRAD_MODE_LINEAR_GRADIENT;
-        draw_grad.surface2paint = &matrix;
-        draw_grad.clut_format = JLGPU_CLUT_FORMAT_ARGB8888;
-        draw_grad.clut_adr = (uint8_t *)__this->ov_clut;
-
-        inter_params.coeff0 = 0;
-        inter_params.coeff1 = 0;
-        inter_params.inter_mode = JLGPU_SAMPLE_MODE_X1;
-        draw_grad.grad_inter_params = &inter_params;
-
-        render_params.layer_en = 1;
-        render_params.gb_trans_en = 1;
-        /* 渐变实现按 LRB_MIR_FADE_MODE: 0 = SRC_OVER 黑色压黑; 1 = MULTIPLY 灰度乘性变暗。 */
-        render_params.blend_mode = LRB_MIR_FADE_MODE ? JLGPU_BLEND_MULTIPLY : JLGPU_BLEND_SRC_OVER;
-        render_params.global_alpha = LRB_MIR_FADE_ALPHA;
-        /* 渲染质量可 A/B(横纹与插值路径相关): 0 = NONANTIALIASED(普通纹理合成同款);
-         * 1 = MSAA_8X(fill.c 渐变配方, 实测对横纹改善有限且更耗). dither 抖动量化。 */
-        render_params.render_quality = LRB_MIR_FADE_MSAA ? JLGPU_RENDERING_QUALITY_MSAA_8X
-                                       : JLGPU_RENDERING_QUALITY_NONANTIALIASED;
-        render_params.dither_en = LRB_MIR_FADE_DITHER;   /* 抖动量化, 摊平 565 渐变分层 */
-        render_params.render_area.x_min = da.x1;
-        render_params.render_area.x_max = da.x2 + 1;
-        render_params.render_area.y_min = da.y1;
-        render_params.render_area.y_max = da.y2 + 1;
-
-        mask_params.mask_mode = JLGPU_MASK_MODE_NONE;
-
-        int task_len = jlgpu_draw_grad_task_len(unit->jlgpu_ctx->ctx, &draw_grad, &mask_params);
-        if (task_len <= 0) {
-            continue;
-        }
-        if ((u32)task_len > __this->ov_task_cap) {
-            uint8_t *nb = lv_malloc(task_len);
-            if (nb == NULL) {
-                continue;
-            }
-            if (__this->ov_task) {
-                lv_free(__this->ov_task);
-            }
-            __this->ov_task = nb;
-            __this->ov_task_cap = (u32)task_len;
-        }
-        lv_memset(__this->ov_task, 0, task_len);
-
-        jlgpu_set_task(unit->jlgpu_ctx->ctx, __this->ov_task, task_len);
-        jlgpu_draw_grad(unit->jlgpu_ctx->ctx, &render_params, &draw_grad, &mask_params);
-
-        /* 单节点不含几何变换: 窗口夹到本镜像 bbox, 全局矩阵复位为恒等再跑(与 manager
-         * 每槽先 sfr_set 再 set_global_trans 的语义一致)。 */
-        uint8_t *out_buf = px_map + ((uint32_t)fbw * (uint32_t)da.y1 + (uint32_t)da.x1) * 2u;
-        lv_jlgpu_sfr_set(unit, &da, (uint32_t)fbw, out_buf, JLGPU_FORMAT_RGB565);
-        lv_jlgpu_reset_global_trans_param();
-        jlgpu_run(unit->jlgpu_ctx->ctx, __this->ov_task);
-    }
 }
 
 /* ========================== 命中测试 ========================== */
@@ -904,22 +678,6 @@ int lv_lrb_mirror_effect_get_face_scr_id(int x, int y)
         __this->nav_active = 1;
     }
 
-#if LRB_TAP_DBG_EN
-    /* 仅 manager 点按分支(松手≤10px)会调本函数 —— 单行自答: 命中页/进入 or 翻页接管 */
-    printf("[LRB]tap(%d,%d) busy=%d ap=%d enter=%d touch=%d hit=%d via=%d mir=%d "
-           "u100=%d scr=%d gen=%d seq=%d C=%d nv=%d d100=%d\n",
-           x, y,
-           g_page_effect_state.effect_busy,
-           (g_page_effect_state.a_old) ? lv_anim_is_paused(g_page_effect_state.a_old) : -1,
-           g_page_effect_state.effect_enter,
-           g_page_effect_state.touch_x,
-           page, (page < 0) ? -1 : via_live, is_mir,
-           (int)(u * 100.0f),
-           scr_id, __this->gen, __this->seq,
-           (int)(Cpose * 100.0f),
-           __this->nav_active ? (__this->nav_enter ? 2 : 1) : 0,
-           (int)(__this->nav_delta * 100.0f));
-#endif
     return scr_id;
 }
 
@@ -985,11 +743,6 @@ static void lrb_settle_tick(lv_timer_t *timer)
         __this->settle_c1 = c1;
         __this->settle_t0 = lv_tick_get();
         __this->settle_active = 1;
-#if LRB_TAP_DBG_EN
-        printf("[LRB]st(%d -> %d) touch=%d base=%d\n",
-               (int)(C * 100.0f), (int)(c1 * 100.0f),
-               g_page_effect_state.touch_x, __this->base_x);
-#endif
     }
 
     uint32_t el = lv_tick_get() - __this->settle_t0;
@@ -1008,10 +761,6 @@ static void lrb_settle_tick(lv_timer_t *timer)
 
     if (p >= 1.0f) {
         __this->settle_active = 0;       /* 已到位: base_x 落整页, 之后静止即整页 */
-#if LRB_TAP_DBG_EN
-        printf("[LRB]st_done C=%d touch=%d base=%d\n",
-               (int)(Ca * 100.0f), g_page_effect_state.touch_x, __this->base_x);
-#endif
     }
     if (g_page_effect_state.act_scr) {
         lv_obj_invalidate(g_page_effect_state.act_scr);
@@ -1029,11 +778,11 @@ void lv_lrb_mirror_effect_init(lv_draw_jlgpu_unit_t *unit, bool list_flag)
         return;
     }
     (void)list_flag;
+    (void)unit;
 
     lv_display_t *disp = lv_refr_get_disp_refreshing();
     __this->width  = lv_display_get_horizontal_resolution(disp);
     __this->height = lv_display_get_vertical_resolution(disp);
-    __this->unit = unit;
 
     float half_fov = LRB_FOV_DEG * LRB_PI / 360.0f; /* fov/2 in rad */
     __this->fx = (float)__this->width  / tanf(half_fov);
@@ -1062,8 +811,6 @@ void lv_lrb_mirror_effect_init(lv_draw_jlgpu_unit_t *unit, bool list_flag)
     __this->frame_init = 1;
     __this->nav_active = 0;                       /* 新实例不带残留导航 */
     __this->nav_enter = 0;
-    __this->seq = 0;                              /* 诊断: 本次实例已渲染帧数 */
-    __this->gen++;                                /* 诊断: 实例代数(uninit->init 重入+1) */
     __this->last_C = 0.0f;                        /* 首帧前: 命中用 drive_C 兜底 */
     __this->settle_active = 0;
 
@@ -1077,7 +824,7 @@ void lv_lrb_mirror_effect_init(lv_draw_jlgpu_unit_t *unit, bool list_flag)
 
 /* ------------------------------------------------------------------------------------*/
 /**
- * @brief lv_lrb_mirror_effect_uninit 反初始化(只清私有状态 + 释放倒影渐隐懒分配资源)
+ * @brief lv_lrb_mirror_effect_uninit 反初始化(只清私有状态)
  */
 /* ------------------------------------------------------------------------------------*/
 void lv_lrb_mirror_effect_uninit(void)
@@ -1089,17 +836,6 @@ void lv_lrb_mirror_effect_uninit(void)
         lv_timer_delete(__this->settle_timer);
         __this->settle_timer = NULL;
     }
-    /* 倒影渐隐资源: 本次实例一次性分配, 退出释放(ov_ready 清 0, 下次 init 懒重建) */
-    if (__this->ov_clut) {
-        lv_free(__this->ov_clut);
-        __this->ov_clut = NULL;
-    }
-    if (__this->ov_task) {
-        lv_free(__this->ov_task);
-        __this->ov_task = NULL;
-    }
-    __this->ov_task_cap = 0;
-    __this->ov_ready = 0;
     for (int i = 0; i < LRB_POLYTOPE_SIX; i++) {
         __this->drawn[i] = 0;
         __this->mir_drawn[i] = 0;
@@ -1185,6 +921,15 @@ int lv_ui_lrb_mirror_move(lv_draw_jlgpu_unit_t *unit, int xoffset, int yoffset)
     return 0;
 }
 
+/* 槽位全局透明度: 镜像(倒影)槽整片压暗成阴影, 本体槽保持不透明。
+ * 槽约定见 lrb_render_frame: 本体槽 = p, 镜像槽 = p + LRB_POLYTOPE_SIX, 画序恒"先镜后体",
+ * 每页最后一个槽必是本体(128) -> 不会把暗度残留给下一页。 */
+static int lrb_mirror_slot_alpha(int ctx_index, int page_num)
+{
+    (void)page_num;
+    return (ctx_index >= LRB_POLYTOPE_SIX) ? LRB_MIR_SHADOW_ALPHA : 128;
+}
+
 static const sticky_effect_ops_t lrb_mirror_effect_ops = {
     .init            = lv_lrb_mirror_effect_init,
     .uninit          = lv_lrb_mirror_effect_uninit,
@@ -1192,7 +937,7 @@ static const sticky_effect_ops_t lrb_mirror_effect_ops = {
     .get_face_scr_id = lv_lrb_mirror_effect_get_face_scr_id,
     .get_face_index  = lv_lrb_mirror_effect_get_face_index,
     .get_page_id     = lv_lrb_mirror_effect_get_page_id,
-    .overlay         = lrb_mirror_fade_overlay,
+    .slot_alpha      = lrb_mirror_slot_alpha,
 };
 
 const sticky_effect_ops_t *lv_lrb_mirror_effect_get_ops(void)

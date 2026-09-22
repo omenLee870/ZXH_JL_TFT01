@@ -128,18 +128,20 @@ echo %bank_lz4_files%
 copy p11_bank_code.bin p11_code.bin
 copy p11_bank_code.lz4 p11_code.lz4
 
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH)
+#if defined(PMC_APP_CASE_WATCH) && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH)
 set case_suffix=_watch
-#elif (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES)
+#elif defined(PMC_APP_CASE_WATCH) && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES)
 set case_suffix=_ai_glasses
-#elif (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_DASHBOARD)
+#elif defined(PMC_APP_CASE_WATCH) && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_DASHBOARD)
 set case_suffix=_dashboard
-#elif (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_KID_CAMERA)
+#elif defined(PMC_APP_CASE_WATCH) && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_KID_CAMERA)
 set case_suffix=_kid_camera
 #endif
+#ifdef PMC_APP_CASE_WATCH
 copy pmc_code.bin pmc_code%case_suffix%.bin
 copy p11_code.bin p11_code%case_suffix%.bin
 copy p11_code.lz4 p11_code%case_suffix%.lz4
+#endif
 
 call download_wid_call.bat
 

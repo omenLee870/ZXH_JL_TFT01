@@ -9,6 +9,21 @@
 
 extern uint32_t timer_get_ms(void);
 
+/* MEMDBG(playback) 探针: 原 12 个点全开会把 app_core 栈推爆, 故只放行 4 个关键点。
+ * 目的: 把 video_dec.c 夹出的"起播链 189KB"拆开, 定位到具体子步骤。 */
+extern void mem_stats(void);
+static void pv_MEMDBG(const char *stage)
+{
+    if (stage == NULL) {
+        return;
+    }
+    if (strcmp(stage, "vs_fq_open_after") == 0 || strcmp(stage, "vs_thread_fork_after") == 0 ||
+        strcmp(stage, "vs_audio_before") == 0 || strcmp(stage, "vs_audio_after") == 0) {
+        printf("[PMM] %s\n", stage);
+        mem_stats();
+    }
+}
+
 static app_playback_ret_t app_playback_video_post_event(app_playback_handle_t handle,
         int event)
 {
@@ -304,12 +319,15 @@ app_playback_ret_t app_playback_video_start(app_playback_handle_t handle,
 {
     app_playback_ret_t app_ret;
 
+    pv_MEMDBG("vs_enter");
     if (handle == NULL || path == NULL || path[0] == '\0') {
         printf("handle or video path is invalid\n");
+        pv_MEMDBG("vs_exit");
         return APP_PLAYBACK_ERR_INVALID_ARG;
     }
     if (handle->video_started) {
         printf("playback is busy\n");
+        pv_MEMDBG("vs_exit");
         return APP_PLAYBACK_ERR_BUSY;
     }
     snprintf(handle->play_path, sizeof(handle->play_path), "%s", path);
@@ -321,14 +339,19 @@ app_playback_ret_t app_playback_video_start(app_playback_handle_t handle,
         handle->video_buffer_size = APP_PLAYBACK_VIDEO_BUF_DEFAULT;
     }
 
+    pv_MEMDBG("vs_fq_open_before");
     app_ret = app_playback_demux_frame_queue_open(handle, handle->video_buffer_size);
+    pv_MEMDBG("vs_fq_open_after");
     if (app_ret != APP_PLAYBACK_OK) {
         printf("failed to open video frame queue\n");
         app_playback_video_post_event(handle, APP_PLAYBACK_EVENT_ERROR);
+        pv_MEMDBG("vs_exit");
         return app_ret;
     }
 
+    pv_MEMDBG("vs_demux_open_before");
     app_ret = app_playback_demux_open(handle, path);
+    pv_MEMDBG("vs_demux_open_after");
     if (app_ret != APP_PLAYBACK_OK) {
         app_playback_video_post_event(handle, APP_PLAYBACK_EVENT_ERROR);
         goto err_close_lbuf;
@@ -340,7 +363,9 @@ app_playback_ret_t app_playback_video_start(app_playback_handle_t handle,
     handle->video_started = 1;
     handle->video_thread_exit_flag = 0;
 
+    pv_MEMDBG("vs_demux_start_before");
     app_ret = app_playback_demux_start(handle);
+    pv_MEMDBG("vs_demux_start_after");
     if (app_ret != APP_PLAYBACK_OK) {
         printf("failed to start demux\n");
         app_playback_video_post_event(handle, APP_PLAYBACK_EVENT_ERROR);
@@ -350,6 +375,7 @@ app_playback_ret_t app_playback_video_start(app_playback_handle_t handle,
     snprintf(handle->video_thread_name,
              sizeof(handle->video_thread_name),
              "play_avi");
+    pv_MEMDBG("vs_thread_fork_before");
     if (thread_fork(handle->video_thread_name,
                     APP_PLAYBACK_VIDEO_THREAD_PRIO,
                     APP_PLAYBACK_VIDEO_THREAD_STACK,
@@ -363,10 +389,14 @@ app_playback_ret_t app_playback_video_start(app_playback_handle_t handle,
         goto err_stop_demux;
     }
 
+    pv_MEMDBG("vs_thread_fork_after");
     app_playback_video_post_event(handle, APP_PLAYBACK_EVENT_STARTED);
 
+    pv_MEMDBG("vs_audio_before");
     app_playback_audio_start(handle);  /* 有音频轨则起音频播放线程(可选, 失败不影响视频) */
+    pv_MEMDBG("vs_audio_after");
 
+    pv_MEMDBG("vs_exit");
     return APP_PLAYBACK_OK;
 
 err_stop_demux:
@@ -376,6 +406,7 @@ err_close_demux:
     app_playback_demux_close(handle);
 err_close_lbuf:
     app_playback_demux_frame_queue_close(handle);
+    pv_MEMDBG("vs_exit");
     return app_ret;
 }
 

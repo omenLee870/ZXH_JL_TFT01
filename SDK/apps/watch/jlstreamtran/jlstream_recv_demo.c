@@ -36,6 +36,36 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+/*
+ * ── 接收链路调优开关 ────────────────────────────────────────────
+ * 数据流大、解码慢时, Q_JLSTM_RECV_DATA 队列易积压, 以下开关独立控制各优化项。
+ */
+
+/* 丢整帧策略: 1=队列满时丢弃当前帧剩余分片(丢整帧不花屏), 0=丢单分片 */
+#ifndef JLSTM_RECV_DROP_FRAME_EN
+#define JLSTM_RECV_DROP_FRAME_EN   1
+#endif
+
+/* 整帧级 post: 1=生产者回调内组帧, 每帧只 post 一条消息(队列消息数=帧数,
+ * 调度/拷贝开销大降, 延迟更低); 0=分片级 post(旧行为, 每分片一条消息)。
+ * 仅作用于新协议 test_sm_data_cb(stream_media, 帧不分离 header/data)。
+ * 旧协议 AE03(jlstream_recv_demo_data_cb) 因 JPEG header/data 分离语义复杂, 保持分片 post。 */
+#ifndef JLSTM_RECV_FRAME_LEVEL_POST
+#define JLSTM_RECV_FRAME_LEVEL_POST   1
+#endif
+
+/* 每处理一个分片后的主动延时(单位 OS tick, 1 tick=10ms)。
+ * 0=不延时(默认, 让解码满速跑, 避免队列积压); 调试期可临时设 1 观察时序。 */
+#ifndef JLSTM_RECV_PER_PKT_DLY_TICK
+#define JLSTM_RECV_PER_PKT_DLY_TICK   0
+#endif
+
+/* 帧时序/堆积打印: 1=打印"post 帧序 vs 解码帧序 + 每帧解码耗时", 0=关闭(默认)。
+ * 用于观察队列是否堆积、解码耗时是否变长。注意会拖慢接收, 定位完务必置 0。 */
+#ifndef JLSTM_RECV_PROFILE_LOG_EN
+#define JLSTM_RECV_PROFILE_LOG_EN   0
+#endif
+
 /* ==================== 内部类型定义 ==================== */
 
 /* BLE 回调 → 任务线程的消息包 */
@@ -175,6 +205,31 @@ int jlstream_recv_ui_refresh_register(void (*cb)(void *arg));
 
 /* ==================== 数据回调 (BLE 上下文) ==================== */
 
+#if JLSTM_RECV_DROP_FRAME_EN
+/* 丢整帧状态: post 失败后丢弃当前帧剩余分片, 直到下一帧(offset==0)才恢复 */
+static u8 g_media_drop_active = 0;
+
+static int media_frame_should_drop(u32 offset)
+{
+    if (!g_media_drop_active) {
+        return 0;
+    }
+    if (offset == 0) {
+        g_media_drop_active = 0;   /* 新帧到来, 恢复 */
+        return 0;
+    }
+    return 1;   /* 仍处上一帧, 继续丢 */
+}
+
+static void media_frame_mark_drop(void)
+{
+    g_media_drop_active = 1;
+}
+#else
+#define media_frame_should_drop(offset)   0
+#define media_frame_mark_drop()           do {} while (0)
+#endif
+
 /**
  * @brief AE03 流数据回调 —— 在 BLE att_write_callback 上下文中执行
  *
@@ -183,6 +238,10 @@ int jlstream_recv_ui_refresh_register(void (*cb)(void *arg));
 static void jlstream_recv_demo_data_cb(const jlstm_push_frame_t *frame)
 {
     if (!frame || !g_recv) {
+        return;
+    }
+
+    if (media_frame_should_drop(frame->offset)) {
         return;
     }
 
@@ -208,6 +267,7 @@ static void jlstream_recv_demo_data_cb(const jlstm_push_frame_t *frame)
     if (err) {
         log_error("post fail: %d", err);
         free(msg);
+        media_frame_mark_drop();
     }
 }
 
@@ -260,6 +320,11 @@ REGISTER_JLSTM_TX_RESPONSE_OPS(jlstream_recv_demo_tx_ops) = {
 };
 
 /* ==================== 接收任务 (独立线程) ==================== */
+
+#if JLSTM_RECV_PROFILE_LOG_EN
+static u16 g_profile_post_seq = 0;   /* 生产者最近 post 的帧序 */
+static u16 g_profile_dec_seq  = 0;   /* 消费者最近解码的帧序 */
+#endif
 
 /**
  * @brief 接收任务主循环
@@ -324,7 +389,9 @@ static void jlstm_push_recv_task(void *p)
 
                 extern void wdt_clear(void);
                 wdt_clear();
-                os_time_dly(1);
+#if JLSTM_RECV_PER_PKT_DLY_TICK
+                os_time_dly(JLSTM_RECV_PER_PKT_DLY_TICK);
+#endif
 #endif
             }
 
@@ -788,10 +855,6 @@ static int recv_h264_feed(jlstm_recv_h264_ctx_t *ctx,
         ctx->stream_len = offset + len;  /* 记录已接收的最大偏移 */
     }
 
-    log_info("h264 pkt,len:%d, offset:%d, frame_size:%d, seq:%d, crc:%x, is_last:%d\n",
-             len, offset, frame_size, seq, crc, is_last);
-
-
     if (!is_last) {
         return 0;  /* 包未收完整，继续累积 */
     }
@@ -848,6 +911,9 @@ static int recv_h264_feed(jlstm_recv_h264_ctx_t *ctx,
     u32 dec_off = 0;
     int frames  = 0;
     u32 zero_read_count = 0;  /* 防御: read_bytes 连续为0时中止 */
+#if JLSTM_RECV_PROFILE_LOG_EN
+    u32 dec_start_us = jiffies_usec();
+#endif
 #if 0
     /* 测试模式: 原始H.264码流写入SD卡 */
     {
@@ -929,6 +995,15 @@ static int recv_h264_feed(jlstm_recv_h264_ctx_t *ctx,
     ctx->stream_len      = 0;
     ctx->pkt_size        = 0;
     ctx->pkt_crc         = 0;
+
+#if JLSTM_RECV_PROFILE_LOG_EN
+    {
+        int dec_us = jiffies_usec2offset(dec_start_us, jiffies_usec());
+        g_profile_dec_seq = seq;
+        printf("[DEC] seq=%d cost_us=%d frames=%d backlog=%d\n",
+               seq, dec_us, frames, (int)(g_profile_post_seq - seq));
+    }
+#endif
     return frames;
 }
 
@@ -1148,6 +1223,62 @@ early_initcall(jlstm_demo_set_device);
 /* 当前推流编码类型 (从 START_STREAM 获取) */
 static u8 g_sm_codec = 0;
 
+#if JLSTM_RECV_FRAME_LEVEL_POST
+/* 整帧级 post: 在生产者回调内组帧, 收满一帧(is_last)才投递一条消息。
+ * 组帧缓冲与序号与丢帧状态独立管理, 不影响 recv 任务里的 frame_ctx。 */
+static u8   *g_sm_frame_buf = NULL;
+static u32   g_sm_frame_cap = 0;
+static u32   g_sm_frame_len = 0;
+static u32   g_sm_frame_size = 0;   /* 整帧大小(仅首包有效, 末包 frame_size 参数不可靠) */
+static u16   g_sm_frame_seq = 0;
+
+static void sm_frame_reset(void)
+{
+    g_sm_frame_len = 0;
+}
+
+static void sm_frame_free(void)
+{
+    if (g_sm_frame_buf) {
+        free(g_sm_frame_buf);
+        g_sm_frame_buf = NULL;
+    }
+    g_sm_frame_cap = 0;
+    g_sm_frame_len = 0;
+    g_sm_frame_size = 0;
+}
+
+#if JLSTM_RECV_DROP_FRAME_EN
+/* 判断整帧是否为 H264 IDR 帧: 扫描 Annex-B 起始码(00 00 01), 首个 NAL 的
+ * nal_unit_type 为 5 即 IDR 帧(nal_type & 0x1f == 5)。 */
+static int sm_frame_is_idr(const u8 *buf, u32 len)
+{
+    u32 i;
+    if (!buf || len < 5) {
+        return 0;
+    }
+    for (i = 0; i + 4 < len; i++) {
+        if (buf[i] == 0x00 && buf[i + 1] == 0x00 && buf[i + 2] == 0x01) {
+            return (buf[i + 3] & 0x1f) == 5;
+        }
+        if (i + 4 < len && buf[i] == 0x00 && buf[i + 1] == 0x00 &&
+            buf[i + 2] == 0x00 && buf[i + 3] == 0x01) {
+            return (buf[i + 4] & 0x1f) == 5;
+        }
+    }
+    return 0;
+}
+#endif
+
+/*
+ * 丢帧策略: 队列满(post 返回 OS_Q_FULL)时, 丢的是"当前这一帧"。
+ * 若当前帧是 H264 IDR 帧(关键帧), 丢弃会导致后续 P 帧全部无法解码(花屏到下一个 IDR),
+ * 代价极大; 而非 IDR 帧(如 P 帧)丢弃只是少一帧画面, 影响小。
+ * 因此: 非 IDR 帧 → 丢弃整帧; IDR 帧 → 丢一个 P 帧也要保 IDR, 这里仅标记"下个 P 帧丢弃",
+ * 本 IDR 帧仍然投递, 让解码器恢复参考链。
+ */
+#endif
+
 /**
  * @brief 新协议数据回调适配 —— 将 stream_media_data_push_cb_t
  *        的参数打包为 jlstm_recv_msg_t 投递到接收任务
@@ -1161,11 +1292,128 @@ static void test_sm_data_cb(const u8 *data, u16 len,
         return;
     }
 
+    if (media_frame_should_drop(offset)) {
+        return;
+    }
+
     /* 首包 stream_type 覆盖 g_sm_codec */
     if (stream_type != 0) {
         g_sm_codec = stream_type;
     }
 
+#if JLSTM_RECV_FRAME_LEVEL_POST
+    /* ── 整帧级 post ── */
+    if (offset == 0) {
+        /* 新帧开始: 按 frame_size 分配整帧缓冲。
+         * 注意: frame_size 仅首包有效, 末包携带的 frame_size 可能为 0/不可靠,
+         * 故这里单独记录到 g_sm_frame_size, 完整性检查用它而不是参数。 */
+        u32 need = frame_size + 16;
+        if (!g_sm_frame_buf || g_sm_frame_cap < need) {
+            u8 *nb = (u8 *)malloc(need);
+            if (!nb) {
+                log_error("sm frame buf alloc fail, size=%lu", frame_size);
+                sm_frame_free();
+                media_frame_mark_drop();
+                return;
+            }
+            if (g_sm_frame_buf) {
+                free(g_sm_frame_buf);
+            }
+            g_sm_frame_buf = nb;
+            g_sm_frame_cap = need;
+        }
+        g_sm_frame_len = 0;
+        g_sm_frame_size = frame_size;
+        g_sm_frame_seq = seq;
+    }
+
+    /* 越界保护 */
+    if (!g_sm_frame_buf || offset + len > g_sm_frame_cap) {
+        log_error("sm frame overflow: off=%lu len=%d cap=%lu",
+                  offset, len, g_sm_frame_cap);
+        sm_frame_free();
+        media_frame_mark_drop();
+        return;
+    }
+    memcpy(g_sm_frame_buf + offset, data, len);
+    if (offset + len > g_sm_frame_len) {
+        g_sm_frame_len = offset + len;
+    }
+
+    if (!is_last) {
+        return;   /* 帧未收满, 继续累积 */
+    }
+
+    /* 帧完整性检查: 用首包记录的 g_sm_frame_size, 而非末包参数 */
+    if (g_sm_frame_len != g_sm_frame_size) {
+        log_error("sm frame incomplete: got=%lu expect=%lu",
+                  g_sm_frame_len, g_sm_frame_size);
+        sm_frame_free();
+        media_frame_mark_drop();
+        return;
+    }
+
+    jlstm_recv_msg_t *msg = (jlstm_recv_msg_t *)malloc(sizeof(*msg) + g_sm_frame_len);
+    if (!msg) {
+        log_error("msg alloc fail");
+        sm_frame_free();
+        media_frame_mark_drop();
+        return;
+    }
+
+    msg->index       = 0;
+    msg->frame_size  = g_sm_frame_size;
+    msg->timestamp   = timestamp;
+    msg->crc         = crc;
+
+    if (g_sm_codec == STREAM_FORMAT_JPEG) {
+        msg->codec_type = 0x00;
+    } else if (g_sm_codec == STREAM_FORMAT_H264) {
+        msg->codec_type = 0x01;
+    }
+    msg->data_type   = (g_sm_codec == STREAM_FORMAT_JPEG)
+                       ? (0x03 | 0x80)
+                       : 0x80;   /* 完整帧 + 末包 */
+    msg->seq         = seq;
+    msg->offset      = 0;        /* 整帧一次投递 */
+    msg->payload_len = g_sm_frame_len;
+    memcpy(msg->payload, g_sm_frame_buf, g_sm_frame_len);
+    sm_frame_free();
+
+    int arg = (int)msg;
+    int err = os_taskq_post_type(g_recv->task_name, Q_JLSTM_RECV_DATA, 1, &arg);
+    if (err) {
+#if JLSTM_RECV_DROP_FRAME_EN
+        int is_idr = (g_sm_codec == STREAM_FORMAT_H264)
+                     ? sm_frame_is_idr(msg->payload, msg->payload_len) : 0;
+#if JLSTM_RECV_PROFILE_LOG_EN
+        printf("[DROP] seq=%d idr=%d\n", seq, is_idr);
+#endif
+        if (is_idr) {
+            /* IDR 帧丢弃代价大(后续 P 帧全解不出), 尽量保留:
+             * 再尝试 post 一次(队列可能刚好被消费者腾出), 不行再丢。 */
+            err = os_taskq_post_type(g_recv->task_name, Q_JLSTM_RECV_DATA, 1, &arg);
+        }
+#endif
+        if (err) {
+            log_error("post fail: %d", err);
+            free(msg);
+            media_frame_mark_drop();
+        } else {
+#if JLSTM_RECV_PROFILE_LOG_EN
+            g_profile_post_seq = seq;
+            printf("[POST] seq=%d backlog=%d\n", seq, (int)(seq - g_profile_dec_seq));
+#endif
+        }
+    } else {
+#if JLSTM_RECV_PROFILE_LOG_EN
+        g_profile_post_seq = seq;
+        printf("[POST] seq=%d backlog=%d\n", seq, (int)(seq - g_profile_dec_seq));
+#endif
+    }
+    return;
+#else
+    /* ── 分片级 post (旧行为) ── */
     jlstm_recv_msg_t *msg = (jlstm_recv_msg_t *)malloc(sizeof(*msg) + len);
     if (!msg) {
         log_error("msg alloc fail");
@@ -1176,19 +1424,12 @@ static void test_sm_data_cb(const u8 *data, u16 len,
     msg->frame_size  = frame_size;
     msg->timestamp   = timestamp;
     msg->crc         = crc;
-    /* msg->crc         = 0; */
 
     if (g_sm_codec == STREAM_FORMAT_JPEG) {
         msg->codec_type = 0x00;
     } else if (g_sm_codec == STREAM_FORMAT_H264) {
         msg->codec_type = 0x01;
     }
-    /*
-     * data_type 适配:
-     *   新协议不再分离 JPEG header/data，统一按完整帧 (0x03) 处理。
-     *   recv_jpeg_feed 会走 Scenario C，不需要 header 缓存。
-     *   H264 则直接由 recv_h264_feed 处理，data_type 仅记录末包标志。
-     */
     msg->data_type   = (g_sm_codec == STREAM_FORMAT_JPEG)
                        ? (0x03 | (is_last ? 0x80 : 0x00))
                        : (is_last ? 0x80 : 0x00);
@@ -1196,15 +1437,16 @@ static void test_sm_data_cb(const u8 *data, u16 len,
     msg->offset      = offset;
     msg->payload_len = len;
     memcpy(msg->payload, data, len);
-    log_info("[sm_data] seq=%d off=%d len=%d last=%d codec=0x%02x ts=%d size=%d, crc = 0x%04x",
-             seq, offset, len, is_last, g_sm_codec, timestamp, frame_size, crc);
 
     int arg = (int)msg;
     int err = os_taskq_post_type(g_recv->task_name, Q_JLSTM_RECV_DATA, 1, &arg);
     if (err) {
         log_error("post fail: %d", err);
         free(msg);
+        media_frame_mark_drop();
     }
+    return;
+#endif
 }
 
 /**
@@ -1232,6 +1474,9 @@ static void test_sm_start_cb(const stream_media_stream_cfg_t *cfg)
 static void test_sm_stop_cb(void)
 {
     log_info("[NEW-PROTO] stop");
+#if JLSTM_RECV_FRAME_LEVEL_POST
+    sm_frame_free();
+#endif
     jlstream_recv_demo_deinit();
 }
 

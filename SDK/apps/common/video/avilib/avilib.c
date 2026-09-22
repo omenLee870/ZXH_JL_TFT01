@@ -2182,7 +2182,9 @@ int AVI_close(avi_t *AVI)
     }
 
     if (AVI->idx) {
-        if (g_idx_pool == NULL && AVI->max_idx >= 4096) {
+        /* 池子只服务录像(写)的跨段复用; 读模式的索引若也塞进池子, 只有录像会清它,
+         * 播放关文件后这 ~190KB 便永不归还物理池(实测: 起播前池子被它吃掉 => 断言死机)。 */
+        if (AVI->mode == AVI_MODE_WRITE && g_idx_pool == NULL && AVI->max_idx >= 4096) {
             g_idx_pool = AVI->idx;
             g_idx_pool_max = AVI->max_idx;
         } else {
@@ -2288,6 +2290,23 @@ avi_t *AVI_open_indexfd(int fd, int getIndex, const char *indexfile)
     }
     AVI_errno = 0;
     avi_parse_input_file(AVI, getIndex);
+
+    /* 解析失败时 ERR_EXIT 内的 AVI_close 已 plat_free(AVI), 此处 AVI 是野指针, 不可再解引用 */
+    if (AVI_errno) {
+        return NULL;
+    }
+
+    /* 原始索引表(idx1/扫描表, 16B/条, 实测 ~190KB)只喂给 video_index/audio_index 的构建,
+     * 解析完即成死重。读模式不再留到 AVI_close: 否则整个播放期占着它, 起播建 VDEC/VPSS 时分配不到页。 */
+    if (AVI->idx) {
+        plat_log_send(PLAT_LOG_INFO, __FILE__,
+                      "read idx released: %ld entries %ld bytes",
+                      AVI->n_idx, (long)AVI->n_idx * 16);
+        plat_free(AVI->idx);
+        AVI->idx = NULL;
+        AVI->n_idx = 0;
+        AVI->max_idx = 0;
+    }
 
     if (AVI != NULL && !AVI_errno) {
         AVI->aptr = 0; //reset
@@ -2682,7 +2701,9 @@ static int avi_parse_input_file(avi_t *AVI, int getIndex)
             } else if (plat_seek(AVI->fdes, n, SEEK_CUR) == (off_t) - 1) {
                 break;
             }
-        } else if (strncasecmp(data, "idx1", 4) == 0) {
+        } else if (getIndex && strncasecmp(data, "idx1", 4) == 0) {
+            /* getIndex=0(只取首帧, 如封面缩略图): 不读整张 idx1 表(16B/帧, 实测 ~190KB),
+             * 直接 seek 跳过 —— 该表只喂给 video_index/audio_index, 不建索引时无人使用。 */
             /* n must be a multiple of 16, but the reading does not
                break if this is not the case */
 
@@ -3685,6 +3706,55 @@ long AVI_read_video(avi_t *AVI, char *vidbuf, long bytes, int *keyframe)
 long AVI_read_frame(avi_t *AVI, char *vidbuf, int *keyframe)
 {
     return AVI_read_video(AVI, vidbuf, -1, keyframe);
+}
+
+/* 只读首个视频帧(封面用): 不建索引, 从 movi 起点顺序找首个非空 ##db/##dc 块。
+ * buf==NULL 时只回帧长(供调用方按需分配); 成功返回帧字节数(>0), 失败返回 -1。 */
+long AVI_read_first_frame(avi_t *AVI, unsigned char *buf, long cap)
+{
+    unsigned char hdr[8];
+    unsigned long n;
+
+    if (!AVI || AVI->mode == AVI_MODE_WRITE) {
+        AVI_errno = AVI_ERR_NOT_PERM;
+        return -1;
+    }
+    if (!AVI->movi_start) {
+        AVI_errno = AVI_ERR_NO_MOVI;
+        return -1;
+    }
+    if (plat_seek(AVI->fdes, AVI->movi_start, SEEK_SET) == (off_t) - 1) {
+        AVI_errno = AVI_ERR_READ;
+        return -1;
+    }
+    while (plat_read(AVI->fdes, hdr, 8) == 8) {
+        n = str2ulong(hdr + 4);
+        if (strncasecmp((char *)hdr, "LIST", 4) == 0) {
+            plat_seek(AVI->fdes, 4, SEEK_CUR);   /* 子表: 跳表类型, 表内继续扫描 */
+            continue;
+        }
+        if ((hdr[2] == 'd' || hdr[2] == 'D') &&
+            (hdr[3] == 'b' || hdr[3] == 'B' || hdr[3] == 'c' || hdr[3] == 'C')) {
+            if (n == 0) {                        /* 0 长帧: 跳过继续找 */
+                continue;
+            }
+            if (!buf) {
+                return (long)n;
+            }
+            if ((long)n > cap) {
+                AVI_errno = AVI_ERR_NO_BUFSIZE;
+                return -1;
+            }
+            if (plat_read(AVI->fdes, buf, n) != (ssize_t)n) {
+                AVI_errno = AVI_ERR_READ;
+                return -1;
+            }
+            return (long)n;
+        }
+        plat_seek(AVI->fdes, PAD_EVEN(n), SEEK_CUR);
+    }
+    AVI_errno = AVI_ERR_NO_VIDS;
+    return -1;
 }
 
 

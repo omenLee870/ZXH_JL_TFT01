@@ -134,6 +134,31 @@ int usb_storage_multiplex_suspend(const struct usb_host_device *host_dev)
     }
     return 0;
 }
+
+/*
+ * 只把multiplex记账拉回USB_MULT_NONE,不做suspend/unmount动作
+ *
+ * host被别处直接usb_host_unmount()关掉时(usb_task.c/hub.c/idle.c),
+ * usb_stor_release()必须调它,否则mult.state仍是USB_MULT_STOR,
+ * 下一次usb_storage_multiplex_resume()会跳过mount直接返回0,
+ * 导致usb_stor_init()报offline,重新插入的U盘收不到DEVICE_EVENT_IN
+ *
+ * 这里不碰OTG/PHY: release跑在_usb_host_unmount()的接口循环里,
+ * 此时usb_sie_close()还没执行,OTG的关断由发起unmount的一方负责
+ */
+void usb_storage_multiplex_host_released(const struct usb_host_device *host_dev)
+{
+    u32 requester = (u32)host_dev;
+
+    if (resource_multiplex_is_registered(IO_PORT_DM) == 0) {
+        return;
+    }
+    if (mult.state == USB_MULT_STOR) {
+        mult.mount = 0;
+        mult.state = USB_MULT_NONE;
+        resource_multiplex_free(IO_PORT_DM, requester);
+    }
+}
 #else
 
 int usb_storage_multiplex_resume(const struct usb_host_device *host_dev)
@@ -145,6 +170,10 @@ int usb_storage_multiplex_resume(const struct usb_host_device *host_dev)
 int usb_storage_multiplex_suspend(const struct usb_host_device *host_dev)
 {
     return 0;
+}
+
+void usb_storage_multiplex_host_released(const struct usb_host_device *host_dev)
+{
 }
 
 #endif

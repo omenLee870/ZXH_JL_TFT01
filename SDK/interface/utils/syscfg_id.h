@@ -263,6 +263,9 @@ int syscfg_early_read(u16 item_id, void *buf, u16 len);
 #define     VM_ID_LRC200K_TRIM          143
 #define     VM_ID_XOSC32K_TRIM          144
 
+#define     DUAL_BANK_BP_STEP           145
+#define     DUAL_BANK_BP_FW_CODE        146
+
 //#MAX 144
 
 //=================================================================================//

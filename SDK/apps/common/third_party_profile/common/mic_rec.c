@@ -300,16 +300,39 @@ int ai_mic_rec_start(void)
 
         speech_cbuf_init();
 
-        printf("%s \n", __this->ai_enc_info.info);
+        if (__this->ai_enc_info.info) {
+            printf("%s \n", __this->ai_enc_info.info);
+        }
         /* audio_mic_enc_open(rec_enc_output, __this->ai_enc_info.enc_type, __this->ai_enc_info.opus_type); */
-        ai_voice_recoder_open(__this->ai_enc_info.enc_type, __this->ai_enc_info.opus_type);
-        ai_voice_recoder_set_ai_tx_node_func(rec_enc_output_tx);
-        __this->ai_mic_busy_flg = 1;
+        err = ai_voice_recoder_open(__this->ai_enc_info.enc_type,
+                                    __this->ai_enc_info.opus_type);
+        if (err == 0) {
+            ai_voice_recoder_set_ai_tx_node_func(rec_enc_output_tx);
+            __this->ai_mic_busy_flg = 1;
+        } else {
+            speech_cbuf_exit();
+            mic_rec_clock_recover();
+            printf("ai voice recorder open failed:%d\n", err);
+        }
+    }
+
+    if (err) {
+#if TCFG_USER_TWS_ENABLE
+        if (get_tws_sibling_connect_state()) {
+            if (tws_api_get_role() == TWS_ROLE_MASTER) {
+                mic_rec_tws_send_cmd(TWS_AI_MIC_RESUME_A2DP);
+            }
+        } else {
+            a2dp_tws_dec_resume();
+        }
+#else
+        a2dp_tws_dec_resume();
+#endif
     }
 
     os_mutex_post(&__this->mutex_ai_mic);
 
-    return 0;
+    return err;
 }
 
 int ai_mic_is_busy(void)
@@ -328,11 +351,18 @@ static int ai_mic_resume_a2dp(void)
 {
     int err = 0;
     int msg[8];
+    const char *task_name = os_current_task();
+
+    /* Posting back to a full own queue would block app_core forever. */
+    if (task_name && !strcmp(task_name, "app_core")) {
+        ai_mic_tws_stop_opus();
+        return 0;
+    }
     msg[0] = (int)ai_mic_tws_stop_opus;
     msg[1] = 1;
     msg[2] = 0;
 
-    while (1) {
+    for (int retry = 0; retry < 10; retry++) {
         err = os_taskq_post_type("app_core", Q_CALLBACK, 3, msg);
         if (err != OS_Q_FULL) {
             break;
@@ -340,6 +370,9 @@ static int ai_mic_resume_a2dp(void)
         os_time_dly(2);
     }
 
+    if (err) {
+        printf("mic A2DP resume post failed:%d\n", err);
+    }
     return err;
 }
 

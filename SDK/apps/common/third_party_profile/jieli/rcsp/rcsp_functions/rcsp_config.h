@@ -37,6 +37,8 @@ enum func_type {
     FM_FUNCTION      = 4,
     LIGHT_FUNCTION   = 5,
     FMTX_FUNCTION    = 6,
+    SPDIF_FUNCTION   = 8,
+    PC_FUNCTION      = 9,
 };
 
 enum mask_func {
@@ -48,6 +50,8 @@ enum mask_func {
     COLOR_LED_MASK		  =  5,
     FMTX_FUNCTION_MASK    =  6,
     EQ_FUNCTION_MASK      =  7,
+    SPDIF_FUNCTION_MASK   =  8,
+    PC_FUNCTION_MASK      =  9,
     FUNCTION_MASK_MAX,
 
     COMMON_FUNCTION    	  =  0xFF,

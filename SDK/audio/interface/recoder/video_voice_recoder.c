@@ -71,6 +71,9 @@ int video_voice_recoder_open(u32 code_type, u8 ai_type, u32 sample_rate, u32 bit
         goto __exit0;
     }
     jlstream_ioctl(recoder->stream, NODE_IOC_GET_ENC_FMT, (int)&set_fmt);
+    /* encoder_fmt 的 priv 通道是输入参数，节点会按它做深拷贝，必须先清零，
+     * 否则 ctx 残留值会被当成指针和长度传给编码器节点 */
+    memset(&enc_fmt, 0, sizeof(enc_fmt));
     switch (code_type) {
     case AUDIO_CODING_OPUS:
         //  bitrate

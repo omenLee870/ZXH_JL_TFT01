@@ -50,6 +50,9 @@ void rcsp_device_status_setting_stop(void);
 // 获取当前模式
 u8 rcsp_get_cur_mode(u8 app_mode);
 
+// PC从机模式在线状态推送
+void rcsp_pc_online_status_update(void);
+
 void function_change_inform(u8 app_mode, u8 ret);
 
 #if (RCSP_MODE)

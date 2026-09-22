@@ -33,6 +33,8 @@
 #include "rcsp_command.h"
 #include "ble_rcsp_adv.h"
 #include "app_msg.h"
+#include "ai_dialogue_control.h"
+#include "translator/rcsp_translator.h"
 
 #if RCSP_MODE
 
@@ -338,6 +340,16 @@ void rcsp_user_event_ble_handler(ble_state_e ble_status, u8 flag)
             rcsp_user_state_event(RCSP_BT_EVENT_BLE_STATUS, BLE_ST_DISCONN);
             break;
         }
+#if RCSP_TRANSLATOR_ENABLE
+        if (bt_rcsp_device_conn_num() == 0) {
+            rcsp_translator_disconnect();
+        }
+#endif
+#if RCSP_AI_DIALOGUE_ENABLE
+        if (bt_rcsp_device_conn_num() == 0) {
+            rcsp_ai_dialogue_disconnect();
+        }
+#endif
         rcsp_ble_disconnect();
 #if RCSP_ADV_MUSIC_INFO_ENABLE
         stop_get_music_timer(1);
@@ -388,6 +400,12 @@ void rcsp_user_event_spp_handler(u8 spp_status, u8 flag)
         }
 
         if (bt_rcsp_device_conn_num() == 0) {
+#if RCSP_TRANSLATOR_ENABLE
+            rcsp_translator_disconnect();
+#endif
+#if RCSP_AI_DIALOGUE_ENABLE
+            rcsp_ai_dialogue_disconnect();
+#endif
             rcsp_ble_disconnect();
 #if RCSP_ADV_MUSIC_INFO_ENABLE
             stop_get_music_timer(1);

@@ -514,36 +514,35 @@ int vstream_send_frame(u8 *buffer, size_t len, u8 type)
     struct stream_info *info = (struct stream_info *)g_stream_info;
     //获取lbuf句柄
     struct lbuf_manager *lm;
-    int retry = 10;
-    do {
-        lm = vstream_type_get_lbuf_hd(type);
-        if (!lm) {
-            log_error("lm is null(type:%d)>\n", type);
-            return -1;
-        }
-        os_mutex_pend(&lm->lock, 0);
-        if (vstream_lbuf_manager_is_init(lm)) {
-            lbuf_data = lbuf_alloc(lm->hd, align);
-            if (!lbuf_data) {
-#if KWT_USE_H264
-                if (type == VSTREAM_JPEG_TYPE_VIDEO || type == VSTREAM_H264_TYPE_VIDEO) {
-#else
-                if (type ==  VSTREAM_JPEG_TYPE_VIDEO) {
-#endif
-                    //视频直接丢帧
-                    os_mutex_post(&lm->lock);
-                    log_error("%s type:%d lbuf_get_error,drop frame\n", __func__, type);
-                    return 0;
-                }
-            } else {
-                //获取到buf，保留临界区
-                break;
-            }
-        }
-        os_mutex_post(&lm->lock);
-        os_time_dly(5);
+    //int retry = 0;
+    //do {
+    lm = vstream_type_get_lbuf_hd(type);
+    if (!lm) {
+        log_error("lm is null(type:%d)>\n", type);
+        return -1;
     }
-    while (retry-- > 0);
+    os_mutex_pend(&lm->lock, 0);
+    if (vstream_lbuf_manager_is_init(lm)) {
+        lbuf_data = lbuf_alloc(lm->hd, align);
+        if (!lbuf_data) {
+#if KWT_USE_H264
+            if (type == VSTREAM_JPEG_TYPE_VIDEO || type == VSTREAM_H264_TYPE_VIDEO) {
+#else
+            if (type ==  VSTREAM_JPEG_TYPE_VIDEO) {
+#endif
+                //视频直接丢帧
+                os_mutex_post(&lm->lock);
+                log_error("%s type:%d lbuf_get_error,drop frame\n", __func__, type);
+                return 0;
+            }
+        } else {
+            //获取到buf，保留临界区
+            //break;
+        }
+    }
+    //os_time_dly(1);
+    //}
+    //while (retry-- > 0);
 
     if (lbuf_data) {
         lbuf_data->len = len;

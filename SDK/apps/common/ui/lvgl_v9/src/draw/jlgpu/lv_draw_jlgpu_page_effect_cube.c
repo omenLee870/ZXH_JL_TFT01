@@ -70,7 +70,7 @@ void lv_cube_effect_init(lv_draw_jlgpu_unit_t *unit, bool list_flag)
     __this->unit = unit;
 
     if (lv_cube_init(__this->width_tab, __this->height_tab,
-                     1.01f, 1.01f, CUBE_VIEW_DISTANCE,
+                     0.996f, 0.996f, CUBE_VIEW_DISTANCE,
                      0, 0, width, height) != 0) {
         return;
     }

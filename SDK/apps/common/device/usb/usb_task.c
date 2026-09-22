@@ -284,6 +284,89 @@ static void handle_slave_msg(int *msg, u8 *is_cdc_background)
 
 #endif
 }
+
+#if TCFG_USB_HOST_ENABLE
+/*
+ * udisk探测句柄
+ *
+ * 原实现是dev_open之后立刻dev_close: 每次插入都要走一遍"完整init -> 完整拆机",
+ * 紧接着应用的dev_manager_add/mount又init一遍; 中间那几毫秒dev_status被压回
+ * DEV_IDLE, 其他任务的读写会拿到-DEV_ERR_NOT_MOUNT。改成保留句柄后, 应用的
+ * 第二次dev_open走"已经打开直接返回成功"的早退分支, 拆机和那个窗口都没了。
+ *
+ * 句柄不是一直保留到拔盘, 而是在UDISK_PROBE_HOLD_MS后由sys_timeout释放
+ * (见udisk_probe_hold_timeout)。这样应用主动卸载(进低功耗时dev_manager_del)
+ * 时不需要任何握手 —— 那时引用里只剩应用那一路, dev_close能正常走到驱动。
+ *
+ * 注意省不掉第二次init: 应用的mount走vfs, 而vfs::mount()自己必调dev_open。
+ *
+ * 本文件这段探测只在"IO_PORT_DM未注册多路复用"的板子上会被执行:
+ * usb_driver_event_from_host()在复用板子上把事件直接投给dev_mg, 不经过
+ * usb_stack的USBSTACK_HOST_MSG, 到不了handle_host_msg。所以这里不需要考虑
+ * 与SD DAT0抢IO_PORT_DM的问题 —— 复用板子上挂载host的主动权在驱动自己的
+ * usb_storage_multiplex_resume/suspend里。
+ */
+static void *udisk_probe_hdl;
+static u16 udisk_probe_timeout_hdl;
+
+/*
+ * 探测保持时长: 给应用的dev_manager_add/mount留出时间(实测约16ms),
+ * 超时后就把探测这一路引用退掉。
+ */
+#define UDISK_PROBE_HOLD_MS     200
+
+static void udisk_probe_hold_timeout(void *priv)
+{
+    udisk_probe_timeout_hdl = 0;
+    if (!udisk_probe_hdl) {
+        return;
+    }
+    /*
+     * 这就是原实现里dev_open之后"立刻"执行的那次dev_close, 只是延后了
+     * UDISK_PROBE_HOLD_MS: 此时应用已经mount过, ref里除了探测这一路还有
+     * 应用那一路, 这次dev_close只把探测这路退掉, 不会触发拆机。
+     * 若应用迟迟没接盘(超过UDISK_PROBE_HOLD_MS), 这次close会把设备关掉,
+     * 应用随后的mount会重新init一遍 —— 退化回老行为, 不会出错。
+     */
+    log_info("release udisk probe hdl by timeout\n");
+    dev_close(udisk_probe_hdl);
+    udisk_probe_hdl = NULL;
+}
+
+static void udisk_probe_hold_start(void)
+{
+    if (udisk_probe_timeout_hdl) {
+        sys_timeout_del(udisk_probe_timeout_hdl);
+        udisk_probe_timeout_hdl = 0;
+    }
+    /*
+     * sys_timeout的回调在"add它的线程"里执行(见interface/system/timer.h): 这里
+     * 就是usb_stack, 和拔盘分支里那个dev_close同一个上下文, 不需要额外同步。
+     */
+    udisk_probe_timeout_hdl = sys_timeout_add(NULL, udisk_probe_hold_timeout,
+                              UDISK_PROBE_HOLD_MS);
+}
+
+static void udisk_probe_hold_cancel(void)
+{
+    if (udisk_probe_timeout_hdl) {
+        sys_timeout_del(udisk_probe_timeout_hdl);
+        udisk_probe_timeout_hdl = 0;
+    }
+}
+
+/* 真正的拔盘处理。提前释放和超时释放都要走这里, 保证"释放句柄+取消定时器"成对 */
+static void udisk_probe_release(void)
+{
+    udisk_probe_hold_cancel();
+    if (udisk_probe_hdl) {
+        dev_close(udisk_probe_hdl);
+        udisk_probe_hdl = NULL;
+    }
+}
+
+#endif
+
 static void handle_host_msg(int *msg, char *otg_msg, u8 *disk_msg)
 {
 #if TCFG_USB_HOST_ENABLE
@@ -297,14 +380,33 @@ static void handle_host_msg(int *msg, char *otg_msg, u8 *disk_msg)
         if (event == DEVICE_EVENT_IN) {
             //只有U盘尝试open成功才将usb host事件分发给app mode
             //offline事件同理，尝试打开不成功则不分发事件
-            dev = dev_open(usb_msg, NULL);
-
-            if (dev) {
-                dev_close(dev);
-                *disk_msg = 1;
+            udisk_probe_hold_cancel();
+            if (!udisk_probe_hdl) {
+                udisk_probe_hdl = dev_open(usb_msg, NULL);
             } else {
-                *disk_msg = 0;
+                /* [1] 已经持有句柄时又收到IN(正常只在插入时报一次, 这里防的是
+                       OTG抖动导致host重新mount而没有配对的OUT)。不能再open一次
+                       累加引用, 但也不能盲目认为设备还在 —— 用一次open/close
+                       验证, 失败说明设备已经没了, 直接把旧句柄放掉 */
+                dev = dev_open(usb_msg, NULL);
+                if (dev) {
+                    dev_close(dev);
+                } else {
+                    log_warn("udisk probe re-check fail, release hdl\n");
+                    udisk_probe_release();
+                }
             }
+            if (udisk_probe_hdl) {
+                udisk_probe_hold_start();
+            }
+            *disk_msg = udisk_probe_hdl ? 1 : 0;
+        } else if (event == DEVICE_EVENT_OUT) {
+            /* [2] 拔盘: 必须释放探测句柄, 否则这一路引用会一直留着,
+                   后面应用自己的dev_close永远减不到0, 设备再也关不掉 */
+            udisk_probe_release();
+            *disk_msg = 1;
+        } else {
+            *disk_msg = udisk_probe_hdl ? 1 : 0;
         }
 
         if (*disk_msg) {

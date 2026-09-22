@@ -10,6 +10,7 @@
 #include "audio_video_control.h"
 #include "rcsp_browser.h"
 #include "rtc/rtc_dev.h"
+#include "translator/rcsp_translator.h"
 
 #define LOG_TAG_CONST       RCSP_MIX_RECORD
 #define LOG_TAG             "[RCSP-REC]"
@@ -859,6 +860,12 @@ static u8 rcsp_mix_record_set_config(const u8 *ltv, u16 len)
 static u8 rcsp_mix_record_start_request(u8 session_id, u8 device_number)
 {
     u8 mode = app_get_current_mode_name();
+
+#if RCSP_TRANSLATOR_ENABLE
+    if (rcsp_translator_is_busy()) {
+        return RCSP_AV_RESULT_BUSY;
+    }
+#endif
 
     if (device_number != RCSP_AV_DEVICE_NUMBER_DEFAULT && device_number != 0) {
         return RCSP_AV_RESULT_UNSUPPORTED;

@@ -25,11 +25,10 @@ SECTIONS
 		*(.update_const)
 		*(.update_code)
 		. = ALIGN(4);
-        *(.hsafe.code*)
+		passive_update_fun_begin = .;
+		*(.passive_update_fun)
+		passive_update_fun_end = .;
 		. = ALIGN(4);
-        passive_update_fun_begin = .;
-        *(.passive_update_fun)
-        passive_update_fun_end = .;
 
 		update_code_end = .;
 

@@ -3,6 +3,8 @@
 
 
 
+
+
 rem @echo off
 
 @echo *****************************************************************
@@ -132,15 +134,9 @@ copy p11_bank_code.lz4 p11_code.lz4
 
 
 set case_suffix=_watch
-
-
-
-
-
-
-
 copy pmc_code.bin pmc_code%case_suffix%.bin
 copy p11_code.bin p11_code%case_suffix%.bin
 copy p11_code.lz4 p11_code%case_suffix%.lz4
+
 
 call download_wid_call.bat

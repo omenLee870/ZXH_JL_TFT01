@@ -25,7 +25,7 @@
   app_version_check = ABSOLUTE(0x7ebfeb8);
   sdk_chip_key_verify_v2 = ABSOLUTE(0x7ebfebc);
   jl_sm_decrypt = ABSOLUTE(0x7ebfec0);
-  crc16_xmodem = ABSOLUTE(0x7ebfec4);
+  crc16_xmodem_rom = ABSOLUTE(0x7ebfec4);
   __local_irq_enable = ABSOLUTE(0x7ebfec8);
   __local_irq_disable = ABSOLUTE(0x7ebfecc);
   request_irq_rom = ABSOLUTE(0x7ebfed0);
@@ -69,8 +69,8 @@
   IcuDisable = ABSOLUTE(0x7ebff68);
   IcuPfetchRegion = ABSOLUTE(0x7ebff6c);
   IcuLockRegion = ABSOLUTE(0x7ebff70);
-  chip_crc16 = ABSOLUTE(0x7ebff74);
-  CrcDecode = ABSOLUTE(0x7ebff78);
+  chip_crc16_rom = ABSOLUTE(0x7ebff74);
+  CrcDecode_rom = ABSOLUTE(0x7ebff78);
   mask_init = ABSOLUTE(0x7ebff7c);
   mask_export_bss_ram_clear = ABSOLUTE(0x7ebff80);
   wdt_clear = ABSOLUTE(0x7ebff84);

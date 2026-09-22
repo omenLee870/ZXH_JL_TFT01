@@ -1133,6 +1133,16 @@ void lv_screen_load_anim(lv_obj_t *new_scr, lv_screen_load_anim_t anim_type, uin
         lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
         lv_anim_set_values(&a_old, 0, lv_display_get_horizontal_resolution(d));
         break;
+    case LV_SCR_LOAD_ANIM_POINT_ENLARGE:
+        g_page_effect_state.page_mode = LV_SCR_LOAD_ANIM_POINT_ENLARGE;
+        lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
+        lv_anim_set_values(&a_old, 0, lv_display_get_horizontal_resolution(d));
+        break;
+    case LV_SCR_LOAD_ANIM_POINT_NARROW:
+        g_page_effect_state.page_mode = LV_SCR_LOAD_ANIM_POINT_NARROW;
+        lv_anim_set_exec_cb(&a_old, jlgpu_set_page_effect_x_anim);
+        lv_anim_set_values(&a_old, 0, lv_display_get_horizontal_resolution(d));
+        break;
 #endif
     default:
         break;

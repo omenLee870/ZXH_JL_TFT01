@@ -313,7 +313,7 @@ void spp_protocol_init(void)
         /* Fix C: 不再把 TX FIFO 提到 15KB。该接口实为 flag 选择 5KB->15KB, 15KB 是
          * bufferbloat —— 只增加排队在途延迟(0.6-1.0s)而不增加吞吐。用默认 5KB FIFO,
          * 使延迟降约 3 倍(0.2-0.35s), 与源端背压(Fix A)配合。 */
-        set_bt_tx_buf_max_size(15 * 1024);
+        //set_bt_tx_buf_max_size(15 * 1024);
         spp_user_max_sending_packet_num_set(SPP_MAX_SENDING_PACKET_NUM);
         log_info("%s succ!", __func__);
     }

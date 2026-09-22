@@ -477,15 +477,15 @@ static const char *_parse_number(const char *str, const char *str_end, float *va
     return end;
 }
 
-static const char *_parse_length(const char *str, const char *str_end, int32_t dpi, float *val)
+static const char *_parse_length(const char *str, const char *str_end, int32_t dpi, float base, float *val)
 {
     str = _parse_number(str, str_end, val);
     if (str) {
         uint32_t len = str_end - str;
         if (len > 0) {
             if (len == 1 && (*str == '%')) {
-                // percentage
-                *val *= 0.01f;
+                // percentage, relative to the corresponding viewport dimension
+                *val = *val * base / 100.0f;
             } else if (len == 2) {
                 if (str[0] == 'p' && str[1] == 't') { // pt
                     *val = *val / 72.0f * (float)dpi;
@@ -1352,7 +1352,9 @@ static void _process_font_attrs(lv_svg_node_t *node, lv_svg_attr_type_t type, co
 
     if (type == LV_SVG_ATTR_FONT_SIZE && _is_number_begin(*val_start)) {
         float val_number = 0.0f;
-        val_start = _parse_length(val_start, val_end, dpi, &val_number);
+        /* font-size '%' is relative to the parent font size, which this parser does
+         * not track; pass a neutral base so it is not collapsed to a tiny fraction */
+        val_start = _parse_length(val_start, val_end, dpi, 100.0f, &val_number);
         attr->value.fval = val_number;
     } else {
         attr->val_type = LV_SVG_ATTR_VALUE_PTR;
@@ -1535,8 +1537,25 @@ static void _process_opacity_value(lv_svg_node_t *node, lv_svg_attr_type_t type,
     attr->value.fval = val_number;
 }
 
+static bool _is_horizontal_length(lv_svg_attr_type_t type)
+{
+    /* '%' resolves against the viewport width for horizontal lengths and against
+     * the viewport height for vertical lengths (SVG spec). */
+    switch (type) {
+    case LV_SVG_ATTR_Y:
+    case LV_SVG_ATTR_HEIGHT:
+    case LV_SVG_ATTR_RY:
+    case LV_SVG_ATTR_CY:
+    case LV_SVG_ATTR_Y1:
+    case LV_SVG_ATTR_Y2:
+        return false;
+    default:
+        return true;
+    }
+}
+
 static void _process_length_value(lv_svg_node_t *node, lv_svg_attr_type_t type, const char *val_start,
-                                  const char *val_end, int32_t dpi)
+                                  const char *val_end, int32_t dpi, float base)
 {
     CHECK_AND_RESIZE_ATTRS(node->attrs);
 
@@ -1547,7 +1566,7 @@ static void _process_length_value(lv_svg_node_t *node, lv_svg_attr_type_t type, 
     attr->class_type = LV_SVG_ATTR_VALUE_INITIAL;
 
     float val_number = 0.0f;
-    val_start = _parse_length(val_start, val_end, dpi, &val_number);
+    val_start = _parse_length(val_start, val_end, dpi, base, &val_number);
     attr->value.fval = val_number;
 }
 
@@ -1856,7 +1875,9 @@ static void _parse_anim_value(lv_svg_node_t *node, lv_svg_attr_t *attr, const ch
 {
     if (node->type == LV_SVG_TAG_ANIMATE || node->type == LV_SVG_TAG_SET) {
         float val_number = 0.0f;
-        val_start = _parse_length(val_start, val_end, dpi, &val_number);
+        /* animated values are resolved against the target attribute's viewport at
+         * animation time; use a neutral base here to keep '%' from collapsing */
+        val_start = _parse_length(val_start, val_end, dpi, 100.0f, &val_number);
         attr->value.fval = val_number;
     } else if (node->type == LV_SVG_TAG_ANIMATE_COLOR) {
         uint32_t color = 0;
@@ -1946,7 +1967,7 @@ static void _anim_values_cb(lv_svg_node_t *node, lv_svg_attr_t *attr, const char
     if (node->type == LV_SVG_TAG_ANIMATE || node->type == LV_SVG_TAG_SET) {
         float *val_number = NULL;
         GET_NEXT_VALUE_PTR(val_number, ctx, float);
-        val_start = _parse_length(val_start, val_end, dpi, val_number);
+        val_start = _parse_length(val_start, val_end, dpi, 100.0f, val_number);
     } else if (node->type == LV_SVG_TAG_ANIMATE_COLOR) {
         uint32_t *color = NULL;
         GET_NEXT_VALUE_PTR(color, ctx, uint32_t);
@@ -2148,6 +2169,20 @@ static void _process_attr_tag(_lv_svg_parser_t *parser, lv_svg_node_t *node, _lv
         break;
     case LV_SVG_ATTR_VIEWBOX:
         _process_view_box(node, type, tok_attr->value_start, tok_attr->value_end);
+        /* Fallback: when <svg> carries only a viewBox (no width/height), seed the
+         * viewport from the viewBox extent so '%' lengths still resolve. */
+        if (node->type == LV_SVG_TAG_SVG
+            && parser->viewport_width <= 0.0f && parser->viewport_height <= 0.0f) {
+            float vb[4];
+            const char *p = _parse_number(tok_attr->value_start, tok_attr->value_end, &vb[0]);
+            p = _parse_number(p, tok_attr->value_end, &vb[1]);
+            p = _parse_number(p, tok_attr->value_end, &vb[2]);
+            p = _parse_number(p, tok_attr->value_end, &vb[3]);
+            if (p && vb[2] > 0.0f && vb[3] > 0.0f) {
+                parser->viewport_width = vb[2];
+                parser->viewport_height = vb[3];
+            }
+        }
         break;
     case LV_SVG_ATTR_PRESERVE_ASPECT_RATIO:
         _process_preserve_aspect_ratio(node, type, tok_attr->value_start, tok_attr->value_end);
@@ -2165,9 +2200,26 @@ static void _process_attr_tag(_lv_svg_parser_t *parser, lv_svg_node_t *node, _lv
     case LV_SVG_ATTR_Y1:
     case LV_SVG_ATTR_X2:
     case LV_SVG_ATTR_Y2:
-    case LV_SVG_ATTR_PATH_LENGTH:
-        _process_length_value(node, type, tok_attr->value_start, tok_attr->value_end, parser->dpi);
+    case LV_SVG_ATTR_PATH_LENGTH: {
+        float base = _is_horizontal_length(type) ? parser->viewport_width : parser->viewport_height;
+        _process_length_value(node, type, tok_attr->value_start, tok_attr->value_end, parser->dpi, base);
+
+        /* Seed the viewport dimensions from the root <svg> width/height so that
+         * subsequent '%' lengths resolve against them. The root svg width/height
+         * are plain numbers in practice, so parse them directly (bypassing the
+         * '%' path which would otherwise recurse on an unset base). */
+        if (node->type == LV_SVG_TAG_SVG
+            && (type == LV_SVG_ATTR_WIDTH || type == LV_SVG_ATTR_HEIGHT)) {
+            float dim = 0.0f;
+            _parse_number(tok_attr->value_start, tok_attr->value_end, &dim);
+            if (type == LV_SVG_ATTR_WIDTH) {
+                parser->viewport_width = dim;
+            } else {
+                parser->viewport_height = dim;
+            }
+        }
         break;
+    }
     case LV_SVG_ATTR_OPACITY:
     case LV_SVG_ATTR_FILL_OPACITY:
     case LV_SVG_ATTR_STROKE_OPACITY:

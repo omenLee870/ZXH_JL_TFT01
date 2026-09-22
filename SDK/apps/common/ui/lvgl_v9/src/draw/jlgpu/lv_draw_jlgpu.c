@@ -13,11 +13,28 @@
 
 #include "app_config.h"
 #include "asm/psram_api.h"
+#include "malloc.h"
 
 #if CONFIG_LVGL_UI_ENABLE
 
 
 #if LV_USE_DRAW_JLGPU
+
+#if LV_USE_DRAW_JLGPU_LIST
+/* 链表内存申请失败(池+堆都失败)时打印详细的上下文，便于区分
+ * "单帧链表占用过大" 还是 "整个堆已耗尽" */
+static void jlgpu_list_alloc_fail_report(lv_draw_jlgpu_unit_t *unit, uint32_t buf_size)
+{
+    uint32_t task_num = unit->jlgpu_ctx ? unit->jlgpu_ctx->jlgpu_task_num : 0;
+    size_t free_ram0 = memory_get_size(P_MEMORY_UNUSED);
+    size_t free_ram1 = memory_get_size(P_VLT_MEMORY_UNUSED);
+
+    printf("!!! jlgpu list alloc failed: want=%u pool_pos=%u/%u attach_bytes=%u task_num=%u free_ram0=%u free_ram1=%u\n",
+           (unsigned)buf_size, (unsigned)unit->pool_pos, (unsigned)unit->pool_size,
+           (unsigned)unit->attach_buf_bytes, (unsigned)task_num,
+           (unsigned)free_ram0, (unsigned)free_ram1);
+}
+#endif
 
 /*********************
  *      DEFINES
@@ -25,6 +42,12 @@
 
 #define DRAW_UNIT_ID_JLGPU 102
 #define ALIGN_UP_4(x) (((x) + 3) & ~3)
+
+// 儿童相机专属：链表内存池调小以省 RAM（公共 lv_conf.h 默认 30*1024）
+#if (defined(SUB_CASE_TYPE_KID_CAMERA) && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_KID_CAMERA))
+#undef JLGPU_LIST_MEM_POOL_SIZE
+#define JLGPU_LIST_MEM_POOL_SIZE (10*1024)
+#endif
 
 /* attach_buf 大于该大小(字节)时优先用 PSRAM 申请，可用宏覆盖；0 表示禁用 */
 #ifndef JLGPU_ATTACH_BUF_PSRAM_THRESHOLD
@@ -47,6 +70,11 @@ extern const int UI_GPU_IRQ_MODE;      		 /*! 中断模式   */
 static  OS_SEM						pnd_sem; /*! 异步信号量 */
 static  OS_SEM						top_pnd_sem; /*! 异步信号量 */
 static volatile unsigned int isr_status = 0; /*! GPU中断状态 */
+static int gpu_init_sta = 0;                    /*gpu初始化状态*/
+
+/* 未定义先调用的函数，统一在此处前置声明 */
+static int __jlgpu_hw_init_hal(void);
+static inline int jlgpu_hw_get_init_sta(void);
 
 #define GPU_SFR                     EVA_GPU
 #define GPU_PEND_TIMEOUT			50 		 /*! 中断超时ms */
@@ -221,6 +249,111 @@ void lv_jlgpu_mutex_post(void)
     os_mutex_post(&jlgpu_mutex);
 }
 
+/* ================== 推屏期 GPU 独占门 ==================
+ * 背景:开了 gpu_link_dbi/jstc 联动后,GPU 是"边算边喂 DBI/GXDMA"的。推屏(lcd->draw)
+ * 期间若被别的线程改了 TOP/BUF/WIN 等 SFR,或者被别的 GPU 任务抢走硬件,联动就会断流,
+ * DBI/DMM 永久等待 → 整机冻死(心跳停、无异常打印、不复位)。
+ *
+ * LIST==2 下"渲染线程(LVGL)"与"推屏线程(消费线程)"是两个线程。原实现只保证
+ * "配SFR + jlgpu_run" 那一段互斥,不保证推屏期间没人动 GPU —— 这就是偶发冻死的根因。
+ *
+ * 这里用一对"意图声明"标志实现互斥(渲染侧只有 LVGL 一个线程会来,推屏侧只有一个消费线程):
+ *   渲染侧:进入"立即绘制"(离屏 layer/canvas)段前 jlgpu_gpu_gate_enter(),
+ *           段末 jlgpu_gpu_gate_leave()。
+ *   推屏侧:必须从"配置 TOP/BUF 联动"之前 jlgpu_push_gate_enter(),
+ *           一直到 lcd->draw 返回之后 jlgpu_push_gate_leave()。
+ *           ⚠ 只罩 lcd->draw 是不够的:配联动和 lcd->draw 之间若被渲染线程插入
+ *             (ctx_init 里的 jlgpu_hw_set_sfr_top(NULL) + JLGXDMA_link_gpu(0)),
+ *             联动会被打断 → GPU top 不产出 → DMM 读不到数据 → lcd->draw 永久等待。
+ * 渲染侧所有真正提交 GPU 的路径(所有 jlgpu_run)都位于 lv_jlgpu_ctx_init/uninit 之间,
+ * 所以在这两个函数里挂钩即可全覆盖。
+ *
+ * 注意:构建 GPU 链表(显存目标路径)是纯 CPU 操作,不经过这道门,
+ *      因此仍与推屏、与 GPU 执行并行 —— 双链路的性能收益得以保留。
+ * ====================================================*/
+#if LV_USE_DRAW_JLGPU_LIST
+
+/* get_system_ms() 在预编译库里,本文件不经过 system/includes.h,按 lv_port_disp.c 的做法就地声明 */
+extern uint32_t get_system_ms(void);
+
+/* 门的最长等待时间(毫秒)。必须大于 lv_jl_lcd_wait_or_recover_stuck() 的 2000ms 上界:
+ * 那条"lcd 卡死恢复"流程是在门内跑的,它自己会重配 TOP 联动并 dbi_link_gpu(0/1);
+ * 渲染侧若在它跑完之前就超时强行进门,ctx_init 里的 jlgpu_hw_set_sfr_top(NULL) +
+ * JLGXDMA_link_gpu(0) 会把它刚建好的联动拆掉 —— 正是本门要防的那种冻死。
+ * 所以宁可多等:等待有界且可恢复,拆联动不可恢复。
+ * 另:这里不能再用"数 tick"实现 —— 本平台 tick 周期没有公开配置,数不出墙钟时间。 */
+#define JLGPU_GATE_WAIT_MS      2500
+
+static volatile uint8_t s_jlgpu_push_busy  = 0;     /* 1=正在推屏(lcd->draw 中) */
+static volatile uint8_t s_jlgpu_gpu_submit = 0;     /* 正在做"立即绘制"的线程数 */
+
+void jlgpu_gpu_gate_enter(void)
+{
+    uint32_t begin = get_system_ms();
+    uint32_t waited;
+
+    for (;;) {
+        s_jlgpu_gpu_submit++;               /* 先声明自己的意图 */
+        if (!s_jlgpu_push_busy) {
+            return;                         /* 推屏还没开始,放行 */
+        }
+        s_jlgpu_gpu_submit--;               /* 推屏中,撤回意图,等一会儿再来 */
+        waited = get_system_ms() - begin;   /* 无符号相减,回绕自然成立 */
+        if (waited > JLGPU_GATE_WAIT_MS) {
+            printf("!!! jlgpu_gpu_gate_enter timeout %ums, push_busy=%d\n",
+                   (unsigned)waited, (int)s_jlgpu_push_busy);
+            s_jlgpu_gpu_submit++;
+            return;
+        }
+        os_time_dly(1);
+    }
+}
+
+void jlgpu_gpu_gate_leave(void)
+{
+    if (s_jlgpu_gpu_submit) {
+        s_jlgpu_gpu_submit--;
+    }
+}
+
+void jlgpu_push_gate_enter(void)
+{
+    uint32_t begin = get_system_ms();
+    uint32_t waited;
+
+    for (;;) {
+        s_jlgpu_push_busy = 1;              /* 先声明自己的意图 */
+        if (!s_jlgpu_gpu_submit) {
+            return;                         /* 没有人在做立即绘制,放行 */
+        }
+        s_jlgpu_push_busy = 0;              /* 有人正在改 SFR/抢 GPU,撤回等一会儿 */
+        waited = get_system_ms() - begin;
+        if (waited > JLGPU_GATE_WAIT_MS) {
+            /* 等这么久还等不到,按异常处理:强制重新同步,避免计数泄漏后每帧都白等 */
+            printf("!!! jlgpu_push_gate_enter timeout %ums, submit=%d\n",
+                   (unsigned)waited, (int)s_jlgpu_gpu_submit);
+            s_jlgpu_gpu_submit = 0;
+            s_jlgpu_push_busy = 1;
+            return;
+        }
+        os_time_dly(1);
+    }
+}
+
+void jlgpu_push_gate_leave(void)
+{
+    s_jlgpu_push_busy = 0;
+}
+
+#else   /* 非链表模式:没有独立推屏线程,门恒开 */
+
+void jlgpu_gpu_gate_enter(void)  {}
+void jlgpu_gpu_gate_leave(void)  {}
+void jlgpu_push_gate_enter(void) {}
+void jlgpu_push_gate_leave(void) {}
+
+#endif
+
 
 static void jlgpu_hw_wait_done_hal(void)
 {
@@ -322,7 +455,12 @@ static void jlgpu_hw_set_top_run(void *task_base)
 
 static void jlgpu_hw_run_hal(void *task_base)
 {
-
+    if (!jlgpu_hw_get_init_sta()) {
+        if (UI_GPU_IRQ_MODE) {
+            lv_jlgpu_pnd_sem_init();
+        }
+        __jlgpu_hw_init_hal();
+    }
     os_mutex_pend(&jlgpu_mutex, 0);
 
     JLGPU_SFR_TypeDef *JLGPU2D = (JLGPU_SFR_TypeDef *)EVA_GPU;
@@ -344,11 +482,8 @@ static void jlgpu_hw_run_hal(void *task_base)
 
     os_mutex_post(&jlgpu_mutex);
 }
-
-static int jlgpu_hw_init_hal(void)
+static int __jlgpu_hw_init_hal()
 {
-    os_mutex_pend(&jlgpu_mutex, 0);
-
     JLGPU_SFR_TypeDef *JL_GPU2D = (JLGPU_SFR_TypeDef *)EVA_GPU;
 
 #if !GPU_PLATFORM_PC
@@ -368,12 +503,23 @@ static int jlgpu_hw_init_hal(void)
 #else
     gpu_init(JLGPU2D);
 #endif
+    gpu_init_sta = 1;
+    return 0;
+}
+
+static int jlgpu_hw_init_hal(void)
+{
+    os_mutex_pend(&jlgpu_mutex, 0);
+    __jlgpu_hw_init_hal();
 
     os_mutex_post(&jlgpu_mutex);
 
     return 0;
 }
-
+static inline int jlgpu_hw_get_init_sta()
+{
+    return  gpu_init_sta;
+}
 static int jlgpu_hw_free_hal(void)
 {
     return 0;
@@ -442,9 +588,14 @@ void jlgpu_ctx_buffer_init(lv_jlgpu_ctx_t *jlgpu_ctx)
 
 void lv_jlgpu_ctx_init(lv_jlgpu_ctx_t *jlgpu_ctx)
 {
+    /* 与推屏互斥:本函数会拆 GPU↔DBI 联动(清 TOP/BUF 等 SFR),推屏期间做这个会让
+     * DBI 直接断流冻死;紧随其后的段内 jlgpu_run 也会抢 GPU。
+     * 对应 lv_jlgpu_ctx_uninit() 里的 gate_leave,必须成对。 */
+    jlgpu_gpu_gate_enter();
 
     if (jlgpu_ctx == NULL) {
         LV_LOG_ERROR("lv_jlgpu_init error");
+        jlgpu_gpu_gate_leave();
         return;
     }
 
@@ -495,7 +646,12 @@ void lv_jlgpu_ctx_uninit(lv_jlgpu_ctx_t *jlgpu_ctx)
         jlgpu_ctx->ctx_buf = NULL;
         jlgpu_ctx->ctx = NULL;
         memset(&jlgpu_ctx->jlgpu_ops, 0, sizeof(jlgpu_ops_t));
+        /* 快照随 ctx 一起销毁; 不释放的话 lv_jlgpu_ctx_init() 里的 memzero 会把指针抹掉, 直接泄漏 */
+        lv_jlgpu_task_list_snapshot_free(jlgpu_ctx);
     }
+
+    /* 与 lv_jlgpu_ctx_init() 里的 gate_enter 配对,释放推屏独占门 */
+    jlgpu_gpu_gate_leave();
 }
 
 
@@ -753,6 +909,19 @@ static int32_t _jlgpu_evaluate(lv_draw_unit_t *draw_unit, lv_draw_task_t *task)
         return 1;
     }
 
+#if LV_USE_VECTOR_GRAPHIC
+    case LV_DRAW_TASK_TYPE_VECTOR: {
+#if (LV_USE_DRAW_JLGPU_VECTOR_ENABLE == 0)
+        return 0;
+#endif
+        if (task->preference_score > 80) {
+            task->preference_score = 80;
+            task->preferred_draw_unit_id = DRAW_UNIT_ID_JLGPU;
+        }
+        return 1;
+    }
+#endif
+
     default:
         return 0;
     }
@@ -917,7 +1086,14 @@ static void _jlgpu_execute_drawing(lv_draw_jlgpu_unit_t *u)
 
 #if LV_USE_DRAW_JLGPU_LIST
         uint8_t *ori_image_data = (uint8_t *)image->data;
-        image->data = lv_jlgpu_attach_buf_list_add(u, (uint8_t *)image->data, image->data_size);
+        uint8_t *attach_data = lv_jlgpu_attach_buf_list_add(u, (uint8_t *)image->data, image->data_size);
+        if (attach_data == NULL) {
+            /* 附加buf申请失败:不能把 image->data 置成 NULL 交给GPU(会读到非法纹理地址导致GPU挂死),
+             * 直接跳过本层 */
+            jlgpu_list_alloc_fail_report(u, image->data_size);
+            break;
+        }
+        image->data = attach_data;
         lv_draw_jlgpu_img(t, &new_draw_dsc, &t->area);
         image->data = ori_image_data;
 #else
@@ -956,6 +1132,13 @@ static void _jlgpu_execute_drawing(lv_draw_jlgpu_unit_t *u)
         printf("LV_DRAW_TASK_TYPE_BLUR todoing\n");
 #endif
         break;
+#if LV_USE_VECTOR_GRAPHIC
+    case LV_DRAW_TASK_TYPE_VECTOR:
+#if (LV_USE_DRAW_JLGPU_VECTOR_ENABLE == 1)
+        lv_draw_jlgpu_vector(t, t->draw_dsc, &t->area);
+#endif
+        break;
+#endif
     default:
         break;
     }
@@ -1046,6 +1229,8 @@ void lv_draw_jlgpu_init(void)
         }
     }
     lv_jlgpu_ctx_init(draw_jlgpu_unit->jlgpu_ctx);
+    /* 常驻 ctx:不会立刻 uninit,这里立刻还门,避免长期占住推屏独占门 */
+    jlgpu_gpu_gate_leave();
 
     uint8_t *buf = malloc(JLGPU_LIST_MEM_POOL_SIZE);
     if (buf == NULL) {
@@ -1089,6 +1274,8 @@ void lv_draw_jlgpu_init(void)
         return;
     }
     lv_jlgpu_ctx_init(draw_jlgpu_unit_2->jlgpu_ctx);
+    /* 常驻 ctx:同上,立刻还门 */
+    jlgpu_gpu_gate_leave();
 
     uint8_t *buf_2 = malloc(JLGPU_LIST_MEM_POOL_SIZE);
     if (buf_2 == NULL) {
@@ -1197,6 +1384,8 @@ void lv_jlgpu_task_list_free(lv_draw_jlgpu_unit_t *unit)
     } else {
         /*printf("wraning!! lv_gpu_task_free: no gpu_task_head\n");*/
     }
+    /* 快照依附于这条任务链, 链没了快照也必须一起清掉, 否则下一帧收集会以为还有旧快照 */
+    lv_jlgpu_task_list_snapshot_free(unit->jlgpu_ctx);
     /*mem_stats();*/
     lv_jlgpu_attach_buf_list_free(unit);
     lv_jlgpu_mem_pool_clean(unit);
@@ -1325,6 +1514,8 @@ void lv_jlgpu_sfr_top_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint16_
 void lv_jlgpu_list_uninit(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint8_t *out_buf, uint8_t out_format)
 {
     if (unit->jlgpu_ctx) {
+        /* 常驻 ctx 的 init 已配平还门,这里补占门以匹配 ctx_uninit 里的 gate_leave */
+        jlgpu_gpu_gate_enter();
         lv_jlgpu_ctx_uninit(unit->jlgpu_ctx);
     }
     lv_jlgpu_task_list_free(unit);
@@ -1432,6 +1623,176 @@ void lv_jlgpu_task_list_run(lv_draw_jlgpu_unit_t *unit)
     }
 }
 
+/*设置GPU任务链上所有节点的全局透明度。
+ * 与 lib 侧 gpu_hw.h 的 TASK_SET_GLO_ALPHA 一致: 指令字 bit24..31, 范围 0~128, 128 为不透明。
+ * 注意: 倒影类特效的镜像槽与本体槽复用同一条任务链, 必须在每次重放前重新设置,
+ * 否则后跑的本体槽会沿用镜像槽的暗化值。*/
+void lv_jlgpu_task_list_set_global_alpha(lv_jlgpu_ctx_t *jlgpu_ctx, uint8_t alpha)
+{
+    if (jlgpu_ctx == NULL) {
+        return;
+    }
+    if (alpha > 128) {
+        alpha = 128;
+    }
+    void *task = jlgpu_ctx->task_base;
+    while (task) {
+        SFR(((uint32_t *)task)[0], 24, 8, alpha);
+        task = jlgpu_task_get_next(task);
+    }
+}
+
+/*设置GPU任务链上所有节点的混合模式。
+ * 与 lib 侧 gpu_hw.h 的 TASK_SET_BLEND_MODE 一致: 指令字 bit6..9, 取值见 jlgpu_blendmode_t。
+ * 用途: 页面特效需要"两页交叉淡入淡出"时, 被淡入/淡出的那一页必须走 SRC_OVER 才会与
+ * 底图做 alpha 混合。而 lv_obj_redraw 收集全屏图层走的是 lv_draw_jlgpu_fill.c 的列表分支,
+ * 那里写死 JLGPU_BLEND_SRC(直接覆盖), 只改 global_alpha 看不到任何渐变效果。
+ * 任务链是常驻复用的, 用完必须恢复成收集时的模式, 否则会影响后续帧。*/
+void lv_jlgpu_task_list_set_blend_mode(lv_jlgpu_ctx_t *jlgpu_ctx, jlgpu_blendmode_t blend_mode)
+{
+    if (jlgpu_ctx == NULL) {
+        return;
+    }
+    void *task = jlgpu_ctx->task_base;
+    while (task) {
+        SFR(((uint32_t *)task)[0], 6, 4, blend_mode);
+        task = jlgpu_task_get_next(task);
+    }
+}
+
+/* 快照里每一项的编码: bit0..3 = 混合模式, bit8..15 = 全局透明度 */
+#define JLGPU_SNAP_BLEND_GET(v) ((uint8_t)((v) & 0x0F))
+#define JLGPU_SNAP_ALPHA_GET(v) ((uint8_t)(((v) >> 8) & 0xFF))
+#define JLGPU_SNAP_PACK(blend, alpha) ((uint16_t)(((blend) & 0x0F) | (((uint16_t)(alpha) & 0xFF) << 8)))
+/* SFR 只提供了写宏, 读位域自己来: 取 cmd 的 [shift, shift+width) 位 */
+#define JLGPU_SFR_GET(cmd, shift, width) ((uint32_t)(((cmd) >> (shift)) & ((1u << (width)) - 1u)))
+
+/* 记下任务链上每个节点当前的(混合模式, 全局透明度)。
+ * 整链覆盖式改写是不可逆的: 链上各节点的值本来互不相同(文字 SRC_OVER/128、图片按 dsc->blend_mode、
+ * 透明度取 dsc->opa/2), 被页级特效统一覆盖后就没法再逐节点恢复。 */
+void lv_jlgpu_task_list_snapshot(lv_jlgpu_ctx_t *jlgpu_ctx)
+{
+    if (jlgpu_ctx == NULL || jlgpu_ctx->task_base == NULL) {
+        return;
+    }
+    if (jlgpu_ctx->node_snap != NULL) {
+        /* 已有快照: 说明链还是收集时那条, 不能拿被改写过的值覆盖掉原值 */
+        return;
+    }
+    uint8_t node_num = jlgpu_ctx->jlgpu_task_num;
+    if (node_num == 0) {
+        return;
+    }
+    uint16_t *snap = (uint16_t *)lv_malloc((uint32_t)node_num * sizeof(uint16_t));
+    if (snap == NULL) {
+        return;
+    }
+    void *task = jlgpu_ctx->task_base;
+    uint8_t i = 0;
+    while (task && i < node_num) {
+        uint32_t cmd = ((uint32_t *)task)[0];
+        snap[i] = JLGPU_SNAP_PACK(JLGPU_SFR_GET(cmd, 6, 4), JLGPU_SFR_GET(cmd, 24, 8));
+        task = jlgpu_task_get_next(task);
+        i++;
+    }
+    jlgpu_ctx->node_snap = snap;
+    jlgpu_ctx->node_snap_num = i;
+}
+
+/* 按快照逐节点还原。任务链节点数在特效期间不会变, 所以顺序一一对应。 */
+void lv_jlgpu_task_list_restore(lv_jlgpu_ctx_t *jlgpu_ctx)
+{
+    if (jlgpu_ctx == NULL || jlgpu_ctx->node_snap == NULL) {
+        return;
+    }
+    void *task = jlgpu_ctx->task_base;
+    uint8_t i = 0;
+    while (task && i < jlgpu_ctx->node_snap_num) {
+        uint16_t v = jlgpu_ctx->node_snap[i];
+        SFR(((uint32_t *)task)[0], 6, 4, JLGPU_SNAP_BLEND_GET(v));
+        SFR(((uint32_t *)task)[0], 24, 8, JLGPU_SNAP_ALPHA_GET(v));
+        task = jlgpu_task_get_next(task);
+        i++;
+    }
+}
+
+/* 与页级透明度相乘: 节点最终 alpha = 收集时的 alpha * scale / 128。
+ * 直接 set_global_alpha 会把元素自身的 dsc->opa/2 一起冲掉, 页级调光应当用这个。 */
+void lv_jlgpu_task_list_scale_global_alpha(lv_jlgpu_ctx_t *jlgpu_ctx, uint8_t scale)
+{
+    if (jlgpu_ctx == NULL) {
+        return;
+    }
+    if (scale > 128) {
+        scale = 128;
+    }
+    void *task = jlgpu_ctx->task_base;
+    uint8_t i = 0;
+    while (task) {
+        uint32_t cmd = ((uint32_t *)task)[0];
+        /* 有快照就按"收集时的透明度"乘, 每帧调用都是幂等的。
+         * 没有快照(分配失败等)只能退化成绝对值: 读当前值再乘会在每帧调用下逐帧累乘,
+         * 几帧之内就把整页乘成全黑, 比不生效严重得多。 */
+        uint8_t base = JLGPU_MAX_GLOBAL_ALPHA;
+        if (jlgpu_ctx->node_snap != NULL) {
+            if (i < jlgpu_ctx->node_snap_num) {
+                base = JLGPU_SNAP_ALPHA_GET(jlgpu_ctx->node_snap[i]);
+            } else {
+                break;
+            }
+        } else {
+            base = JLGPU_SFR_GET(cmd, 24, 8);
+            if (base > scale) {
+                /* 退化成"取较小值"而非乘, 保证多帧调用不会累乘 */
+                SFR(((uint32_t *)task)[0], 24, 8, scale);
+                task = jlgpu_task_get_next(task);
+                i++;
+                continue;
+            }
+        }
+        SFR(((uint32_t *)task)[0], 24, 8, (uint8_t)(((uint32_t)base * scale) / 128));
+        task = jlgpu_task_get_next(task);
+        i++;
+    }
+}
+
+/* 只把"收集时就是 JLGPU_BLEND_SRC(直接覆盖)"的节点改成 SRC_OVER, 其余节点保持原样。
+ * 页级交叉淡入淡出需要被淡的那页半透明地叠在底图上, 而填充类节点收集时写死 SRC, 不改就看不到渐变;
+ * 但文字(SRC_OVER)和按 dsc->blend_mode 走的图片节点本来就参与混合, 必须原样保留。 */
+void lv_jlgpu_task_list_set_blend_src_over(lv_jlgpu_ctx_t *jlgpu_ctx)
+{
+    if (jlgpu_ctx == NULL) {
+        return;
+    }
+    void *task = jlgpu_ctx->task_base;
+    uint8_t i = 0;
+    while (task) {
+        uint32_t cmd = ((uint32_t *)task)[0];
+        uint8_t cur = JLGPU_SFR_GET(cmd, 6, 4);
+        uint8_t orig = cur;
+        if (jlgpu_ctx->node_snap != NULL && i < jlgpu_ctx->node_snap_num) {
+            orig = JLGPU_SNAP_BLEND_GET(jlgpu_ctx->node_snap[i]);
+        }
+        if (orig == JLGPU_BLEND_SRC) {
+            SFR(((uint32_t *)task)[0], 6, 4, JLGPU_BLEND_SRC_OVER);
+        }
+        task = jlgpu_task_get_next(task);
+        i++;
+    }
+}
+
+void lv_jlgpu_task_list_snapshot_free(lv_jlgpu_ctx_t *jlgpu_ctx)
+{
+    if (jlgpu_ctx == NULL) {
+        return;
+    }
+    if (jlgpu_ctx->node_snap != NULL) {
+        lv_free(jlgpu_ctx->node_snap);
+        jlgpu_ctx->node_snap = NULL;
+    }
+    jlgpu_ctx->node_snap_num = 0;
+}
+
 //添加GPU任务链表节点
 void lv_jlgpu_add_task_node(lv_draw_jlgpu_unit_t *unit, void *new_task)
 {
@@ -1458,6 +1819,145 @@ void lv_jlgpu_insert_task_head(lv_draw_jlgpu_unit_t *unit, void *new_task)
     ctx->jlgpu_task_num++;
 
     if (ctx->jlgpu_task_num == 1) {
+        ctx->cur_task = new_task;
+    }
+}
+
+/* 取链表里 node 的前驱节点; node 是头节点 / 不在链表上 / 链表为空时返回 NULL */
+static void *jlgpu_task_list_prev(lv_jlgpu_ctx_t *ctx, void *node)
+{
+    if (ctx->task_base == NULL || node == NULL || node == ctx->task_base) {
+        return NULL;
+    }
+
+    void *prev = ctx->task_base;
+    while (prev && jlgpu_task_get_next(prev) != node) {
+        prev = jlgpu_task_get_next(prev);
+    }
+    return prev;
+}
+
+//取 GPU 任务链表的节点个数
+uint16_t lv_jlgpu_task_list_count(lv_draw_jlgpu_unit_t *unit)
+{
+    if (!unit || !unit->jlgpu_ctx) {
+        return 0;
+    }
+    return unit->jlgpu_ctx->jlgpu_task_num;
+}
+
+//按层号取 GPU 任务链表节点: layer=0 是链表头(最先画=最底层), 越界返回 NULL
+void *lv_jlgpu_task_list_get(lv_draw_jlgpu_unit_t *unit, uint16_t layer)
+{
+    if (!unit || !unit->jlgpu_ctx) {
+        return NULL;
+    }
+
+    void *task = unit->jlgpu_ctx->task_base;
+    while (task && layer > 0) {
+        task = jlgpu_task_get_next(task);
+        layer--;
+    }
+    return task;
+}
+
+//在 anchor_task 之前插入新任务节点(新节点画在 anchor 之下)。
+//anchor_task == NULL 表示"插到链表末尾之后", 等价于 lv_jlgpu_add_task_node()。
+//anchor_task 不在链表上时什么都不做, 避免把链表接坏。
+void lv_jlgpu_insert_task_before(lv_draw_jlgpu_unit_t *unit, void *anchor_task, void *new_task)
+{
+    if (!unit || !unit->jlgpu_ctx || !new_task) {
+        return;
+    }
+
+    lv_jlgpu_ctx_t *ctx = unit->jlgpu_ctx;
+
+    if (anchor_task == NULL) {
+        lv_jlgpu_add_task_node(unit, new_task);
+        return;
+    }
+    if (ctx->task_base == NULL) {
+        return;
+    }
+    /* anchor 就是头节点: 没有前驱, 等价于前插 */
+    if (ctx->task_base == anchor_task) {
+        lv_jlgpu_insert_task_head(unit, new_task);
+        return;
+    }
+
+    void *prev = jlgpu_task_list_prev(ctx, anchor_task);
+    if (prev == NULL) {
+        return;
+    }
+
+    jlgpu_task_set_next(new_task, anchor_task);
+    jlgpu_task_set_next(prev, new_task);
+    ctx->jlgpu_task_num++;
+}
+
+//在 anchor_task 之后插入新任务节点(新节点画在 anchor 之上)。
+//anchor_task == NULL 表示"插到链表头之前", 等价于 lv_jlgpu_insert_task_head()。
+void lv_jlgpu_insert_task_after(lv_draw_jlgpu_unit_t *unit, void *anchor_task, void *new_task)
+{
+    if (!unit || !unit->jlgpu_ctx || !new_task) {
+        return;
+    }
+
+    lv_jlgpu_ctx_t *ctx = unit->jlgpu_ctx;
+
+    if (anchor_task == NULL) {
+        lv_jlgpu_insert_task_head(unit, new_task);
+        return;
+    }
+
+    /* 找不到 anchor 就不动, 免得把节点插到别处去 */
+    bool found = false;
+    for (void *t = ctx->task_base; t; t = jlgpu_task_get_next(t)) {
+        if (t == anchor_task) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        return;
+    }
+
+    jlgpu_task_set_next(new_task, jlgpu_task_get_next(anchor_task));
+    jlgpu_task_set_next(anchor_task, new_task);
+    ctx->jlgpu_task_num++;
+
+    /* anchor 原本是尾节点的话, 尾指针要跟着挪 */
+    if (ctx->cur_task == anchor_task) {
+        ctx->cur_task = new_task;
+    }
+}
+
+//按层号插入新任务节点: layer=0 插到链表头(最底层), layer>=节点数则追加到链表尾(最上层)。
+//注意层号是"当帧"的: 链表节点数每帧都可能变, 跨帧不保证指向同一个 UI 元素。
+void lv_jlgpu_insert_task_at(lv_draw_jlgpu_unit_t *unit, uint16_t layer, void *new_task)
+{
+    if (!unit || !unit->jlgpu_ctx || !new_task) {
+        return;
+    }
+
+    lv_jlgpu_ctx_t *ctx = unit->jlgpu_ctx;
+
+    if (layer == 0 || ctx->task_base == NULL) {
+        lv_jlgpu_insert_task_head(unit, new_task);
+        return;
+    }
+
+    /* 走到第 layer-1 个节点(0 起算)的后面; layer 超过节点数时停在尾节点, 效果就是追加 */
+    void *node = ctx->task_base;
+    for (uint16_t i = 0; (i + 1) < layer && jlgpu_task_get_next(node) != NULL; i++) {
+        node = jlgpu_task_get_next(node);
+    }
+
+    jlgpu_task_set_next(new_task, jlgpu_task_get_next(node));
+    jlgpu_task_set_next(node, new_task);
+    ctx->jlgpu_task_num++;
+
+    if (ctx->cur_task == node) {
         ctx->cur_task = new_task;
     }
 }
@@ -1507,7 +2007,13 @@ uint8_t *lv_jlgpu_mem_pool_get_buf(lv_draw_jlgpu_unit_t *unit, uint8_t *src_buf,
         unit->pool_pos += buf_size;
         return ptr;
     } else {
-        return lv_jlgpu_attach_buf_list_add(unit, src_buf, buf_size);
+        uint8_t *ptr = lv_jlgpu_attach_buf_list_add(unit, src_buf, buf_size);
+        if (ptr == NULL) {
+            /* 内存池已满且堆也申请失败:调用方拿到 NULL 后如果直接 memset/交给GPU,
+             * 会表现为静默黑屏或GPU挂死,所以在这里把上下文打出来 */
+            jlgpu_list_alloc_fail_report(unit, buf_size);
+        }
+        return ptr;
     }
 }
 
@@ -1553,6 +2059,51 @@ bool lv_is_draw_buf(uint8_t *buf)
 
     return false;
 }
+
+#include "asm/power_interface.h"
+u8 lv_gpu_hw_get_status(void)
+{
+    if (!gpu_init_sta) {
+        return 0;
+    }
+    return ((GPU_SFR->STA_CON >> 2) & 0x03);
+}
+void lv_sfc_wait_gpu_idle(u32 id)
+{
+    while (lv_gpu_hw_get_status());
+}
+
+u8 lv_wait_gpu_idle(void)
+{
+    lv_sfc_wait_gpu_idle(0);
+    return 1;
+}
+
+REGISTER_MEMORY_DEFRAG_REQUEST(lv_gpu_driver_defrag) = {
+    .name = "lvgpu",
+    .wait_is_idle = lv_wait_gpu_idle,
+};
+
+REGISTER_TZSPI_TARGET(lv_gpu_tzspi) = {
+    .suspend = lv_sfc_wait_gpu_idle,
+};
+static u8 lv_gpu_enter_deepsleep(void)
+{
+    gpu_init_sta = 0;
+    return 0;
+}
+#if 0
+AT_VOLATILE_CACHE_CODE_LOWPOWER
+u8 lv_gpu_exit_deepsleep(void)
+{
+    return 0;
+}
+#endif
+DEEPSLEEP_TARGET_REGISTER(lv_gpu) = {
+    .name   = "lvgpu",
+    .enter  = lv_gpu_enter_deepsleep,
+    .exit   = NULL,
+};
 
 #endif /*LV_USE_DRAW_JLGPU*/
 #endif /* #if CONFIG_LVGL_UI_ENABLE */

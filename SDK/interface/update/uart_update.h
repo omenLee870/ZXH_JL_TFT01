@@ -40,5 +40,9 @@ typedef struct __update_io {
 void uart_update_init(uart_update_cfg *cfg);
 void sava_uart_update_param(void);
 
+u32 uart_update_read(u8 *data, u32 len, u32 timeout_ms);
+u32 uart_update_read_no_timeout(u8 *data, u32 len);
+u32 uart_update_write(u8 *data, u32 len, u32 timeout_ms);
+
 #endif
 

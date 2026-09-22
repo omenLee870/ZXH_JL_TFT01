@@ -1,24 +1,14 @@
 #ifndef  __TZSFC_H__
 #define  __TZSFC_H__
 
+#include "asm/power/pmc/pmc_sfr.h"
+
 
 #define    TZFLASH_SFC       PMC_SFC0
 #define    TZFLASH_SFCDEC    PMC_SFCDEC0
 #define    TZFLASH_BOOTMMU   PMC_BOOTMMU0
 #define    TZFLASH_SPI       PMC_FSPI0
 
-/*********************spi********************/
-#ifdef CONFIG_FPGA_ENABLE
-#define SPI0_BAUD_FREQ    12000000
-#else
-#define SPI0_BAUD_FREQ    24000000
-#endif
-#define SPI0_CLK_SRC_HSB  0
-#if SPI0_CLK_SRC_HSB
-#define SPI0_SOURCE_FREQ  clk_get("sys")//br35:spi0 src:hsb
-#else
-#define SPI0_SOURCE_FREQ  clk_get("lsb")//br35:spi0 src:hsb
-#endif
 
 
 void tzspi_clock_critical_exit();
@@ -68,8 +58,11 @@ u32 sfc0_is_dtr_mode();
 u32 sfc0_is_addr_4byte_mode();
 u32 sfc0_is_continue_mode();
 void sfc0_continue_switch(u8 continue_en);
+s8 sfc0_get_dummy();
+void sfc0_str_init(s8 dummy_num);
 void sfc0_dtr_init(s8 dummy_num);//base:ini
 void sfc0_dtr_continue_init(u8 dtr_mode, u8 continue_mode, s8 dummy_num);//base:ini
+void sfc0_dat_indly_trim();
 
 u32 sfc0_get_offset_addr();
 u32 sfc0_get_enc_zone(u32 *saddr, u32 *eaddr);

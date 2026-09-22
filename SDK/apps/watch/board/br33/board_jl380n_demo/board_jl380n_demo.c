@@ -35,6 +35,7 @@
 #include "nandflash.h"
 #include "device/device.h"
 #include "asm/sdmmc.h"
+#include "bt.h"
 #if TCFG_VIDEO0_ENABLE
 #include "uvc_device.h"
 #include "camera.h"
@@ -1186,7 +1187,7 @@ extern const struct device_operations nandflash_fs_ftl_ops;
 #endif	// TCFG_NANDFLASH_DEV_ENABLE
 
 
-const u32 g_res_nor_unencry_start_addr = 0; //temp, todo...
+const u32 g_res_nor_unencry_start_addr = TCFG_SDFILE_FLASH_DEV_PATY_BASE;   //资源分区分界地址，用于设备选择和偏移换算
 
 #if TCFG_HOST_UVC_ENABLE
 UVC_PLATFORM_DATA_BEGIN(uvc_data)
@@ -1432,6 +1433,9 @@ void board_init()
 	jldtp_manager_init(chip_conn_configs, ARRAY_SIZE(chip_conn_configs));
 #endif
 
+#if TCFG_BT_PA_ENABLE
+    bt_pa_init();
+#endif
 }
 
 

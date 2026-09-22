@@ -142,9 +142,24 @@ do { \
 	/* jlgpu_task_fill_set_color(0x7f, 0x00, 0xff, 0x00); */   \
 	/* printf("task_id: 0x%x, elm_id: 0x%x\n", task_param.task_id, task_param.element_id); */ \
 	/* __DUMP_RECT(&task_param.draw); */  \
+	/* \
+	 * 透视路径: 矩阵已由 jlgpu_task_fill_set_trans_matrix 取出, \
+	 * 必须清空外部矩阵, 否则 gpu_port.c 会再乘一次导致重复叠加。 \
+	 */ \
 	if (task_param.perspective_en) { \
 		jlgpu_task_fill_set_trans_mode(JLGPU_TRANS_MODE_PROJECTION); \
 		jlgpu_task_fill_set_trans_matrix(task_param.matrix); \
+		jlgpu_task_fill_set_external_matrix(NULL); \
+	} else if (task_param.matrix) { \
+		/* \
+		 * 非透视但带外部矩阵: 按矩阵是否仿射选择变换模式, \
+		 * 原实现此场景变换模式保持 NONE, 矩阵不会生效。 \
+		 */ \
+		if (jlgpu_matrix_is_affine(task_param.matrix)) { \
+			jlgpu_task_fill_set_trans_mode(JLGPU_TRANS_MODE_AFFINE); \
+		} else { \
+			jlgpu_task_fill_set_trans_mode(JLGPU_TRANS_MODE_PROJECTION); \
+		} \
 	} \
 	int tranx = task_param.draw.left; \
 	int trany = task_param.draw.top; \

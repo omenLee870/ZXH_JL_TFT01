@@ -26,6 +26,7 @@
 -Iinterface/media/cvp
 -Iinterface/video
 -Iinterface/video/h264
+-Iinterface/lib_config/watch
 -Iinterface/btstack/third_party/rcsp
 -Iinterface/media/media_new
 -Iinterface/media/media_new/media
@@ -146,6 +147,11 @@
 -Iapps/common/ui/lvgl_v9/demos/stress
 -Iapps/common/ui/lvgl_v9/demos/widgets
 -Iapps/common/ui/lvgl_v9/demos/map
+-Iapps/common/ui/lvgl_v9/demos/amap
+-Iapps/common/ui/lvgl_v9/demos/amap/gps
+-Iapps/common/ui/lvgl_v9/demos/amap/gps/map
+-Iapps/common/ui/lvgl_v9/demos/amap/gps/navi
+-Iapps/common/ui/lvgl_v9/demos/amap/nanosvg
 -Iapps/common/ui/lvgl_v9/src
 -Iapps/common/ui/lvgl_v9/src/core
 -Iapps/common/ui/lvgl_v9/src/draw

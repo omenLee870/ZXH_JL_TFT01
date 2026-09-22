@@ -1,9 +1,68 @@
 #include "app_playback_mpi_priv.h"
 
+extern void *phy_malloc(size_t size);
+extern void phy_free(void *pv);
+
 #define APP_PLAYBACK_DEMUX_THREAD_PRIO   10
 #define APP_PLAYBACK_DEMUX_THREAD_STACK  2048
 #define APP_PLAYBACK_LBUF_ALIGN          4
 #define APP_PLAYBACK_DEMUX_DEFAULT_FPS   20u
+
+/* 帧队列缓冲池: 仿 video_dec.c 的 fb5 池(raw/size/used/enable 四字段)。
+ * 本板无 PSRAM(TCFG_PSRAM_DEV_ENABLE=0), 帧队列与 VO fb 同抢内部物理池, 且该块
+ * 要经 mpi_vdec_send_stream 交给硬件解码 ⇒ 必须物理连续, 不能换堆。
+ * 由 app_playback_demux_frame_queue_prealloc() 在池子干净时先取走, 之后跨模式复用
+ * 同一块, 不再每轮进模式 malloc/free 切碎物理池。 */
+static struct {
+    u8    enable;    /* 仅预建成功后置位, 未预建时行为与原来一致 */
+    u8    used;      /* 已交给某个回放句柄 */
+    u32   size;      /* 实际分配大小, 复用判据 */
+    void *raw;       /* 申请到的原始指针, 供释放 */
+} g_fq_pool;
+
+/* 帧队列预建: 内存宽裕时先取走缓冲。返回 0 成功, -1 失败(调用方走原路径) */
+int app_playback_demux_frame_queue_prealloc(uint32_t size)
+{
+    if (size == 0) {
+        return -1;
+    }
+    if (g_fq_pool.raw != NULL && g_fq_pool.size >= size) {
+        g_fq_pool.enable = 1;       /* 已有够大的常驻块: 直接复用 */
+        return 0;
+    }
+    if (g_fq_pool.used) {
+        return -1;                  /* 池块正被句柄占用: 不换块 */
+    }
+    if (g_fq_pool.raw != NULL) {
+        phy_free(g_fq_pool.raw);     /* 旧块不够大: 换块 */
+        g_fq_pool.raw = NULL;
+        g_fq_pool.size = 0;
+    }
+    g_fq_pool.raw = phy_malloc(size);
+    if (g_fq_pool.raw == NULL) {
+        g_fq_pool.enable = 0;
+        return -1;
+    }
+    g_fq_pool.size = size;
+    g_fq_pool.used = 0;
+    g_fq_pool.enable = 1;
+    return 0;
+}
+
+/* 回放退出时释放常驻帧队列块: 录像不需要帧队列, 留着等于永久占 128KB 物理池。
+ * 走 phy_free 真还物理池(malloc/free 只还给堆, 堆不把页还 pmm)。 */
+void app_playback_demux_frame_queue_pool_release(void)
+{
+    if (g_fq_pool.used) {
+        return;                      /* 仍被句柄占用: 不能拆 */
+    }
+    if (g_fq_pool.raw != NULL) {
+        phy_free(g_fq_pool.raw);
+        g_fq_pool.raw = NULL;
+    }
+    g_fq_pool.size = 0;
+    g_fq_pool.enable = 0;
+}
 
 static uint32_t app_playback_demux_video_pts(uint32_t frame_index,
         double fps)
@@ -25,7 +84,17 @@ app_playback_ret_t app_playback_demux_frame_queue_open(app_playback_handle_t ctx
         return APP_PLAYBACK_ERR_STATE;
     }
 
-    ctx->video_lbuf_mem = malloc(size);
+    /* 先取复用池(命中则零 malloc), 未命中回落原路径 */
+    if (g_fq_pool.enable && !g_fq_pool.used && g_fq_pool.raw != NULL &&
+        g_fq_pool.size >= size) {
+        ctx->video_lbuf_mem = g_fq_pool.raw;
+        g_fq_pool.used = 1;
+    } else {
+        ctx->video_lbuf_mem = malloc(size);
+    }
+    /* MEMDBG 取证: 帧队列尺寸与成败(事后整段清理) */
+    printf("[APP_PLAYBACK][MEMDBG] fq_open size=%u %s\n", size,
+           ctx->video_lbuf_mem ? "ok" : "FAIL");
     if (ctx->video_lbuf_mem == NULL) {
         return APP_PLAYBACK_ERR_NOMEM;
     }
@@ -35,7 +104,11 @@ app_playback_ret_t app_playback_demux_frame_queue_open(app_playback_handle_t ctx
                                 APP_PLAYBACK_LBUF_ALIGN,
                                 sizeof(app_playback_frame_hdr_t));
     if (ctx->video_lbuf == NULL) {
-        free(ctx->video_lbuf_mem);
+        if (g_fq_pool.enable && g_fq_pool.raw == ctx->video_lbuf_mem) {
+            g_fq_pool.used = 0;
+        } else {
+            free(ctx->video_lbuf_mem);
+        }
         ctx->video_lbuf_mem = NULL;
         return APP_PLAYBACK_ERR_IO;
     }
@@ -110,7 +183,11 @@ void app_playback_demux_frame_queue_close(app_playback_handle_t ctx)
     ctx->video_lbuf = NULL;
 
     if (ctx->video_lbuf_mem != NULL) {
-        free(ctx->video_lbuf_mem);
+        if (g_fq_pool.enable && g_fq_pool.raw == ctx->video_lbuf_mem) {
+            g_fq_pool.used = 0;     /* 池块: 只归还池, 不 free(跨模式复用) */
+        } else {
+            free(ctx->video_lbuf_mem);
+        }
         ctx->video_lbuf_mem = NULL;
     }
 }
@@ -144,6 +221,8 @@ app_playback_ret_t app_playback_demux_open(app_playback_handle_t ctx,
     demux->thread_exit_flag = 0;
     demux->thread_finished = 0;
 
+    /* getIndex=1 必须保留: 试过改 0(想省索引扫描时间), 结果起播耗时没降(play 仍 2360ms),
+     * 反而把正常文件判成 CORRUPTED(首帧/损坏检测依赖索引) => 已回退, 勿再改。 */
     demux->avi = AVI_open_input_file(path, 1);
     if (demux->avi == NULL) {
         printf("failed to open AVI file: %s\n", path);

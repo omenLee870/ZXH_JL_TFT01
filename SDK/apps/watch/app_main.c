@@ -95,9 +95,9 @@ const struct task_info task_info_table[] = {
     {"btctrler",            4 + TASK_PRIO_BASE,     0,   512,   512 },
     {"btencry",             1 + TASK_PRIO_BASE,     0,   512,   128 },
 #if (BT_FOR_APP_EN)
-    {"btstack",             3 + TASK_PRIO_BASE,     0,   1024,  256 },
+    {"btstack",             3 + TASK_PRIO_BASE,     0,   1024,  768 },
 #else
-    {"btstack",             3 + TASK_PRIO_BASE,     0,   768,   256 },
+    {"btstack",             3 + TASK_PRIO_BASE,     0,   768,   768 },
 #endif
     {"jlstream",            3 + TASK_PRIO_BASE,     0,  768,   128 },
     {"jlstream_0",          6 + TASK_PRIO_BASE,     0,  768,   0 },
@@ -131,7 +131,7 @@ const struct task_info task_info_table[] = {
     {"aec",					2 + TASK_PRIO_BASE,	   1,   768,   128 },
 
     {"aec_dbg",				3 + TASK_PRIO_BASE,	   0,   512,   128 },
-    {"update",				1 + TASK_PRIO_BASE,	   0,   512,   0   },
+    {"update",				1 + TASK_PRIO_BASE,	   0,   512,   128 },
     {"tws_ota",				2 + TASK_PRIO_BASE,	   0,   256,   0   },
     {"tws_ota_msg",			2 + TASK_PRIO_BASE,	   0,   256,   128 },
     {"dw_update",		 	2 + TASK_PRIO_BASE,	   0,   512,   128 },
@@ -252,6 +252,10 @@ const struct task_info task_info_table[] = {
 #if TCFG_VSTREAM_TRANSFER
     {"vstream_pkg_send_task",   2,      0,  512,   64},
     {"vstream_recv_task",       2,      0,  512,   1024},
+#endif
+#if TCFG_KID_PAGE_BY_UART_ENABLE
+    /* 产线串口配对任务: 优先级同 UI 附近(10), 独立栈, 见 kid_page_uart.c */
+    {"kid_page",                10,     0,  512,   64},
 #endif
 #if TCFG_DASHBOARD_HARDWARE_TEST_ENABLE
     {"gps_test",            1 + TASK_PRIO_BASE,     0,  512,   128 },
@@ -809,6 +813,11 @@ void mem_printf(void *priv)
     mem_stats();
 }
 
+void task_info_cb(void *p)
+{
+    task_info_output(0);
+    task_info_reset();
+}
 
 static void app_task_loop(void *p)
 {
@@ -818,6 +827,9 @@ static void app_task_loop(void *p)
 
     /* sys_timer_add(NULL, mem_printf, 1000); */
     mode = app_task_init();
+
+    /* sys_timer_add(NULL, task_info_cb, 500); */
+
 
 #if CONFIG_FINDMY_INFO_ENABLE || (BT_AI_SEL_PROTOCOL & REALME_EN)
 #if (VFS_ENABLE == 1)

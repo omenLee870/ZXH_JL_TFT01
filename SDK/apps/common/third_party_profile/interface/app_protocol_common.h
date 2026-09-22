@@ -75,6 +75,8 @@ void app_speech_tone_play_end_callback(void *priv, int flag); //提示音播放�
 extern int ai_mic_is_busy(void); //mic正在被使用
 extern int ai_mic_rec_start(void); //启动mic和编码模块
 extern int ai_mic_rec_close(void); //停止mic和编码模块
+int a2dp_tws_dec_suspend(void *priv);
+void a2dp_tws_dec_resume(void);
 extern bool bt_is_sniff_close(void);
 
 //语音识别接口
@@ -110,4 +112,3 @@ int app_protocol_key_event_handler(struct sys_event *event); //按键事件处�
 int app_protocol_sys_event_handler(struct sys_event *event); //系统事件处理函数
 
 #endif
-

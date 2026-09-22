@@ -382,9 +382,10 @@ static void ext_wifi_app_task(void *priv)
     info.net_priv = NULL;
     dev_ioctl(wifi_dev, DEV_SET_CB_FUNC, (u32)&info);
 
-#if defined(TCFG_EXT_WIFI_RST_PIN)&&(TCFG_EXT_WIFI_RST_PIN)
+#if defined(TCFG_EXT_WIFI_RST_PIN)&&(TCFG_EXT_WIFI_RST_PIN != NO_CONFIG_PORT)
     gpio_set_mode(IO_PORT_SPILT(TCFG_EXT_WIFI_RST_PIN), PORT_OUTPUT_LOW);
     os_time_dly(5);
+    gpio_hw_set_spl(IO_PORT_SPILT(TCFG_EXT_WIFI_RST_PIN), 1);//根据模组规格书配复位时序
     gpio_set_mode(IO_PORT_SPILT(TCFG_EXT_WIFI_RST_PIN), PORT_OUTPUT_HIGH);
     os_time_dly(100);
 #else

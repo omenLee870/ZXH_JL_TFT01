@@ -31,6 +31,7 @@
 
 #include "fs/fs.h"
 #include "draw/jlgpu/lv_draw_jlgpu.h"
+#include "draw/jlgpu/lv_draw_jlgpu_ball.h"
 #include "../../display/lv_display_private.h"
 #include "../lv_draw.h"
 #include "../../misc/lv_types.h"
@@ -62,6 +63,15 @@
 /* debug 耗时打印:gpu_run(GPU 渲染) 与 push(推屏) 耗时,
  * 每秒汇总打印一次平均/最大耗时。置 1 打开, 调试完置回 0。 */
 #define LV_JLGPU_DISP_PROFILE    0
+
+/* LIST==2 推屏时序开关(退路)
+ *   0: 走"推屏独占门"(jlgpu_push_gate_*,见 lv_draw_jlgpu.c),保留双链路流水:
+ *      渲染线程可以继续构建下一帧链表,只在"立即绘制"等真正碰 GPU 的操作上与推屏互斥
+ *   1: 粗粒度安全网 —— 生产者 post 后等消费者推完屏(lcd->draw 返回)才 flush_ready,
+ *      链表内存也延后到 lcd->draw 之后释放。能彻底串行化,但失去帧间流水
+ * 背景:开了 gpu_link_dbi 推屏联动后,推屏期间被别的线程改 TOP/BUF SFR 或抢 GPU
+ * 会让联动断流、DBI 永久等待 → 整机冻死。0 是治本做法,1 是把并发彻底关掉。 */
+#define JLGPU_PUSH_SYNC_WITH_LVGL   0
 
 #if (LV_COLOR_DEPTH == 16)
 #define LV_JLGPU_OUT_FORMAT JLGPU_FORMAT_RGB565
@@ -153,7 +163,10 @@ static OS_SEM triple_buf_sem;
 #if LV_USE_DRAW_JLGPU_LIST == 2
 #define JLGPU_RUN_DISP_CB_NAME  "jlgpu_run_disp_task"
 static void _jlgpu_run_disp_cb(void *ptr);
-static OS_SEM jlgpu_run_disp_sem;
+static OS_SEM jlgpu_run_disp_sem;      /* 消费者 -> 生产者:上一帧已处理完,token 归还 */
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+static OS_SEM jlgpu_push_done_sem;     /* 消费者 -> 生产者:推屏(lcd->draw)已完成 */
+#endif
 #endif
 /**********************
  *      MACROS
@@ -545,7 +558,14 @@ void lv_port_disp_init(void)
 
 #if LV_USE_DRAW_JLGPU_LIST == 2
     os_sem_create(&jlgpu_run_disp_sem, 1);
-    thread_fork(JLGPU_RUN_DISP_CB_NAME, 25, 1024, 128, NULL, _jlgpu_run_disp_cb, NULL);
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+    os_sem_create(&jlgpu_push_done_sem, 0);
+#endif
+    /* 该线程会跑到 GPU 框架里(jlgpu_run 的路径/矩阵浮点运算、lv_jl_lcd.lcd->draw)，
+     * 运算量随 UI 绘制任务数量增长。原 1024 字节栈过小，栈溢出是"无打印直接黑屏"的典型原因
+     * (LIST==1 没有这个线程)，这里放大到 4K，与同为渲染通路的 fb_combine 线程一致 */
+    thread_fork(JLGPU_RUN_DISP_CB_NAME, 25, 4096, 128, NULL, _jlgpu_run_disp_cb, NULL);
+
 #endif
 
 }
@@ -1002,14 +1022,39 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
                 printf("disp_flush: os_sem_pend failed\n");
             }
 
+            /*
+             * 圆球特效: 把当帧的特效任务挂到本帧任务链上, 插在哪一层由
+             * lv_ball_effect_set_layer() 决定。
+             * 只能放在拿到 token 之后: 这时上一帧的链表和附着 buf 已被 consumer
+             * 释放、内存池已 clean, 往 unit 上挂任务不会踩到在途帧。
+             */
+            lv_ball_effect_build_tasks(unit);
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+            /* 清掉可能残留的计数(disp_flush_post_msg/video disp 也会走同一个消费线程) */
+            os_sem_set(&jlgpu_push_done_sem, 0);
+#endif
+
             int err = os_taskq_post(JLGPU_RUN_DISP_CB_NAME, 3, disp_drv, unit, px_map);
             if (err) {
                 os_sem_post(&jlgpu_run_disp_sem);
                 printf("jlgpu_run_disp_cb_post err = %d\n", err);
                 /* 如果任务发送失败，直接在此处开背光 */
                 lvgl_try_open_backlight_after_first_frame(1);
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+                /* 消息没发出去,下面的等待直接放行,不要白等 300ms */
+                os_sem_post(&jlgpu_push_done_sem);
+#endif
             }
             /* 背光在 _jlgpu_run_disp_cb 里打开以防止闪屏 */
+
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+            /* 关键:等推屏(lcd->draw)真正结束再放行 LVGL。
+             * 原行为是 post 完就 flush_ready 返回,LVGL 立刻渲染下一帧,
+             * 于是"渲染线程"和"推屏线程"会并发操作同一颗 GPU 与同一组 top SFR */
+            if (os_sem_pend(&jlgpu_push_done_sem, 300) != OS_ERR_NONE) {
+                printf("disp_flush: push_done sem_pend failed\n");
+            }
+#endif
 
             lv_draw_jlgpu_unit_swap();
 
@@ -1023,6 +1068,16 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
             // if (psram_cache_check(px_map)) {
             //     DcuInvalidRegion((unsigned int *)px_map, lv_jl_lcd.buffer_size); // FIXME
             // }
+
+            /*
+             * 圆球特效: 单链表是同步跑完的, 在 task_list_run 之前把当帧的特效任务
+             * 挂到本帧任务链上即可, 插在哪一层由 lv_ball_effect_set_layer() 决定。
+             * 上一帧的链表、附着 buf、内存池都在 lv_jlgpu_task_list_free() 里
+             * 释放/clean 过了, 这里挂任务不会踩到在途帧。放在 t0 之前, 免得把挂
+             * 任务的时间算进 gpu_run 统计。
+             */
+            lv_ball_effect_build_tasks(unit);
+
 #if LV_JLGPU_DISP_PROFILE
             int64_t t0 = get_system_us();
 #endif
@@ -1274,6 +1329,10 @@ static void _jlgpu_run_disp_cb(void *ptr)
                 lv_jlgpu_task_list_free(unit);
             }
             os_sem_post(&jlgpu_run_disp_sem);
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+            /* 生产者这时可能正卡在 push_done 上,必须补一次,否则它只能等到超时 */
+            os_sem_post(&jlgpu_push_done_sem);
+#endif
             continue;
         }
 
@@ -1294,10 +1353,23 @@ static void _jlgpu_run_disp_cb(void *ptr)
 #if LV_JLGPU_DISP_PROFILE
         int64_t t0 = get_system_us();
 #endif
+
+        /* 占住"推屏独占门"必须从"配置 TOP/BUF 联动"就开始,一直到 lcd->draw 返回。
+         * 只罩 lcd->draw 是不够的:配置联动到这里之前如果被渲染线程插入
+         * (lv_jlgpu_ctx_init 里的 jlgpu_hw_set_sfr_top(NULL) + JLGXDMA_link_gpu(0)),
+         * 联动会被打断,GPU top 不再产出,DMM 读不到数据 → lcd->draw 永久等待 → 整机冻死。 */
+        jlgpu_push_gate_enter();
+
         jlgpu_task_list_disp_run(disp_drv, unit, &full_area, px_map);
 
         //处理完成后立刻释放当前unit链表内存
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+        /* SYNC 模式:链表内存必须等推屏(lcd->draw)返回后再释放(与 LIST==1 顺序一致),
+         * 释放点挪到下面 lcd->draw 之后 */
+#else
         lv_jlgpu_task_list_free(unit);
+#endif
+
 #if LV_JLGPU_DISP_PROFILE
         int64_t t1 = get_system_us();
 #endif
@@ -1341,6 +1413,15 @@ static void _jlgpu_run_disp_cb(void *ptr)
 
         lv_jl_lcd.lcd->set_draw_area(full_area.x1, full_area.x2, full_area.y1, full_area.y2);
         lv_jl_lcd.lcd->draw((uint8_t *)px_map, full_area.x1, full_area.x2, full_area.y1, full_area.y2);
+        /* 推屏结束,放开独占门(见上面的 jlgpu_push_gate_enter) */
+        jlgpu_push_gate_leave();
+
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+        /* 推屏已返回,这时才释放链表内存(原实现在 lcd->draw 之前释放) */
+        lv_jlgpu_task_list_free(unit);
+#endif
+
+
 #if LV_JLGPU_DISP_PROFILE
         u32 gpu_us = (u32)(t1 - t0);
         u32 push_us = (u32)(get_system_us() - t1);
@@ -1356,6 +1437,12 @@ static void _jlgpu_run_disp_cb(void *ptr)
 #endif
 
         os_sem_post(&jlgpu_run_disp_sem);
+
+#if JLGPU_PUSH_SYNC_WITH_LVGL
+        /* 通知生产者:本帧推屏已结束,可以 flush_ready 继续下一帧 */
+        os_sem_post(&jlgpu_push_done_sem);
+#endif
+
 
     }
 }

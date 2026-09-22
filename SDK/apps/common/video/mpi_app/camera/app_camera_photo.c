@@ -682,8 +682,14 @@ static app_camera_ret_t app_camera_take_large_photo(app_camera_handle_t ctx,
         src_chn_attr.width = APP_CAMERA_PHOTO_QVGA_WIDTH;
         src_chn_attr.height = APP_CAMERA_PHOTO_QVGA_HEIGHT;
     } else {
+#if CONFIG_CAMERA_PHOTO_MEM_LIMIT
+        /* 无 PSRAM: 按目标尺寸抓帧, 避免整帧离线缓冲(720p=1.8MB)超出 RAM 预算 */
+        src_chn_attr.width = attr->width;
+        src_chn_attr.height = attr->height;
+#else
         src_chn_attr.width = src_grp_attr.src_width;
         src_chn_attr.height = src_grp_attr.src_height;
+#endif
     }
     src_chn_attr.format = attr->yuv420 ? MPI_PIXEL_FMT_YUV420SP : APP_CAMERA_PHOTO_FORMAT;
     src_chn_attr.yuv_order = APP_CAMERA_PHOTO_YUV_ORDER;

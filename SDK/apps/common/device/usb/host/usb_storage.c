@@ -105,6 +105,7 @@ static int usb_stor_rxmaxp(struct mass_storage *disk)
 #endif
 }
 #define     UDISK_MUTEX_TIMEOUT     5000/10 //5s
+#define     UDISK_RELEASE_DRAIN_TIMEOUT     (1 * OS_TICKS_PER_SEC)  //1s, 见usb_stor_release()
 
 static int usb_h_mutex_pend(struct usb_host_device *host_dev)
 {
@@ -143,7 +144,8 @@ static int usb_h_mutex_pend(struct usb_host_device *host_dev)
     }
 
     if (ret == OS_TIMEOUT) {
-        return OS_TIMEOUT;
+        /* 超时也返回负值: 调用方用 if (ret) 统一判断"没拿到锁" */
+        return -OS_TIMEOUT;
     }
     return ret;
 }
@@ -169,20 +171,19 @@ static int set_stor_power(struct usb_host_device *host_dev, u32 value)
         return 0;
     }
     int r = usb_h_mutex_pend(host_dev);
+    if (r) {
+        /* 没拿到锁不碰状态: dev_status的复位由随后的release()/close()负责 */
+        return r;
+    }
     if (disk->dev_status == DEV_READ || disk->dev_status == DEV_WRITE) {
-        if (value == 0) {
-            log_warn("disk busy");
-        }
+        log_warn("disk busy");
     }
 
     disk->dev_status = DEV_CLOSE;
+    usb_h_mutex_post(host_dev);
 
     log_info("set_stor_power() %d ", disk->dev_status);
 
-    if (r) {
-        return r;
-    }
-    usb_h_mutex_post(host_dev);
     return DEV_ERR_NONE;
 }
 
@@ -383,8 +384,14 @@ static int usb_stor_inquiry(struct device *device)
         return ret;
     }
     ret = usb_h_mutex_pend(host_dev);
-    if (ret == OS_TIMEOUT) {
-        return -OS_TIMEOUT;
+    if (ret) {
+        /*
+         * 没拿到锁就绝对不能碰设备: 拔盘时pend返回-DEV_ERR_OFFLINE,
+         * 超时返回-OS_TIMEOUT。继续往下会在没有互斥保护的情况下访问
+         * 已经拆掉的传输层, 并且post一把自己没持有的锁。
+         */
+        log_warn("usb_h_mutex_pend fail %d, %d", ret, __LINE__);
+        return ret;
     }
     usb_host_clock_lock();
     ret = _usb_stor_inquiry(device);
@@ -455,8 +462,14 @@ static int usb_stor_test_unit_ready(struct device *device)
         return ret;
     }
     ret = usb_h_mutex_pend(host_dev);
-    if (ret == OS_TIMEOUT) {
-        return -OS_TIMEOUT;
+    if (ret) {
+        /*
+         * 没拿到锁就绝对不能碰设备: 拔盘时pend返回-DEV_ERR_OFFLINE,
+         * 超时返回-OS_TIMEOUT。继续往下会在没有互斥保护的情况下访问
+         * 已经拆掉的传输层, 并且post一把自己没持有的锁。
+         */
+        log_warn("usb_h_mutex_pend fail %d, %d", ret, __LINE__);
+        return ret;
     }
     usb_host_clock_lock();
     ret = _usb_stor_test_unit_ready(device);
@@ -547,8 +560,14 @@ static int usb_stor_mode_sense6(struct device *device)
         return ret;
     }
     ret = usb_h_mutex_pend(host_dev);
-    if (ret == OS_TIMEOUT) {
-        return -OS_TIMEOUT;
+    if (ret) {
+        /*
+         * 没拿到锁就绝对不能碰设备: 拔盘时pend返回-DEV_ERR_OFFLINE,
+         * 超时返回-OS_TIMEOUT。继续往下会在没有互斥保护的情况下访问
+         * 已经拆掉的传输层, 并且post一把自己没持有的锁。
+         */
+        log_warn("usb_h_mutex_pend fail %d, %d", ret, __LINE__);
+        return ret;
     }
     usb_host_clock_lock();
     ret = _usb_stor_mode_sense6(device);
@@ -637,8 +656,14 @@ static int usb_stor_request_sense(struct device *device)
         return ret;
     }
     ret = usb_h_mutex_pend(host_dev);
-    if (ret == OS_TIMEOUT) {
-        return -OS_TIMEOUT;
+    if (ret) {
+        /*
+         * 没拿到锁就绝对不能碰设备: 拔盘时pend返回-DEV_ERR_OFFLINE,
+         * 超时返回-OS_TIMEOUT。继续往下会在没有互斥保护的情况下访问
+         * 已经拆掉的传输层, 并且post一把自己没持有的锁。
+         */
+        log_warn("usb_h_mutex_pend fail %d, %d", ret, __LINE__);
+        return ret;
     }
     usb_host_clock_lock();
     ret = _usb_stor_request_sense(device);
@@ -742,8 +767,14 @@ static int usb_stor_read_capacity(struct device *device)
         return ret;
     }
     ret = usb_h_mutex_pend(host_dev);
-    if (ret == OS_TIMEOUT) {
-        return -OS_TIMEOUT;
+    if (ret) {
+        /*
+         * 没拿到锁就绝对不能碰设备: 拔盘时pend返回-DEV_ERR_OFFLINE,
+         * 超时返回-OS_TIMEOUT。继续往下会在没有互斥保护的情况下访问
+         * 已经拆掉的传输层, 并且post一把自己没持有的锁。
+         */
+        log_warn("usb_h_mutex_pend fail %d, %d", ret, __LINE__);
+        return ret;
     }
     usb_host_clock_lock();
     ret = _usb_stor_read_capacity(device);
@@ -1687,8 +1718,14 @@ static int usb_stor_read(struct device *device, void *pBuf, u32 num_lba, u32 lba
         return ret;
     }
     ret = usb_h_mutex_pend(host_dev);
-    if (ret == OS_TIMEOUT) {
-        return -OS_TIMEOUT;
+    if (ret) {
+        /*
+         * 没拿到锁就绝对不能碰设备: 拔盘时pend返回-DEV_ERR_OFFLINE,
+         * 超时返回-OS_TIMEOUT。继续往下会在没有互斥保护的情况下访问
+         * 已经拆掉的传输层, 并且post一把自己没持有的锁。
+         */
+        log_warn("usb_h_mutex_pend fail %d, %d", ret, __LINE__);
+        return ret;
     }
     usb_host_clock_lock();
     ret = _usb_stor_read(device, pBuf, num_lba, lba);
@@ -1869,8 +1906,14 @@ static int usb_stor_write(struct device *device, void *pBuf,  u32 num_lba, u32 l
         return ret;
     }
     ret = usb_h_mutex_pend(host_dev);
-    if (ret == OS_TIMEOUT) {
-        return -OS_TIMEOUT;
+    if (ret) {
+        /*
+         * 没拿到锁就绝对不能碰设备: 拔盘时pend返回-DEV_ERR_OFFLINE,
+         * 超时返回-OS_TIMEOUT。继续往下会在没有互斥保护的情况下访问
+         * 已经拆掉的传输层, 并且post一把自己没持有的锁。
+         */
+        log_warn("usb_h_mutex_pend fail %d, %d", ret, __LINE__);
+        return ret;
     }
     usb_host_clock_lock();
     ret = _usb_stor_write(device, pBuf, num_lba, lba);
@@ -2008,6 +2051,7 @@ typedef enum {
     ST_TEST_UNIT_READY,
     ST_READ_CAPACITY,
     ST_REQUEST_SENSE,
+    ST_ABORT,       //init中途放弃：必须走末尾统一复位，不能直接return
     ST_DONE = 0xff
 } stor_state_t;
 static int handle_sense(struct device *device, struct mass_storage *disk)
@@ -2089,13 +2133,16 @@ int usb_stor_init(struct device *device)
 
         if (usb_otg_online(usb_id) != OTG_STATE_HOST_MODE) {
             log_warn("otg disconnect %d", __LINE__);
-
-            return -DEV_ERR_OFFLINE;
+            ret = -DEV_ERR_OFFLINE;
+            state = ST_ABORT;
+            break;
         }
 
         if (resource_multiplex_is_registered(IO_PORT_DM) && resource_multiplex_has_requester_waiting(IO_PORT_DM, (u32)host_dev)) {
             log_warn("otg disconnect %d, IO be occupyed", __LINE__);
-            return -DEV_ERR_OFFLINE;
+            ret = -DEV_ERR_OFFLINE;
+            state = ST_ABORT;
+            break;
         }
 
         switch (state) {
@@ -2162,6 +2209,8 @@ int usb_stor_init(struct device *device)
 
 
         case ST_DONE:
+        case ST_ABORT:
+            /* ST_ABORT只会由上面的offline判断置位并立即break，走到这里只是兜底 */
             break;
         }
 
@@ -2175,8 +2224,11 @@ int usb_stor_init(struct device *device)
     if (state != ST_DONE) {
         disk->dev_status = DEV_IDLE;
         log_warn("unit not ready, sense key %x, state %d\n", disk->sense.SenseKey, state);
-        ret = -DEV_ERR_NOT_READY;
-        disk->dev_status = DEV_IDLE;
+        if (ret >= DEV_ERR_NONE) {
+            /* ST_ABORT时保留 -DEV_ERR_OFFLINE，不被覆盖 */
+            ret = -DEV_ERR_NOT_READY;
+        }
+        disk->init_done = 0;
     } else {
 #if ENABLE_DISK_HOTPLUG
         disk->media_sta_cur = 1;
@@ -2472,6 +2524,7 @@ int usb_msd_parser(struct usb_host_device *host_dev, u8 interface_num, const u8 
 static int usb_stor_release(struct usb_host_device *host_dev)
 {
     int ret = DEV_ERR_NONE;
+    int drain_ret = 0;
     const usb_dev usb_id = host_device2id(host_dev);
     struct mass_storage *disk = host_device2disk(host_dev);
     log_info("usb_stor_release");
@@ -2479,6 +2532,32 @@ static int usb_stor_release(struct usb_host_device *host_dev)
     if (disk->init_done == 0) {
         log_warn("disk->init_done == 0 not mount");
     }
+
+    /*
+     * 释放EP buffer前必须等在飞的读写退出。
+     *
+     * usb_stor_read/write全程持disk->mutex(见usb_stor_read/usb_stor_write),
+     * 拿到锁 == 没有读者在跑, DMA不会再写进epin_buf/epout_buf。否则拔盘时
+     * 读任务的传输还在进行, 这里把DMA buffer还给堆, 后面就会踩内存。
+     *
+     * 为什么不用usb_h_mutex_pend(): 它在usb_otg_online() != OTG_STATE_HOST_MODE
+     * 时立刻返回-DEV_ERR_OFFLINE(usb_storage.c顶部的判断), 而拔盘正是这个场景,
+     * 用它排空等于一个都不等。所以这里直接调os_mutex_pend。
+     *
+     * 为什么1s够: 读者内部的usb_sem_pend每200ms重查一次usb_otg_online()
+     * (usb_host.c的usb_sem_pend), 拔盘后最多一拍就带错误返回并退出临界区,
+     * 1s是5倍余量。超时也照常释放(配合usb_h_ep_write_async等处的判空,
+     * 传输层拿到非法DMA地址会安全返回错误, 不会踩内存)。
+     */
+    if (disk->mutex_created) {
+        drain_ret = os_mutex_pend(&disk->mutex, UDISK_RELEASE_DRAIN_TIMEOUT);
+        if (drain_ret) {
+            log_error("usb_stor_release drain timeout %d, force free", drain_ret);
+        }
+    } else {
+        log_error("usb_stor_release: mutex not created, devices_init() not run?");
+    }
+
     if (udisk_ep.epin_buf) {
         usb_h_free_ep_buffer(usb_id, udisk_ep.epin_buf);
         udisk_ep.epin_buf = NULL;
@@ -2495,8 +2574,14 @@ static int usb_stor_release(struct usb_host_device *host_dev)
         usb_free_ep_num(usb_id, udisk_ep.host_epout | USB_DIR_OUT);
         udisk_ep.host_epout = 0;
     }
+
+    if (drain_ret == 0) {
+        os_mutex_post(&disk->mutex);
+    }
+
     disk->init_done = 0;
     disk->dev_status = DEV_IDLE;
+    usb_storage_multiplex_host_released(host_dev);
     return ret;
 }
 
@@ -2513,30 +2598,41 @@ static int usb_stor_open(const char *name, struct device **device, void *arg)
 {
     int ret;
     *device = &udisk_device;
-    struct usb_host_device *host_dev;
-    struct mass_storage *disk;
+    struct usb_host_device *host_dev = device_to_usbdev(*device);
+    struct mass_storage *disk = host_device2disk(host_dev);
 
-    ret = usb_storage_multiplex_resume(host_id2device(0));
-    if (ret) {
-        return -DEV_ERR_NOT_MOUNT;
-    }
-
-    host_dev = device_to_usbdev(*device);
-    disk = host_device2disk(host_dev);
     log_info("=====================usb_stor_open===================== %d", disk->dev_status);
 
     if (disk->dev_status != DEV_IDLE) {
         if (disk->dev_status == DEV_CLOSE) {
             log_warn("disk->dev_status == DEV_CLOSE not mount");
-            ret = -DEV_ERR_NOT_MOUNT;
-            goto __exit_fail;
-        } else {
-            /* 设备已经打开，直接返回成功 */
-            return DEV_ERR_NONE;
+            return -DEV_ERR_NOT_MOUNT;
         }
+        if (disk->dev_status == DEV_INIT) {
+            /* 另一个任务正在init，此时交出去会拿到还没初始化完的盘 */
+            log_warn("disk->dev_status == DEV_INIT busy");
+            return -DEV_ERR_NOT_MOUNT;
+        }
+        /* 设备已经打开，直接返回成功 */
+        return DEV_ERR_NONE;
     }
-    memset(&disk->mutex, 0, sizeof(disk->mutex));
-    os_mutex_create(&disk->mutex);
+
+    if (!disk->mutex_created) {
+        /* 正常不会发生: 锁由usb_stor_device_init()在开机时建好(同受TCFG_UDISK_ENABLE守卫)。
+           放在resume之前检查, 避免占完DM资源又退出去 */
+        log_error("udisk mutex not created, devices_init() not run?");
+        return -DEV_ERR_NOT_MOUNT;
+    }
+
+    /*
+     * 只有IDLE->OPEN这一次才占用DM并挂载host,
+     * 与__exit_fail和usb_stor_close里的suspend一一对应
+     */
+    ret = usb_storage_multiplex_resume(host_id2device(0));
+    if (ret) {
+        return -DEV_ERR_NOT_MOUNT;
+    }
+
     disk->remain_len = 0;
     disk->prev_lba = 0;
     disk->suspend_cnt = 0;
@@ -2564,18 +2660,24 @@ static int usb_stor_open(const char *name, struct device **device, void *arg)
     }
     log_info("device %x", (u32)*device);
 
-
-    usb_h_mutex_pend(host_dev);
-    if (*device) {
-        log_info("mass storage dev name %s", name);
-        disk->dev_status = DEV_OPEN;
-    } else {
-        ret = -ENODEV;
+    ret = usb_h_mutex_pend(host_dev);
+    if (ret) {
+        /*
+         * init过程中设备被拔掉/被占用: 不能把DEV_OPEN交出去,
+         * 也不能post一把自己没持有的锁。状态要清干净,
+         * 否则dev_status会永远停在DEV_INIT, 后续open全部失败。
+         */
+        log_warn("usb_stor_open pend fail %d", ret);
+        disk->dev_status = DEV_IDLE;
+        disk->init_done = 0;
+        ret = -DEV_ERR_OFFLINE;
+        goto __exit_fail;
     }
+    log_info("mass storage dev name %s", name);
+    disk->dev_status = DEV_OPEN;
     usb_h_mutex_post(host_dev);
-    if (*device) {
-        return DEV_ERR_NONE;
-    }
+
+    return DEV_ERR_NONE;
 
 __exit_fail:
     usb_storage_multiplex_suspend(host_id2device(0));
@@ -2594,15 +2696,17 @@ static int usb_stor_close(struct device *device)
     log_info("usb_stor_close---%d\n", __LINE__);
     struct usb_host_device *host_dev = device_to_usbdev(device);
     struct mass_storage *disk = host_device2disk(host_dev);
-    int ret;
+    const usb_dev usb_id = host_device2id(host_dev);
+    int ret = OS_ERR_NONE;
     log_info("=====================usb_stor_close===================== %p %p ", host_dev, disk);
     if (disk == NULL) {
         log_error("disk == NULL");
         return DEV_ERR_NONE;
     }
     if (disk->dev_status == DEV_IDLE) {
+        /* 已经关过,或者host侧已经release过,但互斥量和DM资源仍要回收 */
         log_warn("disk->dev_status == DEV_IDLE not mount");
-        return DEV_ERR_NONE;
+        goto __tail;
     }
     ret = usb_h_mutex_pend(host_dev);
 
@@ -2610,7 +2714,9 @@ static int usb_stor_close(struct device *device)
         int status = usb_stor_check_status(host_dev);
         if (status) {
 #if UDISK_4K_SECTOR_READ_BUFFERLESS
-            if (disk->remain_len) {
+            if (disk->remain_len && ret == OS_ERR_NONE) {
+                /* 只有拿到锁才flush: _usb_stor_read_block_finish会碰传输层,
+                   没拿到锁(离线/超时)时设备已不可用, 不能碰 */
                 u8 *tmpbuf = malloc(512);
                 if (tmpbuf) {
                     _usb_stor_read_block_finish(device, tmpbuf);
@@ -2639,7 +2745,6 @@ static int usb_stor_close(struct device *device)
         }
     }
 
-    const usb_dev usb_id = host_device2id(host_dev);
     usb_clr_intr_rxe(usb_id, udisk_ep.host_epin);
 
     disk->dev_status = DEV_IDLE;
@@ -2651,8 +2756,21 @@ static int usb_stor_close(struct device *device)
     }
     log_info("=====================usb_stor_close===================== 1222 ");
 
-    os_mutex_del(&disk->mutex, 0);
-    memset(&disk->mutex, 0, sizeof(disk->mutex));
+__tail:
+    /*
+     * 这里不再删锁: disk->mutex由usb_stor_device_init()开机建好后常驻。
+     * 原实现在这里os_mutex_del(&disk->mutex, 0) + memset清零, 有两个问题:
+     * 1. block=0是OS_DEL_NO_PEND(与OS_DEL_ALWAYS相对), 有人在持锁/排队时删不掉
+     *    (对照le_connected.c用OS_DEL_NO_PEND后检查返回值的用法, 以及usb_host.c的
+     *    usb_mutex_del用1), 但下面的memset照样把内核事件对象清零, 还清掉
+     *    mutex_created, 下次open会再create一把盖在同一块内存上。
+     *    注: os_mutex_ 的实现只在预编译库
+     *    interface/liba_store/system/liba/<cpu>/system.a 里, 本仓库没有源码,
+     *    这条语义是从全仓库一致用法推断的。
+     * 2. 紧随其后的usb_storage_multiplex_suspend()会一路回调到
+     *    usb_stor_release(), 那里需要用这把锁等读者退出, 锁必须还活着。
+     */
+    disk->init_done = 0;
 #if UDISK_READ_512_ASYNC_ENABLE
     if (disk->udisk_512_buf) {
         free(disk->udisk_512_buf);
@@ -2682,8 +2800,36 @@ static bool usb_stor_online(const struct dev_node *node)
     return false;
 }
 
+/*
+ * 开机建一次, 之后永不删除
+ *
+ * disk->mutex保护整个SCSI命令串行(usb_h_mutex_pend/post), 也是
+ * usb_stor_release()用来"等在飞读写退出"的那把锁。devices_init()在开机时
+ * 遍历.device段调用一次, 此时{ "udisk0", &mass_storage_ops, NULL }的注册
+ * 与本文件的函数体守卫同为TCFG_UDISK_ENABLE, 所以注册了就一定会被调。
+ * 放在这里(而不是open里建/close里删)是因为usb_stor_release有三条到达路径,
+ * 其中一条(usb_stor_close -> usb_storage_multiplex_suspend -> release)会在
+ * release之前把锁删掉, 会话级锁在那里没法用来排空。
+ */
+static int usb_stor_device_init(const struct dev_node *node, void *arg)
+{
+    int err = 0;
+    if (!mass_stor.mutex_created) {
+        memset(&mass_stor.mutex, 0, sizeof(mass_stor.mutex));
+        err = os_mutex_create(&mass_stor.mutex);
+        if (err) {
+            /* devices_init()会对非0返回ASSERT, 好过带着一把零锁继续跑 */
+            log_error("udisk mutex create err %d", err);
+            return err;
+        }
+        mass_stor.mutex_created = 1;
+    }
+    log_info("udisk device init");
+    return 0;
+}
+
 const struct device_operations mass_storage_ops = {
-    .init = NULL,
+    .init = usb_stor_device_init,
     .online = usb_stor_online,
     .open = usb_stor_open,
     .read = usb_stor_read,

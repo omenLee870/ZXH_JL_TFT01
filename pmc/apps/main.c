@@ -133,7 +133,7 @@ void app_main()
     do_initcall();
 
 #ifndef LOWPOWER_TEST_TMP
-    usr_timer_add(NULL, func, 1000, 0);
+    //usr_timer_add(NULL, func, 1000, 0);
 #endif
 #if 0 //关闭cache，禁止访问flash。用于检测主流程是否都在SRAM中
     void IcuFlushinvAll(void);

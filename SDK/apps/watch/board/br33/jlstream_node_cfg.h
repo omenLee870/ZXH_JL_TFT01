@@ -28,6 +28,7 @@
 #define TCFG_AUDIO_BIT_WIDTH                      0                // 位宽
 #define TCFG_2BAND_MERGE_ENABLE                   0                // 2Band Merge
 #define TCFG_3BAND_MERGE_ENABLE                   0                // 3Band Merge
+#define TCFG_A2DP_TX_NODE_ENABLE                  0                // A2DP_TX
 #define TCFG_ADC_NODE_ENABLE                      1                // ADC
 #define TCFG_AI_RX_NODE_ENABLE                    1                // AI_RX
 #define TCFG_AI_TX_NODE_ENABLE                    1                // AI_TX
@@ -357,6 +358,7 @@
 #define TCFG_AUDIO_EFX_74E3_RUN_MODE              EFx_BW_16t16     // 音量控制器
 #define TCFG_AUDIO_EFX_D911_RUN_MODE              EFx_BW_UNUSED    // 音频分流器
 #define TCFG_AUDIO_EFX_FFF7_RUN_MODE              EFx_BW_UNUSED    // Noise Suppressor LITE
+#define TCFG_AUDIO_EFX_F9B7_RUN_MODE              EFx_BW_UNUSED    // A2DP_TX
 #define TCFG_AUDIO_EFX_DF98_RUN_MODE              EFx_BW_16t16     // AI_RX
 #define TCFG_AUDIO_EFX_E9D0_RUN_MODE              EFx_BW_UNUSED    // Bass Boost[C]
 #define TCFG_AUDIO_EFX_3A0C_RUN_MODE              EFx_BW_UNUSED    // EQ Limiter[C]

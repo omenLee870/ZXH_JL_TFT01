@@ -70,12 +70,46 @@ static void rcsp_audio_video_response(u8 OpCode, u8 OpCode_SN, u8 status,
                          ble_con_handle, spp_remote_addr);
 }
 
+/*
+ * 按字段合并注册, 不做整表覆盖。
+ * 0x38 的回调分散在多个模块(录音在 rcsp_mix_record.c, AI 拍照在
+ * ai_dialogue_control.c), 每个模块只填自己关心的字段, 其余留 NULL。
+ * 若整表覆盖, 后注册的模块会把先注册的模块回调清掉。
+ * 传 NULL 仍表示整体注销。
+ */
 void rcsp_audio_video_register_ops(const struct rcsp_audio_video_ops *ops)
 {
-    memset(&g_audio_video_ops, 0, sizeof(g_audio_video_ops));
-    if (ops) {
-        memcpy(&g_audio_video_ops, ops, sizeof(g_audio_video_ops));
+    if (!ops) {
+        memset(&g_audio_video_ops, 0, sizeof(g_audio_video_ops));
+        return;
     }
+
+#define RCSP_AV_OPS_MERGE(field)                                   \
+    do {                                                           \
+        if (ops->field) {                                          \
+            g_audio_video_ops.field = ops->field;                  \
+        }                                                          \
+    } while (0)
+
+    RCSP_AV_OPS_MERGE(take_photo);
+
+    RCSP_AV_OPS_MERGE(get_video_config);
+    RCSP_AV_OPS_MERGE(set_video_config);
+    RCSP_AV_OPS_MERGE(start_video);
+    RCSP_AV_OPS_MERGE(stop_video);
+    RCSP_AV_OPS_MERGE(pause_video);
+    RCSP_AV_OPS_MERGE(get_video_state);
+
+    RCSP_AV_OPS_MERGE(get_audio_config);
+    RCSP_AV_OPS_MERGE(set_audio_config);
+    RCSP_AV_OPS_MERGE(start_audio);
+    RCSP_AV_OPS_MERGE(stop_audio);
+    RCSP_AV_OPS_MERGE(get_audio_state);
+    RCSP_AV_OPS_MERGE(take_audio_resource);
+    RCSP_AV_OPS_MERGE(audio_start_response_sent);
+    RCSP_AV_OPS_MERGE(audio_stop_response);
+
+#undef RCSP_AV_OPS_MERGE
 }
 
 void rcsp_audio_video_cmd_deal(void *priv, u8 OpCode, u8 OpCode_SN,

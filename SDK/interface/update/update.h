@@ -11,6 +11,11 @@ extern u32 UPDATA_SIZE;
 
 #define UPDATA_MAGIC            (0x5A00)        //防止CRC == 0 的情况
 
+#define MY_STR(x)  #x
+#define STRCHANGE(x) MY_STR(x)
+
+void latch_io_set_protect(u32 *gpio_cfg, const char *cfg_str);
+
 typedef enum {
     UPDATA_NON = UPDATA_MAGIC,
     UPDATA_READY,
@@ -32,7 +37,6 @@ typedef enum {
     DUAL_BANK_UPDATA,
     BLE_TEST_UPDATA,
     NORFLASH_UPDATA,
-    TESTBOX_UART_UPDATA,
     //NOTE:以上的定义不要调整,新升级方式在此添加,注意加在USER_NORFLASH_UFW_UPDATA之前;
     USER_NORFLASH_UFW_UPDATA,
     USER_LC_FLASH_UFW_UPDATA,
@@ -40,7 +44,10 @@ typedef enum {
     DEV_NORFLASH_UFW_UPDATA,
     NET_UFW_UPDATA,
     USER_NANDFLASH_UFW_UPDATA,
-
+    TESTBOX_UART_UPDATA,
+    UPDIFF_FLASH_UPDATA,
+    COMBAK_FLASH_UPDATA,
+    SMCOM_FLASH_UPDATA,
     DEV_UPDATA_MAX,
     NON_DEV = 0xFFFF,
 } UPDATA_TYPE;
@@ -175,6 +182,19 @@ bool update_success_boot_check(void);
 extern int update_check_sniff_en(void);
 
 typedef void(*update_handler_t)(void);
+void update_param_ext_fill(UPDATA_PARM *p, u8 ext_type, u8 *ext_data, u8 ext_len);
+
+u32 update_get_machine_num(u8 *buf, u32 len);
+void uart_update_set_retry_time(u32 time);
+int update_interactive_task_start(void *p, void (*update_set_addr_hdl)(u32), u8 task_en);
+void update_early_erase(void);
+
+/**
+ * @brief 判断是否在升级
+ *
+ * @result 0:不在升级 1:在升级
+ */
+u32 classic_update_task_exist_flag_get(void);
 
 typedef enum _UPDATE_STATE_T {
     UPDATE_TASK_INIT,

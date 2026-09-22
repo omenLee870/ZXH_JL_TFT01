@@ -706,6 +706,16 @@ static int music_file_player_start(struct file_player *player)
     if (!player->stream) {
         goto __exit0;
     }
+
+#if TCFG_USER_EMITTER_ENABLE
+    extern u8 *get_cur_connect_emitter_mac_addr(void);
+    u8 *bt_addr = get_cur_connect_emitter_mac_addr();
+    if (bt_addr) {
+        jlstream_node_ioctl(player->stream, NODE_UUID_A2DP_TX,
+                            NODE_IOC_SET_BTADDR, (int)bt_addr);
+    }
+#endif
+
     int player_id = player->player_id;
     jlstream_set_callback(player->stream, (void *)player_id, music_player_callback);
     jlstream_set_scene(player->stream, player->scene);

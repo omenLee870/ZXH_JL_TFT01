@@ -31,6 +31,13 @@
 	    PROVIDE(lib_version_end = .);
 
 		. = ALIGN(4);
+	    sdk_version_begin = .;
+	    PROVIDE(sdk_version_begin = .);
+	    KEEP(*(.sys.version))
+	    sdk_version_end = .;
+	    PROVIDE(sdk_version_end = .);
+
+		. = ALIGN(4);
 		_initcall_begin = .;
 		PROVIDE(initcall_begin = .);
 	    KEEP(*(.initcall))

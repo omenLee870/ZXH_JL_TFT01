@@ -1,6 +1,11 @@
 #ifndef _DUAL_BANK_API_H_
 #define _DUAL_BANK_API_H_
 
+#ifdef ROM_SECURE_BOOT
+#include "dual_bank_updata_api_v2.h"
+#else
+
+
 /* @brief:Api for getting the buffer size for temporary storage
  */
 u32 get_dual_bank_passive_update_max_buf(void);
@@ -31,6 +36,7 @@ u32 dual_bank_update_allow_check(u32 fw_size);
  * @param write_complete_cb:callback for programming done,return 0 if no err occurred
 */
 u32 dual_bank_update_write(void *data, u16 len, int (*write_complete_cb)(void *priv));
+u32 dual_bank_update_write_only(void *data, u16 len, int (*write_complete_cb)(void *priv));
 
 /* @brief: caculate all the data had flashed,and compare with the cre value intializeed when update init;
  * @crc_init_hdl:if it equals NULL,use internal implementation(CRC16-CCITT Standard);otherwise,use user's customization;
@@ -75,6 +81,12 @@ u8 dual_bank_update_verify_without_crc_new(int (*verify_result_hdl)(int calc_crc
 u32 dual_bank_passive_update_get_target_update_addr(void);
 
 extern u32 dual_bank_update_exist_flag_get(void);
-extern u32 classic_update_task_exist_flag_get(void);
+
+int dual_bank_update_info_get(u32 *start_addr, u32 *len);
+int dual_bank_erase_other_bank(u8 opt);
+void dual_bank_check_flash_update_area(u8 opt);
+
+#endif
+
 #endif
 

@@ -23,6 +23,11 @@
 #include "media_file_list.h"
 #include "avilib.h"        /* AVI 首帧封面(阶段二): 读侧 API */
 
+/* 帧队列预建入口(app_playback_demux.c): 返回 0 成功, 非 0 失败走原路径 */
+extern int app_playback_demux_frame_queue_prealloc(uint32_t size);
+/* 帧队列常驻块释放(app_playback_demux.c): 回放退出时归还 128KB 物理池 */
+extern void app_playback_demux_frame_queue_pool_release(void);
+
 
 #define LOG_TAG             "[APP_VIDEO_DEC]"
 #define LOG_ERROR_ENABLE
@@ -55,6 +60,144 @@
 #define VDEC_VIDEO_BUF_SIZE    (128u * 1024u) /* 帧池实测41KB/JPEG 33~44KB, 256KB过量挤压物理池 */
 #define VDEC_AUDIO_BUF_SIZE    (16u * 1024u)
 /*==============================================================================
+ * Playback fb buffer pool
+ *==============================================================================*/
+#define VDEC_FB_POOL_SLOTS     2    /* 与 VDEC_PB_FB_NUM 一致: 双缓冲两块不能同址 */
+#define VDEC_FB_POOL_ALIGN     8
+
+/* 回放期固定 fb5 缓冲: 每轮导航重建管线都会 fb_draw_open/fb_close 一次,
+ * 默认路径每轮 malloc/free 两块 115200 字节, 堆扩页在物理池上留下永久切痕,
+ * 最终 pmalloc_continue 拿不到连续页死机。池不随 g_vd 走(memset 会清零)。 */
+static struct {
+    u8    enable;                          /* 仅回放模式内置位, 其余场景不接管 */
+    u8    used[VDEC_FB_POOL_SLOTS];        /* 已交给 fb 层的槽 */
+    u32   size[VDEC_FB_POOL_SLOTS];        /* 实际分配大小, 复用判据 */
+    void *raw[VDEC_FB_POOL_SLOTS];         /* 申请到的原始指针, 供释放 */
+    void *aligned[VDEC_FB_POOL_SLOTS];     /* 8 字节对齐后交给 fb 层 */
+} g_vd_fb_pool;
+
+/* 释放全部槽并清标志: 回放退出时调用, 缓冲还给物理池(录像还要用) */
+static void vd_fb_pool_release(void)
+{
+    int i;
+
+    g_vd_fb_pool.enable = 0;
+    for (i = 0; i < VDEC_FB_POOL_SLOTS; i++) {
+        if (g_vd_fb_pool.raw[i]) {
+            phy_free(g_vd_fb_pool.raw[i]);   /* 走物理池: kc_free 只还给堆, 堆不把页还 pmm => 每轮永久少 230KB */
+            g_vd_fb_pool.raw[i] = NULL;
+        }
+        g_vd_fb_pool.aligned[i] = NULL;
+        g_vd_fb_pool.size[i] = 0;
+        g_vd_fb_pool.used[i] = 0;
+    }
+}
+
+/* fbvirtual.c 弱函数的强定义: 回放期复用固定缓冲, 池满/失败一律返回 NULL
+ * 交回默认路径; 返回指针必须 8 字节对齐(fbvirtual.c 对用户指针不补对齐)。 */
+void *fb_virtual_user_alloc_buffer(const char *fb_name, u32 size)
+{
+    int i;
+    void *buf;
+
+    if (!g_vd_fb_pool.enable || !fb_name || strcmp(fb_name, VDEC_PB_FB_NAME)) {
+        return NULL;
+    }
+    for (i = 0; i < VDEC_FB_POOL_SLOTS; i++) {
+        if (!g_vd_fb_pool.used[i] && g_vd_fb_pool.size[i] >= size) {
+            g_vd_fb_pool.used[i] = 1;
+            return g_vd_fb_pool.aligned[i];
+        }
+    }
+    for (i = 0; i < VDEC_FB_POOL_SLOTS; i++) {
+        if (!g_vd_fb_pool.used[i]) {
+            break;
+        }
+    }
+    if (i >= VDEC_FB_POOL_SLOTS) {
+        return NULL;
+    }
+    buf = phy_malloc(size + VDEC_FB_POOL_ALIGN);   /* 物理池: 与 phy_free 配对, 真取真还 */
+    if (!buf) {
+        return NULL;
+    }
+    if (g_vd_fb_pool.raw[i]) {
+        phy_free(g_vd_fb_pool.raw[i]);   /* 旧块不够大: 换块 */
+    }
+    g_vd_fb_pool.raw[i] = buf;
+    g_vd_fb_pool.size[i] = size;
+    g_vd_fb_pool.aligned[i] = buf;
+    if ((u32)buf % VDEC_FB_POOL_ALIGN) {
+        g_vd_fb_pool.aligned[i] = (void *)(((u32)buf + VDEC_FB_POOL_ALIGN - 1) & ~(VDEC_FB_POOL_ALIGN - 1));
+    }
+    g_vd_fb_pool.used[i] = 1;
+    return g_vd_fb_pool.aligned[i];
+}
+
+/* 命中池内缓冲返回 1(已由用户处理, fb 层不要再 free), 其余返回 0 */
+int fb_virtual_user_free_buffer(const char *fb_name, void *buf)
+{
+    int i;
+
+    if (!g_vd_fb_pool.enable || !buf) {
+        return 0;
+    }
+    for (i = 0; i < VDEC_FB_POOL_SLOTS; i++) {
+        if (g_vd_fb_pool.used[i] && g_vd_fb_pool.aligned[i] == buf) {
+            g_vd_fb_pool.used[i] = 0;
+            return 1;
+        }
+    }
+    log_info("[FBP] slot free MISS buf=%p\n", buf);   // 取证: 指针不在池里 => 槽位永不释放
+    return 0;
+}
+
+/* 峰值前移: 进模式时(缩略图刚释放, 池子最干净)先把管线骨架的堆成本取走——
+ * fb5 两块 115200 与帧队列 128KB 同抢内部物理池, 首播时再取会拿不到连续块。
+ * 只入池不占位(used=0), fb5 通道仍由首播 pipeline_open 建一次并命中池块。 */
+static int vd_fb_pool_prime(void)
+{
+    int i;
+    int ready = 0;
+    /* fbvirtual.c 按 s_xres*s_yres*bpp/8 请求, YUV420SP bpp=12 ⇒ 320x240 = 115200 */
+    u32 size = (u32)VDEC_PB_WIDTH * VDEC_PB_HEIGHT * 12 / 8;
+
+    for (i = 0; i < VDEC_FB_POOL_SLOTS; i++) {
+        if (g_vd_fb_pool.raw[i] != NULL) {
+            ready++;                /* 已在池中或已交给 fb 层 */
+            continue;
+        }
+        g_vd_fb_pool.raw[i] = phy_malloc(size + VDEC_FB_POOL_ALIGN);   /* 物理池: 与 phy_free 配对 */
+        if (g_vd_fb_pool.raw[i] == NULL) {
+            break;
+        }
+        g_vd_fb_pool.aligned[i] = g_vd_fb_pool.raw[i];
+        if ((u32)g_vd_fb_pool.raw[i] % VDEC_FB_POOL_ALIGN) {
+            g_vd_fb_pool.aligned[i] = (void *)(((u32)g_vd_fb_pool.raw[i] + VDEC_FB_POOL_ALIGN - 1) & ~(VDEC_FB_POOL_ALIGN - 1));
+        }
+        g_vd_fb_pool.size[i] = size;
+        g_vd_fb_pool.used[i] = 0;
+        ready++;
+    }
+
+    return ready;
+}
+
+/* 预建失败回滚: 只释放还没交给 fb 层的槽, 已占用的槽留给 fb 层正常归还 */
+static void vd_fb_pool_unprime(void)
+{
+    int i;
+
+    for (i = 0; i < VDEC_FB_POOL_SLOTS; i++) {
+        if (g_vd_fb_pool.raw[i] && !g_vd_fb_pool.used[i]) {
+            phy_free(g_vd_fb_pool.raw[i]);   /* 与 phy_malloc 配对(原 kc_free 是配对错) */
+            g_vd_fb_pool.raw[i] = NULL;
+            g_vd_fb_pool.aligned[i] = NULL;
+            g_vd_fb_pool.size[i] = 0;
+        }
+    }
+}
+/*==============================================================================
  * Global context
  *==============================================================================*/
 static struct {
@@ -71,7 +214,9 @@ static struct {
     u8   photo_showing;
     u8   stopping_for_switch;
     u8   first_frame_seen;
-    u8   corruption_skip_count;
+    u16  corruption_skip_count;   /* 跳过预算: 与 file_count 同量级(实测>255), u8 会回绕 */
+    // 最近一次导航方向: +1=下一个, -1=上一个(跳过失败项时按此方向走)
+    s8   nav_dir;
     u32  play_gen;   /* 播放代号: 每次 video_dec_play 递增, 用于丢弃快切后过期的 SKIP/RECOVER 事件(防重入崩溃) */
     u8   muted;
     u8   mute_before_enter;
@@ -113,10 +258,19 @@ int video_rec_repair_avi(const char *path);
  *==============================================================================*/
 static void vd_close_photo_if_showing(void)
 {
-    if (g_vd.photo_showing && g_vd.pb_handle) {
+    // 以句柄为准关闭: 显示失败时 photo_showing 仍为 0, 但管线可能已打开
+    if (g_vd.pb_handle) {
         app_playback_image_pipeline_close(g_vd.pb_handle);
         g_vd.photo_showing = 0;
     }
+}
+// 归一化导航方向: 非法值(memset 后的 0)按 +1 处理
+static int vd_nav_dir_norm(void)
+{
+    if (g_vd.nav_dir != -1) {
+        g_vd.nav_dir = 1;
+    }
+    return g_vd.nav_dir;
 }
 static void vd_set_state(enum video_dec_state new_state)
 {
@@ -153,10 +307,69 @@ static void vd_ui_refresh_grid(void)
     video_dec_ui_refresh_grid(name, flm_get_count(), g_vd.current_index);
 }
 /*==============================================================================
+ * Async storage info
+ *
+ * fget_free_space 遍历 FAT 首次耗时数秒(既有结论, 见 video_rec_worker.c):
+ * 1371 文件/30GB 分区实测 ~14s, 不能跑在进屏同步路径。改独立低优先级线程
+ * 后台算, 进屏只投递; 重扫/拔卡按代际作废在飞结果。
+ *==============================================================================*/
+static volatile u32 g_vdec_storage_total_kb = 0;
+static volatile u32 g_vdec_storage_free_kb = 0;
+static volatile u8  g_vdec_storage_done = 0;   /* 后台已算出有效值 */
+static volatile u8  g_vdec_storage_busy = 0;   /* 计算线程在飞, 防重入 */
+static volatile u32 g_vdec_storage_gen = 0;    /* 代际: 重扫/拔卡使在飞结果作废 */
+
+static void vd_storage_invalidate(void)
+{
+    g_vdec_storage_gen++;
+    g_vdec_storage_done = 0;
+    g_vdec_storage_total_kb = 0;
+    g_vdec_storage_free_kb = 0;
+}
+
+/* 后台线程: 慢遍历 FAT; 代际已变则丢弃结果不发布 */
+static void vd_storage_worker(void *arg)
+{
+    u32 gen = g_vdec_storage_gen;
+    video_dec_storage_t info;
+
+    (void)arg;
+    if (video_dec_get_storage_info(&info) == 0 && gen == g_vdec_storage_gen) {
+        video_dec_storage_t cached;
+
+        g_vdec_storage_total_kb = info.total_kb;
+        g_vdec_storage_free_kb = info.free_kb;
+        g_vdec_storage_done = 1;
+        cached.total_kb = g_vdec_storage_total_kb;
+        cached.free_kb = g_vdec_storage_free_kb;
+        cached.photo_count = 0;
+        cached.video_count = 0;
+        video_dec_ui_update_storage(&cached);
+    }
+    g_vdec_storage_busy = 0;
+}
+
+/* 进屏/重扫路径: 只投递线程, 不做 FAT 遍历 */
+static void vd_storage_recalc_async(void)
+{
+    int pid = 0;
+
+    if (g_vdec_storage_busy || g_vdec_storage_done) {
+        return;
+    }
+    g_vdec_storage_busy = 1;
+    if (thread_fork("vd_storage_calc", VIDEO_DEC_THUMB_WORKER_PRIO, 2048, 0, &pid,
+                    vd_storage_worker, NULL) != OS_NO_ERR) {
+        log_error("vd_storage_recalc_async: fork fail\n");
+        g_vdec_storage_busy = 0;
+    }
+}
+/*==============================================================================
  * File scanning
  *==============================================================================*/
 static int vd_scan_and_load(void)
 {
+    vd_storage_invalidate();   /* 重扫后旧容量作废, 在飞结果丢弃 */
     /* 模式内重扫前先停六宫格缩略图 worker(防与回放抢 VDEC/VPSS, 双保险) */
     video_dec_thumb_cancel_wait();
     vd_free_files();
@@ -184,7 +397,7 @@ static int vd_scan_and_load(void)
     }
 
     /* 分配缩略图指针数组 */
-    g_vd.thumb_data = (u8 **)kc_malloc(file_count * sizeof(u8 *));
+    g_vd.thumb_data = (u8 **)phy_malloc(file_count * sizeof(u8 *));   /* 物理池: 与 phy_free(arr) 配对 */
     if (g_vd.thumb_data) {
         memset(g_vd.thumb_data, 0, file_count * sizeof(u8 *));
     }
@@ -193,10 +406,7 @@ static int vd_scan_and_load(void)
     /* 遗留: 原 9 格页 prefetch 已删(真缩略图走六宫格页异步引擎, 不再模式内白解码) */
     vd_set_state(VIDEO_DEC_STATE_LIST);
     vd_ui_refresh_grid();
-    video_dec_storage_t info;
-    if (video_dec_get_storage_info(&info) == 0) {
-        video_dec_ui_update_storage(&info);
-    }
+    vd_storage_recalc_async();   /* 容量后台算, 进屏不等 FAT 遍历 */
     return file_count;
 }
 
@@ -220,6 +430,7 @@ void video_dec_clear_on_card_out(void)
     vd_close_photo_if_showing();
     vd_free_files();  /* 先按旧 file_count 释放缩略图, flm_reset 会把计数清零 */
     flm_reset();
+    vd_storage_invalidate();   /* 拔卡: 旧容量作废 */
     g_vd.current_index = 0;
     s_del_menu = 0;
     vd_set_state(VIDEO_DEC_STATE_LIST);
@@ -228,22 +439,29 @@ void video_dec_clear_on_card_out(void)
     video_dec_ui_refresh_grid(NULL, 0, -1);
     video_dec_ui_show_alert(1);
 }
+/* 只按入参释放、不读 g_vd: 退出异步线程复用同一份释放逻辑, 入参是已摘除所有权的旧数组 */
+static void vd_free_files_ptr(u8 **arr, int count)
+{
+    int i;
+
+    if (!arr) {
+        return;
+    }
+    for (i = 0; i < count; i++) {
+        if (arr[i]) {
+            kc_free(arr[i]);
+            arr[i] = NULL;
+        }
+    }
+    phy_free(arr);
+}
 static void vd_free_files(void)
 {
     /* 遗留簿记: thumb_data 仅服务未来模式内 LIST UI, 当前不再有生成方 */
-    int i;
     /* 按自己记录的条目数释放, 不依赖 flm 计数(删除/拔卡路径会先清零 flm, 按 flm
      * 遍历会漏掉全部缩略图条目 -> 每删一批泄漏 ~294KB) */
-    if (g_vd.thumb_data) {
-        for (i = 0; i < g_vd.thumb_count; i++) {
-            if (g_vd.thumb_data[i]) {
-                kc_free(g_vd.thumb_data[i]);
-                g_vd.thumb_data[i] = NULL;
-            }
-        }
-        kc_free(g_vd.thumb_data);
-        g_vd.thumb_data = NULL;
-    }
+    vd_free_files_ptr(g_vd.thumb_data, g_vd.thumb_count);
+    g_vd.thumb_data = NULL;
     g_vd.thumb_count = 0;
     g_vd.thumb_lru_count = 0;
 }
@@ -386,6 +604,7 @@ int video_dec_play(int index)
 {
     app_playback_ret_t ret;
     int file_count = flm_get_count();
+    log_info("[VDEC] play_enter idx=%d\n", index);
     /* 新一次播放: 递增代号。此刻之前旧播放的 play_avi 线程若已 post ERROR/FINISHED,
      * 那些过期事件仍带旧 play_gen, app_core 处理 SKIP/RECOVER 时据此丢弃。 */
     g_vd.play_gen++;
@@ -407,13 +626,15 @@ int video_dec_play(int index)
         g_vd.video_playing = 0;
         g_vd.video_paused = 0;
     }
-    vd_close_photo_if_showing();
     g_vd.current_index = index;
-    flm_file_t entry;
-    if (flm_get_entry(index, &entry) != 0) {
-        return -1;
+    flm_file_t entry = {0};
+    int entry_ok = (flm_get_entry(index, &entry) == 0);
+    // 照片解码成功: 保留现有照片管线不关
+    int photo_keep = 0;
+    if (entry_ok) {
+        log_info("[VDEC] play_type=%d idx=%d\n", entry.type, index);
     }
-    if (entry.type == VIDEO_DEC_TYPE_PHOTO) {
+    if (entry_ok && entry.type == VIDEO_DEC_TYPE_PHOTO) {
         /* 坏照片(JPEG头损坏 -> one_image_path 内部 probe 失败, 日志 "failed to probe
          * VDEC pic info ret=-5")会拆掉当前画面变黑屏且不恢复。用有限循环(非递归:
          * app_core 栈仅~3KB, 禁止按坏文件数深递归)自动跳到下一张可解码照片; 若跳到
@@ -424,28 +645,51 @@ int video_dec_play(int index)
             video_dec_ui_time_hide();  /* 视频切照片: 隐藏播放进度标签 */
             video_dec_ui_show_photo(entry.path);
             ret = app_playback_one_image_path(g_vd.pb_handle, entry.path);
+            if (ret == APP_PLAYBACK_ERR_BUSY) {
+                // 视频 ERROR 事件不碰 pb_handle, video_started 残留 1 会把后续照片全判 busy
+                log_info("video_dec_play: photo BUSY, force stop video and retry\n");
+                app_playback_video_stop(g_vd.pb_handle);
+                g_vd.video_playing = 0;
+                g_vd.video_paused = 0;
+                ret = app_playback_one_image_path(g_vd.pb_handle, entry.path);
+            }
             if (ret == APP_PLAYBACK_OK) {
                 vd_set_state(VIDEO_DEC_STATE_PHOTO_VIEW);
                 g_vd.photo_showing = 1;
                 g_vd.corruption_skip_count = 0;
+                photo_keep = 1;
                 break;
             }
-            log_error("video_dec_play: one_image_path failed ret=%d (corrupt %s), skip\n",
-                      ret, entry.path);
+            if (ret == APP_PLAYBACK_ERR_BUSY) {
+                log_error("video_dec_play: photo BUSY after force stop ret=%d (%s), skip\n",
+                          ret, entry.path);
+            } else {
+                log_error("video_dec_play: one_image_path failed ret=%d (corrupt %s), skip\n",
+                          ret, entry.path);
+            }
             if (file_count <= 1 || ++photo_tries >= file_count) {
                 video_dec_ui_show_alert(2);   /* 全部无法解码 */
-                return -1;
+                entry_ok = 0;
+                break;
             }
-            g_vd.current_index = (g_vd.current_index + 1) % file_count;
+            g_vd.current_index = (g_vd.current_index + vd_nav_dir_norm() + file_count) % file_count;
             if (flm_get_entry(g_vd.current_index, &entry) != 0) {
                 log_error("video_dec_play: flm_get_entry failed idx=%d\n", g_vd.current_index);
                 video_dec_ui_show_alert(2);
-                return -1;
+                entry_ok = 0;
+                break;
             }
             if (entry.type != VIDEO_DEC_TYPE_PHOTO) {
                 break;  /* 跳到了视频, 交给下面视频分支 */
             }
         }
+    }
+    // 视频目标或照片解码失败: 关照片管线; 照片→照片复用时不关(免 VO fb 反复 alloc/free)
+    if (!photo_keep) {
+        vd_close_photo_if_showing();
+    }
+    if (!entry_ok) {
+        return -1;
     }
     if (entry.type != VIDEO_DEC_TYPE_PHOTO) {
         log_info("video_dec_play: video %s\n", entry.path);
@@ -473,7 +717,13 @@ int video_dec_play(int index)
 #endif
         if (ret != APP_PLAYBACK_OK) {
             log_error("video_dec_play: video_start failed, ret=%d path=%s\n", ret, entry.path);
-            video_dec_ui_show_alert(2);
+            /* 单个文件起播失败: 复用跳过预算, 经消息队列静默跳下一个(不递归);
+             * 预算用尽=整段都放不了, 才提示一次 */
+            if (file_count > 1 && g_vd.corruption_skip_count < file_count) {
+                app_send_message2(APP_MSG_VIDEO_DEC_SKIP_CORRUPT, (int)g_vd.play_gen, 0);
+            } else {
+                video_dec_ui_show_alert(2);
+            }
             return -1;
         }
         g_vd.video_playing = 1;
@@ -534,7 +784,6 @@ int video_dec_resume_video(void)
     }
     if (ret != APP_PLAYBACK_OK) {
         log_error("resume_video: video_start failed ret=%d\n", ret);
-        video_dec_ui_show_alert(2);
         return -1;
     }
     g_vd.video_playing = 1;
@@ -582,15 +831,20 @@ int video_dec_set_mute(int mute)
     }
     return 0;
 }
-void video_dec_mode_exit_mute_restore(void)
+/* 只做静音恢复动作、不写 g_vd: 退出异步线程只调本函数 */
+static void vd_mute_restore_apply(u8 mute_on)
 {
-    if (g_vd.mute_before_enter) {
+    if (mute_on) {
         app_audio_mute(AUDIO_MUTE_DEFAULT);
         log_info("video_dec_mode_exit_mute_restore: restore mute ON\n");
     } else {
         app_audio_mute(AUDIO_UNMUTE_DEFAULT);
         log_info("video_dec_mode_exit_mute_restore: restore mute OFF\n");
     }
+}
+void video_dec_mode_exit_mute_restore(void)
+{
+    vd_mute_restore_apply(g_vd.mute_before_enter);
     g_vd.muted = g_vd.mute_before_enter;
 }
 /*==============================================================================
@@ -654,7 +908,7 @@ void video_dec_skip_corrupt(u32 gen)
         return;
     }
     g_vd.corruption_skip_count++;
-    g_vd.current_index = (g_vd.current_index + 1) % file_count;
+    g_vd.current_index = (g_vd.current_index + vd_nav_dir_norm() + file_count) % file_count;
     log_info("skip_corrupt: -> idx=%d (skip_cnt=%d)\n",
              g_vd.current_index, g_vd.corruption_skip_count);
     video_dec_play(g_vd.current_index);
@@ -683,7 +937,7 @@ void video_dec_err_recover(u32 gen)
     video_dec_ui_close_video();
     if (file_count > 1 && g_vd.corruption_skip_count < file_count) {
         g_vd.corruption_skip_count++;
-        g_vd.current_index = (g_vd.current_index + 1) % file_count;
+        g_vd.current_index = (g_vd.current_index + vd_nav_dir_norm() + file_count) % file_count;
         log_info("err_recover: skip to idx=%d (skip_cnt=%d)\n",
                  g_vd.current_index, g_vd.corruption_skip_count);
         video_dec_play(g_vd.current_index);
@@ -765,6 +1019,7 @@ void video_dec_dispatch_play(void)
             }
             log_info("dispatch_play: PHOTO_VIEW -> next photo, new_index=%d\n",
                      g_vd.current_index);
+            g_vd.nav_dir = 1;   // OK 键语义 = 下一张
             video_dec_play(g_vd.current_index);
         }
         break;
@@ -831,6 +1086,7 @@ void video_dec_dispatch_next(void)
             if (g_vd.current_index >= file_count) {
                 g_vd.current_index = 0;
             }
+            g_vd.nav_dir = 1;
             video_dec_play(g_vd.current_index);
         }
         break;
@@ -877,6 +1133,7 @@ void video_dec_dispatch_prev(void)
             if (g_vd.current_index < 0) {
                 g_vd.current_index = file_count - 1;
             }
+            g_vd.nav_dir = -1;
             video_dec_play(g_vd.current_index);
         }
         break;
@@ -1068,7 +1325,7 @@ static void vd_thumb_lru_touch(int index)
     if (g_vd.thumb_lru_count >= VIDEO_DEC_THUMB_CACHE_MAX) {
         int victim = g_vd.thumb_lru[VIDEO_DEC_THUMB_CACHE_MAX - 1];
         if (victim >= 0 && victim < file_count && g_vd.thumb_data && g_vd.thumb_data[victim]) {
-            kc_free(g_vd.thumb_data[victim]);
+            kc_free(g_vd.thumb_data[victim]);   /* 装的是 f.thumbnail(FLM 的指针), 配对未证实 ⇒ 保持 kc_free */
             g_vd.thumb_data[victim] = NULL;
             log_info("vd_thumb LRU evict index=%d\n", victim);
         }
@@ -1224,7 +1481,7 @@ static void vd_thumb_lru_insert_locked(const char *path, u8 *tile)
     if (g_thumb.lru_count >= VIDEO_DEC_THUMB_LRU_MAX) {
         i = g_thumb.lru_count - 1;               /* 淘汰队尾并立即释放 tile */
         if (g_thumb.lru[i].tile) {
-            kc_free(g_thumb.lru[i].tile);
+            phy_free(g_thumb.lru[i].tile);
             g_thumb.lru[i].tile = NULL;
         }
         g_thumb.lru_count--;
@@ -1278,6 +1535,7 @@ static int vd_thumb_calc_vpss_size(u16 src_w, u16 src_h, u16 *out_w, u16 *out_h)
     return (*out_w >= 2 && *out_h >= 2) ? 0 : -1;
 }
 
+#if !VIDEO_DEC_TILE_NV12_TEST
 /* YUV420SP -> 96x64 RGB565 最近邻采样: 整图 min-fit, 留边填占位底色 */
 static void vd_thumb_yuv420sp_to_rgb565(const mpi_video_frame_info_t *frame, u8 *tile)
 {
@@ -1359,9 +1617,10 @@ static void vd_thumb_yuv420sp_to_rgb565(const mpi_video_frame_info_t *frame, u8 
         }
     }
 }
+#endif /* !VIDEO_DEC_TILE_NV12_TEST: RGB565 现网路径 */
 
-/* NV12 直显暂缓: jlgpu 渲染侧滞留物理池, 修复后启用(2026-09-07) */
-#if 0
+/* NV12 直显测试(VIDEO_DEC_TILE_NV12_TEST=1): jlgpu 渲染侧滞留物理池问题复现(2026-09-07) */
+#if VIDEO_DEC_TILE_NV12_TEST
 /* tile 组装: VPSS 帧(YUV420SP 160x120) 最近邻缩到 96x64 NV12(Y+UV 连续, U 先) */
 static void vd_thumb_frame_to_nv12_tile(const mpi_video_frame_info_t *frame, u8 *tile)
 {
@@ -1429,7 +1688,7 @@ static void vd_thumb_frame_to_nv12_tile(const mpi_video_frame_info_t *frame, u8 
         }
     }
 }
-#endif /* NV12 直显暂缓(2026-09-07) */
+#endif /* VIDEO_DEC_TILE_NV12_TEST: NV12 直显测试路径 */
 
 static void vd_thumb_fill_chn(int mod_id, int dev_id, int chn_id, mpi_chn_t *chn)
 {
@@ -1447,14 +1706,13 @@ static int vd_thumb_avi_first_jpg(const char *path, u8 **jpg_out, u32 *len_out)
     avi_t *avi;
     const char *comp;
     long frames;
-    long maxchunk;
-    long i;
+    long need;
     u8 *buf = NULL;
 
     if (!path || !path[0]) {
         return -1;
     }
-    avi = AVI_open_input_file(path, 1);   /* getIndex=1: 建帧索引 */
+    avi = AVI_open_input_file(path, 0);   /* getIndex=0: 首帧顺序扫描, 不付整份文件索引 */
     if (!avi) {
         log_error("vd_thumb: AVI open fail: %s\n", path);
         return -1;
@@ -1471,43 +1729,26 @@ static int vd_thumb_avi_first_jpg(const char *path, u8 **jpg_out, u32 *len_out)
         AVI_close(avi);
         return -1;
     }
-    maxchunk = AVI_max_video_chunk(avi);
-    if (maxchunk > VTHUMB_AVI_MAX_CHUNK) {
-        log_error("vd_thumb: AVI chunk over budget %ld: %s\n", maxchunk, path);
+    need = AVI_read_first_frame(avi, NULL, 0);   /* 第一遍: 只探首帧长度(不依赖索引) */
+    if (need <= 0 || need > VTHUMB_AVI_MAX_CHUNK) {
+        log_error("vd_thumb: AVI first frame over budget %ld: %s\n", need, path);
         AVI_close(avi);
         return -1;
     }
-    if (maxchunk <= 0) {
-        /* 录像 AVI 头无 max_bytes_per_sec(实测返回 0): 按防护上限分配, 帧级防护兜底 */
-        maxchunk = VTHUMB_AVI_MAX_CHUNK;
-    }
-    buf = (u8 *)kc_malloc((u32)maxchunk);
+    buf = (u8 *)phy_malloc((u32)need);   /* 第二遍: 按实际帧长分配, 替代恒定 128KB */
     if (!buf) {
         AVI_close(avi);
         return -1;
     }
-    for (i = 0; i < frames; i++) {
-        long sz = AVI_frame_size(avi, i);
-        int kf = 0;
-        if (sz <= 0) {
-            /* 0 长帧(坏帧): NULL buf 仅推进, 与回放 demux 同范式 */
-            (void)AVI_read_video(avi, NULL, -1, &kf);
-            continue;
-        }
-        if (sz > maxchunk) {
-            break;
-        }
-        if (AVI_read_video(avi, (char *)buf, sz, &kf) == sz) {
-            *jpg_out = buf;
-            *len_out = (u32)sz;
-            AVI_close(avi);
-            return 0;
-        }
-        break;   /* 读帧异常: 放弃(封面降级占位) */
+    if (AVI_read_first_frame(avi, buf, need) != need) {
+        phy_free(buf);
+        AVI_close(avi);
+        return -1;
     }
-    kc_free(buf);
+    *jpg_out = buf;
+    *len_out = (u32)need;
     AVI_close(avi);
-    return -1;
+    return 0;
 }
 
 /* 缩略图解码全局门控: 回放模式(mode_running)占用 VDEC 期间禁止;
@@ -1602,13 +1843,13 @@ static u8 *vd_thumb_decode_tile(const char *path, u8 type)
                 fclose(fp);
                 return NULL;
             }
-            jpg = (u8 *)kc_malloc((u32)fsize);
+            jpg = (u8 *)phy_malloc((u32)fsize);   // 必须走物理池: 大图(1.3~1.6MB)走堆会把池擦掉
             if (!jpg) {
                 fclose(fp);
                 return NULL;
             }
             if (fread(jpg, 1, (u32)fsize, fp) != (u32)fsize) {
-                kc_free(jpg);
+                phy_free(jpg);
                 fclose(fp);
                 return NULL;
             }
@@ -1765,13 +2006,17 @@ static u8 *vd_thumb_decode_tile(const char *path, u8 type)
         log_error("vd_thumb: get VPSS frame fail ret=%d: %s\n", ret, path);
         goto teardown;
     }
-    tile = (u8 *)kc_malloc(VIDEO_DEC_THUMB_TILE_BYTES);
+    tile = (u8 *)phy_malloc(VIDEO_DEC_THUMB_TILE_BYTES);   // 必须走物理池: kc(堆)版实测每轮擦掉池 ~185KB(2026-09-21 回退实验)
     if (!tile) {
         log_error("vd_thumb: tile malloc fail: %s\n", path);
         (void)mpi_vpss_release_chn_frame(vpss_grp, vpss_chn, &frame);
         goto teardown;
     }
+#if VIDEO_DEC_TILE_NV12_TEST
+    vd_thumb_frame_to_nv12_tile(&frame, tile);
+#else
     vd_thumb_yuv420sp_to_rgb565(&frame, tile);
+#endif
     (void)mpi_vpss_release_chn_frame(vpss_grp, vpss_chn, &frame);
 
 teardown:
@@ -1800,11 +2045,56 @@ out:
         if (jpg_exif) {
             free(jpg);          /* EXIF 接口契约: 调用方 free() */
         } else {
-            kc_free(jpg);       /* 整读缓冲: 与 tile 同封装 kc_free */
+            phy_free(jpg);
         }
         jpg = NULL;
     }
     return tile;
+}
+
+/* ---- FAT 冷路径后台预热: 进多宫格/移动光标时请求, 后台延迟 300ms 预热"焦点文件" ----
+ * 背景: 首次打开某文件的 FAT 冷路径要 ~2.4s(实测 FS 缓存填充 365 扇区 x 7.6ms),
+ * 落在 video_dec_play 里 => 用户按 OK 后黑屏 2.4s。这里在用户浏览时就后台暖好。
+ * 安全性: 只 fopen+fread(4KB)+fclose(与原有一次性预热同法); 不在 app_core 小栈线程打日志;
+ * 延迟 300ms 让焦点稳定后才做, 避免快速翻页把 SD 读请求堆起来。 */
+static volatile int g_warm_req_idx = -1;   /* 请求预热的 index; -1=无 */
+static volatile u8  g_warm_stop    = 0;
+static int          g_warm_pid     = 0;    /* 预热 worker 的 pid(0=未建) */
+
+static void vd_fat_warm_worker(void *priv)
+{
+    (void)priv;
+    while (!g_warm_stop) {
+        int idx = g_warm_req_idx;
+        if (idx < 0) {
+            os_time_dly(5);                 /* 10ms 轮询 */
+            continue;
+        }
+        g_warm_req_idx = -1;                /* 取走本次请求 */
+        os_time_dly(30);                    /* 300ms: 焦点稳定才预热 */
+        if (g_warm_req_idx >= 0) {
+            continue;                       /* 期间又变了 => 丢弃本次 */
+        }
+        {
+            flm_file_t fe;
+            if (flm_get_entry(idx, &fe) == 0 && fe.path[0]) {
+                FILE *f = fopen(fe.path, "r");
+                if (f != NULL) {
+                    static u8 wb[4096];
+                    (void)fread(wb, 1, sizeof(wb), f);
+                    fclose(f);
+                }
+            }
+        }
+    }
+}
+
+/* 供 UI 层调用: 请求预热某个 index 的文件(只置标志, 零栈开销) */
+void video_dec_fat_warm_request(int idx)
+{
+    if (idx >= 0) {
+        g_warm_req_idx = idx;
+    }
 }
 
 /* worker 主循环: 取 WAIT 槽 -> 解码 -> 入 LRU -> ready_cb; 无活时挂起等唤醒 */
@@ -1891,10 +2181,10 @@ static void vd_thumb_worker(void *priv)
                 } else if (matched >= 0) {
                     /* 取消/失效窗口内完成的解码: 释放结果 */
                     g_thumb.slot[matched].state = VTHUMB_SLOT_EMPTY;
-                    kc_free(tile);
+                    phy_free(tile);
                 } else {
                     /* 槽已被新批次替换(翻页/重请求): 释放过期结果 */
-                    kc_free(tile);
+                    phy_free(tile);
                 }
             } else {
                 int i;
@@ -2076,7 +2366,7 @@ void video_dec_thumb_invalidate(void)
     vd_thumb_slot_clear_locked();
     for (i = 0; i < g_thumb.lru_count; i++) {
         if (g_thumb.lru[i].tile) {
-            kc_free(g_thumb.lru[i].tile);
+            phy_free(g_thumb.lru[i].tile);
             g_thumb.lru[i].tile = NULL;
         }
         g_thumb.lru[i].path[0] = '\0';
@@ -2107,7 +2397,7 @@ void video_dec_thumb_release_all(void)
     g_thumb.gen++;
     for (i = 0; i < g_thumb.lru_count; i++) {
         if (g_thumb.lru[i].tile) {
-            kc_free(g_thumb.lru[i].tile);
+            phy_free(g_thumb.lru[i].tile);
             g_thumb.lru[i].tile = NULL;
         }
         g_thumb.lru[i].path[0] = '\0';
@@ -2137,8 +2427,8 @@ int video_dec_get_storage_info(video_dec_storage_t *info)
     return flm_get_storage_info(
                info ? &info->total_kb : NULL,
                info ? &info->free_kb : NULL,
-               info ? &info->photo_count : NULL,
-               info ? &info->video_count : NULL);
+               NULL,   /* photo/video_count 全树无读者, 跳过逐条遍历 */
+               NULL);
 }
 int video_dec_delete_file(const char *path)
 {
@@ -2163,34 +2453,246 @@ int video_dec_open(void)
 {
     return vd_open_playback();
 }
+/* 峰值前移: scan 前先把骨架的堆成本取走(fb5 两块 115200 + 帧队列 128KB), 全有或全无;
+ * 只入池不建通道, 首播 pipeline_open/fq_open 命中池块 ⇒ 不重复建、不再抢连续块。
+ * 任一步失败即回滚已入池的槽, 由调用方降级(不自动播, 停 LIST), 不许崩。 */
+static int vd_prebuild_pipeline(void)
+{
+    int vo_ready = vd_fb_pool_prime();
+    int fq_ok = 0;
+
+    if (vo_ready == VDEC_FB_POOL_SLOTS) {
+        fq_ok = (app_playback_demux_frame_queue_prealloc(VDEC_VIDEO_BUF_SIZE) == 0);
+    }
+    if (vo_ready != VDEC_FB_POOL_SLOTS || !fq_ok) {
+        vd_fb_pool_unprime();
+        log_info("[VDEC] prebuild pipeline: fail (fq=%d vo=%d)\n", fq_ok, vo_ready);
+        return -1;
+    }
+
+    /* 预暖堆: AVI 帧索引(~189KB)是回放期堆的第一个大分配, 直接视频时它会当场从物理池
+     * 扩页(实测 -189KB)导致起播内存不足; 照片先解码再切视频则正常(索引复用既有堆空间)。
+     * 这里趁池子最干净先付掉这笔切痕, 之后索引分配不再动物理池。 */
+    {
+        void *warm = kc_malloc(200u * 1024u);
+        if (warm != NULL) {
+            kc_free(warm);
+            log_info("[PMM] heap warm 200KB ok\n");
+        }
+    }
+    log_info("[VDEC] prebuild pipeline: ok (fq=%d vo=%d)\n", fq_ok, vo_ready);
+    return 0;
+}
+/*==============================================================================
+ * Exit async release (app_core 栈外执行退出尾部两步)
+ *==============================================================================*/
+/* video_dec_exit 尾部的静音恢复与文件释放不改变退出链顺序语义, 但会叠加调用深度;
+ * 移交短命线程执行, 退出路径不再吃 app_core 栈。所有权在 start 里同步摘除,
+ * worker 只碰摘下来的旧指针, 不读不写 g_vd; 下次 video_dec_init 前 wait 保证完成 */
+static struct {
+    OS_MUTEX lock;
+    OS_SEM   done;                   /* worker 完成通知 */
+    u8   init;
+    u8   busy;                       /* worker 在飞 */
+    u8   waiting;                    /* app_core 正在等 worker 完成 */
+    u8 **files;                      /* 已从 g_vd 摘除的 thumb_data */
+    int  files_count;
+    u8   mute_on;
+    int  pid;
+} g_vd_exit_async;
+
+static void vd_exit_async_init(void)
+{
+    if (g_vd_exit_async.init) {
+        return;
+    }
+    os_mutex_create(&g_vd_exit_async.lock);
+    os_sem_create(&g_vd_exit_async.done, 0);
+    g_vd_exit_async.init = 1;
+}
+
+static void vd_exit_async_worker(void *arg)
+{
+    u8 **files;
+    int count;
+    u8 mute_on;
+
+    (void)arg;
+    os_mutex_pend(&g_vd_exit_async.lock, 0);
+    files = g_vd_exit_async.files;
+    count = g_vd_exit_async.files_count;
+    mute_on = g_vd_exit_async.mute_on;
+    g_vd_exit_async.files = NULL;
+    g_vd_exit_async.files_count = 0;
+    os_mutex_post(&g_vd_exit_async.lock);
+
+    vd_mute_restore_apply(mute_on);
+    vd_free_files_ptr(files, count);
+
+    os_mutex_pend(&g_vd_exit_async.lock, 0);
+    g_vd_exit_async.busy = 0;
+    g_vd_exit_async.pid = 0;
+    if (g_vd_exit_async.waiting) {
+        g_vd_exit_async.waiting = 0;
+        os_sem_post(&g_vd_exit_async.done);
+    }
+    os_mutex_post(&g_vd_exit_async.lock);
+}
+
+/* 等上一次退出的异步释放完成(单轮上限 2s); 超时只留痕不阻塞: 旧数组所有权已摘除,
+ * 与下一次进模式重新分配的数组无别名, 内存安全不依赖等待成功 */
+static void vd_exit_async_wait(void)
+{
+    if (!g_vd_exit_async.init) {
+        return;
+    }
+    for (;;) {
+        os_mutex_pend(&g_vd_exit_async.lock, 0);
+        if (!g_vd_exit_async.busy) {
+            os_mutex_post(&g_vd_exit_async.lock);
+            return;
+        }
+        g_vd_exit_async.waiting = 1;
+        os_mutex_post(&g_vd_exit_async.lock);
+        if (os_sem_pend(&g_vd_exit_async.done, 200) != OS_NO_ERR) {
+            log_error("[VDEC] exit async: wait timeout\n");
+            return;
+        }
+        /* 上一轮超时遗留的 post 会立即唤醒: 循环复查 busy, 未完成则继续等 */
+    }
+}
+
+static void vd_exit_async_start(void)
+{
+    u8 **files;
+    int count;
+    u8 mute_on;
+    int pid = 0;
+
+    vd_exit_async_init();
+    vd_exit_async_wait();            /* 上一轮未完成则先等, 防同名线程并发 */
+    mute_on = g_vd.mute_before_enter;
+    os_mutex_pend(&g_vd_exit_async.lock, 0);
+    files = g_vd.thumb_data;         /* 所有权移交: 摘除后 g_vd 不再引用 */
+    count = g_vd.thumb_count;
+    g_vd.thumb_data = NULL;
+    g_vd.thumb_count = 0;
+    g_vd.thumb_lru_count = 0;
+    g_vd.muted = mute_on;
+    if (g_vd_exit_async.busy) {      /* 上一次仍未被调度: 本轮回落同步, 不并发 */
+        os_mutex_post(&g_vd_exit_async.lock);
+        vd_mute_restore_apply(mute_on);
+        vd_free_files_ptr(files, count);
+        log_info("[VDEC] exit async: fork=0\n");
+        return;
+    }
+    g_vd_exit_async.files = files;
+    g_vd_exit_async.files_count = count;
+    g_vd_exit_async.mute_on = mute_on;
+    g_vd_exit_async.busy = 1;
+    os_mutex_post(&g_vd_exit_async.lock);
+
+    if (thread_fork("vd_exit_async", VIDEO_DEC_THUMB_WORKER_PRIO, 2048, 0, &pid,
+                    vd_exit_async_worker, NULL) != OS_NO_ERR) {
+        os_mutex_pend(&g_vd_exit_async.lock, 0);
+        files = g_vd_exit_async.files;
+        count = g_vd_exit_async.files_count;
+        g_vd_exit_async.files = NULL;
+        g_vd_exit_async.files_count = 0;
+        g_vd_exit_async.busy = 0;
+        os_mutex_post(&g_vd_exit_async.lock);
+        vd_mute_restore_apply(mute_on);   /* fork 失败回落同步, 不静默不释放 */
+        vd_free_files_ptr(files, count);
+        log_info("[VDEC] exit async: fork=0\n");
+        return;
+    }
+    g_vd_exit_async.pid = pid;
+    log_info("[VDEC] exit async: fork=1\n");
+}
+/* 起播判据在 FAT 预暖【之前】定死: 预暖是 fopen/fread/fclose 深调用链, 跑在 app_core 小栈上,
+ * 实测(2026-09-21)偶发"跑过预暖后这次不起播", 且加打印即不复现(Heisenbug) —— 故不依赖预暖后的局部量 */
+static volatile int g_autoplay_pending;
 int video_dec_init(void)
 {
+    /* FAT 后台预热 worker: 模式内常驻(进多宫格/移光标时由 UI 层投请求) */
+    if (!g_warm_pid) {
+        g_warm_stop = 0;
+        if (thread_fork("vd_fat_warm", VIDEO_DEC_THUMB_WORKER_PRIO, 1024, 0, &g_warm_pid,
+                        vd_fat_warm_worker, NULL) != OS_NO_ERR) {
+            g_warm_pid = 0;
+        }
+    }
     log_info("video_dec_init\n");
+    vd_exit_async_wait();            /* 上次退出的异步释放须先完成 */
     video_dec_thumb_cancel_wait();   /* 进全屏回放前停缩略图 worker(双保险) */
     g_vd.mode_running = 1;           /* 提前置位: init 起即禁缩略图解码(VDEC 占用期) */
     memset(&g_vd, 0, sizeof(g_vd));
     g_vd.mode_running = 1;           /* memset 复位后重置 */
+    g_vd.nav_dir = 1;                /* 默认方向: 下一个 */
     g_vd.mute_before_enter = app_audio_get_dac_digital_mute();
+    g_vd_fb_pool.enable = 1;         /* fb5 在 video_dec_ui_init 创建, 置位须在它之前 */
     if (vd_open_playback() != 0) {
         log_error("video_dec_init: vd_open_playback failed\n");
         g_vd.mode_running = 0;       /* 失败回滚: 允许缩略图继续(六宫格场景) */
+        vd_fb_pool_release();        /* 失败回滚: 清标志并释放池 */
         return -1;
     }
     video_dec_ui_init(VDEC_PB_WIDTH, VDEC_PB_HEIGHT);
+    /* 碎片整理: 实测出现"池子 808KB 空闲却拿不到 128KB 连续块"(physics memory size 828160
+     * 而 prebuild fail fq=0) => 只分配了 ~30KB 却把 808KB 戳碎, 唯一解释是堆(malloc 按单页
+     * 增长)的页零散散布在池里。memory_defrag() 正是搬 vmem/堆页的整理器(全树此前零调用),
+     * 故在预建前调一次, 把堆页收拢, 让连续块重新可用。 */
+    {
+        u32 td0 = sys_timer_get_ms();
+        int dfr = memory_defrag();
+        log_info("[VDEC] memory_defrag before prebuild: ret=%d took=%ums\n",
+                 dfr, (unsigned)(sys_timer_get_ms() - td0));
+    }
+    /* 峰值前移: 此刻池子最干净(缩略图刚释放), 预建失败则不自动播 */
+    int prebuild_ok = (vd_prebuild_pipeline() == 0);
+    /* 建全库名字缓存(87.8KB): 必须在预建【之后】(放前面会挤掉预建 => prebuild_ok=0 => 不自动播)。
+     * 无缓存时 lru_miss 会走全库遍历的慢路径(long 名目录项逐条 zalloc), 卡在 FAT 上会导致
+     * 看门狗超时死机; 开着缓存则回放全程不遍历, P_MEM=0。
+     * 代价: 建立时的一次遍历把最大连续块从 196608 压到 65536 —— 实测可接受, 优先保不死机。 */
+    flm_names_cache_prepare();
     vd_scan_and_load();
     /* 进回放模式自动解码显示第一个文件(用户无需按OK)。LIST态只有文件名文本无
-     * 缩略图渲染, 停在LIST=白屏; 有文件则直接全屏解码显示首张(照片/视频)。
+     * 缩略图渲染, 停在LIST=白屏; 有文件则直接全屏解码取首张(照片/视频)。
      * 相册列表点了具体某格进来时, 用 s_pending_start_index 指定起始文件。 */
-    if (flm_get_count() > 0) {
-        int start = 0;
-        if (s_pending_start_index >= 0) {
-            start = s_pending_start_index;
-            s_pending_start_index = -1;
+    log_info("[VDEC][MEMDBG] auto_play_check count=%d pending=%d from_grid=%d\n",
+             flm_get_count(), s_pending_start_index, (int)s_entered_from_grid);
+    int start = 0;
+    if (s_pending_start_index >= 0) {
+        start = s_pending_start_index;
+        s_pending_start_index = -1;
+    }
+    if (start < 0 || start >= flm_get_count()) {
+        start = 0;
+    }
+    g_autoplay_pending = (prebuild_ok && flm_get_count() > 0) ? 1 : 0;
+    log_info("[VDEC][MEMDBG] auto_play_gate: prebuild_ok=%d count=%d start=%d pending=%d\n",
+             prebuild_ok, flm_get_count(), start, (int)g_autoplay_pending);
+    /* FAT 预暖(必须保留): 打开 AVI 时 dir_find 扫 1400+ 长名目录项每项 zalloc(512) 累积 ~188KB, 不预暖
+     * 这笔钱留到播放时(池子只剩 ~460KB)付会打穿池子([P_MEM] 风暴+断言); 判据是内存水位不是 play 耗时。 */
+    {
+        static u8 g_fat_warmed = 0;
+        if (!g_fat_warmed && prebuild_ok && flm_get_count() > 0) {
+            flm_file_t we;
+            if (flm_get_entry(start, &we) == 0 && we.path[0]) {
+                FILE *wf = fopen(we.path, "r");
+                if (wf != NULL) {
+                    static u8 wbuf[4096];
+                    (void)fread(wbuf, 1, sizeof(wbuf), wf);
+                    fclose(wf);
+                    g_fat_warmed = 1;
+                    log_info("[VDEC] fat warm: %s\n", we.path);
+                }
+            }
         }
-        if (start < 0 || start >= flm_get_count()) {
-            start = 0;
-        }
+    }
+    if (g_autoplay_pending) {
         video_dec_play(start);
+        log_info("[VDEC][MEMDBG] auto_play_done start=%d\n", start);
     }
     return 0;
 }
@@ -2205,7 +2707,7 @@ static void video_dec_thumb_mode_exit_clean(void)
     os_mutex_pend(&g_thumb.lock, 0);
     for (i = 0; i < g_thumb.lru_count; i++) {
         if (g_thumb.lru[i].tile) {
-            kc_free(g_thumb.lru[i].tile);
+            phy_free(g_thumb.lru[i].tile);
             g_thumb.lru[i].tile = NULL;
         }
         g_thumb.lru[i].path[0] = '\0';
@@ -2216,6 +2718,9 @@ static void video_dec_thumb_mode_exit_clean(void)
 
 void video_dec_exit(void)
 {
+    /* 停 FAT 预热 worker(不 kill, 置标志让它自己退): 与缩略图 worker 同策略 */
+    g_warm_stop = 1;
+    g_warm_req_idx = -1;
     log_info("video_dec_exit enter, mode_running=%d\n", g_vd.mode_running);
     /* 只清 LRU、保留等待槽(见 video_dec_thumb_mode_exit_clean 注释); worker 由
      * mode_running 门控不会在退出期间解码, 无需 cancel_wait */
@@ -2236,8 +2741,14 @@ void video_dec_exit(void)
     vd_close_photo_if_showing();
     video_dec_ui_time_hide();
     vd_close_playback();
-    video_dec_mode_exit_mute_restore();
-    vd_free_files();
+    vd_fb_pool_release();            /* fb5 已 close, 固定缓冲还回物理池(录像需要) */
+    app_playback_demux_frame_queue_pool_release();   /* 帧队列常驻块(128KB)也还回物理池: 录像不需要它 */
+    /* 注意: 这里【不】释放全库名字缓存(87.8KB)。它跨"多宫格 ↔ 全屏"保持, 避免每次从多宫格
+     * 点开一个文件都重建(实测重建 2.3s = FS 缓存冷填充 365 扇区)。释放点改在
+     * app_enter_video_rec_mode()(进录像等吃内存模式时还), 保证不影响其他模式。 */
+    /* 静音恢复+文件释放移交短命线程(顺序语义不变, 只是移出 app_core 栈);
+     * 线程创建失败或上轮未完成则内部回落同步执行 */
+    vd_exit_async_start();
     g_vd.mode_running = 0;
     g_vd.state = VIDEO_DEC_STATE_IDLE;
     log_info("video_dec_exit done, mode off\n");

@@ -98,6 +98,9 @@ void rcsp_config(struct RcspModel *rcspModel)
 #if (defined TCFG_CSC_BT_APP) && TCFG_CSC_BT_APP
     rcspModel->function_mask |= BIT(EQ_FUNCTION_MASK);
 #endif
+#if TCFG_APP_PC_EN
+    rcspModel->function_mask |= BIT(PC_FUNCTION_MASK);
+#endif
 
 #if (TCFG_APP_MUSIC_EN && !RCSP_APP_MUSIC_EN)
     rcspModel->music_icon_mask = DEV_ICON_ALL_DISPLAY

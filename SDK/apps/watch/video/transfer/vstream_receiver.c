@@ -399,14 +399,14 @@ void vstream_spp_rx_handler(u8 *buf, u16 len)
     }
 
     struct lbuf_data_head *head = NULL;
-    int retry = 10;
-    do {
-        head = lbuf_alloc(g_recv_hdl->recv_lbuf_handle, STREAM_RECV_BUF_SIZE);
-        if (head) {
-            break;
-        }
-        os_time_dly(1);
-    } while (retry-- > 0);
+    int retry = 0;
+    //do {
+    head = lbuf_alloc(g_recv_hdl->recv_lbuf_handle, STREAM_RECV_BUF_SIZE);
+    //    if (head) {
+    //        break;
+    //    }
+    //    os_time_dly(1);
+    //} while (retry-- > 0);
 
     if (head) {
         head->len = len;

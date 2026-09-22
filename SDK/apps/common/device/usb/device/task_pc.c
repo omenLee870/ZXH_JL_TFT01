@@ -268,6 +268,15 @@ void usb_start(const usb_dev usbfd)
 #if TCFG_USB_SLAVE_HCI_ENABLE
     class |= HCI_CLASS;
 #endif
+    /* Xbox360 手柄（XInput）与其配套的标准键鼠 HID。
+     * 注意：xbox360 独占 EP1~EP4、hid_kbmouse 占 EP3，与 MSD(EP1)/HID(EP2)/UAC(EP3)
+     * 的端点硬冲突，必须互斥使能；同时开启会导致端点被覆盖、描述符与端点不符。 */
+#if TCFG_USB_SLAVE_XBOX360_ENABLE
+    class |= XBOX360_CLASS;
+#endif
+#if TCFG_USB_SLAVE_HID_KBMOUSE_ENABLE
+    class |= HID_KBMOUSE_CLASS;
+#endif
     g_printf("USB_DEVICE_CLASS_CONFIG:%x", class);
     usb_device_mode(usbfd, class);
 

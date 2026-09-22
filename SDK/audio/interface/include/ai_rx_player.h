@@ -48,4 +48,9 @@ void ai_rx_player_close(u8 source);
 
 bool ai_rx_player_runing(u8 source);
 
+/* Optional per-instance lifecycle observer; existing callers are unchanged. */
+void ai_rx_player_set_event_callback(u8 source,
+                                     void (*callback)(void *, int), void *priv);
+bool ai_rx_player_any_running(void);
+
 #endif

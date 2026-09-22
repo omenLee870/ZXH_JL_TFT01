@@ -47,6 +47,24 @@ struct uac_stream_config {
 extern const struct uac_stream_config g_stream_configs[];
 
 /* ---------- stream config helpers ---------- */
+/* spk_rate_num / mic_rate_num 是描述符、端点、DMA buffer、接口 handler 的唯一判定依据，
+ * 但 g_stream_configs 里它们只由 SPK_AUDIO_RATE_NUM / MIC_AUDIO_RATE_NUM 初始化，
+ * 与 TCFG_USB_SLAVE_AUDIO_SPK_ENABLE / TCFG_USB_SLAVE_AUDIO_MIC_ENABLE 无关，
+ * 导致使能宏写 0 时该功能依然被枚举出来（uac1.c/uac2.c 的文件级开关是 SPK||MIC）。
+ * 这里把使能宏折算进 rate_num：使能宏为 0 → rate_num 为 0 → UAC_CFG_HAS_* 判定为无此功能。
+ * 注意：引用 TCFG_* 宏，需在 app_config.h 之后包含本头文件（uac1.c/uac2.c 均满足）。 */
+#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
+#define UAC_CFG_SPK_RATE_NUM(cfg_num)   (cfg_num)
+#else
+#define UAC_CFG_SPK_RATE_NUM(cfg_num)   0
+#endif
+
+#if TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
+#define UAC_CFG_MIC_RATE_NUM(cfg_num)   (cfg_num)
+#else
+#define UAC_CFG_MIC_RATE_NUM(cfg_num)   0
+#endif
+
 #define UAC_CFG_HAS_SPK(cfg)  ((cfg)->spk_rate_num > 0)
 #define UAC_CFG_HAS_MIC(cfg)  ((cfg)->mic_rate_num > 0)
 

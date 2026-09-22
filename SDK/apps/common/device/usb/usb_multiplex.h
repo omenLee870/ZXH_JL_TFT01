@@ -14,6 +14,7 @@ struct pc_multiplex_callback {
 
 int usb_storage_multiplex_resume(const struct usb_host_device *host_dev);
 int usb_storage_multiplex_suspend(const struct usb_host_device *host_dev);
+void usb_storage_multiplex_host_released(const struct usb_host_device *host_dev);
 int pc_multiplex_resume();
 int pc_multiplex_suspend();
 void pc_multiplex_register_callback(struct pc_multiplex_callback *callback);

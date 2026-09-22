@@ -25,6 +25,9 @@ int flm_rebuild_in_progress(void);  /* 插卡重建进行中: 录像自动开录
 void flm_reset(void);  /* 拔卡清索引状态, 不删文件 */
 int flm_get_count(void);
 int flm_get_entry(int index, flm_file_t *out);
+/* 全库名字缓存: 进多宫格页面前 prepare, 离开页面或开始播放时 release(必须成对) */
+void flm_names_cache_prepare(void);
+void flm_names_cache_release(void);
 int flm_delete_file(const char *path);
 int flm_lock_file(const char *path);
 int flm_unlock_file(const char *path);

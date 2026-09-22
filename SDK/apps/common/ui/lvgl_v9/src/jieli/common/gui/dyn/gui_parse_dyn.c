@@ -496,7 +496,7 @@ static dyn_err_t parse_file_view(const uint8_t *buf, uint32_t size, dyn_file_vie
         return DYN_ERR_MAGIC;
     }
     if (version != JLDYN_PROTOCOL_VERSION || header_size != JLDYN_FILE_HEADER_SIZE ||
-        memcmp(tag, "W004", 4) != 0 || reserved != 0) {
+        memcmp(tag, "W005", 4) != 0 || reserved != 0) {
         return DYN_ERR_VERSION;
     }
     if (target_lvgl_major != DYN_TARGET_LVGL_MAJOR) {

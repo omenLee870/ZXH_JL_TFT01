@@ -1136,7 +1136,7 @@ static void gpu_draw_ring_arc(struct draw_context *dc,
     jlgpu_update_task_by_id(dc->gpu_task_head, task_param.task_id, task_param.element_id, &task_param);
 }
 
-int ui_gpu_draw(struct draw_context *dc, u8 *buf, int x, int y, int width, int height, void *cb, void *priv, int priv_len, int id)
+int jlui_gpu_draw(struct draw_context *dc, u8 *buf, int x, int y, int width, int height, void *cb, void *priv, int priv_len, int id)
 {
 
     if (id == DRAW_RING) {
@@ -4373,6 +4373,7 @@ static const struct ui_platform_api jlui_platform_api = {
     .fill_rect          = jlui_fill_rect,
     .draw_image         = jlui_draw_image,
     .show_text          = jlui_show_text,
+    .draw_primitive     = jlui_gpu_draw,
 
     .draw_rect          = jlui_draw_rect,
     .read_point         = jlui_read_point,

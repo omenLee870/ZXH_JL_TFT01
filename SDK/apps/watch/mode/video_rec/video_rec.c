@@ -327,8 +327,22 @@ u32 video_rec_get_elapsed_sec(void)
 
 void video_rec_build_file_path(char *out_path, int out_size);
 
+/* 录像中巡检/边界删除在 video_rec_worker.c 实现; 头文件不改, 这里文件内声明 */
+extern int video_rec_check_storage_no_delete(void);
+extern int video_rec_try_delete_old(u32 *out_free_kb);
+extern volatile u8 g_rec_need_delete_old;
+extern volatile u8 g_rec_cyc_boundary;
+
+/* 分段边界待维护: CYC_FILE 回调不再交下一段路径(MPI 停在 wait_next_file 等),
+ * 置位后由 worker 主循环停录→删最旧→重启(重启自带新路径); 超时未服务则看门狗强制交路径 */
+#define VREC_MAINT_PENDING_TIMEOUT_MS   300
+static volatile u8  g_rec_maint_pending    = 0;
+static volatile u32 g_rec_maint_pending_ms = 0;
+
 /* MPI cyc_sec 驱动分段: close→reopen→post CYC_FILE, 回调 frename 占位路径为时间戳名 */
 static volatile u32 g_cyc_file_count = 0;   /* CYC_FILE 事件累计次数 */
+/* 本次录像会话开始前的段数基数: 维护性停录重开新段后段号继续递增(MPI cyc_count 会从 1 重数) */
+static u32 g_rec_cyc_base = 0;
 
 #if (TCFG_HOST_UVC_ENABLE && TCFG_USB_HOST_ENABLE)
 /* UVC 录像管线前置声明 (video_rec_start/stop 在本文件前部, 定义在 mode_init 之前) */
@@ -370,24 +384,34 @@ static void video_rec_event_handler(void *priv, int argc, int *argv)
         /* argv[1] = cyc_count (1-based, MPI 自增) */
         int cyc_count = (argc > 1) ? argv[1] : 0;
         g_cyc_file_count++;
+        /* 本回调在 MPI camera event 线程: 只置边界标志, FS 删除交给 rec_worker */
+        g_rec_cyc_boundary = 1;
         /* Mode0 时间戳命名走 frename+file_index 段号; Mode1 固定 VID_****.AVI 由 JLFS 撞名自增 */
         if (VIDEO_REC_NAMING_MODE == 1) {
             /* Mode 1: 跳过 frename + 跳过 file_index, 仅刷新 ctx 字段 */
             char new_path[APP_CAMERA_REC_PATH_MAX];
             video_rec_build_file_path(new_path, sizeof(new_path));
-            g_rec_ctx.total_segments = (u32)cyc_count;
+            g_rec_ctx.total_segments = g_rec_cyc_base + (u32)cyc_count;
             snprintf(g_rec_ctx.current_file_path,
                      sizeof(g_rec_ctx.current_file_path), "%s", new_path);
             g_rec_ctx.segment_start_time = sys_timer_get_ms() / 1000;
             log_info("[VREC] CYC_FILE #%d (FIXED mode=1, skip frename/file_index):"
                      " next=%s\n", cyc_count, g_rec_ctx.current_file_path);
-            /* 必须 set_path 交下一段路径, 否则 wait_next_file 永久 pend 阻塞(VENC 缓冲不排空死循环) */
-            app_camera_rec_set_path(g_camera_handle, new_path);
+            /* 有待删文件时不交路径: 交了 MPI 立刻开新段, 随后维护停录会掐断它留 0 帧碎片.
+             * 置 pending 交 worker: 停录→删最旧→重启, 重启自带新路径解开 MPI 的等待 */
+            if (g_rec_need_delete_old) {
+                g_rec_maint_pending_ms = jiffies_msec();
+                g_rec_maint_pending    = 1;
+                log_info("[VREC] CYC_FILE #%d: maint pending, hold path\n", cyc_count);
+            } else {
+                /* 必须 set_path 交下一段路径, 否则 wait_next_file 永久 pend 阻塞(VENC 缓冲不排空死循环) */
+                app_camera_rec_set_path(g_camera_handle, new_path);
+            }
             break;
         }
 
-        /* Mode 0: file_index 推进到 cyc_count, 用作路径中 _NNN 段序号 */
-        g_rec_ctx.file_index = (u32)cyc_count;
+        /* Mode 0: file_index 推进到 基数+cyc_count, 用作路径中 _NNN 段序号 */
+        g_rec_ctx.file_index = g_rec_cyc_base + (u32)cyc_count;
 
         /* 复用 build_file_path 统一命名: 之前直接 rtc_read_time, RTC 无效拼出 00000000 名与 fallback 源名不重合 → frename 失败 */
         char new_path[APP_CAMERA_REC_PATH_MAX];
@@ -408,7 +432,7 @@ static void video_rec_event_handler(void *priv, int argc, int *argv)
                      g_rec_ctx.current_file_path, new_path);
         }
 
-        g_rec_ctx.total_segments = (u32)cyc_count;
+        g_rec_ctx.total_segments = g_rec_cyc_base + (u32)cyc_count;
         snprintf(g_rec_ctx.current_file_path,
                  sizeof(g_rec_ctx.current_file_path), "%s", new_path);
         g_rec_ctx.segment_start_time = sys_timer_get_ms() / 1000;
@@ -447,7 +471,7 @@ static void video_rec_fill_rec_attr(app_camera_rec_attr_t *ra)
     /* MPI cyc_sec 写满 cyc_frame 帧自动 close+reopen 并 post CYC_FILE, 回调 frename 时间戳名 */
     ra->cyc_sec         = (u32)g_rec_ctx.loop_time_sec;
     /* 录音走 app_video_audio_rec_open, PCM 16kHz 免编码器电脑可放 */
-    ra->audio_enable            = 0;
+    ra->audio_enable            = 1;
     ra->audio_codec_type        = APP_CAMERA_AUDIO_CODEC_PCM;  /* 0=PCM */
     ra->audio_sample_rate       = 16000;   /* 16kHz, 优于电话8kHz, 环境音更清晰 */
     ra->audio_buf_size          = 32 * 1024;   /* 探针实证: 32KB够用 */
@@ -455,12 +479,73 @@ static void video_rec_fill_rec_attr(app_camera_rec_attr_t *ra)
     ra->audio_bit_rate          = 0;       /* PCM时无效(仅MP3用) */
 }
 
+/* 维护驱动: 分段边界"停录 -> 删最旧 -> 恢复录新段".
+ * 停录用 app_camera_rec_stop 只关录制通道(VO 预览通道不动), 目的是回收录像占用的
+ * 连续物理页: 录像期池子被切碎, 直接 fdelete 取不到连续块会触发 P_MEM 风暴死机.
+ * 在 worker 线程内联执行, 不走 video_rec_stop 的 worker 自杀路径, 也不经 app_core 投递. */
+static void video_rec_maint_pause_delete_resume(void)
+{
+    if (!g_rec_ctx.recording || g_rec_ctx.paused || g_camera_handle == NULL) {
+        g_rec_cyc_boundary = 0;
+        g_rec_maint_pending = 0;
+        return;
+    }
+
+    log_info("[VREC] maint: pause rec for delete\n");
+    if (app_camera_rec_stop(g_camera_handle) != APP_CAMERA_OK) {
+        log_error("[VREC] maint: pause rec failed\n");
+        g_rec_cyc_boundary = 0;
+        g_rec_maint_pending = 0;
+        return;
+    }
+    u32 free_kb = 0;
+    int deleted = video_rec_try_delete_old(&free_kb);
+
+    /* 维护窗口内 app_core 已请求停止: 不恢复, 剩余清理交给 worker 退出路径 */
+    if (g_rec_ctx.worker_stop) {
+        log_info("[VREC] maint: worker_stop set, skip resume\n");
+        g_rec_maint_pending = 0;
+        return;
+    }
+
+    if (deleted < 0) {
+        log_error("[VREC] maint: no file to delete\n");
+        video_rec_ui_show_alert((deleted == -2) ? 1 : 0);
+        app_send_message(APP_MSG_VIDEO_REC_STOP, 0);
+        g_rec_ctx.worker_stop = 1;
+        g_rec_maint_pending = 0;
+        return;
+    }
+
+    /* 恢复: 新起一段(段号在 g_rec_cyc_base 上继续), 预览通道全程未动 */
+    video_rec_build_file_path(g_rec_ctx.current_file_path, sizeof(g_rec_ctx.current_file_path));
+    video_rec_enable_osd();
+    app_camera_rec_attr_t ra;
+    video_rec_fill_rec_attr(&ra);
+    if (app_camera_rec_start(g_camera_handle, &ra) != APP_CAMERA_OK) {
+        log_error("[VREC] maint: resume failed\n");
+        video_rec_ui_show_alert(2);
+        app_send_message(APP_MSG_VIDEO_REC_STOP, 0);
+        g_rec_ctx.worker_stop = 1;
+        g_rec_maint_pending = 0;
+        return;
+    }
+
+    g_rec_cyc_base = g_rec_ctx.total_segments;
+    if (VIDEO_REC_NAMING_MODE == 0) {
+        g_rec_ctx.file_index++;
+    }
+    g_rec_ctx.total_segments++;
+    g_rec_ctx.segment_start_time = jiffies_msec() / 1000;
+    log_info("[VREC] maint: resume rec deleted=%d free=%uKB\n", deleted, free_kb);
+    g_rec_maint_pending = 0;
+}
+
 /* 录制工作者线程 */
 static void video_rec_worker(void *arg)
 {
     (void)arg;
     log_info("[VREC] worker started\n");
-    /* MEMDBG (3): worker thread entry - log mem + own stack */
 
     app_camera_rec_attr_t ra;
     video_rec_fill_rec_attr(&ra);
@@ -479,7 +564,6 @@ static void video_rec_worker(void *arg)
         }
         return;
     }
-
     g_rec_ctx.record_start_time = sys_timer_get_ms() / 1000;
     /* frame_timer 统一由 app_core 在 video_rec_start() 创建，worker 不再 add */
     /* Mode0 _NNN 由 file_index 派生(启动+1 首段 001); Mode1 不写入路径 */
@@ -505,6 +589,23 @@ static void video_rec_worker(void *arg)
         /* worker 常驻; 暂停由 app_camera_rec 层丢帧实现, 本循环不参与, 退出条件只有 stop */
         u32 now_ms = jiffies_msec();
 
+        /* 分段边界待维护: 回调没交下一段路径(MPI 停在 wait_next_file), 这里停录→删最旧→重启.
+         * 服务条件不满足时不消费 pending(否则早退清标志, 看门狗永远等不到) */
+        if (g_rec_maint_pending) {
+            if ((u32)jiffies_msec2offset(g_rec_maint_pending_ms, now_ms) >=
+                VREC_MAINT_PENDING_TIMEOUT_MS) {
+                /* 看门狗: worker 迟迟没服务, MPI 会永久 pend(VENC 缓冲不排空).
+                 * 宁可留一个碎片段, 也不能让录像卡死 */
+                char wd_path[APP_CAMERA_REC_PATH_MAX];
+                video_rec_build_file_path(wd_path, sizeof(wd_path));
+                log_error("[VREC] maint watchdog: force set_path\n");
+                app_camera_rec_set_path(g_camera_handle, wd_path);
+                g_rec_maint_pending = 0;
+            } else if (g_rec_ctx.recording && !g_rec_ctx.paused && g_camera_handle != NULL) {
+                video_rec_maint_pause_delete_resume();
+            }
+        }
+
         /* ① 每秒打印一次当前录制状态 (累计帧数 / 1s 内的瞬时 FPS) */
         if (g_rec_ctx.recording && (u32)jiffies_msec2offset(print_last_ms, now_ms) >= 1000) {
             u32 frames_now  = g_rec_ctx.total_frames;
@@ -523,12 +624,12 @@ static void video_rec_worker(void *arg)
             print_last_frm = frames_now;
         }
 
-        /* ② 录像中定期检查剩余空间: 不足时自动删除最旧未加锁录像文件并继续,
-         *    删无可删或拔卡时才停止录像 (用户要求不要直接因空间不足停止) */
+        /* ② 录像中定期检查剩余空间: 只置待删标志, 不在录像满负荷时做 FS 删除
+         *   (此时物理池近枯竭, fdelete 取不到物理页会打死系统); 删无可删/拔卡才停录 */
         if (g_rec_ctx.recording &&
             (u32)jiffies_msec2offset(last_storage_check_ms, now_ms) >= VIDEO_REC_SPACE_CHECK_INTERVAL_MS) {
             last_storage_check_ms = now_ms;
-            int stor_ret = video_rec_check_storage();
+            int stor_ret = video_rec_check_storage_no_delete();
             if (stor_ret == -2) {
                 log_error("[VREC] SD offline during recording, stopping\n");
                 video_rec_ui_show_alert(1);
@@ -536,13 +637,16 @@ static void video_rec_worker(void *arg)
                 g_rec_ctx.worker_stop = 1;
                 break;
             } else if (stor_ret != 0) {
-                log_error("[VREC] storage full and no old file to delete, stopping\n");
+                log_error("[VREC] free space below danger line, stopping\n");
                 video_rec_ui_show_alert(0);
                 app_send_message(APP_MSG_VIDEO_REC_STOP, 0);
                 g_rec_ctx.worker_stop = 1;
                 break;
             }
         }
+
+        /* 分段边界维护已上移到循环开头: 判据由"段内时间余量"改为回调置的 g_rec_maint_pending,
+         * 边界一到即停录删最旧(那时下一段还没建, 不会掐断它), 每段都是完整 cyc_sec */
 
         /* ③ MPI cyc_sec 驱动的自动分段: 由 app_camera_rec_thread 内部
          *   完成 close+reopen, 然后 post APP_CAMERA_EVENT_REC_CYC_FILE.
@@ -593,7 +697,6 @@ static void video_rec_worker(void *arg)
     /* 停止录像不再弹"保存完成"提示(用户要求静默停止)。AVI 文件已由
      * app_camera_rec_stop() 关闭保存, 无需 UI 打扰。 */
 
-    /* MEMDBG: worker exit - log mem (check worker own usage/leak) */
     log_info("[VREC] worker: stopped, total_frames=%u, segments=%u\n",
              g_rec_ctx.total_frames, g_rec_ctx.total_segments);
 
@@ -689,8 +792,12 @@ static int video_rec_launch_worker(void)
 
     g_rec_ctx.worker_stop = 0;
     g_rec_ctx.worker_pid = 0;
+    /* 新一次录像: 清上次会话残留的待删标志与边界标志; 段号基数=已有段数, 段号跨维护/重开继续 */
+    g_rec_need_delete_old = 0;
+    g_rec_cyc_boundary = 0;
+    g_rec_maint_pending = 0;
+    g_rec_cyc_base = g_rec_ctx.total_segments;
 
-    /* MEMDBG (3): log mem BEFORE worker create */
     video_rec_log_mem("before_worker_create");
 
     int err = thread_fork("rec_worker",
@@ -703,12 +810,10 @@ static int video_rec_launch_worker(void)
     if (err != 0) {
         log_error("[VREC] failed to create worker thread: %d\n", err);
         g_rec_ctx.worker_pid = 0;  /* thread_fork 失败时不写 pid, 这里兜底 */
-        /* MEMDBG (4): thread create fail - log mem/stack (locate leak) */
         video_rec_log_mem("worker_create_FAIL");
         return -1;
     }
 
-    /* MEMDBG (3): after create - delay a bit to let worker entry run, then read stack */
     os_time_dly(20);
     video_rec_log_mem("after_worker_create");
     video_rec_log_task_stack("after_worker_create", "rec_worker");
@@ -720,7 +825,6 @@ static int video_rec_launch_worker(void)
 
 int video_rec_start(void)
 {
-    /* MEMDBG (2): video_rec_start entry - log free mem */
     log_info("[VREC] video_rec_start\n");
     g_sd_auto_start_pending = 0;  /* 任意路径开录: 清 pending 防 DONE 重触自动开录 */
     g_rec_ctx.low_bat_alert_shown = 0;  /* 新录像: 复位低电量弹窗标志 */
@@ -1905,9 +2009,7 @@ static void vrec_uvc_close(void)
 static int video_rec_mode_init(int param)
 {
     putchar('6');
-    /* MEMDBG (1): mode_init entry - log free mem */
     log_info("video_rec_mode_init, param=%d\n", param);
-
 
     video_rec_check_rtc();
 
@@ -1964,7 +2066,6 @@ void video_rec_mode_exit(void)
 {
     log_info("video_rec_mode_exit\n");
     g_sd_auto_start_pending = 0;  /* 退出模式: 清 pending 防退出后 DONE 误触开录 */
-    /* MEMDBG: mode exit - log mem, compare with mode_init/start to find leak */
     /* 先停录再拆 UI: stop 会触发 state->IDLE 的 UI 回调, 必须在 UI 仍存活时执行 */
     if (g_rec_ctx.recording || g_rec_ctx.paused) {
         video_rec_stop();
@@ -1993,6 +2094,11 @@ struct app_mode *app_enter_video_rec_mode(int arg)
     int msg[16];
     struct app_mode *next_mode;
     enum video_rec_state prev_state = VIDEO_STATE_IDLE, curr_state;
+
+    /* 进录像(内存吃紧模式)前释放回放遗留的全库名字缓存(87.8KB): 该缓存跨"多宫格↔全屏"
+     * 保持是为了避免每次进回放重建(实测重建 2.3s, 是 FS 缓存冷填充 365 扇区所致),
+     * 但不能带进录像/拍照这类吃内存的模式。 */
+    flm_names_cache_release();
 
     {
         u8 _mode = APP_MODE_VIDEO_REC;

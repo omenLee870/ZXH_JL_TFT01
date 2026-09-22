@@ -1,7 +1,9 @@
 #ifndef __APP_CONFIG_H__
 #define __APP_CONFIG_H__
 
+#ifdef PMC_APP_CASE_WATCH
 #include "msys_sdk_config.h"
+#endif
 #include "msys_pmc_app.h"
 
 //==========================================================//
@@ -40,7 +42,7 @@
 //==========================================================//
 //                 		VAD使能开关                   		//
 //==========================================================//
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES)
+#if defined(PMC_APP_CASE_WATCH) && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES)
 #define CONFIG_VAD_ENABLE          				1
 #else
 #define CONFIG_VAD_ENABLE          				0
@@ -113,7 +115,7 @@
 //===========================================================//
 //                     lptocuh 配置                          //
 //===========================================================//
-#if (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES)
+#if defined(PMC_APP_CASE_WATCH) && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES)
 #define TCFG_LPTOUCH_ENABLE         1   //触摸总开关
 #else
 #define TCFG_LPTOUCH_ENABLE         0   //触摸总开关

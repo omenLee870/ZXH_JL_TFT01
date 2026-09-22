@@ -166,6 +166,7 @@ int dev_status_event_filter(int *msg)
 {
     int ret = true;
     int err = 0;
+    int i = 0;
     char *add = NULL;
     char *del = NULL;
     static u32 sdx_mount_err_cnt = 0;
@@ -217,6 +218,20 @@ int dev_status_event_filter(int *msg)
                 printf("%s online already, del residue and remount\n", add);
                 dev_manager_del(add);
                 err = dev_manager_add(add);
+            }
+            if (err == DEV_MANAGER_ADD_ERR_MOUNT_FAIL) {
+                // 插卡瞬间卡未就绪: 重试前先 del 清僵尸条目, 否则 add 只返回 IN_LIST_AREADY
+                for (i = 0; i < 3; i++) {
+                    dev_manager_del(add);
+                    os_time_dly(5);
+                    err = dev_manager_add(add);
+                    if (err != DEV_MANAGER_ADD_ERR_MOUNT_FAIL) {
+                        break;
+                    }
+                }
+                if (err == DEV_MANAGER_ADD_ERR_MOUNT_FAIL) {
+                    dev_manager_del(add);
+                }
             }
             if (!err) {
                 sdx_mount_err_cnt = 0;

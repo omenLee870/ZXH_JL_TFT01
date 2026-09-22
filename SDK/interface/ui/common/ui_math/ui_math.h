@@ -4,7 +4,7 @@
 
 
 #ifndef UI_PI
-#define UI_PI					(3.14159265f)              /*! 定义 PI    */
+#define UI_PI (3.1415927f) /*! 定义 PI    */
 #endif
 
 
@@ -37,6 +37,13 @@
 
 #ifndef ALIGN_DOWN /*! 向下对齐 */
 #define ALIGN_DOWN(val, align) ((val) / (align) * (align))
+#endif
+
+
+
+#ifndef CHECK_RANGE /*! 抖动检查: val 落在 target ± a 区间内 */
+#define CHECK_RANGE(val, target, a) \
+	(((val) >= ((target) - (a))) && ((val) <= ((target) + (a))))  /*! val 会被求值两次, 实参不得带副作用 */
 #endif
 
 

@@ -198,7 +198,7 @@ const int key_bt_io_num0_msg_table[KEY_ACTION_MAX] = {
 };
 const int key_bt_io_num1_msg_table[KEY_ACTION_MAX] = {
     APP_MSG_TAKE_PHOTO,    APP_MSG_NULL,  APP_MSG_NULL,
-    APP_MSG_NULL,    APP_MSG_NULL,  APP_MSG_NULL,
+    APP_MSG_NULL,    APP_MSG_AI_TAKE_PHOTO,  APP_MSG_AI_VOICE_TRIGGER,
     APP_MSG_NULL,    APP_MSG_NULL,  APP_MSG_NULL,
     APP_MSG_RECORD_START,
 };

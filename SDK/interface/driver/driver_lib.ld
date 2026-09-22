@@ -73,12 +73,6 @@ SECTIONS
         . = ALIGN(4);
 
         . = ALIGN(4);
-        _SFC_TRIM_CODE_START = . ;
-        *(.sfc_trim_code)
-        . = ALIGN(4);
-        _SFC_TRIM_CODE_END = . ;
-
-        . = ALIGN(4);
         tzspi_target_begin = .;
         PROVIDE(tzspi_target_begin = .);
         KEEP(*(.tzspi_target))

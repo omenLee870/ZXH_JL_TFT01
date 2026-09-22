@@ -27,7 +27,7 @@
 
 /* ========================================================================== */
 /* Walkie-Talkie UI — 弱符号桩 (仅非 kid_camera 配置链接)                     */
-/* 真实实现在 kid_camera UI 模块 walkie_talkie_ui.c, 以强符号覆盖本弱符号。    */
+/* 真实实现在 kid_camera UI 模块 ui_action_video_intercom.c, 以强符号覆盖本弱符号。 */
 /* 此处保留弱桩是为了: 当 TCFG_VSTREAM_TRANSFER=1 但未编译 kid_camera UI 模块  */
 /* (例如 WATCH/AI_GLASSES/DASHBOARD 子项目) 时, vstream_cmd.c 仍能链接。      */
 /* ========================================================================== */
@@ -38,11 +38,6 @@ __attribute__((weak)) void walkie_talkie_talk_sel_show(void)
 }
 
 __attribute__((weak)) void walkie_talkie_hangup_show(void)
-{
-    log_info("stub: %s called\n", __func__);
-}
-
-__attribute__((weak)) void walkie_talkie_blank_remote(void)
 {
     log_info("stub: %s called\n", __func__);
 }

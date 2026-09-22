@@ -15,6 +15,7 @@
 #include "ble_rcsp_server.h"
 #include "rcsp_manage.h"
 #include "rcsp_bt_manage.h"
+#include "app_msg.h"
 #include "update_loader_download.h"
 #include "ble_rcsp_server.h"
 #include "classic/tws_api.h"
@@ -485,12 +486,22 @@ int JL_rcsp_update_cmd_resp(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 l
             fw_update_block_handle(UPDATA_STOP, NULL, 0);
         }
         break;
-    case JL_OPCODE_SET_DEVICE_REBOOT:
-        rcsp_printf("JL_OPCODE_SET_DEVICE_REBOOT\n");
-        JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, NULL, 0, ble_con_handle, spp_remote_addr);
-        rcsp_rcsp_reboot_dev();
-
+    case JL_OPCODE_SET_DEVICE_REBOOT: {
+        u8 reboot_type = (len >= 1) ? data[0] : 0x00;
+        u8 result = 0x00;   // 重启结果: 0x00 成功, 0x01 失败
+        rcsp_printf("JL_OPCODE_SET_DEVICE_REBOOT: type=%d\n", reboot_type);
+        if (0x02 == reboot_type) {  // 主机恢复出厂设置
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &result, 1, ble_con_handle, spp_remote_addr);
+            app_send_message(APP_MSG_DISCON_RESET_BT, 0);   // 断开所有连接+恢复出厂+复位
+        } else if (0x01 == reboot_type) {   // 主机强制设备关机
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &result, 1, ble_con_handle, spp_remote_addr);
+            app_send_message(APP_MSG_POWER_OFF, 0);
+        } else {    // 0x00 主机强制设备重新启动
+            JL_CMD_response_send(OpCode, JL_PRO_STATUS_SUCCESS, OpCode_SN, &result, 1, ble_con_handle, spp_remote_addr);
+            rcsp_rcsp_reboot_dev();
+        }
         break;
+    }
 #if 0//TCFG_RCSP_DUAL_CONN_ENABLE
     case JL_OPCODE_CHECK_DEVICE_CONN_NUM:
         rcsp_printf("JL_OPCODE_CHECK_DEVICE_CONN_NUM\n");

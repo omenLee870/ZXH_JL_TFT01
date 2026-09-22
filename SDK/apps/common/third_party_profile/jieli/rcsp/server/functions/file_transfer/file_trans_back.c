@@ -82,6 +82,8 @@ static const char scan_parm[] = "-t"
                                 "OPS"
 #endif
                                 "TMP"
+                                "JPG"
+                                "AVI"
 #endif // WATCH_FILE_TO_FLASH
                                 " -sn -r"
                                 ;

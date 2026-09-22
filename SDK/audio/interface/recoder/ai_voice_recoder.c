@@ -18,17 +18,29 @@ extern struct audio_dac_hdl dac_hdl;
 extern int audio_dac_get_sample_rate(struct audio_dac_hdl *dac);
 
 static struct ai_voice_recoder *g_ai_voice_recoder = NULL;
+static void (*g_ai_voice_recoder_event_cb)(int event);
 
 
 static void ai_voice_recoder_callback(void *private_data, int event)
 {
-    struct ai_voice_recoder *recoder = g_ai_voice_recoder;
-    struct jlstream *stream = (struct jlstream *)private_data;
+    (void)private_data;
 
     switch (event) {
     case STREAM_EVENT_START:
         break;
+    case STREAM_EVENT_NEGOTIATE_FAILD:
+    case STREAM_EVENT_PREEMPTED:
+    case STREAM_EVENT_STOP:
+        if (g_ai_voice_recoder_event_cb) {
+            g_ai_voice_recoder_event_cb(event);
+        }
+        break;
     }
+}
+
+void ai_voice_recoder_set_event_callback(void (*callback)(int event))
+{
+    g_ai_voice_recoder_event_cb = callback;
 }
 
 void ai_voice_recoder_set_ai_tx_node_func(int (*func)(u8 *, u32))
@@ -52,6 +64,12 @@ int ai_voice_recoder_open(u32 code_type, u8 ai_type)
 
     struct ai_voice_recoder *recoder;
 
+    memset(&fmt, 0, sizeof(fmt));
+    memset(&enc_fmt, 0, sizeof(enc_fmt));
+    memset(&set_fmt, 0, sizeof(set_fmt));
+    memset(&s_fmt, 0, sizeof(s_fmt));
+    memset(&cvp_fmt, 0, sizeof(cvp_fmt));
+
     if (g_ai_voice_recoder) {
         return -EBUSY;
     }
@@ -65,13 +83,13 @@ int ai_voice_recoder_open(u32 code_type, u8 ai_type)
         return -ENOMEM;
     }
 
+    memset(recoder, 0, sizeof(*recoder));
     recoder->stream = jlstream_pipeline_parse(uuid, NODE_UUID_ADC);
-    jlstream_ioctl(recoder->stream, NODE_IOC_GET_ENC_FMT, (int)&set_fmt);
-
     if (!recoder->stream) {
         err = -ENOMEM;
         goto __exit0;
     }
+    jlstream_ioctl(recoder->stream, NODE_IOC_GET_ENC_FMT, (int)&set_fmt);
     switch (code_type) {
     case AUDIO_CODING_OPUS:
         //  bitrate
@@ -100,10 +118,9 @@ int ai_voice_recoder_open(u32 code_type, u8 ai_type)
         enc_fmt.complexity = 0;
         enc_fmt.sample_rate = 16000;
         enc_fmt.format = (ai_type);    //传入的ai_type实参是bit7:6，用于选择封装格式，兼容以前调用的接口
-        fmt.coding_type = AUDIO_CODING_OPUS;
         enc_fmt.ops_type = OPUS_TYPE_SILK;
         enc_fmt.frame_dms = 20 * 10;//与工具保持一致，要乘以10,表示20ms
-        fmt.coding_type = AUDIO_CODING_OPUS;
+
         fmt.coding_type = code_type;
         fmt.sample_rate = 16000;
         fmt.bit_rate = 16000;
@@ -194,6 +211,3 @@ void ai_voice_recoder_close()
 
     jlstream_event_notify(STREAM_EVENT_CLOSE_RECODER, (int)"ai_voice");
 }
-
-
-

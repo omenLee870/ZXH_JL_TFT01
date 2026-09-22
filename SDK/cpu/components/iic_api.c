@@ -17,13 +17,15 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-static OS_MUTEX iic_mutex[2] = {0};
-static atomic_t iic_ref[2];
+
+static OS_MUTEX iic_mutex[MAX_HW_IIC_NUM];
+static atomic_t iic_ref[MAX_HW_IIC_NUM];
 //********************hw-iic for tp/alipay se/compass**********************//
 int iic_api_init(void)
 {
-    os_mutex_create(&iic_mutex[0]);
-    os_mutex_create(&iic_mutex[1]);
+    for (u8 iic = 0; iic < MAX_HW_IIC_NUM; iic++) {
+        os_mutex_create(&iic_mutex[iic]);
+    }
     return 0;
 }
 platform_initcall(iic_api_init);

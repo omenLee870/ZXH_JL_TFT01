@@ -21,12 +21,20 @@
 
 #define PIPELINE_RECODER    0x49EC
 
+/* 录音最少需要的空闲空间(KB)，低于此值不允许开始录音 */
+#define MIN_FREE_SPACE_KB_FOR_RECORD       (1024)  /* 1M */
+/* 录音过程中低于此值立即停止，预留空间完成文件封头保存 */
+#define MIN_FREE_SPACE_KB_RECORD_CRITICAL  (256)   /* 256K */
+/* 录音中剩余空间检查间隔(ms) */
+#define RECORD_SPACE_CHECK_INTERVAL_MS     5000
+
 static OS_MUTEX record_mutex;
 
 struct app_recode_handle {
     void *recorder;
     FILE *file;
     char logo[20];
+    u16 space_timer;		//录音剩余空间检查定时器ID
 };
 
 struct app_recode_file_play_hdl {
@@ -145,6 +153,44 @@ void record_cut_head_timeout(void *priv)
     }
 }
 
+//检查录音目标设备的剩余空间是否充足
+static bool app_recorder_check_free_space(const char *root_path, u32 need_kb)
+{
+    u32 free_kb = 0;
+
+    if (!root_path) {
+        r_printf("[RECORD] no active device, cannot get free space\n");
+        return false;
+    }
+    if (fget_free_space(root_path, &free_kb) != 0) {
+        r_printf("[RECORD] failed to get free space from %s\n", root_path);
+        return false;
+    }
+    if (free_kb < need_kb) {
+        r_printf("[RECORD] low storage: free=%u KB, need=%u KB\n", free_kb, need_kb);
+        return false;
+    }
+    return true;
+}
+
+//录音中定时检查剩余空间，不足则立即停止录音(保证文件正常封头保存)
+static void record_free_space_timer(void *priv)
+{
+    if (!g_rec_hdl.recorder) {
+        //录音已停止(如设备离线)，删除自身定时器
+        if (g_rec_hdl.space_timer) {
+            sys_timer_del(g_rec_hdl.space_timer);
+            g_rec_hdl.space_timer = 0;
+        }
+        return;
+    }
+    char *root_path = dev_manager_get_root_path_by_logo(g_rec_hdl.logo);
+    if (!app_recorder_check_free_space(root_path, MIN_FREE_SPACE_KB_RECORD_CRITICAL)) {
+        r_printf("[RECORD] critically low storage, stopping record\n");
+        app_recorder_stop();
+    }
+}
+
 static void app_recorder_start()
 {
     int err;
@@ -214,6 +260,12 @@ static void app_recorder_start()
     char *root_path = dev_manager_get_root_path_by_logo(logo);
     char path[64] = {};
 
+    //启动前检查剩余空间，不足则不创建录音文件直接退出
+    if (!app_recorder_check_free_space(root_path, MIN_FREE_SPACE_KB_FOR_RECORD)) {
+        file_recorder_close(recorder, 0);
+        return;
+    }
+
     snprintf(path, sizeof(path), "%s%s/%s.%s", root_path, folder, filename, suffix);
     FILE *file = file_recorder_open_file(recorder, path);
     if (!file) {
@@ -233,6 +285,11 @@ static void app_recorder_start()
     g_rec_hdl.file      = file;
     g_rec_hdl.recorder   = recorder;
 
+    //启动剩余空间定时检查，录音过程中空间不足立即停止
+    if (g_rec_hdl.space_timer == 0) {
+        g_rec_hdl.space_timer = sys_timer_add(NULL, record_free_space_timer, RECORD_SPACE_CHECK_INTERVAL_MS);
+    }
+
     //记录播放录音需要的信息
     memcpy(g_rec_play_hdl.path, path, sizeof(path));
     memcpy(g_rec_play_hdl.suffix, suffix, strlen(suffix));
@@ -241,6 +298,10 @@ static void app_recorder_start()
 static void app_recorder_stop()
 {
     os_mutex_pend(&record_mutex, 0);
+    if (g_rec_hdl.space_timer) {
+        sys_timer_del(g_rec_hdl.space_timer);
+        g_rec_hdl.space_timer = 0;
+    }
     file_recorder_close(g_rec_hdl.recorder, 1);
     g_rec_hdl.recorder = NULL;
     os_mutex_post(&record_mutex);
@@ -577,6 +638,14 @@ u8 is_recorder_runing(void)
     }
     os_mutex_post(&record_mutex);
     return 0;
+}
+
+//供外部模块(如录像)停止录音使用，保证录音文件正常封头保存
+void app_recorder_stop_public(void)
+{
+    if (g_rec_hdl.recorder) {
+        app_recorder_stop();
+    }
 }
 
 //用来设置录音文件的后缀名称，例如为 .mp3 或者 .wav等等

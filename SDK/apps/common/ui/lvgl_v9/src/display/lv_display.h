@@ -77,13 +77,16 @@ typedef enum {
     LV_SCREEN_LOAD_ANIM_OUT_TOP,
     LV_SCREEN_LOAD_ANIM_OUT_BOTTOM,
 #if defined(LV_USE_DRAW_JLGPU) && LV_USE_DRAW_JLGPU
-    LV_SCR_LOAD_ANIM_OTHER_PAGE,		//当前页面不动，其他页面滑动
+    //参数is_clean需要false,否则目标页面对象被清理，为纯黑页面
+    LV_SCR_LOAD_ANIM_OTHER_PAGE,		//平移
     LV_SCR_LOAD_ANIM_SCALE_DOUBLE,	    //双页面缩放
     LV_SCR_LOAD_ANIM_FLIP,	            //翻页
     LV_SCR_LOAD_ANIM_CENTER_FLIP,       //中心轴翻转
     LV_SCR_LOAD_ANIM_EDGE_FLIP,	        //边沿翻转
     LV_SCR_LOAD_ANIM_CUBE_FLIP,         //立方体翻页
     LV_SCR_LOAD_ANIM_RIPPLE,            //水波纹
+    LV_SCR_LOAD_ANIM_POINT_ENLARGE,     //定点放大
+    LV_SCR_LOAD_ANIM_POINT_NARROW,      //定点缩小
     LV_SCR_LOAD_ANIM_CUBE,	            //sticky 3D 立方体
     LV_SCR_LOAD_ANIM_HEXAGON,           //sticky 3D 灯笼
     LV_SCR_LOAD_ANIM_HEXAGON_REFLECTION,//sticky 3D 灯笼 + 倒影

@@ -11,6 +11,7 @@
 #include "audio_config.h"
 #include "app_tone.h"
 #include "volume_node.h"
+#include "rcsp_device_status.h"
 
 #if (defined CONFIG_JL_UI_ENABLE)&&CONFIG_JL_UI_ENABLE
 #include "ui/jlui_app/ui_api.h"
@@ -119,6 +120,11 @@ void set_music_device_volume(int volume)
     app_audio_set_volume(APP_AUDIO_STATE_MUSIC, music_volume, 1);
 
     app_audio_set_volume_def_state(0);
+
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+    /* 智能眼镜: 手机绝对音量直接回调路径(bt_music_vol_change_handle_register)设置音量后, 主动上报多通道音量 */
+    rcsp_ai_glasses_vol_update();
+#endif
 #endif
 #if (defined CONFIG_JL_UI_ENABLE)&&CONFIG_JL_UI_ENABLE
     UI_MSG_POST("volume");

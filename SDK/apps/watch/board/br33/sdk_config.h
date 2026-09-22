@@ -127,8 +127,8 @@
 #define TCFG_HW_I2C0_CLK_PORT                     IO_PORTB_02      // 硬件iic-0 CLK脚
 #define TCFG_HW_I2C0_DAT_PORT                     IO_PORTB_03      // 硬件iic-0 DATA脚
 #define TCFG_HW_I2C0_CLK                          400000           // 硬件iic-0波特率
-#define TCFG_HW_I2C1_CLK_PORT                     IO_PORTD_12   // 硬件iic-1 CLK脚
-#define TCFG_HW_I2C1_DAT_PORT                     IO_PORTE_00   // 硬件iic-1 DATA脚
+#define TCFG_HW_I2C1_CLK_PORT                     IO_PORTD_12      // 硬件iic-1 CLK脚
+#define TCFG_HW_I2C1_DAT_PORT                     IO_PORTE_00      // 硬件iic-1 DATA脚
 #define TCFG_HW_I2C1_CLK                          400000           // 硬件iic-1波特率
 #define TCFG_HW_I2C2_CLK_PORT                     NO_CONFIG_PORT   // 硬件iic-2 CLK脚
 #define TCFG_HW_I2C2_DAT_PORT                     NO_CONFIG_PORT   // 硬件iic-2 DATA脚
@@ -177,7 +177,7 @@
 #define TCFG_HW_SPI2_BAUD                         32000000         // SPI2  时钟
 #endif // TCFG_HW_SPI2_ENABLE
 
-#define TCFG_CAN_ENABLE                           1                 // CAN
+#define TCFG_CAN_ENABLE                           1                // CAN
 #if TCFG_CAN_ENABLE
 #define TCFG_CAN_MODE                             1                // CAN MODE
 #define TCFG_CAN_RX_IO                            IO_PORTD_00      // RX脚
@@ -195,6 +195,20 @@
 #define TCFG_SPI_CS_PIN                           IO_PORTA_08      // SPI_CS
 #define TCFG_SPI_BAUD                             16000000         // SPI 时钟
 #endif // TCFG_MULTI_CHIP_CONN_ENABLE
+
+#define TCFG_BT_PA_ENABLE                         0                // 蓝牙PA
+#if TCFG_BT_PA_ENABLE
+#define TCFG_BT_PA_PWR_IO                         IO_PORTD_04      // 电源脚
+#define TCFG_BT_PA_PWR_IO_LEVEL                   1                // 电源脚有效电平
+#define TCFG_BT_PA_RX_IO                          IO_PORTD_06      // RX脚
+#define TCFG_BT_PA_TX_IO                          IO_PORTD_05      // TX脚
+#endif // TCFG_BT_PA_ENABLE
+
+#define TCFG_CLOCK_OSC_ADJUST_ENABLE              0                // 晶振电容调整
+#if TCFG_CLOCK_OSC_ADJUST_ENABLE
+#define TCFG_CLOCK_OSC_CAP                        7                // CAP
+#define TCFG_CLOCK_OSC_CAP_FINE                   3                // CAP_FINE
+#endif // TCFG_CLOCK_OSC_ADJUST_ENABLE
 // ------------板级配置.json------------
 
 // ------------功能配置.json------------
@@ -464,6 +478,7 @@
 #define TCFG_EXT_WIFI_STA_SSID                    "JL380N-STA"     // STA SSID
 #define TCFG_EXT_WIFI_STA_PWD                     "12345678"       // STA PWD
 #define TCFG_EXT_WIFI_P2P_SSID                    "JL380N-P2P"     // P2P SSID
+#define TCFG_EXT_WIFI_RST_PIN                     NO_CONFIG_PORT   // RST PIN
 #endif // TCFG_EXT_WIFI_ENABLE
 
 #define TCFG_UART_NET_ENABLE                      0                // UART网卡
@@ -474,7 +489,6 @@
 #endif // TCFG_UART_NET_ENABLE
 
 #define TCFG_LTE_PHY_ENABLE                       1                // 4G网卡
-
 #if TCFG_LTE_PHY_ENABLE
 #define TCFG_HOST_WIRELESS_ENABLE                 1                // USB网卡
 #endif // TCFG_LTE_PHY_ENABLE
@@ -495,10 +509,10 @@
 #define TCFG_COMPELTE_UFW_LC_EN                   0                // 升级文件存放本地触发升级（内置flash升级）
 #define TCFG_NORFLASH_UPDATE_EN                   0                // norflash_flash升级，目前功能没用到
 #define TCFG_UPDATE_RESOURCE_EN                   1                // 升级资源（除代码以外的其他部分）
-#define TCFG_HTTP_UPDATE_ENABLE                   1                // HTTP升级
 #define TCFG_TEST_BOX_WIRELESS_EN                 0                // 测试盒无线升级
 #define TCFG_APP_UPDATE_EN                        0                // APP升级
 #define TCFG_CHARGESTORE_PORT                     IO_PORTA_01      // 串口通信IO
+#define TCFG_HTTP_UPDATE_ENABLE                   1                // HTTP升级
 #endif // TCFG_UPDATE_ENABLE
 // ------------升级配置.json------------
 

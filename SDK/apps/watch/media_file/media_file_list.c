@@ -370,15 +370,48 @@ int flm_rebuild_in_progress(void)
     return flm_rebuild_busy ? 1 : 0;
 }
 
+/* 坏名目录项限流: 只打前几条示例, 扫描结束再补一条汇总, 防刷屏堵串口 */
+#define FLM_BAD_NAME_SHOW_MAX   3
+
+/* 坏文件(空/截断)不入库, 但不动卡上文件。
+ * 第一层: fget_attrs 取到的目录项大小 fsize, 零额外 IO;
+ * 第二层: 仅尺寸可疑(< 结构下限)才读头确认, 只对少数文件产生 IO。
+ * 阈值取结构下限: AVI = RIFF(4)+size(4)+"AVI "(4); JPG = SOI(2)+最小段头。 */
+#define FLM_AVI_MIN_SIZE    12u
+#define FLM_JPG_MIN_SIZE    12u
+
+static int flm_media_bad_file(FILE *fd, u32 file_size, u8 type, int *empty)
+{
+    u8 hdr[4] = {0};
+
+    if (file_size == 0) {
+        (*empty)++;
+        return 1;
+    }
+    if (file_size >= (type ? FLM_AVI_MIN_SIZE : FLM_JPG_MIN_SIZE)) {
+        return 0;
+    }
+    fseek(fd, 0, SEEK_SET);
+    if (type) {
+        return !(fread(hdr, 1, 4, fd) == 4 && !memcmp(hdr, "RIFF", 4));
+    }
+    return !(fread(hdr, 1, 2, fd) == 2 && hdr[0] == 0xFF && hdr[1] == 0xD8);
+}
+
 static int add_files_in_path_to_database(
     bp_db_t *database_handle,
     const char *path,
-    const char *extension)
+    const char *extension,
+    int *bad_cnt,
+    int *empty_cnt)
 {
     char file_name[128] = {0};
     char media_name[128] = {0};
     char options[32] = {0};
     int file_count = 0;
+    int invalid_name_cnt = 0;
+    int invalid_name_shown = 0;
+    char invalid_name_first[64] = {0};
 #if TCFG_APP_VIDEO_REC_EN
     /* 损坏 AVI 先记录, 目录扫描句柄释放后再修; 扫描中 frename 源文件会失败 */
     char repair_paths[4][160];
@@ -407,15 +440,32 @@ static int add_files_in_path_to_database(
         int name_len = fget_name(file_handle, (u8 *)file_name, sizeof(file_name));
         struct vfs_attr attr = {0};
         int _attr = 0;
-        fget_attrs(file_handle, &attr);
+        int attrs_ok = (fget_attrs(file_handle, &attr) == 0);
         fget_attr(file_handle, &_attr);
 
         if (flm_normalize_name(file_name, name_len, media_name, sizeof(media_name)) < 0) {
-            printf("Skip invalid media name: %s%s\n", path, file_name);
+            /* 名字无效分支: file_name 未必 NUL 结尾, 一律以 name_len 为上界打印 */
+            int bad_len = (name_len > 0) ? name_len : 0;
+
+            if (bad_len > (int)sizeof(file_name)) {
+                bad_len = (int)sizeof(file_name);
+            }
+            if (invalid_name_cnt == 0) {
+                snprintf(invalid_name_first, sizeof(invalid_name_first), "%.*s", bad_len, file_name);
+            }
+            if (invalid_name_shown < FLM_BAD_NAME_SHOW_MAX) {
+                printf("Skip invalid media name: %s%.*s\n", path, bad_len, file_name);
+                invalid_name_shown++;
+            }
+            invalid_name_cnt++;
         } else {
             printf("Discovered file %s%s\n", path, media_name);
 
-            if (!memcmp(extension, "AVI", 3)) {
+            if (attrs_ok && flm_media_bad_file(file_handle, attr.fsize,
+                                               !memcmp(extension, "AVI", 3) ? 1 : 0,
+                                               empty_cnt)) {
+                (*bad_cnt)++;
+            } else if (!memcmp(extension, "AVI", 3)) {
                 if (add_avi_file_to_database(database_handle, file_handle, media_name, &attr, _attr) == 0) {
                     file_count++;
 #if TCFG_APP_VIDEO_REC_EN
@@ -472,6 +522,11 @@ static int add_files_in_path_to_database(
     }
 #endif
 
+    if (invalid_name_cnt > 0) {
+        printf("[FLM] invalid media name: total=%d (shown=%d, first=\"%s\")\n",
+               invalid_name_cnt, invalid_name_shown, invalid_name_first);
+    }
+
     return file_count;
 }
 
@@ -495,14 +550,25 @@ struct flm_name_ctx {
     int  count;
 };
 
-static int flm_name_cb(void *arg, const bp_key_t *key, const bp_value_t *value)
+/* 过滤回调版的名字收集: 在库【加载 value 之前】执行, 只拿 key, 恒返回 0 =>
+ * 一个 value 都不加载 => 省掉遍历里每 key 一次的 malloc/free + 后续 free。
+ * 实测这是"建缓存要 2.1 秒 + 期间刷 [P_MEM]"的主因(遍历 1450 条)。 */
+static int flm_name_filter(void *arg, const bp_key_t *key)
 {
-    (void)value;
     struct flm_name_ctx *ctx = (struct flm_name_ctx *)arg;
     if (ctx->count < ctx->cap) {
         snprintf(ctx->names[ctx->count], 64, "%s", key->value);
     }
     ctx->count++;
+    return 0;               /* 恒 0: 不加载 value、不调 range cb */
+}
+
+/* range 回调: filter 恒返回 0, 本回调不会被调用; 仅为满足 API 形参 */
+static int flm_name_noop_cb(void *arg, const bp_key_t *key, const bp_value_t *value)
+{
+    (void)arg;
+    (void)key;
+    (void)value;
     return 0;
 }
 
@@ -519,15 +585,90 @@ static void flm_names_cache_build_locked(void)
     }
     bp_db_t db;
     if (bp_open(&db, MEDIA_DB_PATH) != BP_OK) {
+        printf("[FLM] names cache SKIP: bp_open fail\n");
         return;
     }
     g_flm.names = (char (*)[64])malloc((size_t)g_flm.file_count * 64);
     if (g_flm.names) {
         struct flm_name_ctx ctx = { .names = g_flm.names, .cap = g_flm.file_count, .count = 0 };
-        bp_get_ranges(&db, "/", "z", flm_name_cb, &ctx);
+        bp_get_filtered_ranges(&db, "/", "z", flm_name_filter, flm_name_noop_cb, &ctx);
         g_flm.names_count = ctx.count;
     }
     bp_close(&db);
+}
+
+/* 文件名小 LRU: 只缓存最近访问的 N 条, 替代原全库 1372x64=87.8KB 常驻缓存 */
+#define FLM_NAME_LRU_N   64
+/* 慢路径全库遍历时顺手预取的邻居条数(预取目标前后各 N 条)。
+ * 必须 < FLM_NAME_LRU_N/2, 否则预取会把自己挤出 LRU。 */
+#define FLM_LRU_PREFETCH_N   8
+static struct {
+    int  idx[FLM_NAME_LRU_N];      /* -1 = 空槽 */
+    char name[FLM_NAME_LRU_N][64];
+    u32  stamp[FLM_NAME_LRU_N];    /* 最近使用序号, 越小越旧 */
+    u32  tick;
+} g_name_lru;
+
+static u8 g_name_lru_ready;
+
+static void flm_name_lru_reset(void)
+{
+    int i;
+
+    for (i = 0; i < FLM_NAME_LRU_N; i++) {
+        g_name_lru.idx[i] = -1;
+    }
+    g_name_lru.tick = 0;
+    g_name_lru_ready = 1;
+}
+
+// 静态区零初值时 idx[] 全为 0, 会把 0 号文件误判成命中, 故首次访问前先初始化
+static void flm_name_lru_ensure(void)
+{
+    if (!g_name_lru_ready) {
+        flm_name_lru_reset();
+    }
+}
+
+// 命中返回 name 指针(调用方须持 database_mutex), 未命中返回 NULL
+static const char *flm_name_lru_get(int index)
+{
+    int i;
+
+    flm_name_lru_ensure();
+    for (i = 0; i < FLM_NAME_LRU_N; i++) {
+        if (g_name_lru.idx[i] == index) {
+            g_name_lru.stamp[i] = ++g_name_lru.tick;
+            return g_name_lru.name[i];
+        }
+    }
+    return NULL;
+}
+
+// 调用方须持 database_mutex; 无空槽时淘汰 stamp 最小的一条
+static void flm_name_lru_put(int index, const char *name)
+{
+    int i;
+    int victim = -1;
+
+    flm_name_lru_ensure();
+    for (i = 0; i < FLM_NAME_LRU_N; i++) {
+        if (g_name_lru.idx[i] == index || g_name_lru.idx[i] == -1) {
+            victim = i;
+            break;
+        }
+    }
+    if (victim < 0) {
+        victim = 0;
+        for (i = 1; i < FLM_NAME_LRU_N; i++) {
+            if (g_name_lru.stamp[i] < g_name_lru.stamp[victim]) {
+                victim = i;
+            }
+        }
+    }
+    g_name_lru.idx[victim] = index;
+    snprintf(g_name_lru.name[victim], sizeof(g_name_lru.name[victim]), "%s", name);
+    g_name_lru.stamp[victim] = ++g_name_lru.tick;
 }
 
 /* 任何索引变更都必须显式失效缓存: 同数量换文件时 names_count==file_count 会误命中旧路径 */
@@ -538,11 +679,31 @@ static void flm_names_cache_invalidate(void)
         g_flm.names = NULL;
     }
     g_flm.names_count = 0;
+    flm_name_lru_reset();
 }
 
-/* ---- 开机重建: 增量(目录diff, 不删库) + 目录级扫描(免解析头) + 分段bulk写库 ---- */
+/* 全库名字缓存: 进多宫格页面前建(此刻池子最宽), 离开页面【或开始播放】时释放。
+ * 目的: 浏览全程不再 miss, 从而不触发全库遍历 —— 那在碎片化物理池里每次 open
+ * 都要一块 ~160KB 连续内存(pages.c 页结构), 拿不到就刷 P_MEM 风暴。
+ * 常驻不放会白占 87.8KB(1372 文件 x 64B), 故必须与 release 成对。 */
+void flm_names_cache_prepare(void)
+{
+    os_mutex_pend(&g_flm.database_mutex, 0);
+    if (!g_flm.names || g_flm.names_count != g_flm.file_count) {
+        flm_names_cache_build_locked();
+    }
+    os_mutex_post(&g_flm.database_mutex);
+}
+
+void flm_names_cache_release(void)
+{
+    os_mutex_pend(&g_flm.database_mutex, 0);
+    flm_names_cache_invalidate();
+    os_mutex_post(&g_flm.database_mutex);
+}
+
+/* ---- 开机重建: 流式目录diff(免解析头) + 分段bulk写库; 内存只随 DB key 数增长 ---- */
 #define FLM_SCAN_BATCH      64u
-#define FLM_SCAN_MAX_FILES  1024u
 
 typedef struct {
     char name[64];
@@ -575,76 +736,90 @@ static int flm_key_collect_cb(void *arg, const bp_key_t *key, const bp_value_t *
     return 0;
 }
 
-//目录扫描收集: 不解析文件头; AVI 验 RIFF(4B); 超限返回-1; files==NULL 时仅计数不存储
-static int flm_scan_collect(const char *path, const char *extension, u8 type,
-                            flm_scan_file_t *files, int max,
-                            char repair_paths[][160], int *repair_count)
+/* 名字 → 下标: 开放寻址(FNV-1a + 线性探测), 槽存"下标+1"(0=空) */
+struct flm_scan_idx {
+    char (*keys)[64];   /* DB key 名字表(所有权仍归 flm_key_ctx) */
+    u8  *seen;          /* 本次扫描命中的 key 位图 */
+    u32 *slots;         /* 槽数取 >= 2×key_cnt 的 2 的幂 */
+    int key_cnt;
+    int slot_cnt;
+};
+
+static u32 flm_name_hash(const char *s)
 {
-    char file_name[128] = {0};
-    char media_name[128] = {0};
-    char options[32] = {0};
-    int file_count = 0;
+    u32 h = 2166136261u;
 
-    snprintf(options, 32, "-t%s -sn", extension);
-    if (fdir_exist(path) != 0) {
+    while (*s) {
+        h ^= (u8) * s++;
+        h *= 16777619u;
+    }
+    return h;
+}
+
+/* key_cnt==0 时 slots==NULL, 查询恒不命中(全部按新增处理) */
+static int flm_scan_idx_build(struct flm_scan_idx *idx, char (*keys)[64], int key_cnt)
+{
+    int i;
+
+    memset(idx, 0, sizeof(*idx));
+    idx->keys = keys;
+    idx->key_cnt = key_cnt;
+    if (key_cnt <= 0) {
         return 0;
     }
-    struct vfscan *scan_result = fscan(path, options, 9);
-    if (scan_result == NULL) {
-        printf("Failed to scan path %s\n", path);
-        return 0;
+    idx->seen = malloc((size_t)key_cnt);
+    idx->slot_cnt = 2;
+    while (idx->slot_cnt < key_cnt * 2) {
+        idx->slot_cnt <<= 1;
     }
-    FILE *file_handle = fselect(scan_result, FSEL_FIRST_FILE, 0);
-    while (file_handle != NULL) {
-        int name_len = fget_name(file_handle, (u8 *)file_name, sizeof(file_name));
+    idx->slots = malloc((size_t)idx->slot_cnt * sizeof(u32));
+    if (idx->seen == NULL || idx->slots == NULL) {
+        free(idx->seen);
+        free(idx->slots);
+        memset(idx, 0, sizeof(*idx));
+        return -1;
+    }
+    memset(idx->seen, 0, (size_t)key_cnt);
+    memset(idx->slots, 0, (size_t)idx->slot_cnt * sizeof(u32));
+    for (i = 0; i < key_cnt; i++) {
+        u32 h = flm_name_hash(keys[i]) & (u32)(idx->slot_cnt - 1);
 
-        if (flm_normalize_name(file_name, name_len, media_name, sizeof(media_name)) < 0) {
-            printf("Skip invalid media name: %s%s\n", path, file_name);
-        } else if (type == 1) {
-            u8 hdr[4] = {0};
-            fseek(file_handle, 0, SEEK_SET);
-            int has_riff = (fread(hdr, 1, 4, file_handle) == 4 && !memcmp(hdr, "RIFF", 4));
-            if (has_riff) {
-                if (files != NULL) {
-                    if (file_count >= max) {
-                        fclose(file_handle);
-                        fscan_release(scan_result);
-                        return -1;
-                    }
-                    strncpy(files[file_count].name, media_name, 63);
-                    files[file_count].name[63] = '\0';
-                    files[file_count].type = 1;
-                    fget_attrs(file_handle, &files[file_count].attr);
-                    fget_attr(file_handle, &files[file_count]._attr);
-                    files[file_count].fsize = (u32)flen(file_handle);
-                }
-                file_count++;
-            } else if (flm_rebuild_busy && repair_count != NULL &&
-                       *repair_count < 4) {
-                snprintf(repair_paths[*repair_count], 160, "%s%s", path, media_name);
-                (*repair_count)++;
-            }
-        } else {
-            if (files != NULL) {
-                if (file_count >= max) {
-                    fclose(file_handle);
-                    fscan_release(scan_result);
-                    return -1;
-                }
-                strncpy(files[file_count].name, media_name, 63);
-                files[file_count].name[63] = '\0';
-                files[file_count].type = 0;
-                fget_attrs(file_handle, &files[file_count].attr);
-                fget_attr(file_handle, &files[file_count]._attr);
-                files[file_count].fsize = (u32)flen(file_handle);
-            }
-            file_count++;
+        while (idx->slots[h] != 0) {
+            h = (h + 1) & (u32)(idx->slot_cnt - 1);
         }
-        fclose(file_handle);
-        file_handle = fselect(scan_result, FSEL_NEXT_FILE, 0);
+        idx->slots[h] = (u32)(i + 1);
     }
-    fscan_release(scan_result);
-    return file_count;
+    return 0;
+}
+
+static void flm_scan_idx_free(struct flm_scan_idx *idx)
+{
+    free(idx->seen);
+    free(idx->slots);
+    memset(idx, 0, sizeof(*idx));
+}
+
+/* 命中返回 key 下标, 未命中/空表返回 -1 */
+static int flm_key_idx(const struct flm_scan_idx *idx, const char *name)
+{
+    u32 h;
+    int probe;
+
+    if (idx->slots == NULL || idx->slot_cnt <= 0) {
+        return -1;
+    }
+    h = flm_name_hash(name) & (u32)(idx->slot_cnt - 1);
+    for (probe = 0; probe < idx->slot_cnt; probe++) {
+        u32 i = (h + (u32)probe) & (u32)(idx->slot_cnt - 1);
+
+        if (idx->slots[i] == 0) {
+            return -1;
+        }
+        if (strcmp(idx->keys[idx->slots[i] - 1], name) == 0) {
+            return (int)(idx->slots[i] - 1);
+        }
+    }
+    return -1;
 }
 
 //固定元数据 json(宽高/fps/时长无人消费, 本机录制格式固定): 返回 json 长度
@@ -680,13 +855,142 @@ static int flm_fill_json(const flm_scan_file_t *e, char *buf, int buf_len)
     return bytes;
 }
 
-//diff + 分段bulk写; 返回卡上文件总数(失败-1)
-static int flm_rebuild_fast(bp_db_t *db, flm_scan_file_t *files, int nfiles)
+/* 流式单扫目录: 命中哈希置 seen; 未命中填批缓冲, 满批 bulk 落库。
+ * AVI 先验 RIFF(4B), 非 RIFF 且正在重建时记入 repair_paths。
+ * 空/截断文件计数经 bad_cnt/empty_cnt 汇总, 不入库也不置 seen(残留 key 由调用方删除)。
+ * 恒返回 0: 目录不存在或无匹配文件均视作该目录 0 个文件 */
+static int flm_scan_diff_dir(bp_db_t *db, struct flm_scan_idx *idx,
+                             const char *path, const char *extension, u8 type,
+                             int *added, int *scanned,
+                             char repair_paths[][160], int *repair_count,
+                             int *bad_cnt, int *empty_cnt)
+{
+    char file_name[128] = {0};
+    char media_name[128] = {0};
+    char options[32] = {0};
+    flm_scan_file_t entry;
+    static bp_key_t bkeys[FLM_SCAN_BATCH];
+    static bp_value_t bvals[FLM_SCAN_BATCH];
+    static char bnames[FLM_SCAN_BATCH][64];
+    static char bjsons[FLM_SCAN_BATCH][256];
+    struct vfscan *scan_result;
+    FILE *file_handle;
+    int n = 0;
+    int invalid_name_cnt = 0;
+    int invalid_name_shown = 0;
+    char invalid_name_first[64] = {0};
+
+    snprintf(options, 32, "-t%s -sn", extension);
+    if (fdir_exist(path) != 0) {
+        return 0;
+    }
+    scan_result = fscan(path, options, 9);
+    if (scan_result == NULL) {
+        printf("Failed to scan path %s\n", path);
+        return 0;
+    }
+    file_handle = fselect(scan_result, FSEL_FIRST_FILE, 0);
+    while (file_handle != NULL) {
+        int name_len = fget_name(file_handle, (u8 *)file_name, sizeof(file_name));
+        struct vfs_attr attr = {0};
+        int attrs_ok = (fget_attrs(file_handle, &attr) == 0);
+        int has_riff = 1;
+        int len;
+
+        if (flm_normalize_name(file_name, name_len, media_name, sizeof(media_name)) < 0) {
+            /* 名字无效分支: file_name 未必 NUL 结尾, 一律以 name_len 为上界打印 */
+            int bad_len = (name_len > 0) ? name_len : 0;
+
+            if (bad_len > (int)sizeof(file_name)) {
+                bad_len = (int)sizeof(file_name);
+            }
+            if (invalid_name_cnt == 0) {
+                snprintf(invalid_name_first, sizeof(invalid_name_first), "%.*s", bad_len, file_name);
+            }
+            if (invalid_name_shown < FLM_BAD_NAME_SHOW_MAX) {
+                printf("Skip invalid media name: %s%.*s\n", path, bad_len, file_name);
+                invalid_name_shown++;
+            }
+            invalid_name_cnt++;
+        } else if (attrs_ok && flm_media_bad_file(file_handle, attr.fsize, type, empty_cnt)) {
+            (*bad_cnt)++;
+        } else {
+            if (type == 1) {
+                u8 hdr[4] = {0};
+
+                fseek(file_handle, 0, SEEK_SET);
+                has_riff = (fread(hdr, 1, 4, file_handle) == 4 && !memcmp(hdr, "RIFF", 4));
+                /* 热拔卡未收尾 AVI: 记待修, 扫完统一 video_rec_repair_avi */
+                if (!has_riff && flm_rebuild_busy && repair_count != NULL && *repair_count < 4) {
+                    snprintf(repair_paths[*repair_count], 160, "%s%s", path, media_name);
+                    (*repair_count)++;
+                }
+            }
+            if (has_riff) {
+                int hit;
+
+                (*scanned)++;
+                hit = flm_key_idx(idx, media_name);
+                if (hit >= 0) {
+                    idx->seen[hit] = 1;
+                } else {
+                    memset(&entry, 0, sizeof(entry));
+                    strncpy(entry.name, media_name, 63);
+                    entry.name[63] = '\0';
+                    entry.type = type;
+                    entry.attr = attr;
+                    fget_attr(file_handle, &entry._attr);
+                    entry.fsize = (u32)flen(file_handle);
+                    strncpy(bnames[n], entry.name, 63);
+                    bnames[n][63] = '\0';
+                    len = flm_fill_json(&entry, bjsons[n], 256);
+                    if (len > 0) {
+                        bkeys[n].value = bnames[n];
+                        bkeys[n].length = strlen(bnames[n]) + 1;
+                        bvals[n].value = bjsons[n];
+                        bvals[n].length = len;
+                        n++;
+                        (*added)++;
+                        if (n == (int)FLM_SCAN_BATCH) {
+                            const bp_key_t *pk = bkeys;
+                            const bp_value_t *pv = bvals;
+
+                            bp_bulk_set(db, n, &pk, &pv);
+                            n = 0;
+                        }
+                    }
+                }
+            }
+        }
+        fclose(file_handle);
+        file_handle = fselect(scan_result, FSEL_NEXT_FILE, 0);
+    }
+    if (n > 0) {
+        const bp_key_t *pk = bkeys;
+        const bp_value_t *pv = bvals;
+
+        bp_bulk_set(db, n, &pk, &pv);
+    }
+    fscan_release(scan_result);
+
+    if (invalid_name_cnt > 0) {
+        printf("[FLM] invalid media name: total=%d (shown=%d, first=\"%s\")\n",
+               invalid_name_cnt, invalid_name_shown, invalid_name_first);
+    }
+
+    return 0;
+}
+
+/* 流式增量重建: 单次目录扫描 + 名字哈希 diff; 内存只随 DB key 数增长。
+ * 返回卡上文件总数(失败 -1 ⇒ 调用方退删库全扫) */
+static int flm_rebuild_stream(bp_db_t *db, char repair_paths[][160], int *repair_count)
 {
     struct flm_key_ctx *kctx;
-    int i, j;
+    struct flm_scan_idx idx;
+    int i;
     int key_cnt = 0;
-    int added = 0, removed = 0;
+    int added = 0, removed = 0, scanned = 0;
+    int bad_cnt = 0, empty_cnt = 0;
     u32 t0 = sys_timer_get_ms();
 
     //先数 DB 键数再按需分配名字表, 不再按 1024 满额预占 64KB
@@ -705,74 +1009,39 @@ static int flm_rebuild_fast(bp_db_t *db, flm_scan_file_t *files, int nfiles)
         }
     }
     bp_get_ranges(db, "/", "z", flm_key_collect_cb, kctx);
-    if (kctx->overflow) {
+    if (kctx->overflow || flm_scan_idx_build(&idx, kctx->names, kctx->count) != 0) {
+        free(kctx->names);
+        free(kctx);
+        return -1;
+    }
+    if (flm_scan_diff_dir(db, &idx, MEDIA_VIDEO_DIR, "AVI", 1, &added, &scanned,
+                          repair_paths, repair_count, &bad_cnt, &empty_cnt) != 0 ||
+        flm_scan_diff_dir(db, &idx, MEDIA_PHOTO_DIR, "JPG", 0, &added, &scanned,
+                          repair_paths, repair_count, &bad_cnt, &empty_cnt) != 0) {
+        flm_scan_idx_free(&idx);
         free(kctx->names);
         free(kctx);
         return -1;
     }
     //DB 残留 key(卡上已无文件) → 删除, 索引错位自愈
-    for (i = 0; i < kctx->count; i++) {
-        for (j = 0; j < nfiles; j++) {
-            if (strcmp(kctx->names[i], files[j].name) == 0) {
-                break;
-            }
-        }
-        if (j == nfiles) {
-            bp_key_t k = { .value = kctx->names[i], .length = strlen(kctx->names[i]) + 1 };
+    for (i = 0; i < idx.key_cnt; i++) {
+        if (!idx.seen[i]) {
+            bp_key_t k = { .value = idx.keys[i], .length = strlen(idx.keys[i]) + 1 };
+
             bp_remove(db, &k);
             removed++;
         }
     }
-    //卡上文件: DB 无 → 待写
-    for (i = 0; i < nfiles; i++) {
-        files[i].to_write = 1;
-        for (j = 0; j < kctx->count; j++) {
-            if (strcmp(files[i].name, kctx->names[j]) == 0) {
-                files[i].to_write = 0;
-                break;
-            }
-        }
-    }
-    free(kctx->names);
-    free(kctx);
-    //分段 bulk(批缓冲固定 ~26KB, 与文件总数无关)
-    static bp_key_t bkeys[FLM_SCAN_BATCH];
-    static bp_value_t bvals[FLM_SCAN_BATCH];
-    static char bnames[FLM_SCAN_BATCH][64];
-    static char bjsons[FLM_SCAN_BATCH][256];
-    int n = 0;
-
-    for (i = 0; i < nfiles; i++) {
-        if (!files[i].to_write) {
-            continue;
-        }
-        strncpy(bnames[n], files[i].name, 63);
-        bnames[n][63] = '\0';
-        int len = flm_fill_json(&files[i], bjsons[n], 256);
-        if (len <= 0) {
-            continue;
-        }
-        bkeys[n].value = bnames[n];
-        bkeys[n].length = strlen(bnames[n]) + 1;
-        bvals[n].value = bjsons[n];
-        bvals[n].length = len;
-        n++;
-        added++;
-        if (n == (int)FLM_SCAN_BATCH) {
-            const bp_key_t *pk = bkeys;
-            const bp_value_t *pv = bvals;
-            bp_bulk_set(db, n, &pk, &pv);
-            n = 0;
-        }
-    }
-    if (n > 0) {
-        const bp_key_t *pk = bkeys;
-        const bp_value_t *pv = bvals;
-        bp_bulk_set(db, n, &pk, &pv);
+    //坏/空文件限流留痕: 每次重建合计一条, 无坏文件不打
+    if (bad_cnt > 0) {
+        printf("[FLM] skip empty media: total=%d (empty=%d)\n", bad_cnt, empty_cnt);
     }
     printf("[FLM] rebuild diff: scan=%d new=%d removed=%d ms=%u\n",
-           nfiles, added, removed, sys_timer_get_ms() - t0);
-    return nfiles;
+           scanned, added, removed, sys_timer_get_ms() - t0);
+    flm_scan_idx_free(&idx);
+    free(kctx->names);
+    free(kctx);
+    return scanned;
 }
 
 static int flm_do_scan_and_load(void)
@@ -795,24 +1064,8 @@ static int flm_do_scan_and_load(void)
         return -1;
     }
 
-    //fast: 增量重建(目录diff+免解析+bulk), 失败/超限退老路径
-    //先计数再按实际文件数分配, 不再按 1024 满额 malloc(~110KB 抢录像启动内存)
-    int n_v = flm_scan_collect(MEDIA_VIDEO_DIR, "AVI", 1, NULL, 0, NULL, NULL);
-    int n_p = flm_scan_collect(MEDIA_PHOTO_DIR, "JPG", 0, NULL, 0, NULL, NULL);
-    int total = (n_v >= 0 && n_p >= 0) ? n_v + n_p : -1;
-    if (total >= 0 && total <= (int)FLM_SCAN_MAX_FILES) {
-        flm_scan_file_t *files = malloc(sizeof(flm_scan_file_t) * (total > 0 ? total : 1));
-        if (files != NULL) {
-            int n = flm_scan_collect(MEDIA_VIDEO_DIR, "AVI", 1, files, total, repair_paths, &repair_count);
-            if (n >= 0) {
-                int n2 = flm_scan_collect(MEDIA_PHOTO_DIR, "JPG", 0, files + n, total - n, NULL, NULL);
-                if (n2 >= 0) {
-                    file_count = flm_rebuild_fast(&database_handle, files, n + n2);
-                }
-            }
-            free(files);
-        }
-    }
+    //stream: 流式增量重建(单扫目录+免解析+bulk), 失败退删库全扫老路径
+    file_count = flm_rebuild_stream(&database_handle, repair_paths, &repair_count);
 
 #if TCFG_APP_VIDEO_REC_EN
     //热拔卡收尾 AVI: 修复成功重新入库(数量少, 走老解析路径)
@@ -850,9 +1103,17 @@ static int flm_do_scan_and_load(void)
             flm_names_cache_invalidate();
             return -1;
         }
+        int bad_cnt = 0, empty_cnt = 0;
+
         file_count = 0;
-        file_count += add_files_in_path_to_database(&database_handle, MEDIA_VIDEO_DIR, "AVI");
-        file_count += add_files_in_path_to_database(&database_handle, MEDIA_PHOTO_DIR, "JPG");
+        file_count += add_files_in_path_to_database(&database_handle, MEDIA_VIDEO_DIR, "AVI",
+                      &bad_cnt, &empty_cnt);
+        file_count += add_files_in_path_to_database(&database_handle, MEDIA_PHOTO_DIR, "JPG",
+                      &bad_cnt, &empty_cnt);
+        //坏/空文件限流留痕: 与流式路径同格式, 每次重建合计一条
+        if (bad_cnt > 0) {
+            printf("[FLM] skip empty media: total=%d (empty=%d)\n", bad_cnt, empty_cnt);
+        }
         printf("[FLM] rebuild full: scan=%d ms=%u\n", file_count, sys_timer_get_ms() - t1);
     }
 
@@ -948,31 +1209,38 @@ struct flm_find_ctx {
     flm_file_t *out;
 };
 
-static int flm_find_by_idx_cb(void *arg, const bp_key_t *key, const bp_value_t *value)
+/* 过滤回调: 在库【加载 value 之前】执行, 只拿到 key。用它完成"按序号取名字":
+ * 全程返回 0 => 一个 value 都不加载 => 省掉遍历里每 key 一次的 malloc/free
+ * (实测那是 P_MEM 风暴的剩余来源: 1385 个 key => 1385 次分配)。
+ * 名字/类型/路径的填充由调用方 flm_get_entry 按 name 完成, 这里只要 name。 */
+static int flm_find_by_idx_filter(void *arg, const bp_key_t *key)
 {
     struct flm_find_ctx *ctx = (struct flm_find_ctx *)arg;
-    (void)value;
+
+    /* 顺序遍历顺手把目标前后各 N 条填进名字 LRU(零额外成本) */
+    if (ctx->current + FLM_LRU_PREFETCH_N >= ctx->target &&
+        ctx->current <= ctx->target + FLM_LRU_PREFETCH_N) {
+        flm_name_lru_put(ctx->current, key->value);
+    }
     if (ctx->current == ctx->target) {
         strncpy(ctx->out->name, key->value, sizeof(ctx->out->name) - 1);
         ctx->out->name[sizeof(ctx->out->name) - 1] = '\0';
-
-        const char *ext = strrchr(ctx->out->name, '.');
-        if (ext && (!memcmp(ext + 1, "JPG", 3) || !memcmp(ext + 1, "jpg", 3))) {
-            ctx->out->type = 0;
-            snprintf(ctx->out->path, sizeof(ctx->out->path), "%s%s", MEDIA_PHOTO_DIR, ctx->out->name);
-        } else {
-            ctx->out->type = 1;
-            snprintf(ctx->out->path, sizeof(ctx->out->path), "%s%s", MEDIA_VIDEO_DIR, ctx->out->name);
-        }
-        ctx->out->thumbnail = NULL;
-        /* bp 库约定回调返回 <0 才停止遍历 (见 bp__page_get_range).
-         * 原 return 1 不停止: current 卡在 target, 后续所有 key 都匹配
-         * 覆盖填 out, 最终返回最后一个 key (回放所有 index 都指向末张照片). */
-        return -1;
     }
     ctx->current++;
     return 0;
 }
+
+/* 范围回调: filter 恒返回 0, 本回调不会被调用; 仅为满足 API 形参 */
+static int flm_find_noop_cb(void *arg, const bp_key_t *key, const bp_value_t *value)
+{
+    (void)arg;
+    (void)key;
+    (void)value;
+    return 0;
+}
+
+// 慢路径自身也要内存, 池子紧时直接失败, 不与回放管线并发撞车
+#define FLM_SLOW_MIN_PMM   (96u * 1024u)
 
 static int flm_get_entry_slow(int index, flm_file_t *out)
 {
@@ -980,6 +1248,11 @@ static int flm_get_entry_slow(int index, flm_file_t *out)
     struct flm_find_ctx ctx;
 
     if (index < 0 || index >= g_flm.file_count || !out) {
+        return -1;
+    }
+
+    if (memory_get_size(P_MEMORY_UNUSED) < FLM_SLOW_MIN_PMM) {
+        printf("[FLM] slow skipped: pmm low\n");
         return -1;
     }
 
@@ -993,7 +1266,7 @@ static int flm_get_entry_slow(int index, flm_file_t *out)
         os_mutex_post(&g_flm.database_mutex);
         return -1;
     }
-    bp_get_ranges(&db, "/", "z", flm_find_by_idx_cb, &ctx);
+    bp_get_filtered_ranges(&db, "/", "z", flm_find_by_idx_filter, flm_find_noop_cb, &ctx);
     bp_close(&db);
     os_mutex_post(&g_flm.database_mutex);
 
@@ -1005,17 +1278,32 @@ static int flm_get_entry_slow(int index, flm_file_t *out)
 
 int flm_get_entry(int index, flm_file_t *out)
 {
+    const char *nm;
+
     if (index < 0 || index >= g_flm.file_count || !out) {
         return -1;
     }
     memset(out, 0, sizeof(*out));
 
     os_mutex_pend(&g_flm.database_mutex, 0);
-    if (!g_flm.names || g_flm.names_count != g_flm.file_count) {
-        flm_names_cache_build_locked();
-    }
-    if (g_flm.names && index < g_flm.names_count) {
+    /* 全库缓存优先: 回放模式内由 flm_names_cache_prepare 建好, 命中则零遍历、零 LRU 访问 */
+    if (g_flm.names != NULL && g_flm.names_count == g_flm.file_count && index < g_flm.names_count) {
         snprintf(out->name, sizeof(out->name), "%s", g_flm.names[index]);
+        os_mutex_post(&g_flm.database_mutex);
+        const char *cext = strrchr(out->name, '.');
+        if (cext && (!memcmp(cext + 1, "JPG", 3) || !memcmp(cext + 1, "jpg", 3))) {
+            out->type = 0;
+            snprintf(out->path, sizeof(out->path), "%s%s", MEDIA_PHOTO_DIR, out->name);
+        } else {
+            out->type = 1;
+            snprintf(out->path, sizeof(out->path), "%s%s", MEDIA_VIDEO_DIR, out->name);
+        }
+        out->thumbnail = NULL;
+        return 0;
+    }
+    nm = flm_name_lru_get(index);
+    if (nm != NULL) {
+        snprintf(out->name, sizeof(out->name), "%s", nm);
         os_mutex_post(&g_flm.database_mutex);
         const char *ext = strrchr(out->name, '.');
         if (ext && (!memcmp(ext + 1, "JPG", 3) || !memcmp(ext + 1, "jpg", 3))) {
@@ -1029,7 +1317,14 @@ int flm_get_entry(int index, flm_file_t *out)
         return 0;
     }
     os_mutex_post(&g_flm.database_mutex);
-    return flm_get_entry_slow(index, out);
+    // 未命中走慢路径(自己加锁, 已填 name/type/path/thumbnail), 拿到名字后回填 LRU
+    if (flm_get_entry_slow(index, out) != 0) {
+        return -1;
+    }
+    os_mutex_pend(&g_flm.database_mutex, 0);
+    flm_name_lru_put(index, out->name);
+    os_mutex_post(&g_flm.database_mutex);
+    return 0;
 }
 
 int flm_delete_file(const char *path)
@@ -1187,18 +1482,7 @@ int flm_get_storage_info(u32 *total_kb, u32 *free_kb, u32 *photo_cnt, u32 *video
         *free_kb = fs;
     }
 
-    /* Count by type from DB entries */
-    bp_db_t db;
-    os_mutex_pend(&g_flm.database_mutex, 0);
-    if (bp_open(&db, MEDIA_DB_PATH) == BP_OK) {
-        int total = 0;
-        bp_get_ranges(&db, "/", "z", accumulate, &total);
-        bp_close(&db);
-        /* Approximation: we don't track per-type count in DB;
-         * g_flm.file_count is total. Caller can count from entries. */
-    }
-    os_mutex_post(&g_flm.database_mutex);
-
+    // 起播路径 flm_get_entry 取同一把 database_mutex; 此处持锁做无人读的全库遍历会把它挡在锁外约 27s
     /* Count by iterating entries via flm_get_entry */
     int i;
     if (photo_cnt) {

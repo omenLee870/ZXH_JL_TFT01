@@ -112,7 +112,7 @@ int vstream_sender_file_deinit();
 #define VSTREAM_MSG_RECV                    1
 
 #define STREAM_RECV_BUF_SIZE               650
-#define STREAM_RECV_BUF_NUM				   10		//more than 6k
+#define STREAM_RECV_BUF_NUM				   64		//more than 6k
 #if KWT_USE_H264
 #define STREAM_PARSE_BUF_SIZE               (64 * 1024)            /* H264 reassembly buffer */
 #else

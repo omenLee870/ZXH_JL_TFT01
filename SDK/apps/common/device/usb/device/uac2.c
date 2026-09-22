@@ -34,11 +34,12 @@
 
 /* Windows UAC2驱动要求Clock Source RANGE至少包含2个子范围才能正常枚举，
  * 单采样率下Windows会请求完采样率表后直接suspend设备。
- * 请将SPK_AUDIO_RATE_NUM和MIC_AUDIO_RATE_NUM至少配置为2。 */
-#if SPK_AUDIO_RATE_NUM < 2
+ * 请将SPK_AUDIO_RATE_NUM和MIC_AUDIO_RATE_NUM至少配置为2。
+ * 已由使能宏关闭的一侧不参与枚举，不做检查。 */
+#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE && (SPK_AUDIO_RATE_NUM < 2)
 #error "UAC2: SPK_AUDIO_RATE_NUM must be at least 2 (Windows UAC2 driver requires >=2 sample rates)"
 #endif
-#if MIC_AUDIO_RATE_NUM < 2
+#if TCFG_USB_SLAVE_AUDIO_MIC_ENABLE && (MIC_AUDIO_RATE_NUM < 2)
 #error "UAC2: MIC_AUDIO_RATE_NUM must be at least 2 (Windows UAC2 driver requires >=2 sample rates)"
 #endif
 
@@ -50,14 +51,14 @@
 const struct uac_stream_config g_stream_configs[UAC_MAX_STREAMS] = {
     {
         .spk_rates     = {SPK_AUDIO_RATE_1, SPK_AUDIO_RATE_2, SPK_AUDIO_RATE_3},
-        .spk_rate_num  = SPK_AUDIO_RATE_NUM,
+        .spk_rate_num  = UAC_CFG_SPK_RATE_NUM(SPK_AUDIO_RATE_NUM),
         .spk_res       = SPK_AUDIO_RES,
         .spk_res_2     = SPK_AUDIO_RES_2,
         .spk_channels  = SPK_CHANNEL,
         .spk_channel_config = SPK_CHANNEL_CONFIG_VAL,
         .spk_controls  = {0},         /* filled by builder */
         .mic_rates     = {MIC_AUDIO_RATE_1, MIC_AUDIO_RATE_2, MIC_AUDIO_RATE_3},
-        .mic_rate_num  = MIC_AUDIO_RATE_NUM,
+        .mic_rate_num  = UAC_CFG_MIC_RATE_NUM(MIC_AUDIO_RATE_NUM),
         .mic_res       = MIC_AUDIO_RES,
         .mic_res_2     = MIC_AUDIO_RES_2,
         .mic_channels  = MIC_CHANNEL,
@@ -71,14 +72,14 @@ const struct uac_stream_config g_stream_configs[UAC_MAX_STREAMS] = {
 #if UAC_MAX_STREAMS >= 2
     {
         .spk_rates     = {UAC_STREAM_1_SPK_RATE_1, UAC_STREAM_1_SPK_RATE_2, UAC_STREAM_1_SPK_RATE_3},
-        .spk_rate_num  = UAC_STREAM_1_SPK_RATE_NUM,
+        .spk_rate_num  = UAC_CFG_SPK_RATE_NUM(UAC_STREAM_1_SPK_RATE_NUM),
         .spk_res       = UAC_STREAM_1_SPK_RES,
         .spk_res_2     = UAC_STREAM_1_SPK_RES_2,
         .spk_channels  = UAC_STREAM_1_SPK_CHANNELS,
         .spk_channel_config = UAC_STREAM_1_SPK_CHANNEL_CONFIG,
         .spk_controls  = {0},
         .mic_rates     = {0},
-        .mic_rate_num  = UAC_STREAM_1_MIC_RATE_NUM,
+        .mic_rate_num  = UAC_CFG_MIC_RATE_NUM(UAC_STREAM_1_MIC_RATE_NUM),
         .mic_res       = 0,
         .mic_res_2     = 0,
         .mic_channels  = 0,

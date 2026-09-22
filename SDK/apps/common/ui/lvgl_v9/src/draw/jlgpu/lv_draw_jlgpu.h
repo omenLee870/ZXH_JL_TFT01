@@ -96,6 +96,13 @@ typedef struct _lv_jlgpu_ctx_t {
     void *cur_task;//gpu任务基地址
     jlgpu_ops_t jlgpu_ops;
     uint8_t jlgpu_task_num;      //GPU任务链节点数
+    /*每个节点收集时的(混合模式, 全局透明度)快照, 页面特效做页级调光后按它精确还原。
+     * 收集期各绘制源按元素自身参数写这两个字段(文字恒 SRC_OVER/128, 图片按 dsc->blend_mode,
+     * 透明度取 dsc->opa/2), 各不相同; 页级特效只能整链覆盖式改写, 没有快照就还原不回去。
+     * 每项 1 个 uint16_t: bit0..3 = blend_mode, bit8..15 = global_alpha。
+     * 生命周期与任务链一致: 由 lv_jlgpu_task_list_snapshot() 分配, 随任务链/ctx 一起释放。*/
+    uint16_t *node_snap;
+    uint8_t node_snap_num;       //快照覆盖的节点数
     /*lv_jlgpu_global_sfr_t global_sfr;*/
 } lv_jlgpu_ctx_t;
 
@@ -233,6 +240,10 @@ void lv_draw_jlgpu_line(lv_draw_task_t *t, const lv_draw_line_dsc_t *dsc);
 void lv_draw_jlgpu_box_shadow(lv_draw_task_t *t, const lv_draw_box_shadow_dsc_t *dsc, const lv_area_t *coords);
 #endif
 
+#if (LV_USE_DRAW_JLGPU_VECTOR_ENABLE == 1)
+void lv_draw_jlgpu_vector(lv_draw_task_t *t, const lv_draw_vector_dsc_t *dsc, const lv_area_t *coords);
+#endif
+
 
 lv_jlgpu_ctx_t *lv_get_base_jlgpu_ctx(void);
 void lv_jlgpu_ctx_init(lv_jlgpu_ctx_t *jlgpu_ctx);
@@ -250,10 +261,29 @@ void lv_jlgpu_draw_buf_clear(lv_draw_buf_t *draw_buf, const lv_area_t *a);
 void lv_jlgpu_clean_buf(lv_draw_jlgpu_unit_t *unit, uint8_t *draw_buf, uint8_t buf_format, const lv_area_t *a);
 int lv_page_effect_manager(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t *unit, const lv_area_t *screen_area, uint8_t *px_map);
 void lv_page_effect_set_page_index(lv_screen_load_anim_t page_mode, uint32_t page_id, uint32_t page_index);
+/* 注册 sticky 特效(按面旋转那四个: CUBE / HEXAGON / HEXAGON_REFLECTION / LRB_MIRROR)
+ * 旋转时露出来的背景。obj 为 NULL = 回落原来的纯黑底。
+ * obj 会被整屏收集进一个 ctx, 固定不动、不跟多面体旋转。
+ * 每次 effect_enter 都会重新收集, 所以中途换图(lv_image_set_src)立即生效, 不必重注册。
+ * 不要传页面自己的子控件(会被当页面内容一起收进页面 ctx, 造成重复绘制);
+ * 也不要给 obj 加透明度/transform/圆角裁剪(会走离屏 layer 路径, 链上引用会被释放的临时 buf),建议挂在lv_layer_bottom()。
+ * manager 只存裸指针不持有对象: 销毁 obj 前必须先本函数传 NULL。 */
+void lv_page_effect_set_bg_obj(lv_obj_t *obj);
 
 uint8_t lv_jlgpu_get_gxdma_bpp(uint8_t out_format);
 #if LV_USE_DRAW_JLGPU_LIST
 void lv_jlgpu_add_task_node(lv_draw_jlgpu_unit_t *unit, void *new_task);
+void lv_jlgpu_insert_task_head(lv_draw_jlgpu_unit_t *unit, void *new_task);
+/* 链表节点数(当帧)。链表的顺序就是绘制顺序: 下标 0 最先画 = 最底层 */
+uint16_t lv_jlgpu_task_list_count(lv_draw_jlgpu_unit_t *unit);
+/* 按层号取节点, 越界返回 NULL。拿到的指针只在当帧有效, 不要跨帧保存 */
+void *lv_jlgpu_task_list_get(lv_draw_jlgpu_unit_t *unit, uint16_t layer);
+/* 在 anchor_task 之前/之后插入。anchor_task 为 NULL 时分别表示"追加到尾部"/"插到头部",
+ * anchor_task 不在链表上时不动(防接坏链表) */
+void lv_jlgpu_insert_task_before(lv_draw_jlgpu_unit_t *unit, void *anchor_task, void *new_task);
+void lv_jlgpu_insert_task_after(lv_draw_jlgpu_unit_t *unit, void *anchor_task, void *new_task);
+/* 按层号插入: layer=0 插到最底层, layer 超出节点数则追加到最上层 */
+void lv_jlgpu_insert_task_at(lv_draw_jlgpu_unit_t *unit, uint16_t layer, void *new_task);
 uint8_t *lv_jlgpu_attach_buf_list_add(lv_draw_jlgpu_unit_t *unit, uint8_t *src_buf, uint32_t buf_size);
 void lv_jlgpu_attach_buf_list_free(lv_draw_jlgpu_unit_t *unit);
 void lv_jlgpu_task_list_free(lv_draw_jlgpu_unit_t *unit);
@@ -262,6 +292,26 @@ void lv_jlgpu_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint32_t bg
 void lv_jlgpu_sfr_set_surface(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint8_t *out_buf, uint8_t out_format);
 void lv_jlgpu_sfr_top_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint16_t pingpong_buf_w, uint16_t pingpong_buf_h, uint8_t *pingpong_buf0, uint8_t *pingpong_buf1);
 void lv_jlgpu_task_list_run(lv_draw_jlgpu_unit_t *unit);
+/*设置GPU任务链上所有节点的全局透明度(0~128, 128 为不透明)*/
+void lv_jlgpu_task_list_set_global_alpha(lv_jlgpu_ctx_t *jlgpu_ctx, uint8_t alpha);
+/*设置GPU任务链上所有节点的混合模式(取值见 jlgpu_blendmode_t), 用完需恢复收集时的模式*/
+void lv_jlgpu_task_list_set_blend_mode(lv_jlgpu_ctx_t *jlgpu_ctx, jlgpu_blendmode_t blend_mode);
+/* 记下任务链上每个节点当前的(混合模式, 全局透明度), 供 lv_jlgpu_task_list_restore() 精确还原。
+ * 整链覆盖式改写是不可逆的: 链上各节点的值本来互不相同(文字 SRC_OVER/128、图片按 dsc->blend_mode、
+ * 透明度取 dsc->opa/2), 一旦被页级特效统一覆盖就再也恢复不出来。
+ * 必须在 lv_obj_redraw 收集完成后、任何页级改写之前调用; 重复调用只在首次生效。 */
+void lv_jlgpu_task_list_snapshot(lv_jlgpu_ctx_t *jlgpu_ctx);
+/* 按 lv_jlgpu_task_list_snapshot() 记下的原值逐节点还原; 无快照时不做任何事 */
+void lv_jlgpu_task_list_restore(lv_jlgpu_ctx_t *jlgpu_ctx);
+/* 与页级透明度相乘: 节点最终 alpha = 收集时的 alpha * scale / 128。
+ * 比 lv_jlgpu_task_list_set_global_alpha() 多保留一层元素自身的 dsc->opa, 页级特效应当用它。 */
+void lv_jlgpu_task_list_scale_global_alpha(lv_jlgpu_ctx_t *jlgpu_ctx, uint8_t scale);
+/* 只把收集时混合模式为 JLGPU_BLEND_SRC(直接覆盖, 即不参与混合)的节点改成 SRC_OVER, 其余保持原样。
+ * 页级交叉淡入淡出要的是"半透明地叠在底图上", 而填充类节点收集时写死 SRC, 不改就看不到渐变;
+ * 但文字(SRC_OVER)和按 dsc->blend_mode 走的图片节点必须原样保留。 */
+void lv_jlgpu_task_list_set_blend_src_over(lv_jlgpu_ctx_t *jlgpu_ctx);
+/* 释放快照(不碰任务链), 与任务链释放路径配对 */
+void lv_jlgpu_task_list_snapshot_free(lv_jlgpu_ctx_t *jlgpu_ctx);
 void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint16_t in_stride, uint8_t *out_buf, uint8_t in_format, uint8_t out_format, uint8_t out_jstc_en, uint8_t out_rotate);
 void lv_jlgpu_list_uninit(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint8_t *out_buf, uint8_t out_format);
 void lv_jlgpu_mem_pool_init(lv_draw_jlgpu_unit_t *unit, uint8_t *pool_buf, uint16_t buf_size);
@@ -282,6 +332,14 @@ void jlgpu_hw_sfr_register_dump(void);
 int lv_jlgpu_pnd_sem_clr(void);
 void lv_jlgpu_mutex_pend(void);
 void lv_jlgpu_mutex_post(void);
+
+/* 推屏期 GPU 独占门(见 lv_draw_jlgpu.c 里的说明)
+ * jlgpu_gpu_gate_*   : 渲染侧"立即绘制"段,内部已由 lv_jlgpu_ctx_init/uninit 调用
+ * jlgpu_push_gate_*  : 推屏侧,在 lcd->draw 两侧调用 */
+void jlgpu_gpu_gate_enter(void);
+void jlgpu_gpu_gate_leave(void);
+void jlgpu_push_gate_enter(void);
+void jlgpu_push_gate_leave(void);
 
 #if LV_USE_DRAW_JLGPU_LIST == 2
 void lv_draw_jlgpu_unit_swap(void);

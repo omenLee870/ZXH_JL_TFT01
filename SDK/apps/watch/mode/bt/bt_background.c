@@ -319,6 +319,11 @@ static int bt_background_btstack_event_filter(struct bt_event *event)
 #endif
         break;
     case BT_STATUS_CALL_VOL_CHANGE:
+
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+        // 转发给原 handler(phone_call.c)处理, 用于智能眼镜上报通话音量到 App
+        ret = BACKGROUND_EVENT_ORIGINAL_DEAL;
+#endif
         break;
     // 按原方式处理的命令
     default:

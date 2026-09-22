@@ -11,7 +11,9 @@
 #include "rcsp_update.h"
 #include "file_transfer.h"
 #include "audio_video_control.h"
+#include "translator/rcsp_translator.h"
 #include "rcsp_trace.h"
+#include "ai_dialogue_control.h"
 #if	(defined CONFIG_DEBUG_RECORD_ENABLE && CONFIG_DEBUG_RECORD_ENABLE)
 #include "asm/debug_record.h"
 #endif
@@ -52,6 +54,13 @@ void rcsp_cmd_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len, u16 b
 #endif
 
     switch (OpCode) {
+#if RCSP_TRANSLATOR_ENABLE
+    case JL_OPCODE_APP_RECORDING:
+    case JL_OPCODE_APP_RECORD_END:
+        rcsp_translator_cmd_response(OpCode, status, ble_con_handle,
+                                     spp_remote_addr);
+        break;
+#endif
 #if TCFG_DEV_MANAGER_ENABLE
     case JL_OPCODE_FILE_TRANSFER_END:
         rcsp_file_transfer_download_end(status, data, len);
@@ -77,6 +86,15 @@ void rcsp_cmd_respone(void *priv, u8 OpCode, u8 status, u8 *data, u16 len, u16 b
     case JL_OPCODE_AUDIO_VIDEO_CONTROL:
         rcsp_audio_video_cmd_response(status, data, len);
         break;
+        /*
+         * 0x32 AI 操作应答: 与 rcsp_cmd_recieve.c 的入口优先级保持一致,
+         * 保证命令与应答由同一套状态机处理, 不出现重复 case。
+         */
+#if RCSP_AI_DIALOGUE_ENABLE
+    case JL_OPCODE_AI_DIAL:
+        rcsp_ai_dialogue_cmd_response(status, data, len);
+        break;
+#endif
     default:
         break;
     }

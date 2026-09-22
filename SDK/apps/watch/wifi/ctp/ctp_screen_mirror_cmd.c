@@ -310,13 +310,26 @@ static int cmd_put_date_time(void *priv, char *content)
     return 0;
 }
 
-int cmd_put_ota_download_progress(int download_len, int total, int status)
+static int cmd_put_ota_progress_notify(int download_len, int total, int status, int err_code)
 {
     char buf[128];
-    snprintf(buf, sizeof(buf), "downloaded:%d,total:%d,status:%d", download_len, total, status);
-    CTP_CMD_COMBINED(NULL, 0, "OTA_DOWNLOAD_PROGRESS", "NOTIFY", buf);
+    char error_field[32] = "";
+    if (status == 2) {
+        snprintf(error_field, sizeof(error_field), ",err_code:%d", err_code);
+    }
+    snprintf(buf, sizeof(buf), "downloaded:%d,total:%d,status:%d%s",
+             download_len, total, status, error_field);
+    return CTP_CMD_COMBINED(NULL, CTP_NO_ERR, "OTA_DOWNLOAD_PROGRESS", "NOTIFY", buf);
+}
 
-    return 0;
+int cmd_put_ota_download_progress(int download_len, int total, int status)
+{
+    return cmd_put_ota_progress_notify(download_len, total, status, 0);
+}
+
+int cmd_put_ota_download_error(int download_len, int total, int err_code)
+{
+    return cmd_put_ota_progress_notify(download_len, total, 2, err_code);
 }
 
 
@@ -329,3 +342,4 @@ const struct ctp_map_entry ctp_screen_mirror_cmd_tab[] SEC_USED(.ctp_screen_mirr
 };
 
 #endif
+

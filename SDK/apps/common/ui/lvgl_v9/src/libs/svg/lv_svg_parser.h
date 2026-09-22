@@ -33,6 +33,8 @@ typedef struct {
     char *ignore_name;
     uint32_t ignore_len;
     int32_t dpi;
+    float viewport_width;   /**< root <svg> width, base for '%' lengths on the x axis */
+    float viewport_height;  /**< root <svg> height, base for '%' lengths on the y axis */
     lv_svg_node_t *doc_root;
     lv_svg_node_t *cur_node;
 } _lv_svg_parser_t;

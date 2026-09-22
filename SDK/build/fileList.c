@@ -499,6 +499,111 @@ objs += \
 
 
 
+#if EXPORT_LE_AUDIO_SUPPORT
+
+objs += \
+	$(ROOT)/apps/common/le_audio/big.o
+
+objs += \
+	$(ROOT)/apps/common/le_audio/cig.o
+
+objs += \
+	$(ROOT)/apps/common/le_audio/wireless_trans_manager.o
+
+#endif
+
+
+#if CONFIG_VIDEO_ENABLE
+
+
+
+objs += \
+	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/avilib/ -name '*.c' -print)) \
+
+objs += \
+	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/libmov/src/libmov/ -name '*.c' -print)) \
+	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/libmov/src/codec/ -name '*.c' -print)) \
+	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/libmov/api/ -name '*.c' -print)) \
+
+objs += \
+	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/mpi_app/ -name '*.c' -print)) \
+
+objs += \
+	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/mpi_demo/ -name '*.c' -print)) \
+
+
+
+#endif
+
+
+
+
+#if CONFIG_LV9_ENABLE
+
+
+
+objs += \
+	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/ui/lvgl_v9/src -name '*.c' -print)) \
+	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/ui/lvgl_v9/examples -name '*.c' -print)) \
+    $(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/ui/lvgl_v9/demos -name '*.c' -print)) \
+
+objs += \
+	$(ROOT)/apps/common/ui/lvgl_v9/lvgl_v9_main.o \
+
+
+
+#endif
+
+
+
+
+#if CONFIG_LV9_ENABLE
+
+
+
+objs += \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/autofit/autofit.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftbase.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftsystem.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftbitmap.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftdebug.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftglyph.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftinit.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftmm.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftstroke.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/bdf/bdf.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/cache/ftcache.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/cff/cff.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/cid/type1cid.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/gzip/ftgzip.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/lzw/ftlzw.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/pcf/pcf.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/pfr/pfr.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/psaux/psaux.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/pshinter/pshinter.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/psnames/psnames.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/raster/raster.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/sdf/sdf.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/sfnt/sfnt.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/smooth/smooth.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/svg/svg.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/truetype/truetype.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/type1/type1.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/type42/type42.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/winfonts/winfnt.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/bzip2/ftbzip2.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/dlg/dlgwrap.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/gxvalid/gxvalid.o \
+	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/otvalid/otvalid.o \
+
+
+
+
+#endif
+
+
+
+
 
 
 objs += \
@@ -583,6 +688,7 @@ objs += \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/device_info/device_status_cmd/rcsp_music_func.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/device_info/device_status_cmd/rcsp_linein_func.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/device_info/device_status_cmd/rcsp_bt_func.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/device_info/device_status_cmd/rcsp_pc_func.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/rcsp_update/rcsp_update.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/rcsp_update/rcsp_update_tws.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/rcsp_update/rcsp_ch_loader_download.o \
@@ -606,6 +712,11 @@ objs += \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/watch_expand/rcsp_common_info_res_file_handler.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/stream_media/stream_media.o \
 	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/stream_media/audio_video_control.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/stream_media/ai_dialogue_control.o
+
+objs += \
+	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/translator/rcsp_translator.o \
+	$(ROOT)/apps/common/third_party_profile/jieli/rcsp/server/functions/translator/rcsp_translator_audio.o
 
 
 objs += \
@@ -788,6 +899,14 @@ objs += \
 #endif
 
 objs += \
+	$(ROOT)/apps/common/device/usb/device/xbox360.o \
+
+
+objs += \
+	$(ROOT)/apps/common/device/usb/device/hid_kbmouse.o \
+
+
+objs += \
 		$(ROOT)/apps/common/device/usb/device/usb_test_device.o \
 		$(ROOT)/apps/common/device/usb/host/usb_test_host.o \
 
@@ -800,111 +919,6 @@ objs += \
 #endif
 
 
-
-
-#if CONFIG_LV9_ENABLE
-
-
-
-objs += \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/autofit/autofit.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftbase.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftsystem.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftbitmap.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftdebug.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftglyph.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftinit.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftmm.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/base/ftstroke.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/bdf/bdf.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/cache/ftcache.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/cff/cff.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/cid/type1cid.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/gzip/ftgzip.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/lzw/ftlzw.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/pcf/pcf.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/pfr/pfr.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/psaux/psaux.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/pshinter/pshinter.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/psnames/psnames.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/raster/raster.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/sdf/sdf.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/sfnt/sfnt.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/smooth/smooth.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/svg/svg.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/truetype/truetype.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/type1/type1.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/type42/type42.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/winfonts/winfnt.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/bzip2/ftbzip2.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/dlg/dlgwrap.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/gxvalid/gxvalid.o \
-	$(ROOT)/apps/common/ui/lvgl_v9/freetype/src/otvalid/otvalid.o \
-
-
-
-
-#endif
-
-
-
-
-#if CONFIG_LV9_ENABLE
-
-
-
-objs += \
-	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/ui/lvgl_v9/src -name '*.c' -print)) \
-	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/ui/lvgl_v9/examples -name '*.c' -print)) \
-    $(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/ui/lvgl_v9/demos -name '*.c' -print)) \
-
-objs += \
-	$(ROOT)/apps/common/ui/lvgl_v9/lvgl_v9_main.o \
-
-
-
-#endif
-
-
-
-
-#if CONFIG_VIDEO_ENABLE
-
-
-
-objs += \
-	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/avilib/ -name '*.c' -print)) \
-
-objs += \
-	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/libmov/src/libmov/ -name '*.c' -print)) \
-	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/libmov/src/codec/ -name '*.c' -print)) \
-	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/libmov/api/ -name '*.c' -print)) \
-
-objs += \
-	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/mpi_app/ -name '*.c' -print)) \
-
-objs += \
-	$(patsubst %.c, %.o, $(shell find $(ROOT)/apps/common/video/mpi_demo/ -name '*.c' -print)) \
-
-
-
-#endif
-
-
-
-
-#if EXPORT_LE_AUDIO_SUPPORT
-
-objs += \
-	$(ROOT)/apps/common/le_audio/big.o
-
-objs += \
-	$(ROOT)/apps/common/le_audio/cig.o
-
-objs += \
-	$(ROOT)/apps/common/le_audio/wireless_trans_manager.o
-
-#endif
 
 
 
@@ -931,8 +945,13 @@ objs += \
 #if EXPORT_PLATFORM_AUDIO_DEMO
 objs += \
 	  $(ROOT)/audio/cpu/br33/audio_demo/audio_dac_demo.o \
+	  $(ROOT)/audio/cpu/br33/anpu_demo/anpu_example.o \
+	  $(ROOT)/audio/cpu/br33/anpu_demo/anpu_performance_test.o \
+
+objs += \
 	  $(ROOT)/audio/cpu/br33/audio_demo/audio_adc_demo.o \
 	  $(ROOT)/audio/cpu/br33/audio_demo/audio_adc_pt.o \
+
 
 #endif
 
@@ -998,8 +1017,11 @@ objs += \
     $(ROOT)/apps/watch/video/transfer/vstream_receiver.o \
     $(ROOT)/apps/watch/video/transfer/vstream_sender.o \
     $(ROOT)/apps/watch/video/transfer/fps_counts.o \
-    $(ROOT)/apps/watch/video/transfer/kid_wt_video.o \
-    $(ROOT)/apps/watch/video/transfer/audio_app.o
+    $(ROOT)/apps/watch/video/transfer/audio_app.o \
+    $(ROOT)/apps/watch/video/transfer/kid_page_uart.o
+
+objs += \
+    $(ROOT)/apps/watch/video/transfer/kid_wt_video.o
 
 
 objs += \
@@ -1041,6 +1063,111 @@ objs += \
 objs += \
 	$(ROOT)/apps/watch/net/net_event.o \
 
+
+
+
+#if CONFIG_LV9_ENABLE
+
+#if EXPORT_KID_CAMERA_LVGL_APP_CODE_ENABLE
+
+
+objs += \
+    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/custom -name '*.c' -print)) \
+    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/generated -name '*.c' -print)) \
+    $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/ui_action.o \
+
+
+
+
+#endif
+
+#endif
+
+
+
+
+#if CONFIG_LV9_ENABLE
+
+#if EXPORT_WATCH_LVGL_APP_CODE_ENABLE
+
+
+objs += \
+    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/watch_320x385_v1/custom -name '*.c' -print)) \
+    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/watch_320x385_v1/generated -name '*.c' -print)) \
+    $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/watch_320x385_v1/ui_action.o \
+
+
+
+
+#endif
+
+#endif
+
+
+#if CONFIG_LV9_ENABLE
+
+#if EXPORT_DASHBOARD_LVGL_APP_CODE_ENABLE
+
+
+objs += \
+    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom -name '*.c' -print)) \
+    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated -name '*.c' -print)) \
+    $(ROOT)/apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/ui_action.o \
+
+
+
+
+#endif
+
+#endif
+
+
+
+#if CONFIG_JLUI_ENABLE
+
+#if EXPORT_CSC_JLUI_APP_CODE_ENABLE
+
+
+objs += \
+        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/language_text.o \
+        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_bg_manage.o \
+        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_charging.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_eq.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_find_earphone.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_language_select.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_lock_select.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_music.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_denoise.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_phone_call_status.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_setting.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_take_picture.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_topbar.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_volue_controls.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_weather.o \
+        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_cube.o \
+        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_cube_reflection.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_football_menu.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_hexagon.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_hexagon_reflection.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_dial.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_menu_list.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_set.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_menu_manage.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_alarm_clock.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_time_set.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/smartbox_info_manager.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_upgrade.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_dial_sel.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_sd_music.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_bt_emitter.o \
+		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_notice.o \
+
+
+
+
+#endif
+
+#endif
 
 
 
@@ -1123,109 +1250,4 @@ objs += \
 
 #endif
 
-
-
-
-#if CONFIG_JLUI_ENABLE
-
-#if EXPORT_CSC_JLUI_APP_CODE_ENABLE
-
-
-objs += \
-        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/language_text.o \
-        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_bg_manage.o \
-        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_charging.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_eq.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_find_earphone.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_language_select.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_lock_select.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_music.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_denoise.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_phone_call_status.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_setting.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_take_picture.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_topbar.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_volue_controls.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_weather.o \
-        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_cube.o \
-        $(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_cube_reflection.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_football_menu.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_hexagon.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_hexagon_reflection.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_dial.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_menu_list.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_set.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_menu_manage.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_alarm_clock.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_time_set.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/smartbox_info_manager.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_upgrade.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_dial_sel.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_sd_music.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_bt_emitter.o \
-		$(ROOT)/apps/watch/ui/jlui_app/STYLE_CSC_PUBLIC_MOLDS/ui_notice.o \
-
-
-
-
-#endif
-
-#endif
-
-
-
-#if CONFIG_LV9_ENABLE
-
-#if EXPORT_KID_CAMERA_LVGL_APP_CODE_ENABLE
-
-
-objs += \
-    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/custom -name '*.c' -print)) \
-    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/generated -name '*.c' -print)) \
-    $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/ui_action.o \
-
-
-
-
-#endif
-
-#endif
-
-
-
-
-#if CONFIG_LV9_ENABLE
-
-#if EXPORT_WATCH_LVGL_APP_CODE_ENABLE
-
-
-objs += \
-    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/watch_320x385_v1/custom -name '*.c' -print)) \
-    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/watch_320x385_v1/generated -name '*.c' -print)) \
-    $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/watch_320x385_v1/ui_action.o \
-
-
-
-
-#endif
-
-#endif
-
-
-#if CONFIG_LV9_ENABLE
-
-#if EXPORT_DASHBOARD_LVGL_APP_CODE_ENABLE
-
-
-objs += \
-    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom -name '*.c' -print)) \
-    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated -name '*.c' -print)) \
-    $(ROOT)/apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/ui_action.o \
-
-
-
-
-#endif
-
-#endif
 

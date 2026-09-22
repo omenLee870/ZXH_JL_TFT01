@@ -20,6 +20,7 @@
 #include "app_main.h"
 #include "ui/ui_api.h"
 #include "ui_manage.h"
+#include "rcsp_device_status.h"
 
 #define LOG_TAG_CONST       PC
 #define LOG_TAG             "[PC]"
@@ -64,6 +65,18 @@ static int app_pc_check(void)
         return true;
     }
     return false;
+}
+
+//*----------------------------------------------------------------------------*/
+/**@brief    pc 从机在线状态查询  (3.3.1.8 Bit2)
+  @param    无
+  @return   1 在线, 0 下线
+  @note
+ */
+/*----------------------------------------------------------------------------*/
+u8 pc_get_online_status(void)
+{
+    return app_pc_check() ? 1 : 0;
 }
 
 //*----------------------------------------------------------------------------*/
@@ -184,6 +197,12 @@ static void app_pc_init()
     pc_task_start();
 #endif
     app_send_message(APP_MSG_ENTER_MODE, APP_MODE_PC);
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+    /* ① 设备自主切到 PC 从机模式, 主动推送模式变化(0x09/type:0xFF/attr:0x06/mode:0x09) */
+    function_change_inform(APP_PC_TASK, 0);
+    /* ② 进入 PC 从机模式向app上报在线状态(0x09/type:0x09/attr:0x02/Bit2) */
+    rcsp_pc_online_status_update();
+#endif
 #if TCFG_PC_MODE_LOCK_UI_ENABLE
     UI_WINDOW_PREEMPTION_POSH(ID_WINDOW_PC	, NULL, NULL, UI_WINDOW_PREEMPTION_TYPE_PC);
 #endif
@@ -196,13 +215,19 @@ static void app_pc_init()
   @note
  */
 /*----------------------------------------------------------------------------*/
-static void app_pc_exit()
+static void app_pc_exit(u8 next_mode)
 {
 #if TCFG_PC_MODE_LOCK_UI_ENABLE
     UI_WINDOW_PREEMPTION_POP(ID_WINDOW_PC);
 #endif
     pc_task_stop();
     app_audio_set_volume(APP_AUDIO_STATE_MUSIC, __this->volume, 1);
+#if (defined(TCFG_AI_GLASSES_SPECIAL_ENABLE)) && TCFG_AI_GLASSES_SPECIAL_ENABLE
+    /* 退出 PC 从机模式向app上报下线状态(0x09/type:0x09/attr:0x02/Bit2) */
+    rcsp_pc_online_status_update();
+    /* ⑦ 切回目标模式(通常为蓝牙), 主动推送模式变化(0x09/type:0xFF/attr:0x06) */
+    function_change_inform(next_mode, 0);
+#endif
 #if (TCFG_DEC2TWS_ENABLE)
     bt_tws_sync_volume();
 #endif
@@ -237,7 +262,7 @@ struct app_mode *app_enter_pc_mode(int arg)
         app_default_msg_handler(msg);
     }
 
-    app_pc_exit();
+    app_pc_exit(next_mode->name);
 
     return next_mode;
 }

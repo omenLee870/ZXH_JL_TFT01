@@ -75,6 +75,7 @@ lv_indev_t *indev_button;
 static int32_t encoder_diff;
 static lv_indev_state_t encoder_state;
 static int32_t g_first_touch_x = 0; //记录每次触摸首次按下坐标
+static int32_t g_first_touch_y = 0; //记录每次触摸首次按下坐标(y)
 
 /**********************
  *      MACROS
@@ -427,6 +428,7 @@ _GET_DATA_DONE:
     if (status && !g_prev_touch_status)
     {
         g_first_touch_x = data->point.x;
+        g_first_touch_y = data->point.y;
     }
     g_prev_touch_status = status;
     if (status)
@@ -450,6 +452,12 @@ _GET_DATA_DONE:
 int32_t lv_port_get_first_touch_x(void)
 {
     return g_first_touch_x;
+}
+
+/*返回本次触摸首次按下的y坐标*/
+int32_t lv_port_get_first_touch_y(void)
+{
+    return g_first_touch_y;
 }
 
 /*Return true is the touchpad is pressed*/
@@ -546,10 +554,24 @@ _WEAK_ int ui_scr_key_event_handler_ext(struct key_event *event)
     return 1;
 }
 
+_WEAK_ bool lvgl_key_down_consumed(struct key_event *event)
+{
+    //按下(DOWN)事件是否被页面直接消费: 返回true时不再注入LVGL组导航。
+    //默认false(维持各屏原有CLICK导航); 游戏玩法页在 custom/ui_action_game.c 中
+    //强实现本函数, 把合成DOWN转给正在玩的游戏(sokoban_key/snake_game_key)。
+    return false;
+}
+
 
 /* UI页面事件处理函数 */
 static int ui_scr_key_event_handler(struct key_event *key, u8 long_handled)
 {
+    //按下(DOWN)事件先让页面直接消费(游戏玩法方向键等): 消费掉就不再注入LVGL组导航。
+    //lvgl_key_down_consumed 为 _WEAK_, 默认 false; 游戏玩法页在 custom/ui_action_game.c
+    //强实现, 把合成DOWN转给正在玩的游戏(sokoban_key/snake_game_key)后返回 true。
+    if (key->event == KEY_ACTION_LVGL_DOWN && lvgl_key_down_consumed(key)) {
+        return 1;
+    }
 
 #if 1
     //有注册页面注册函数

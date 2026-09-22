@@ -37,9 +37,16 @@ typedef enum {
  *==============================================================================*/
 #define VIDEO_DEC_THUMB_TILE_W        96   /* 格占位区 96x64 */
 #define VIDEO_DEC_THUMB_TILE_H        64
-/* RGB565 行宽/总字节(96x64x2); NV12 直显暂缓见 video_dec.c */
+/* NV12 直显测试开关: 1=复现 jlgpu 渲染侧滞留物理池问题(2026-09-07), 0=现网 RGB565 */
+#define VIDEO_DEC_TILE_NV12_TEST      0
+#if VIDEO_DEC_TILE_NV12_TEST
+#define VIDEO_DEC_THUMB_TILE_STRIDE   VIDEO_DEC_THUMB_TILE_W              /* NV12: Y 平面行宽 */
+#define VIDEO_DEC_THUMB_TILE_BYTES    (VIDEO_DEC_THUMB_TILE_W * VIDEO_DEC_THUMB_TILE_H * 3 / 2)
+#else
+/* RGB565 行宽/总字节(96x64x2); NV12 直显见 video_dec.c 开关 */
 #define VIDEO_DEC_THUMB_TILE_STRIDE   (VIDEO_DEC_THUMB_TILE_W * 2)
 #define VIDEO_DEC_THUMB_TILE_BYTES    (VIDEO_DEC_THUMB_TILE_W * VIDEO_DEC_THUMB_TILE_H * 2)
+#endif
 #define VIDEO_DEC_THUMB_FULL_READ_MAX (128u * 1024u)  /* JPG 整读硬顶(不做 1/4 空闲上浮) */
 #define VIDEO_DEC_THUMB_VPSS_W_MAX    160            /* VPSS 中间档上限 */
 #define VIDEO_DEC_THUMB_VPSS_H_MAX    120
@@ -54,6 +61,8 @@ typedef enum {
 typedef void (*video_dec_thumb_ready_cb_t)(void *priv, const char *path, int gidx);
 /* 页请求: 快照 [base, base+n) 的照片槽 (UI 线程, 非阻塞, 命中 LRU 不再解码) */
 int video_dec_thumb_request(int base, int n);
+/* 请求后台预热某个 index 的文件(FAT 冷路径): 只置标志, 供 UI 在进多宫格/移光标时调用 */
+void video_dec_fat_warm_request(int idx);
 /* LRU 命中返回 tile 指针(96x64 RGB565), 未命中返回 NULL; 供 UI 线程挂图 */
 const void *video_dec_thumb_peek(const char *path);
 /* 注册就绪回调(页面生命周期: LOAD 注册 / UNLOAD 摘除) */

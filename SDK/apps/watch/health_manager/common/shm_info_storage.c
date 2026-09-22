@@ -139,4 +139,33 @@ int sport_sleep_detection_get(sleep_detection_t *sleep_detection)
     return sport_info_read_vm(VM_SPORT_INFO_SLEEP_DETECTION, (u8 *)sleep_detection, sizeof(sleep_detection_t));
 }
 
+int sport_info_sedentary_switch_get(void)
+{
+    return sport_info_swtich_record_get(SPORT_INFO_SWTICH_TYPE_SEDENTARY) ? 1 : 0;
+}
+
+int sport_info_sedentary_switch_set(u8 on)
+{
+    sport_info_switch_record_update(SPORT_INFO_SWTICH_TYPE_SEDENTARY, on ? 1 : 0, 1);
+    return 0;
+}
+
+int sport_info_raise_wrist_switch_get(void)
+{
+    return sport_info_swtich_record_get(SPORT_INFO_SWTICH_TYPE_RAISE_WRIST) ? 1 : 0;
+}
+
+int sport_info_raise_wrist_switch_set(u8 on)
+{
+    if (on) {
+        // 开 = 全天开启
+        sport_info_switch_record_update(SPORT_INFO_SWTICH_TYPE_RAISE_WRIST, 1, 1);
+    } else {
+        // 关 = 清除全天/定时两个位
+        sport_info_switch_record_update(SPORT_INFO_SWTICH_TYPE_RAISE_WRIST, 0, 0);
+        sport_info_switch_record_update(SPORT_INFO_SWTICH_TYPE_RAISE_WRIST_CUSTOMIZE, 0, 1);
+    }
+    return 0;
+}
+
 

@@ -21,6 +21,8 @@
 #define     IAP_CLASS           0x00000200
 #define     WEBUSB_CLASS        0x00000400
 #define     HCI_CLASS           0x00000800
+#define     XBOX360_CLASS       0x00001000
+#define     HID_KBMOUSE_CLASS   0x00002000
 #define     TEST_CLASS          0x80000000
 
 
@@ -497,6 +499,72 @@
 #define     WEBUSB_EP_IN        4
 #define     WEBUSB_EP_OUT       4
 
+/* ---------- Xbox360 gamepad (XInput) ----------
+ * 4 个 interface、EP1~EP4 各一对双向中断端点。
+ * 端点号与接口角色绑定（鼠标 EP3、聊天板 EP4），便于描述符与参考设备逐字节对齐。
+ * bInterval 直接取自参考设备描述符：FS 按 ms 解释，HS 按 2^(n-1)*125us 解释，
+ * 两种速率下都是同一组字节，无需条件改写。 */
+#ifndef XBOX360_EP_IN_0
+#define XBOX360_EP_IN_0             1       /* IF0 XID            */
+#endif
+#ifndef XBOX360_EP_IN_1
+#define XBOX360_EP_IN_1             2       /* IF1 厂商 HID 耳机   */
+#endif
+#ifndef XBOX360_EP_IN_2
+#define XBOX360_EP_IN_2             4       /* IF3 厂商 HID 聊天板 */
+#endif
+#ifndef XBOX360_MAXP_IF0
+#define XBOX360_MAXP_IF0            32
+#endif
+#ifndef XBOX360_MAXP_HID
+#define XBOX360_MAXP_HID            64
+#endif
+#ifndef XBOX360_INTR_INTERVAL_0
+#define XBOX360_INTR_INTERVAL_0     1
+#endif
+#ifndef XBOX360_INTR_INTERVAL_0_OUT
+#define XBOX360_INTR_INTERVAL_0_OUT 7
+#endif
+#ifndef XBOX360_INTR_INTERVAL_1
+#define XBOX360_INTR_INTERVAL_1     4
+#endif
+#ifndef XBOX360_INTR_INTERVAL_1_OUT
+#define XBOX360_INTR_INTERVAL_1_OUT 8
+#endif
+#ifndef XBOX360_INTR_INTERVAL_2
+#define XBOX360_INTR_INTERVAL_2     1
+#endif
+#ifndef XBOX360_INTR_INTERVAL_2_OUT
+#define XBOX360_INTR_INTERVAL_2_OUT 1
+#endif
+
+/* ---------- 标准键鼠 HID class ----------
+ * 参数化实现，本产品实例化为「Boot Mouse + Report ID 2 键盘」。 */
+#ifndef HID_KBMOUSE_EP_IN
+#define HID_KBMOUSE_EP_IN           3
+#endif
+#ifndef HID_KBMOUSE_EP_OUT
+#define HID_KBMOUSE_EP_OUT          3
+#endif
+#ifndef HID_KBMOUSE_MAXP
+#define HID_KBMOUSE_MAXP            64
+#endif
+#ifndef HID_KBMOUSE_INTR_INTERVAL
+#define HID_KBMOUSE_INTR_INTERVAL   1
+#endif
+#ifndef HID_KBMOUSE_INTR_INTERVAL_OUT
+#define HID_KBMOUSE_INTR_INTERVAL_OUT 8
+#endif
+#ifndef HID_KBMOUSE_BCD_HID
+#define HID_KBMOUSE_BCD_HID         0x0110
+#endif
+#ifndef HID_KBMOUSE_SUBCLASS
+#define HID_KBMOUSE_SUBCLASS        0x01    /* Boot Interface */
+#endif
+#ifndef HID_KBMOUSE_PROTOCOL
+#define HID_KBMOUSE_PROTOCOL        0x02    /* Mouse */
+#endif
+
 #ifndef TCFG_USB_MSD_INDEX
 #define TCFG_USB_MSD_INDEX         0
 #endif
@@ -532,6 +600,12 @@
 #endif
 #ifndef TCFG_USB_HCI_INDEX
 #define TCFG_USB_HCI_INDEX         11
+#endif
+#ifndef TCFG_USB_XBOX360_INDEX
+#define TCFG_USB_XBOX360_INDEX     12
+#endif
+#ifndef TCFG_USB_HID_KBMOUSE_INDEX
+#define TCFG_USB_HID_KBMOUSE_INDEX 13
 #endif
 
 #endif /* __USB_STD_CLASS_DEF_H__ */

@@ -18,6 +18,8 @@
 #include "rcsp_manage.h"
 #include "rcsp_setting_opt.h"
 #include "adv_1t2_setting.h"
+#include "ai_dialogue_control.h"
+#include "translator/rcsp_translator.h"
 #if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
 #include "app_ble_spp_api.h"
 #endif
@@ -272,6 +274,12 @@ void rcsp_init(void)
     __this->rcsp_buf = ptr;
 
     JL_protocol_init(ptr, size);
+#if RCSP_TRANSLATOR_ENABLE
+    rcsp_translator_reset();
+#endif
+#if RCSP_AI_DIALOGUE_ENABLE
+    rcsp_ai_dialogue_reset();
+#endif
     bt_rcsp_callback.priv = rcspModel;
     JL_protocol_dev_switch(&bt_rcsp_callback);
 
@@ -313,6 +321,12 @@ static void rcsp_exit_in_app_core_task(void)
 #if RCSP_FILE_TRANS_SPP_WAKEUP_FLOW_CTRL
     g_rcsp_spp_tx_flow_ctrl_ready = 0;
     rcsp_spp_tx_wait_wakeup();
+#endif
+#if RCSP_AI_DIALOGUE_ENABLE
+    rcsp_ai_dialogue_disconnect();
+#endif
+#if RCSP_TRANSLATOR_ENABLE
+    rcsp_translator_disconnect();
 #endif
 #if TCFG_DEV_MANAGER_ENABLE
     extern void rcsp_file_trans_back_close(void);

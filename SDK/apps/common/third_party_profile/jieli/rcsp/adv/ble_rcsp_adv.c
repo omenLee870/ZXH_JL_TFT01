@@ -166,7 +166,7 @@ int rcsp_make_set_adv_data(void)
 
 #if RCSP_MODE == RCSP_MODE_WATCH
 #if TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES
-    buf[8] = 0x70 | VER_FLAG_BLE_CTRL_BREDR | VER_FLAG_IOS_BLE_LINK_BREDR;	// 手表类型
+    buf[8] = 0x70 | VER_FLAG_BLE_CTRL_BREDR | VER_FLAG_IOS_BLE_LINK_BREDR;	// 智能眼镜类型
 #else
 #if TCFG_COLOR_SCREEN_CHARGING_CASE_ENABLE
     buf[8] = 0x10 | BIT(0);	// 充电仓类型
@@ -308,7 +308,9 @@ static int update_adv_data(u8 *buf)
 #endif
 
 #if RCSP_MODE == RCSP_MODE_WATCH
-#if TCFG_COLOR_SCREEN_CHARGING_CASE_ENABLE
+#if TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES
+    buf[6] = 0x70 | VER_FLAG_BLE_CTRL_BREDR | VER_FLAG_IOS_BLE_LINK_BREDR;	// 智能眼镜类型
+#elif TCFG_COLOR_SCREEN_CHARGING_CASE_ENABLE
     buf[6] = 0x10 | BIT(0);	// 充电仓类型
 #else
     buf[6] = 0x50 | VER_FLAG_BLE_CTRL_BREDR | VER_FLAG_IOS_BLE_LINK_BREDR;	// 手表类型
@@ -1066,7 +1068,11 @@ u16 rebuild_adv_rcsp_info(u8 *adv_rsp_buf, u16 buf_size, u8 type, u8 *addr)
             adv_rsp_buf[rsp_adv_len++] = 0x03 | VER_FLAG_BLE_CTRL_BREDR | VER_FLAG_IOS_BLE_LINK_BREDR;	// 耳机类型
 #endif
 #else
+#if TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_AI_GLASSES
+            adv_rsp_buf[rsp_adv_len++] = 0x70 | VER_FLAG_BLE_CTRL_BREDR | VER_FLAG_IOS_BLE_LINK_BREDR;	// 智能眼镜类型
+#else
             adv_rsp_buf[rsp_adv_len++] = 0x50 | VER_FLAG_BLE_CTRL_BREDR | VER_FLAG_IOS_BLE_LINK_BREDR;	// 手表类型
+#endif
 #endif
             // vbat (1byte)
             adv_rsp_buf[rsp_adv_len++] = 0;

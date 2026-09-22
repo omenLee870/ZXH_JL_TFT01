@@ -428,4 +428,9 @@ void sport_data_func_get_finish_deal(void)
 {
 
 }
+
+int rcsp_register_sport_data_opt_interface(rcsp_sport_data_opt_t *rcsp_sport_data_opt_interface)
+{
+    return 0;
+}
 #endif

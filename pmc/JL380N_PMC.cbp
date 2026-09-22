@@ -32,6 +32,7 @@
 <Add option="-DCONFIG_BR33_FPGA_VERIFY" />
 <Add option="-DCONFIG_UCOS_ENABLE" />
 <Add option="-DBREDR_PMC_CODE" />
+<Add option="-DPMC_APP_CASE_WATCH" />
 <Add option="-DBT_PMC_BT_FUN_OVERWRITE" />
 <Add option="-DBREDR_Q32F" />
 <Add option="-DCONFIG_NEW_BREDR_ENABLE" />
@@ -110,7 +111,6 @@
 <Unit filename="apps/bsp/cpu/br33/iic_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/bsp/cpu/br33/iic_soft.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/bsp/cpu/br33/ipc_spin_lock.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="apps/bsp/cpu/br33/pmc_pmu_msg.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/bsp/cpu/br33/power/lib_power_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/bsp/cpu/br33/power/power_app.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/bsp/cpu/br33/power/power_config.c"><Option compilerVer="CC"/></Unit>
@@ -128,6 +128,7 @@
 <Unit filename="apps/main.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/main.h" />
 <Unit filename="apps/msg/msg.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/sdk_version.z.S" />
 <Unit filename="apps/sensor/algo_motion_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/sensor/default.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/sensor/driver/driver_hr_vc30fx/algo.h" />
@@ -176,6 +177,7 @@
 <Unit filename="apps/sensor/service/sensor_service_vc_hr_spo2.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/sensor/service/sensor_service_wrist_tilt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/sensor/service/sensor_service_wrist_tilt.h" />
+<Unit filename="apps/version.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="include/driver/cpu/br33/audio_vad.h" />
 <Unit filename="include/driver/cpu/br33/br33.h" />
 <Unit filename="include/driver/cpu/br33/bsp.h" />

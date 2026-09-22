@@ -318,7 +318,8 @@ static int a2dp_tx_ioc_fmt_nego(struct stream_iport *iport)
 {
     void *bt_addr = get_cur_connect_emitter_mac_addr();
     if (!bt_addr) {
-        return 0;     // 若无蓝牙发射连接，直接返回
+        log_warn("no emitter connect, use default sbc param to nego\n");
+        //  return 0;     // 若无蓝牙发射连接，直接返回
     }
 
     struct a2dp_tx_hdl *hdl = (struct a2dp_tx_hdl *)iport->node->private_data;
@@ -334,7 +335,7 @@ static int a2dp_tx_ioc_fmt_nego(struct stream_iport *iport)
     u8 sbc_need_free = 0;
     sbc_t *sbc_param = a2dp_sbc_encoder_get_param(hdl->bt_addr);
     if (!sbc_param) {
-        log_info("no sbc param, use initlized param\n");
+        log_error("no sbc param, use initlized param\n");
         sbc_param = zalloc(sizeof(sbc_t));
         sbc_param->frequency = SBC_FREQ_44100;    // 给sbc_param初值,防止未连接emitter的时候nego不过
         sbc_param->blocks = SBC_BLK_16;
@@ -368,13 +369,10 @@ static int a2dp_tx_ioc_fmt_nego(struct stream_iport *iport)
     hdl->sample_rate = in_fmt->sample_rate;
     /* printf("====bit_rate %x\n", bit_rate); */
     /* printf("a2dp_tx frequency %d, sr %d, bitpool %d, mode %d, channle_mode %x,allocation %d, blocks %d, subbands %d, endian %d\n", sbc_param->frequency, sample_rate, sbc_param->bitpool, sbc_param->mode, channel_mode, sbc_param->allocation, sbc_param->blocks, sbc_param->subbands, sbc_param->endian); */
-
-    // 调整sbc编码参数与耳机sbc参数一致
-    stream_node_ioctl(iport->prev->node, NODE_UUID_ENCODER, NODE_IOC_SET_PARAM, (int)sbc_param);
-
     if (sbc_need_free) {
         free(sbc_param);
     }
+
     return ret;
 }
 

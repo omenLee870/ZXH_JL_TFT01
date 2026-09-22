@@ -135,5 +135,10 @@ void sport_info_opt_update(u32 mask)
 
 }
 
+int rcsp_register_sport_info_opt_interface(rcsp_sport_info_opt_t *rcsp_sport_info_opt_interface)
+{
+    return 0;
+}
+
 #endif
 

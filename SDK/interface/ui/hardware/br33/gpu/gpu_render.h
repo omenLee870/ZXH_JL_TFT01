@@ -239,7 +239,11 @@ typedef struct {
  * @note 初始化GPU硬件寄存器
  */
 void gpu_hw_sfr_init(void);
-
+/**
+ * @brief GPU硬件初始化查询
+ * @note GPU硬件初始化查询
+ */
+int gpu_hw_get_init_status();
 /**
  * @brief 设置GPU硬件第一个任务
  * @param base_task 第一个任务地址

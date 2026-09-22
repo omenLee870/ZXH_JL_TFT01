@@ -28,11 +28,29 @@
 #if TCFG_MIX_RECORD_ENABLE
 #include "mix_record_api.h"
 #endif
+#include "rcsp_mix_record.h"
+#include "record.h"
 
 void common_api_reboot_or_shutdown(u8 flag, u8 erase)
 {
 #if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
     camera_api_stop_rec_photo();
+#endif
+
+#if TCFG_APP_RECORD_EN
+    //复位/关机/恢复出厂前停止本地录音，保证录音文件正常封头保存
+    if (is_recorder_runing()) {
+        app_recorder_stop_public();
+    }
+#endif
+#if TCFG_MIX_RECORD_ENABLE
+    //复位/关机/恢复出厂前停止混响录音，保证录音文件正常封头保存
+    if (get_mix_recorder_status()) {
+        mix_recorder_stop();
+    }
+    if (rcsp_mix_recorder_get_status()) {
+        rcsp_mix_recorder_stop();
+    }
 #endif
 
 #if (defined CONFIG_JL_UI_ENABLE && CONFIG_JL_UI_ENABLE)
@@ -105,7 +123,13 @@ static void common_api_restore_sys_settings()
     ble_list_clear_all();
 #endif
 #if TCFG_USER_BT_CLASSIC_ENABLE
+    /* 清除经典蓝牙全部配对记录，避免恢复出厂后继续回连旧手机 */
     bt_cmd_prepare(USER_CTRL_DEL_ALL_REMOTE_INFO, 0, NULL);
+    /* 清除上电回连地址列表计数，确保下次开机不再发起回连 */
+    bt_clear_current_poweron_memory_search_index(1);
+    /* 让蓝牙栈先处理删除命令并落盘，再复位 */
+    bt_cmd_prepare(USER_CTRL_POWER_OFF, 0, NULL);
+    os_time_dly(10);
 #endif
     small_file_del_all();//清外挂flash 存储
 

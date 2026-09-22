@@ -102,6 +102,10 @@ struct rcsp_audio_video_ops {
     void (*audio_stop_response)(u8 status, u8 result);
 };
 
+/*
+ * 按字段合并注册: 每个模块只填自己关心的回调, 未填(NULL)的保持原值,
+ * 因此多个模块可以各自注册而不互相覆盖。传 NULL 表示整体注销。
+ */
 void rcsp_audio_video_register_ops(const struct rcsp_audio_video_ops *ops);
 
 void rcsp_audio_video_cmd_deal(void *priv, u8 OpCode, u8 OpCode_SN,

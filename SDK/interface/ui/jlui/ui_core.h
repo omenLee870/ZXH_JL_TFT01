@@ -702,6 +702,7 @@ struct ui_platform_api {
     int (*draw_point)(struct draw_context *, u16 x, u16 y, u32 color);
     u32(*read_point)(struct draw_context *dc, u16 x, u16 y);
     int (*invert_rect)(struct draw_context *, u32 color);
+    int (*draw_primitive)(struct draw_context *dc, u8 *buf, int x, int y, int width, int height, void *cb, void *priv, int priv_len, int id);
 
     void *(*load_widget_info)(void *_head, u8 page);
     void *(*load_css)(u8 page, void *_css);

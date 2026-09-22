@@ -396,6 +396,16 @@ SECTIONS
         PROVIDE(text_rodata_begin = .);
 
         *(.startup.text)
+        . = ALIGN(4);
+        _SFC_TRIM_CODE_START = . ;
+        *(.sfc_trim_code)
+        . = ALIGN(4);
+        _SFC_TRIM_CODE_END = . ;
+        . = ALIGN(32);
+        *(.sfc_trim_verify_data)
+
+        *(.startup_func.text)
+
 	    bsp_export_begin = .;
         KEEP(*(.sec.bsp_export))
 	    bsp_export_end = .;

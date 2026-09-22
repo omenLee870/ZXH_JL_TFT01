@@ -18,10 +18,9 @@
 
 #if (BT_AI_SEL_PROTOCOL & CUSTOM_DEMO_EN)
 
-//ANCS profile enable
-#define TRANS_ANCS_EN  			  	 0
-//AMS profile enable
-#define TRANS_AMS_EN  			  	 0
+extern int bt_modify_name(u8 *new_name);
+extern void bt_update_mac_addr(u8 *addr);
+
 
 void *custom_demo_ble_hdl = NULL;
 void *custom_demo_spp_hdl = NULL;
@@ -86,6 +85,26 @@ const uint8_t custom_demo_profile_data[] = {
 #define ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE 0x0009
 
 static u16 custom_adv_interval_min = 150;
+static int s_ble_att_mtu = 0;
+static remote_type_e s_connect_remote_type = REMOTE_TYPE_UNKNOWN;   //remote's system type
+
+
+static void ble_att_check_remote_result(u16 con_handle, remote_type_e remote_type);
+
+
+static void connection_update_complete_success(u8 *packet)
+{
+    int con_handle, conn_interval, conn_latency, conn_timeout;
+
+    con_handle = hci_subevent_le_connection_update_complete_get_connection_handle(packet);
+    conn_interval = hci_subevent_le_connection_update_complete_get_conn_interval(packet);
+    conn_latency = hci_subevent_le_connection_update_complete_get_conn_latency(packet);
+    conn_timeout = hci_subevent_le_connection_update_complete_get_supervision_timeout(packet);
+
+    log_info("conn_interval = %d\n", conn_interval);
+    log_info("conn_latency = %d\n", conn_latency);
+    log_info("conn_timeout = %d\n", conn_timeout);
+}
 
 static void custom_cbk_packet_handler(void *hdl, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
@@ -98,13 +117,38 @@ static void custom_cbk_packet_handler(void *hdl, uint8_t packet_type, uint16_t c
             log_info("ATT_EVENT_CAN_SEND_NOW");
             break;
 
+        case ATT_EVENT_MTU_EXCHANGE_COMPLETE:
+            s_ble_att_mtu = att_event_mtu_exchange_complete_get_MTU(packet) - 3;
+            log_info("ATT MTU:%d", s_ble_att_mtu);
+            break;
+
+        case HCI_EVENT_ENCRYPTION_CHANGE:
+            con_handle = little_endian_read_16(packet, 3);
+            log_info("HCI_EVENT_ENCRYPTION_CHANGE= %d\n", packet[2]);
+            if (packet[2] == 0) {
+                /*ENCRYPTION is ok */
+                /*要配对加密后才能检测对方系统类型*/
+                att_server_set_check_remote(con_handle, ble_att_check_remote_result);
+            }
+            break;
+
         case HCI_EVENT_LE_META:
             switch (hci_event_le_meta_get_subevent_code(packet)) {
             case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                 con_handle = little_endian_read_16(packet, 4);
                 log_info("HCI_SUBEVENT_LE_CONNECTION_COMPLETE: %0x", con_handle);
+                connection_update_complete_success(packet + 8);
                 // reverse_bd_addr(&packet[8], addr);
                 put_buf(&packet[8], 6);
+                s_connect_remote_type = REMOTE_TYPE_UNKNOWN;
+                break;
+            case L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE:
+                con_handle = little_endian_read_16(packet, 4);
+                log_info("L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE %0x", con_handle);
+                break;
+            case HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE:
+                log_info("HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE\n");
+                connection_update_complete_success(packet);
                 break;
             default:
                 break;
@@ -113,6 +157,8 @@ static void custom_cbk_packet_handler(void *hdl, uint8_t packet_type, uint16_t c
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             log_info("HCI_EVENT_DISCONNECTION_COMPLETE: %0x", packet[5]);
+            s_ble_att_mtu = 0;
+            s_connect_remote_type = REMOTE_TYPE_UNKNOWN;
             custom_demo_adv_enable(1);
             break;
         default:
@@ -139,6 +185,11 @@ static uint16_t custom_att_read_callback(void *hdl, hci_con_handle_t connection_
             memcpy(buffer, &gap_name[offset], buffer_size);
             att_value_len = buffer_size;
             log_info("\n------read gap_name: %s", gap_name);
+#if 0
+            //此处为了方便自动更新连接参数进行测试
+            static struct conn_update_param_t param = {25, 32, 16, 600};
+            custom_demo_send_request_connect_parameter(&param);
+#endif
         }
         break;
     case ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE:
@@ -253,6 +304,76 @@ int custom_demo_gatt_over_edr_send(u8 *data, u32 len)
     return ret;
 }
 #endif
+
+int custom_demo_ble_is_connect(void)
+{
+    u16 tmp_con_handle = app_ble_get_hdl_con_handle(custom_demo_ble_hdl);
+    return (tmp_con_handle) ? TRUE : FALSE;
+}
+
+static void ble_att_check_remote_result(u16 con_handle, remote_type_e remote_type)
+{
+    log_info("con_handle %d:remote_type= %d\n", con_handle, remote_type);
+    s_connect_remote_type = remote_type;
+}
+
+int custom_demo_ble_disconnect(void)
+{
+    if (app_ble_get_hdl_con_handle(custom_demo_ble_hdl)) {
+        app_ble_disconnect(custom_demo_ble_hdl);
+    }
+    return 0;
+}
+
+int custom_demo_ble_get_att_mtu(void)
+{
+    return s_ble_att_mtu;
+}
+
+void custom_demo_ble_set_adv_interval(u16 adv_interval)
+{
+    custom_adv_interval_min = adv_interval;
+    if (app_ble_adv_state_get(custom_demo_ble_hdl)) {
+        custom_demo_adv_enable(0);
+        custom_demo_adv_enable(1);
+    }
+}
+
+void custom_demo_ble_set_name(const char *name)
+{
+    bt_modify_name((u8 *)name);
+    if (app_ble_adv_state_get(custom_demo_ble_hdl)) {
+        custom_demo_adv_enable(0);
+        custom_demo_adv_enable(1);
+    }
+}
+
+u8 *custom_demo_ble_get_addr(void)
+{
+    return app_ble_adv_addr_get(custom_demo_ble_hdl);
+}
+
+int custom_demo_ble_get_remote_type(void)
+{
+    return s_connect_remote_type;
+}
+
+int custom_demo_send_request_connect_parameter(struct conn_update_param_t *param)
+{
+    ble_cmd_ret_e ret;
+    u16 tmp_con_handle = app_ble_get_hdl_con_handle(custom_demo_ble_hdl);
+
+    if (param == NULL) {
+        return BLE_CMD_PARAM_ERROR;
+    }
+    if (!tmp_con_handle) {
+        return BLE_CMD_STACK_NOT_RUN;
+    }
+    log_info("update_request:-%d-%d-%d-%d-\n", param->interval_min, param->interval_max, param->latency, param->timeout);
+    ret = ble_user_cmd_prepare(BLE_CMD_REQ_CONN_PARAM_UPDATE, 2, tmp_con_handle, param);
+    return ret;
+}
+
 /*************************************************
                   BLE 相关内容 end
 *************************************************/
@@ -639,6 +760,37 @@ void custom_demo_all_exit(void)
     att_over_edr_hdl = NULL;
 #endif
 
+}
+
+void custom_demo_edr_set_name(u8 *name)
+{
+    if (name == NULL) {
+        return;
+    }
+    bt_modify_name(name);
+    if (!bt_get_total_connect_dev()) {
+        bt_cmd_prepare(USER_CTRL_WRITE_SCAN_DISABLE, 0, NULL);
+        bt_cmd_prepare(USER_CTRL_WRITE_CONN_DISABLE, 0, NULL);
+
+        bt_cmd_prepare(USER_CTRL_WRITE_SCAN_ENABLE, 0, NULL);
+        bt_cmd_prepare(USER_CTRL_WRITE_CONN_ENABLE, 0, NULL);
+    }
+}
+
+void custom_demo_edr_set_addr(u8 *addr, u8 len)
+{
+    if (!((addr) && (len == 6))) {
+        return;
+    }
+    bt_update_mac_addr(addr);
+    lmp_hci_write_local_address(addr);
+    if (!bt_get_total_connect_dev()) {
+        bt_cmd_prepare(USER_CTRL_WRITE_SCAN_DISABLE, 0, NULL);
+        bt_cmd_prepare(USER_CTRL_WRITE_CONN_DISABLE, 0, NULL);
+
+        bt_cmd_prepare(USER_CTRL_WRITE_SCAN_ENABLE, 0, NULL);
+        bt_cmd_prepare(USER_CTRL_WRITE_CONN_ENABLE, 0, NULL);
+    }
 }
 
 #endif

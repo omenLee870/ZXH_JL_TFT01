@@ -11,7 +11,7 @@ void app_main();
 void p11_cmac_init(void);
 void bredr_bd_init();
 void maskrom_init();
-void pmu_free_ram_init(void);
+void sdk_version_dump(void);
 
 __attribute__((weak))
 unsigned long audio_jiffies_usec(void)
@@ -34,17 +34,16 @@ int main(void)
 
     power_early_flowing(0);
 
-    pmu_free_ram_init();
-
 #if CONFIG_UART_DEBUG_ENABLE
     debug_uart_init(CONFIG_DEBUG_UART_TX_PIN);
 #endif /* #if CONFIG_UART_DEBUG_ENABLE */
 
     log_info("\n============ Hello BR33 PMC Q32F ============\n");
+    sdk_version_dump();
 
-#ifdef LOWPOWER_TEST_TMP
+//#ifdef LOWPOWER_TEST_TMP
     clk_set_api("sys", 48 * MHz);
-#endif
+//#endif
     clock_dump();
 
     debug_init(); //异常检测初始化

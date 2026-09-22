@@ -132,6 +132,9 @@ s32 usb_bulk_only_receive_async(struct device *device, u8 host_ep, u16 rxmaxp, u
 
     int ret = usb_h_ep_read_async(usb_id, host_ep, target_ep, urb.ptr, len, USB_ENDPOINT_XFER_BULK, 1);
     if (ret < 0) {
+        /* 失败也要把RX中断和ISR收掉, 否则会留下指向已释放EP的残留中断 */
+        usb_clr_intr_rxe(usb_id, host_ep);
+        usb_h_set_ep_isr(host_dev, host_ep | USB_DIR_IN, NULL, host_dev);
         return ret;
     }
     ret = usb_sem_pend(host_dev, USB_BULK_TRANSFER_TIMEOUT);
@@ -273,6 +276,11 @@ s32 usb_bulk_only_send_async(struct device *device, u8 host_ep, u16 txmaxp, u8 t
 
     int ret = usb_h_ep_write_async(usb_id, host_ep, txmaxp, target_ep, pBuf, min(len, urb.txmap), USB_ENDPOINT_XFER_BULK, 1);
     if (ret < 0) {
+        /* 失败也要把TX中断和ISR收掉: 拔盘时这里会返回-DEV_ERR_OFFLINE,
+           若直接return, TX中断保持使能且ISR仍指向usb_bulk_tx_isr,
+           重新枚举会把ep_taddr清零, 残留中断再进来就会memcpy到地址0 */
+        usb_clr_intr_txe(usb_id, host_ep);
+        usb_h_set_ep_isr(host_dev, host_ep, NULL, host_dev);
         return ret;
     }
     ret = usb_sem_pend(host_dev, USB_BULK_SEM_TIMEOUT);

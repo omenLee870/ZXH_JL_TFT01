@@ -47,6 +47,23 @@ typedef struct sleep_detection_mode {
     u8 end_time_min;
 } sleep_detection_t;
 
+#pragma pack(1)
+// 女性健康/经期提醒 线格式（APP 侧需按同样布局解析）
+typedef struct sport_info_mense {
+    u8  mense_period_days;    // 经期天数
+    u8  physiological_days;   // 生理周期天数
+    u16 start_year;           // 最近经期开始:年
+    u8  start_month;          // 月
+    u8  start_day;            // 日
+    u8  resp_enable;          // 提醒总开关 0/1
+    u8  mense_prev_day;       // 经期提前提醒天数
+    u8  ovulation_prev_day;   // 排卵提前提醒天数
+    u8  easy_prev_day;        // 易孕提前提醒天数
+    u8  resp_hour;            // 提醒时
+    u8  resp_min;             // 提醒分
+} sport_info_mense_t;
+#pragma pack()
+
 
 
 int sport_info_write_vm(int vm_id, u8 *data, u16 data_len);
@@ -63,6 +80,12 @@ int sport_personal_info_get(personal_information *info);
 int sport_raise_wrist_get(raise_wrist_t *raise_wrist);
 int sport_sedentary_get(sedentary_t *sedentary);
 int sport_sleep_detection_get(sleep_detection_t *sleep_detection);
+
+/* 开关薄封装：供 UI 层读取/写入开关状态，避免 UI 层引入 sport_info_opt.h 的枚举 */
+int sport_info_sedentary_switch_get(void);        // 久坐提醒开关 0/1
+int sport_info_sedentary_switch_set(u8 on);
+int sport_info_raise_wrist_switch_get(void);      // 抬腕亮屏开关 0/1
+int sport_info_raise_wrist_switch_set(u8 on);
 
 #endif
 

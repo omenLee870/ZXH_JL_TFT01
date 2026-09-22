@@ -629,7 +629,6 @@ static app_playback_ret_t app_playback_image_pipeline_open(app_playback_handle_t
         printf("failed to create VDEC channel\n");
         return APP_PLAYBACK_ERR_IO;
     }
-
     ret = mpi_vpss_find_free_grp(&ctx->vpss_grp);
     if (ret != MPI_SUCCESS) {
         printf("failed to find free VPSS group\n");
@@ -662,7 +661,6 @@ static app_playback_ret_t app_playback_image_pipeline_open(app_playback_handle_t
         printf("failed to start VPSS group\n");
         goto err_destroy_grp;
     }
-
     ret = mpi_vpss_find_free_chn(ctx->vpss_grp, &ctx->vpss_chn);
     if (ret != MPI_SUCCESS) {
         printf("failed to find free VPSS channel\n");
@@ -683,7 +681,6 @@ static app_playback_ret_t app_playback_image_pipeline_open(app_playback_handle_t
         printf("failed to enable VPSS channel\n");
         goto err_destroy_vpss_chn;
     }
-
     app_playback_prepare_vo_attr(&vo_attr, &ctx->display_attr);
 
     ret = mpi_vo_find_free_chn(&ctx->vo_chn);
@@ -702,7 +699,6 @@ static app_playback_ret_t app_playback_image_pipeline_open(app_playback_handle_t
         printf("failed to start VO channel\n");
         goto err_destroy_vo;
     }
-
     app_playback_fill_chn(MPI_MOD_ID_VDEC, ctx->vdec_dev, ctx->vdec_chn, &vdec_src);
     app_playback_fill_chn(MPI_MOD_ID_VPSS, ctx->vpss_grp, 0, &vpss_dst);
     app_playback_fill_chn(MPI_MOD_ID_VPSS, ctx->vpss_grp, ctx->vpss_chn, &vpss_out);
@@ -725,7 +721,6 @@ static app_playback_ret_t app_playback_image_pipeline_open(app_playback_handle_t
         printf("failed to bind VDEC and VPSS group\n");
         goto err_stop_vdec;
     }
-
     memcpy(&ctx->image_info, image_info, sizeof(ctx->image_info));
     return APP_PLAYBACK_OK;
 
@@ -748,6 +743,7 @@ err_destroy_grp:
 err_destroy_vdec:
     mpi_vdec_destroy_chn(ctx->vdec_chn);
 
+    printf("[APP_PLAYBACK] pipe_open_fail ret=%d\n", err_ret);
     return err_ret;
 }
 

@@ -153,8 +153,16 @@ void lv_draw_jlgpu_triangle(lv_draw_task_t *t, const lv_draw_triangle_dsc_t *dsc
     uint32_t *clut_data = clut_data_2;
 
     int task_len;
-    lv_jlgpu_ctx_t jlgpu_ctx;
-    lv_jlgpu_ctx_init(&jlgpu_ctx);
+    lv_jlgpu_ctx_t jlgpu_ctx = {0};
+    /* 链表模式(is_disp_buf)只构建 CPU 任务节点,下面链表分支里完全不使用本局部 ctx,
+     * 也没有配对的 lv_jlgpu_ctx_uninit()。若在此处无条件 init:
+     *   1) 会一直占住推屏独占门到函数返回 → s_jlgpu_gpu_submit 只增不减,
+     *      推屏侧每帧都等满超时并打印 "!!! jlgpu_push_gate_enter timeout";
+     *   2) 每次还白 malloc 一块 ctx_buf(uninit 不释放它),并空拆一次 TOP 联动。
+     * 与 fill.c/arc.c/border.c/letter.c 一致:只在"立即绘制"路径创建。 */
+    if (!(LV_USE_DRAW_JLGPU_LIST && is_disp_buf)) {
+        lv_jlgpu_ctx_init(&jlgpu_ctx);
+    }
 
     if (dsc->grad.dir != LV_GRAD_DIR_NONE) {
         lv_draw_jlgpu_premult_and_swizzle(&main_color, dsc->grad.stops[0].color, dsc->grad.stops[0].opa);

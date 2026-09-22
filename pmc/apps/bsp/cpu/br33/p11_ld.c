@@ -37,19 +37,10 @@ PMC_RAM2_BEG 	= 0x7ec0000;
 PMC_RAM2_SIZE 	= TCFG_MSYS_SRAM_SHARE_WITH_PMC_SIZE ? TCFG_MSYS_SRAM_SHARE_WITH_PMC_SIZE : 4;
 PMC_RAM2_END 	= PMC_RAM2_BEG + PMC_RAM2_SIZE;
 
-#if CONFIG_PMU_DEBUG_ENABLE
-PMC_RAM0_SIZE 	= 4;//1024*2;
-#else
-PMC_RAM0_SIZE 	= 1024*8;
-#endif
-PMC_RAM0_END 	= P11_RAM1_BEGIN;
-PMC_RAM0_BEG 	= PMC_RAM0_END - PMC_RAM0_SIZE;
-
 MEMORY
 {
     p11_message_ram(rw)		:	ORIGIN = P2M_MESSAGE_RAM_BEGIN, LENGTH = (P2M_MESSAGE_SIZE+M2P_MESSAGE_SIZE)
 	msys_poweroff_ram(rw)	:	ORIGIN = MSYS_POFF_RAM_BEGIN, LENGTH = MSYS_POFF_RAM_SIZE
-	p11_ram0(rw)			:	ORIGIN = PMC_RAM0_BEG, LENGTH = PMC_RAM0_SIZE
 	p11_ram1(rw)			:	ORIGIN = PMC_F_RAM_LIMIT_L, LENGTH = PMC_F_PHY_RAM_SIZE
 	p11_ram1_reset(rw)      :   ORIGIN = PMC1_RESET_BEGIN, LENGTH = PMC1_RESET_SIZE
 	p11_ram2(rw)			:	ORIGIN = PMC_RAM2_BEG, LENGTH = PMC_RAM2_SIZE
@@ -295,15 +286,6 @@ SECTIONS
 	ram2_free_ram_start = .;
 	ram2_free_ram_end = PMC_RAM2_END;
 
-
-	. = ORIGIN(p11_ram0);
-    .ram0_bss ALIGN(4):
-    {
-        *(.pmu_free_bss)
-		. = ORIGIN(p11_ram0) + LENGTH(p11_ram0) - 4;
-		LONG(0xffffffff);
-    } > p11_ram0
-
 }
 
 /* flash_code_begin  = ADDR(.flash_code); */
@@ -334,9 +316,6 @@ bss2_size  = SIZEOF(.ram2_bss);
 data2_addr = ADDR(.ram2_data);
 data2_begin = text2_begin + text2_size;
 data2_size =  SIZEOF(.ram2_data);
-
-pmu_free_begin = ADDR(.ram0_bss);
-pmu_free_size  = SIZEOF(.ram0_bss);
 
 /* _HEAP_BEGIN = p11_heap_begin; */
 /* _HEAP_END = p11_heap_end; */

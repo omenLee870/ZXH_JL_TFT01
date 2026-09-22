@@ -15,6 +15,9 @@
 #include "fs/fs.h"
 #include "device/device.h"
 #include "video_api.h"
+#include "record.h"
+#include "mix_record_api.h"
+#include "rcsp_mix_record.h"
 #if TCFG_APP_MUSIC_EN
 #include "file_player.h"
 #endif
@@ -556,7 +559,12 @@ static const video_resolution_t *video_api_select_photo_res(void)
 
 static void camera_stop_record_video(void);
 
-static void camera_take_photo(void)
+/*
+ * 内部拍照实现。done_cb 为 NULL 表示普通拍照（调用方不关心结果）；
+ * 非 NULL 时在拍照结束（成功或失败）后回调，供 AI 识图流程决定后续回报。
+ * result: 0 成功，-1 失败；成功时 path 为落盘路径，失败时为 NULL。
+ */
+static void camera_take_photo_internal(void (*done_cb)(int result, const char *path))
 {
     const u8 camera_id = VIDEO_CAMERA_ID;
     const char *sensor_name = VIDEO_SENSOR_NAME;
@@ -568,6 +576,9 @@ static void camera_take_photo(void)
     if (!video_api_sd_is_online()) {
         printf("[VIDEO_API] SD card not ready, cannot take photo\n");
         reset_camera_status();
+        if (done_cb) {
+            done_cb(-1, NULL);
+        }
         return;
     }
 
@@ -575,6 +586,9 @@ static void camera_take_photo(void)
     if (video_api_file_init() != 0) {
         printf("[VIDEO_API] file init failed, cannot take photo\n");
         reset_camera_status();
+        if (done_cb) {
+            done_cb(-1, NULL);
+        }
         return;
     }
 
@@ -582,6 +596,9 @@ static void camera_take_photo(void)
     if (ret != APP_CAMERA_OK) {
         printf("[VIDEO_API] failed to open camera for photo, ret=%d\n", ret);
         reset_camera_status();
+        if (done_cb) {
+            done_cb(-1, NULL);
+        }
         return;
     }
 
@@ -601,6 +618,9 @@ static void camera_take_photo(void)
     if (video_api_get_photo_path(photo_attr.path, sizeof(photo_attr.path)) != 0) {
         printf("[VIDEO_API] failed to generate photo path\n");
         video_api_close_and_reset(&photo_handle);
+        if (done_cb) {
+            done_cb(-1, NULL);
+        }
         return;
     }
 
@@ -610,6 +630,30 @@ static void camera_take_photo(void)
         printf("[VIDEO_API] take photo failed, ret=%d\n", ret);
     }
     video_api_close_and_reset(&photo_handle);
+
+    if (done_cb) {
+        /* 拍照文件已完整落盘并关闭，此时才通知调用者 */
+        done_cb(ret == APP_CAMERA_OK ? 0 : -1,
+                ret == APP_CAMERA_OK ? photo_attr.path : NULL);
+    }
+}
+
+static void camera_take_photo(void)
+{
+    camera_take_photo_internal(NULL);
+}
+
+/* AI 识图专用入口：只负责拍照落盘，完成后回调通知 AI 对话流程 */
+void camera_api_take_photo_ai(void (*on_done)(int result, const char *path))
+{
+    if (get_camera_status() != CAMERA_STATE_IDLE) {
+        printf("[VIDEO_API] camera busy, cannot take AI photo\n");
+        if (on_done) {
+            on_done(-1, NULL);
+        }
+        return;
+    }
+    camera_take_photo_internal(on_done);
 }
 
 static void app_camera_test_event_handler(void *priv, int argc, int *argv)
@@ -696,6 +740,34 @@ static void app_camera_test_event_handler(void *priv, int argc, int *argv)
     }
 }
 
+/**
+ * @brief 启动录像前，先停止并保存正在进行的录音
+ *
+ * 录像本身带音频（.audio_enable = 1），音频源同样是 ADC/mic，
+ * 与录音模式、混合录音、RCSP 混合录音会抢占同一条 mic 通路。
+ * 若录音还在进行就直接开录像，正在录的音频文件不会被正常封头保存，
+ * 可能产生损坏的录音文件甚至管线冲突，所以这里先停止保存。
+ */
+static void video_api_stop_active_record(void)
+{
+#if TCFG_APP_RECORD_EN
+    if (is_recorder_runing()) {
+        printf("[VIDEO_API] recorder active, stopping\n");
+        app_recorder_stop_public();
+    }
+#endif
+#if TCFG_MIX_RECORD_ENABLE
+    if (get_mix_recorder_status()) {
+        printf("[VIDEO_API] mix recorder active, stopping\n");
+        mix_recorder_stop();
+    }
+    if (rcsp_mix_recorder_get_status()) {
+        printf("[VIDEO_API] rcsp mix recorder active, stopping\n");
+        rcsp_mix_recorder_stop();
+    }
+#endif
+}
+
 void camera_api_record_video()
 {
     const u8 camera_id = VIDEO_CAMERA_ID;
@@ -732,6 +804,9 @@ void camera_api_record_video()
                   time.hour, time.min, time.sec); */
     }
 #endif
+
+    /* 先停止正在进行的录音，避免与录像抢占 mic 通路 */
+    video_api_stop_active_record();
 
     /* 先检查 SD 卡状态，避免离线时触发目录扫描/创建 */
     if (!video_api_sd_is_online()) {

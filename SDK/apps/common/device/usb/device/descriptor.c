@@ -92,7 +92,11 @@ static const u8 sDeviceDescriptor[] = { //<Device Descriptor
     EP0_SETUP_LEN,//EP0_LEN,      // bMaxPacketSize0: 8/64 bytes
     LOBYTE(USB_VID), HIBYTE(USB_VID),     // idVendor: 0x3654 - Zhuhai Jieli Technology
     LOBYTE(USB_PID), HIBYTE(USB_PID),     // idProduct
-    0x00, 0x01,     // bcdDevice: version 1.0
+#if defined(FUSB_MODE) && FUSB_MODE
+    0x00, 0x01,     // bcdDevice: version 1.00
+#else
+    0x02, 0x01,     // bcdDevice: version 1.02，高速模式下与参考设备保持一致
+#endif
     0x01,       // iManufacturer: Index to string descriptor that contains the string <Your Name> in Unicode
     0x02,       // iProduct: Index to string descriptor that contains the string <Your Product Name> in Unicode
     USB_ISERIALNUMBER,       // iSerialNumber: none
@@ -194,9 +198,8 @@ static const string_desc_t string_desc_arr[] = {
     { 3, NULL },                     // Serial Number（NULL → 使用芯片 UUID）
 #endif
 
-#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE || TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
+#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
     { SPEAKER_STR_INDEX, USB_SPEAKER_DESC },   // Speaker
-    { MIC_STR_INDEX,     USB_MIC_DESC     },   // Microphone
 
     /* Stream 1: separate string indices for per-stream naming */
 #ifdef UAC_STREAM_1_SPEAKER_STR_INDEX
@@ -207,6 +210,11 @@ static const string_desc_t string_desc_arr[] = {
     { UAC_STREAM_1_SPEAKER_STR_INDEX, UAC_STREAM_1_SPEAKER_DESC },
 #endif
 #endif
+#endif /* TCFG_USB_SLAVE_AUDIO_SPK_ENABLE */
+
+#if TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
+    { MIC_STR_INDEX,     USB_MIC_DESC     },   // Microphone
+
 #ifdef UAC_STREAM_1_MIC_STR_INDEX
 #if UAC_STREAM_1_MIC_STR_INDEX
 #ifndef UAC_STREAM_1_MIC_DESC
@@ -215,7 +223,7 @@ static const string_desc_t string_desc_arr[] = {
     { UAC_STREAM_1_MIC_STR_INDEX, UAC_STREAM_1_MIC_DESC },
 #endif
 #endif
-#endif
+#endif /* TCFG_USB_SLAVE_AUDIO_MIC_ENABLE */
 
 #if TCFG_USB_APPLE_DOCK_EN
     { IAP_STR_INDEX, IAP_interface_string },

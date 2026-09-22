@@ -25,6 +25,7 @@ enum {
     PUPDATE_RET_NOT_SUPPORT_FUNC,               ///< 不支持的功能
     PUPDATE_RET_NOT_INIT,                       ///< 未初始化
     PUPDATE_RET_DATA_BUSY,                      ///< 数据忙
+    PUPDATE_RET_OPEN_LCFLASH_FAIL,
     PUPDATE_RET_PACKAGE_HEAD_ERROR,             ///< 包头错误
     PUPDATE_RET_WBUFF_OVERFLOW,                 ///< 写缓冲区溢出
     PUPDATE_RET_CBUFF_OVERFLOW,                 ///< 环形缓冲区溢出
@@ -144,6 +145,15 @@ enum {
 
 };
 
+/* @brief:struct for firmware crc16&crc32
+ * @param crc32 flash.bin的crc32
+ * @param crc16 flash.bin的crc16
+*/
+struct crc_info {
+    u32 crc32;
+    u16 crc16;
+};
+
 /**
  * @brief 被动升级初始化拓展参数
  * @param upper_buf 上层传递给底层用的计算缓存，该缓存大小必须>=(max_pkt_len+(96B))
@@ -160,8 +170,6 @@ struct db_param_ext {
     u8 task_en;
 };
 
-
-
 /**
  * @brief 初始化更新任务，并设置新固件的CRC值和文件大小
  * @param fw_crc 新固件文件的CRC值
@@ -171,7 +179,6 @@ struct db_param_ext {
  * @return 初始化结果，0表示成功，其他值表示失败
  */
 int dual_bank_passive_update_init_v2(u32 fw_crc, u32 fw_size, u32 max_pkt_len, struct db_param_ext *ex_param);
-
 
 /**
  * @brief 退出更新任务
@@ -231,13 +238,13 @@ int dual_bank_update_burn_boot_info_apply_v2(u8 *stash_buff, u8 len);
  * @param offset 相对于更新区域的偏移量
  * @param read_buf 用户数据缓冲区
  * @param read_len 读取长度
- * @return 实际读取长度
+ * @return 0:成功 其他:失败
  */
 int dual_bank_update_read_data_v2(u32 offset, u8 *read_buf, u32 read_len);
 
 /**
  * @brief 验证更新结果
- * @param verify_result_hdl 验证结果回调函数,ret返回0是成功，其他是失败
+ * @param verify_result_hdl 验证结果回调函数,ret返回1是成功，0是失败
  * @return 验证结果，0表示成功，其他值表示失败
  */
 int dual_bank_update_verify_v2(int (*verify_result_hdl)(int ret));
@@ -257,6 +264,22 @@ int dual_bank_update_pause_register_v2(int (*user_pause_hdl)(int ret));
  * @return 同步接口，0代表成功，其他代表失败
  */
 int dual_bank_update_early_handle_v2(void);
+
+
+/**
+ * @brief 获取本地的flash.bin的crc_info
+ * @param lcrc crc_info
+ * @return 0代表成功，其他代表失败
+ */
+int dual_bank_update_get_local_crc_v2(struct crc_info *lcrc);
+
+/**
+ * @brief 获取当前ota包的升级进度
+ * @param offset 返回升级ota包升级进度偏移
+ * @return 0代表成功，其他代表失败
+ */
+u32 dual_bank_update_curr_package_off(u32 *offset);
+
 
 /**
  * @brief 用户断点结构体定义
@@ -301,6 +324,13 @@ int dual_bank_passive_update_init_breakpoint_v2(struct user_breakpoint *ub);
  */
 int dual_bank_passive_update_resume_breakpoint_v2(u32 offset, void *point_info, u32 info_len, void *priv_data, u32 priv_len);
 
+/**
+ * @brief 清空上一次升级残留的升级参数
+ * @return 同步接口，0代表成功，其他代表失败
+ */
+int dual_bank_update_break_last_update_param_v2(void);
+
+
 
 #define DUAL_BANK_PASSIVE_V1_PORTING_V2
 #ifdef DUAL_BANK_PASSIVE_V1_PORTING_V2
@@ -321,6 +351,10 @@ static inline u32 dual_bank_update_write(void *data, u16 len, int (*write_comple
 {
     return dual_bank_update_write_v2(data, len, write_complete_cb);
 }
+static inline u32 dual_bank_update_read_data(u32 offset, u8 *read_buf, u32 read_len)
+{
+    return dual_bank_update_read_data_v2(offset, read_buf, read_len);
+}
 static inline u8 dual_bank_update_verify_without_crc(void)
 {
     return dual_bank_update_verify_v2(NULL);
@@ -337,7 +371,24 @@ static inline u32 dual_bank_update_burn_boot_info(int (*burn_boot_info_result_hd
 {
     return dual_bank_update_burn_boot_info_v2(NULL, 0, burn_boot_info_result_hdl);
 }
+static inline int dual_bank_update_info_get(u32 *start_addr, u32 *len)
+{
+    return 0;
+}
+static inline int dual_bank_erase_other_bank(u8 opt)
+{
+    return 0;
+}
+static inline u32 dual_bank_passive_update_get_target_update_addr(void)
+{
+    return 0;
+}
+static inline void dual_bank_check_flash_update_area(u8 opt)
+{
+    dual_bank_update_early_handle_v2();
+}
 
 #endif
+
 
 #endif

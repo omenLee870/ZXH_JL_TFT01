@@ -168,6 +168,7 @@ extern const int const_audio_howling_ahs_adc_hw_ref_mic_gain;
 extern const int const_audio_howling_ahs_adc_hw_ref_mic_pre_gain;
 extern const int const_audio_howling_ahs_dac_read_points_offset;
 extern const int const_audio_howling_ahs_algo_runtime_debug;
+extern const int const_audio_ai_vocal_remover_algo_runtime_debug;
 extern const int const_audio_autoduck_trigger_status_get;
 extern const int virtual_bass_eq_hard_select;
 
@@ -245,8 +246,10 @@ extern const char config_bt_aac_dec_fifo_precision;
 extern const int config_msbc_encode_used_software_enable;
 extern const int midi_ctrl_support_multi_ch;
 //opus 解码配置
+extern const int CONFIG_OGG_OPUS_DEC_SUPPORT;
 extern const int CONFIG_OGG_OPUS_DEC_FORMAT_MODE;
 extern const int CONFIG_OGG_OPUS_DEC_SET_CBR_PACKET_LEN;
+extern const int OPUS_SRINDEX;
 /*
  *******************************************************************
  *						record Config

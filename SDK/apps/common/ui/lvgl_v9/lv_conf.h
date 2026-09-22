@@ -1630,6 +1630,12 @@
 #endif /* LV_BUILD_DEMOS */
 
 #define LV_USE_DEMO_MAP 0
+
+/*AMap (高德) map demo*/
+#define LV_USE_DEMO_AMAP 0
+#define AMAP_USE_CANVAS 1
+#define AMAP_OPEN_INFO 0
+
 /*--END OF LV_CONF_H--*/
 
 #endif /*LV_CONF_H*/

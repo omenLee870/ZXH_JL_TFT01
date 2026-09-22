@@ -120,6 +120,8 @@ void dma_free(void *pv);
  * @param size: 申请内存大小, 单位byte;
  *
  * @return : npu专用的物理内存地址
+ *
+ * @note : npu接口仅br33支持,其它芯片请勿调用
  */
 /* ----------------------------------------------------------------------------*/
 void *npu_malloc(size_t size);
@@ -129,6 +131,8 @@ void *npu_malloc(size_t size);
  * @brief :释放连续空间的npu内存
  *
  * @param :npu内存地址
+ *
+ * @note : npu接口仅br33支持,其它芯片请勿调用
  */
 /* ---------------------------------------------------------------------------- */
 void npu_free(void *pv);

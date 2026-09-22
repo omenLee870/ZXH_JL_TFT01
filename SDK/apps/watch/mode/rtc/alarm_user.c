@@ -180,6 +180,13 @@ static int alarm_ui_exit(int page)
 }
 #endif /* #if TCFG_UI_ENABLE */
 
+#if CONFIG_LVGL_UI_ENABLE
+/* LVGL 侧提供强实现：响铃时在 ui 线程弹出响铃页；JLUI 构建下为空实现。 */
+__attribute__((weak)) void lvgl_alarm_ring_notify(void)
+{
+}
+#endif
+
 void alm_wakeup_isr(void)
 {
     int msg[2];
@@ -202,8 +209,15 @@ static int alarm_event_handler(int *msg)
         case DEVICE_EVENT_IN:
             printf("<%s>", __func__);
             alarm_update_info_after_isr();
+#if CONFIG_LVGL_UI_ENABLE
+            /* LVGL 下 JLUI 抢占窗口宏是空操作，这里直接开铃并通知 LVGL 弹响铃页。 */
+            alarm_ring_start();
+            lvgl_alarm_ring_notify();
+            ret = 1;
+#else
             UI_WINDOW_PREEMPTION_POSH(ID_WINDOW_ALARM_RINGING, alarm_ui_entry, alarm_ui_exit, UI_WINDOW_PREEMPTION_TYPE_ALARM);
             ret = 1;
+#endif
             break;
         default:
             break;

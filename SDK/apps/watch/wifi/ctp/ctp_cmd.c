@@ -335,16 +335,17 @@ static int cmd_get_ota_request(void *priv, char *content)
     tmp =  json_object_object_get(parm, "url");
     const char *url = json_object_get_string(tmp);
 
-    if (url == NULL) {
+    if (url == NULL || url[0] == '\0') {
         printf("url is null \n");
+        json_object_put(new_obj);
         return 0;
     }
     printf("url : %s\n", url);
-    snprintf(buf, sizeof(buf), "allow:%d", 1);  //1: 允许升级, 0: 拒绝
+    int ret = http_create_passive_update_task(url);
+    snprintf(buf, sizeof(buf), "allow:%d", ret == 0);  //新建成功或复用同一升级任务
     printf("OTA_REQUEST  GET\n");
     CTP_CMD_COMBINED(priv, CTP_NO_ERR, "OTA_REQUEST", "NOTIFY", buf);  //回复allow
-
-    http_create_passive_update_task(url);  //开始双备份OTA升级
+    json_object_put(new_obj);  //下载任务已经复制URL
 
     return 0;
 }
@@ -361,3 +362,4 @@ const struct ctp_map_entry ctp_system_cmd_tab[] SEC_USED(.ctp_system_cmd) = {
 };
 
 #endif
+

@@ -197,6 +197,18 @@ static void _jlgpu_draw_image_normal_helper(lv_draw_task_t *t, const lv_draw_ima
     if (decoded->header.reserved_2 == 0xff) {
         need_save_src_buf = true;
     }
+    /* 解码器堆上分配的 buf(lv_bin_decoder 解码 .bin/.rle/.lzw 等得到的)会在
+     * lv_image_decoder_close() -> free_decoder_data() 里被 lv_draw_buf_destroy() 释放,
+     * 而 close 就发生在本函数返回之后的 lv_draw_jlgpu_img() 里。
+     * 页面特效在 effect_enter 时把任务链整条留在 ctx 里逐帧重放, 链上引用的正是这里的
+     * img_buf; buf 一旦被释放, 首帧之后堆被复用, 重放就会画出错乱内容
+     * (表现为"第一帧正常, 第二帧开始跳动")。这类 buf 必须拷进常驻的 attach buf 链表。
+     * 判据用 LV_IMAGE_FLAGS_ALLOCATED: 只有 lv_draw_buf_create_ex() 分配的堆 buf 带这个
+     * 标志(见 lv_draw_buf_destroy/res_image_free 的同类判断); 直接指向 flash/SD 的
+     * lv_jl_bin 描述符和 lv_draw_buf_from_image() 的 c_array 都不带, 不会多拷。 */
+    if (decoded->header.flags & LV_IMAGE_FLAGS_ALLOCATED) {
+        need_save_src_buf = true;
+    }
 
     uint32_t src_width  = decoded->header.w;
     uint32_t src_height = decoded->header.h;
@@ -207,7 +219,10 @@ static void _jlgpu_draw_image_normal_helper(lv_draw_task_t *t, const lv_draw_ima
 
 #if LV_USE_DRAW_JLGPU_LIST
     if (need_save_src_buf) {
-        img_buf = lv_jlgpu_attach_buf_list_add(u, img_buf, src_width * src_stride);
+        /* data_size 是 lv_draw_buf_create_ex() 分配时的整块大小(RGB565A8 的 A8 尾、
+         * 索引图的调色板都算在内), 比 w*stride 更完整 */
+        uint32_t save_size = decoded->data_size ? decoded->data_size : (src_width * src_stride);
+        img_buf = lv_jlgpu_attach_buf_list_add(u, img_buf, save_size);
     }
 #endif
 
@@ -535,12 +550,20 @@ static void _jlgpu_draw_image_normal_helper(lv_draw_task_t *t, const lv_draw_ima
 #if LV_USE_DRAW_JLGPU_LIST
         if (compress_type == LV_COMPRESS_C3) {
             uint8_t *ex_task = lv_jlgpu_c3_draw_task_create(u, dsc, u->jlgpu_ctx, img_buf, &mask_params, &draw_img_params, &render_area, &tex_clip_area, true);
+            if (ex_task == NULL) {
+                LV_LOG_ERROR("c3 task malloc fail");
+                return;
+            }
             lv_jlgpu_add_task_node(u, ex_task);
             uint8_t *task = jlgpu_task_get_next(ex_task);
             u->jlgpu_ctx->jlgpu_task_num++;
             u->jlgpu_ctx->cur_task = task;
         } else if (img_info.color_format == JLGPU_FORMAT_YUV420_BT601) {
             uint8_t *ex_task = lv_jlgpu_yuv420_draw_task_create(u, dsc, u->jlgpu_ctx, img_buf, decoded->header.flags, &mask_params, &draw_img_params, &render_area, &tex_clip_area, true);
+            if (ex_task == NULL) {
+                LV_LOG_ERROR("yuv420 task malloc fail");
+                return;
+            }
             lv_jlgpu_add_task_node(u, ex_task);
             uint8_t *task = jlgpu_task_get_next(ex_task);
             u->jlgpu_ctx->jlgpu_task_num++;
@@ -573,6 +596,11 @@ static void _jlgpu_draw_image_normal_helper(lv_draw_task_t *t, const lv_draw_ima
                     jlgpu_draw_img(u->jlgpu_ctx->ctx, &render_params, &draw_img_params, &mask_params);
                 }
 
+            }
+            if (task == NULL) {
+                /* 池+堆都申请失败:直接往下走会 lv_jlgpu_add_task_node(NULL) 破坏链表 */
+                LV_LOG_ERROR("draw img task malloc fail");
+                return;
             }
             /*jlgpu_dump_task(task);*/
             lv_jlgpu_add_task_node(u, task);
@@ -769,6 +797,11 @@ static bool _jlgpu_draw_image_transform_helper(lv_draw_task_t *t, const lv_draw_
     if (decoded->header.reserved_2 == 0xff) {
         need_save_src_buf = true;
     }
+    /* 同 _jlgpu_draw_image_normal_helper: 解码器堆上的 buf 会在
+     * lv_image_decoder_close() 里被释放, 而页面特效的任务链要跨帧重放, 必须拷贝留底 */
+    if (decoded->header.flags & LV_IMAGE_FLAGS_ALLOCATED) {
+        need_save_src_buf = true;
+    }
 
     uint32_t src_width = decoded->header.w;
     uint32_t src_height = decoded->header.h;
@@ -780,7 +813,10 @@ static bool _jlgpu_draw_image_transform_helper(lv_draw_task_t *t, const lv_draw_
 
 #if LV_USE_DRAW_JLGPU_LIST
     if (need_save_src_buf) {
-        img_buf = lv_jlgpu_attach_buf_list_add(u, img_buf, src_width * src_stride);//A8
+        /* data_size 是 lv_draw_buf_create_ex() 分配时的整块大小(RGB565A8 的 A8 尾、
+         * 索引图的调色板都算在内), 比 w*stride 更完整 */
+        uint32_t save_size = decoded->data_size ? decoded->data_size : (src_width * src_stride);
+        img_buf = lv_jlgpu_attach_buf_list_add(u, img_buf, save_size);//A8
     }
 #endif
 
@@ -1176,12 +1212,20 @@ static bool _jlgpu_draw_image_transform_helper(lv_draw_task_t *t, const lv_draw_
 #if LV_USE_DRAW_JLGPU_LIST
         if (compress_type == LV_COMPRESS_C3) {
             uint8_t *ex_task = lv_jlgpu_c3_draw_task_create(u, dsc, u->jlgpu_ctx, img_buf, &mask_params, &draw_img_params, &render_area, &tex_clip_area, true);
+            if (ex_task == NULL) {
+                LV_LOG_ERROR("c3 task malloc fail");
+                return false;
+            }
             lv_jlgpu_add_task_node(u, ex_task);
             uint8_t *task = jlgpu_task_get_next(ex_task);
             u->jlgpu_ctx->jlgpu_task_num++;
             u->jlgpu_ctx->cur_task = task;
         } else if (img_info.color_format == JLGPU_FORMAT_YUV420_BT601) {
             uint8_t *ex_task = lv_jlgpu_yuv420_draw_task_create(u, dsc, u->jlgpu_ctx, img_buf, decoded->header.flags, &mask_params, &draw_img_params, &render_area, &tex_clip_area, true);
+            if (ex_task == NULL) {
+                LV_LOG_ERROR("yuv420 task malloc fail");
+                return false;
+            }
             lv_jlgpu_add_task_node(u, ex_task);
             uint8_t *task = jlgpu_task_get_next(ex_task);
             u->jlgpu_ctx->jlgpu_task_num++;
@@ -1216,6 +1260,11 @@ static bool _jlgpu_draw_image_transform_helper(lv_draw_task_t *t, const lv_draw_
                     jlgpu_draw_img(u->jlgpu_ctx->ctx, &render_params, &draw_img_params, &mask_params);
                 }
 
+            }
+            if (task == NULL) {
+                /* 池+堆都申请失败:直接往下走会 lv_jlgpu_add_task_node(NULL) 破坏链表 */
+                LV_LOG_ERROR("draw img task malloc fail");
+                return false;
             }
             /*jlgpu_dump_task(task);*/
             lv_jlgpu_add_task_node(u, task);
@@ -1361,6 +1410,11 @@ static uint8_t *lv_jlgpu_c3_draw_task_create(lv_draw_jlgpu_unit_t *u, const lv_d
         ex_task = lv_malloc(ex_task_len);
     }
 
+    if (ex_task == NULL) {
+        LV_LOG_ERROR("c3 ex_task malloc fail");
+        return NULL;
+    }
+
     lv_memset(ex_task, 0, ex_task_len);
     jlgpu_set_task(jlgpu_ctx->ctx, ex_task, ex_task_len);
     jlgpu_extend_command(jlgpu_ctx->ctx, &extend_params);
@@ -1404,6 +1458,12 @@ static uint8_t *lv_jlgpu_c3_draw_task_create(lv_draw_jlgpu_unit_t *u, const lv_d
 #endif
     } else {
         task = lv_malloc(task_len);
+    }
+
+    if (task == NULL) {
+        LV_LOG_ERROR("img task malloc fail");
+        jlgpu_hal_destroy_context(ctx_hal);
+        return NULL;
     }
 
     memset(task, 0, task_len);
@@ -1510,6 +1570,11 @@ static uint8_t *lv_jlgpu_yuv420_draw_task_create(lv_draw_jlgpu_unit_t *u, const 
         ex_task = lv_malloc(ex_task_len);
     }
 
+    if (ex_task == NULL) {
+        LV_LOG_ERROR("yuv420 ex_task malloc fail");
+        return NULL;
+    }
+
     lv_memset(ex_task, 0, ex_task_len);
     jlgpu_set_task(jlgpu_ctx->ctx, ex_task, ex_task_len);
     jlgpu_extend_command(jlgpu_ctx->ctx, &extend_params);
@@ -1552,6 +1617,12 @@ static uint8_t *lv_jlgpu_yuv420_draw_task_create(lv_draw_jlgpu_unit_t *u, const 
 #endif
     } else {
         task = lv_malloc(task_len);
+    }
+
+    if (task == NULL) {
+        LV_LOG_ERROR("img task malloc fail");
+        jlgpu_hal_destroy_context(ctx_hal);
+        return NULL;
     }
 
     memset(task, 0, task_len);

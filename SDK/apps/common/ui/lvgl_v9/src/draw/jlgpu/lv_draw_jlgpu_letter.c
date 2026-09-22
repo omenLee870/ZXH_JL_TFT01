@@ -346,7 +346,14 @@ static void draw_letter_bitmap(lv_draw_task_t *t, const lv_draw_glyph_dsc_t *dsc
 
     if (LV_USE_DRAW_JLGPU_LIST && is_disp_buf) {
 #if LV_USE_DRAW_JLGPU_LIST
+        /* 字形位图必须拷进链表内存:链表是延后执行的,源buf在此期间可能已失效。
+         * 申请失败只能放弃本字形,绝不能让 img_info.data == NULL 交给GPU(会读到非法纹理地址导致GPU挂死) */
         img_info.data = lv_jlgpu_mem_pool_get_buf(u, img_buf, src_height * src_stride);
+        if (img_info.data == NULL) {
+            /* 不要静默跳过:否则只是"少几个字",看不出是内存问题 */
+            LV_LOG_ERROR("letter glyph buf malloc fail");
+            return;
+        }
 #endif
     } else {
         img_info.data = img_buf;
@@ -397,6 +404,12 @@ static void draw_letter_bitmap(lv_draw_task_t *t, const lv_draw_glyph_dsc_t *dsc
 #if LV_USE_DRAW_JLGPU_LIST
         int task_len = jlgpu_draw_img_task_len(u->jlgpu_ctx->ctx, &draw_img_params, &mask_params);
         uint8_t *task = lv_jlgpu_mem_pool_get_buf(u, NULL, task_len);
+        if (task == NULL) {
+            /* 池和堆都申请失败:这里如果直接往下走就是 lv_memset(NULL, 0, len) 踩空,
+             * 表现为无任何打印直接黑屏,所以必须判空 */
+            LV_LOG_ERROR("letter task malloc fail");
+            return;
+        }
         lv_memset(task, 0, task_len);
 
         jlgpu_set_task(u->jlgpu_ctx->ctx, task, task_len);

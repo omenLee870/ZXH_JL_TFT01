@@ -79,6 +79,7 @@
 #define    JL_OPCODE_1T2_DEVICE_EDR_INFO_LIST						0x31
 #define    JL_OPCODE_AI_DIAL						                0x32
 #define    JL_OPCODE_COMMON_INFO_SET						        0x33
+#define    JL_OPCODE_TRANSLATOR                                     0x34
 
 // 流控制相关命令
 #define    JL_OPCODE_STREAM_CONTROL							        0x37

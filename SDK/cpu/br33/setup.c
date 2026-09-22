@@ -336,12 +336,8 @@ void eva_clock_init(void)
     SFR(JL_VDOCOM->EVA_CON, 10, 1, 1);
     SFR(JL_IOMC->VDO_IOMC, 1, 2, 2);
 }
-void eva_init_code(void)
+void eva_cfg_init(void)
 {
-#if (defined TCFG_UI_ENABLE &&  TCFG_UI_ENABLE) || (defined TCFG_VIDEO0_ENABLE && TCFG_VIDEO0_ENABLE)
-    //eva init code
-    eva_clock_init();
-    EcuInitial(); //eva cache init
 
     //==========================================
     //      x2c setting
@@ -427,8 +423,37 @@ void eva_init_code(void)
     x2a_rmst_cfg(RID_DMM, xchid, 0);
     x2a_rmst_cfg(RID_DBI, xchid, 0);
 #undef xchid
+}
+void eva_init_code(void)
+{
+#if (defined TCFG_UI_ENABLE &&  TCFG_UI_ENABLE) || (defined TCFG_VIDEO0_ENABLE && TCFG_VIDEO0_ENABLE)
+    //eva init code
+    eva_clock_init();
+    EcuInitial(); //eva cache init
+    eva_cfg_init();
 #endif
 }
+static u8 eva_enter_deepsleep(void)
+{
+    return 0;
+}
+
+AT_VOLATILE_CACHE_CODE_LOWPOWER
+u8 eva_exit_deepsleep(void)
+{
+
+    eva_clock_init();
+    //EcuInitial(); //eva cache init
+    //eva_cfg_init();
+
+    return 0;
+}
+
+DEEPSLEEP_TARGET_REGISTER(eva) = {
+    .name   = "eva",
+    .enter  = eva_enter_deepsleep,
+    .exit   = eva_exit_deepsleep,
+};
 
 void setup_arch(void)
 {
@@ -473,8 +498,10 @@ void setup_arch(void)
     sdfile_init();
     syscfg_tools_init();
 
+#if TCFG_CLOCK_OSC_ADJUST_ENABLE
     xosc_set_cap(TCFG_CLOCK_OSC_CAP, TCFG_CLOCK_OSC_CAP);
     xosc_set_cap_fine(TCFG_CLOCK_OSC_CAP_FINE, TCFG_CLOCK_OSC_CAP_FINE);
+#endif
     /* clk_early_init(PLL_REF_XOSC_DIFF, TCFG_CLOCK_OSC_HZ, 480 * MHz); */
     clk_early_init(PLL_REF_XOSC_DIFF, TCFG_CLOCK_OSC_HZ, 768 * MHz);
 

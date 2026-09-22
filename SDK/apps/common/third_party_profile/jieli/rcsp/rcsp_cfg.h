@@ -140,7 +140,7 @@ RCSP_BTMATE_EN
 
 #define	JL_RCSP_SIMPLE_TRANSFER 								1
 
-#if (TCFG_UI_ENABLE && CONFIG_JL_UI_ENABLE)
+#if (TCFG_UI_ENABLE && (TCFG_SUB_CASE_TYPE == SUB_CASE_TYPE_WATCH))
 #define JL_RCSP_EXTRA_FLASH_OPT									1
 #endif
 
@@ -557,6 +557,56 @@ RCSP_BTMATE_EN
 #else
 #define RCSP_MIX_RECORD_ENABLE                                  0
 #endif
+#endif
+
+/*
+ * RCSP 0x32 AI dialogue feature gate.
+ * The first integration uses the existing RCSP real-time microphone path.
+ */
+#ifndef RCSP_AI_DIALOGUE_ENABLE
+#if defined(RCSP_MODE) && RCSP_MODE && \
+    defined(TCFG_AI_VOICE_ENABLE) && TCFG_AI_VOICE_ENABLE
+#define RCSP_AI_DIALOGUE_ENABLE                                1
+#else
+#define RCSP_AI_DIALOGUE_ENABLE                                0
+#endif
+#endif
+
+/*
+ * 0x34 translation integration, independent of AI dialogue.
+ * Keep the legacy RCSP_ADV_TRANSLATOR audio hooks disabled: their BR28
+ * interfaces are not compatible with the BR33 player interfaces.
+ * The feature is owned by the RCSP module, so the switch lives here; products
+ * still gate it through TCFG_AI_VOICE_ENABLE and TCFG_AI_RX_NODE_ENABLE.
+ */
+#ifndef TCFG_TRANSLATOR_ENABLE
+#define TCFG_TRANSLATOR_ENABLE                                 1
+#endif
+
+#ifndef RCSP_TRANSLATOR_ENABLE
+#if defined(RCSP_MODE) && RCSP_MODE && \
+    defined(TCFG_TRANSLATOR_ENABLE) && TCFG_TRANSLATOR_ENABLE && \
+    defined(TCFG_AI_VOICE_ENABLE) && TCFG_AI_VOICE_ENABLE && \
+    defined(TCFG_AI_RX_NODE_ENABLE) && TCFG_AI_RX_NODE_ENABLE
+#define RCSP_TRANSLATOR_ENABLE                                 1
+#else
+#define RCSP_TRANSLATOR_ENABLE                                 0
+#endif
+#endif
+
+/* Temporary bring-up entry: double-click KEY_IO_NUM0 in BT mode.
+ * Off by default, so IO0 keeps reporting battery; enable it explicitly
+ * for on-device bring-up. */
+#ifndef RCSP_AI_DIALOGUE_KEY_DEBUG_ENABLE
+#define RCSP_AI_DIALOGUE_KEY_DEBUG_ENABLE                      0
+#endif
+
+/*
+ * Save every RCSP real-time recording to SD1 for APP integration analysis.
+ * Each recording creates a separate 8.3 file, for example AIREC000.OPS.
+ */
+#ifndef RCSP_AI_DIALOGUE_RECORD_DUMP_ENABLE
+#define RCSP_AI_DIALOGUE_RECORD_DUMP_ENABLE                    0
 #endif
 
 /*
