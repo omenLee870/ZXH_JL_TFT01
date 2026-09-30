@@ -31,7 +31,7 @@ copy ..\..\isd_config.ini .
 copy ..\..\p11_code.bin .
 copy ..\..\flash_params_v2.bin .
 copy ..\..\flash_params_v3.bin .
-copy ..\..\json_watch_lvgl.txt json.txt
+copy ..\..\json.txt json.txt
 copy ..\..\cfg_tool.bin watch.bin
 
 @rem 先把外部 ui_lvgl_res 资源全部复制进来
@@ -50,6 +50,7 @@ if defined HAS_DIAL_RES (
     mkdir ui_dial_res
     move /y ui_lvgl_res\*.dyn ui_dial_res\ >nul 2>nul
     move /y ui_lvgl_res\*.json ui_dial_res\ >nul 2>nul
+    copy ..\..\json_watch_lvgl.txt json.txt
 )
 
 

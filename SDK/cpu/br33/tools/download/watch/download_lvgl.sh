@@ -21,11 +21,11 @@ cp ../../isd_config.ini .
 cp ../../p11_code.bin .
 cp ../../flash_params_v2.bin .
 cp ../../flash_params_v3.bin .
-cp ../../json_watch_lvgl.txt json.txt
+cp ../../json.txt json.txt
 cp ../../cfg_tool.bin watch.bin
 
 
-../../json_to_res json.txt
+
 
 # remove and recreate ui_lvgl_res / ui_dial_res (if they exist)
 rm -rf ui_lvgl_res
@@ -44,7 +44,10 @@ if [ -n "${HAS_DIAL_RES}" ]; then
     mkdir ui_dial_res
     find ui_lvgl_res -maxdepth 1 -name "*.dyn"  -exec mv -f {} ui_dial_res/ \;
     find ui_lvgl_res -maxdepth 1 -name "*.json" -exec mv -f {} ui_dial_res/ \;
+    cp ../../json_watch_lvgl.txt json.txt
 fi
+
+../../json_to_res json.txt
 
 if [[ -n "$KEY_FILE_PATH" ]]; then
 	echo find KEY_FILE_PATH
