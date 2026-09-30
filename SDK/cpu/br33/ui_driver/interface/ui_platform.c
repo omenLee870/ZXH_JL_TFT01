@@ -54,6 +54,7 @@
 #include "ui_draw/ui_ring.h"
 
 #include "ui_color.h"
+#include "gpu_buf_manager.h"
 
 /* #define DBG_PRINT_POS */
 /* #include "ui_debug.h" */
@@ -958,18 +959,29 @@ static void gpu_draw_ring_full(struct draw_context *dc,
     float fill_w = (float)(outer_r * 2) + 0;
     float fill_h = (float)(outer_r * 2) + 0;
 
-    uint32_t *clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
-    extern int gpu_buf_add(u8 * buf, u32 size);
-    gpu_buf_add((u8 *)clut, sizeof(uint32_t) * 3);
+    uint32_t *clut = NULL;
+    struct gpu_buf *gpu_buf_t = NULL;
+    if (!(gpu_buf_t = gpu_buf_search(elm_id, task_id, 1))) {
+        clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
+        gpu_buf_add(elm_id, task_id, 1, (u8 *)clut, sizeof(uint32_t) * 3);
+    } else {
+        clut = (uint32_t*)gpu_buf_t->buf;
+    }
+    /* printf("clut : 0x%x\n", (u32)clut); */
     clut[0] = 0xffffffff;
     clut[1] = 0xffffffff;
     clut[2] = 0xffffffff;
 
     jlgpu_task_gradient_set_clut(clut, 1, JLGPU_CLUT_FORMAT_ARGB8888);
 
-    uint32_t *radial_clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
-    extern int gpu_buf_add(u8 * buf, u32 size);
-    gpu_buf_add((u8 *)radial_clut, sizeof(uint32_t) * 3);
+    uint32_t *radial_clut = NULL;
+    if (!(gpu_buf_t = gpu_buf_search(elm_id, task_id, 2))) {
+        radial_clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
+        gpu_buf_add(elm_id, task_id, 2, (u8 *)radial_clut, sizeof(uint32_t) * 3);
+    } else {
+        radial_clut = (uint32_t*)gpu_buf_t->buf;
+    }
+    /* printf("radial_clut : 0x%x\n", (u32)radial_clut); */
     radial_clut[0] = (a << 24) | (r << 16) | (g << 8) | b;
     radial_clut[1] = (a << 24) | (r << 16) | (g << 8) | b;
     radial_clut[2] = (a << 24) | (r << 16) | (g << 8) | b;
@@ -2155,6 +2167,9 @@ static int jlui_close_draw_context(struct draw_context *dc)
     if (dc->refresh && (config_gpu_cache_psram_jpeg_en || config_gpu_cache_psram_file_res_en)) {
         gpu_cache_reset();
     }
+
+    /* GPU 合成完成, 释放圆环绘制等任务在 gpu_buf_add 中临时申请的 clut 缓冲 */
+    gpu_buf_list_free();
 
     __this->dc_flag &= ~BIT(dc->index);
     return 0;

@@ -49,6 +49,9 @@
 #endif
 
 
+// 鉴权url的buf长度。拼接后的url约300bytes，留出余量
+#define IFLY_AUTH_URL_BUF_LEN   400
+
 // 鉴权信息结构体
 struct auth_info_t {
     char sig_ori[100];
@@ -139,8 +142,15 @@ char *ifly_authentication(char *host_name, char *host, char *path, int retry)
 {
     //初始化
     struct auth_info_t *auth = net_iflytek_malloc(sizeof(struct auth_info_t));
-    char *url_xf = net_iflytek_malloc(400);
+    char *url_xf = net_iflytek_malloc(IFLY_AUTH_URL_BUF_LEN);
     int retry_cnt = 0;
+
+    if ((auth == NULL) || (url_xf == NULL)) {
+        log_error("malloc err!!\n");
+        net_iflytek_free(auth);
+        net_iflytek_free(url_xf);
+        return NULL;
+    }
 
 __retry:
     //获取网络时间
@@ -148,6 +158,8 @@ __retry:
     int ntp = ntp_client_get_time("s2c.time.edu.cn");
     if (ntp == -1) {
         log_error("get ntp error!!\n");
+        net_iflytek_free(auth);
+        net_iflytek_free(url_xf);
         return NULL;
     }
     int week = ifly_get_sys_time(&(auth->curtime));
@@ -173,7 +185,7 @@ __retry:
         log_info("base64 encode error!!\n");
         if (retry_cnt < retry) {
             memset(auth, 0, sizeof(struct auth_info_t));
-            memset((char *)url_xf, 0, sizeof(url_xf));
+            memset((char *)url_xf, 0, IFLY_AUTH_URL_BUF_LEN);
             retry_cnt++;
             goto __retry;
         }

@@ -110,7 +110,7 @@ const int support_norflash_update_loader_only = 0;
 const int support_ufw_com_update_en = 0;
 
 //支持外挂flash和预留区域一起升级，关闭只升级外挂flash
-#if (defined(TCFG_UPDATE_RESOURCE_EN) && (TCFG_UPDATE_RESOURCE_EN)) && ((defined(TCFG_VIRFAT_INSERT_FLASH_ENABLE) && (TCFG_VIRFAT_INSERT_FLASH_ENABLE)) || (defined(TCFG_NANDFLASH_DEV_ENABLE) && (TCFG_NANDFLASH_DEV_ENABLE)))
+#if (defined(TCFG_UPDATE_RESOURCE_EN) && (TCFG_UPDATE_RESOURCE_EN)) && ((defined(TCFG_VIRFAT_INSERT_FLASH_ENABLE) && (TCFG_VIRFAT_INSERT_FLASH_ENABLE)) || (defined(TCFG_NANDFLASH_DEV_ENABLE) && (TCFG_NANDFLASH_DEV_ENABLE)) || (defined(TCFG_SDFILE_INSERT_FLASH_ENABLE) && (TCFG_SDFILE_INSERT_FLASH_ENABLE)))
 const int support_user_file_update_v2_en = 1;
 #else
 const int support_user_file_update_v2_en = 0;

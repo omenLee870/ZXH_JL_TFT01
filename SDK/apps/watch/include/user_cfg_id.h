@@ -139,6 +139,10 @@
 
 #define		CFG_SYS_VOL                 			203
 #define     CFG_MUSIC_VOL               			204
+/*系统提示音(tone)/通话音量: 与 CFG_MUSIC_VOL 一样掉电记忆。
+ * 之前这两个通道只改 RAM 不落盘, 每次开机都被 Vol_SysTone/Vol_BtcCall 的配置默认值覆盖*/
+#define     CFG_TONE_VOL                			222
+#define     CFG_CALL_VOL                			223
 
 #define 	CFG_TWS_LOCAL_ADDR						205
 #define 	CFG_TWS_REMOTE_ADDR						206

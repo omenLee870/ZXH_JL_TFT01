@@ -15,6 +15,12 @@
 #include "http/http_server.h"
 #include "dev_desc.h"
 #include "screen_mirror.h"
+#include "wifi_adapter.h"
+#if TCFG_AIC8800D40_ENABLE
+#include "sdio_port.h"
+#include "sdio_def.h"
+#include "asm/psram_api.h"
+#endif
 
 #define LOG_TAG             "[EXT_WIFI]"
 #define LOG_ERROR_ENABLE
@@ -62,7 +68,6 @@ enum WIFI_APP_MSG_CODE {
 
 
 static void *wifi_dev = NULL;
-int wifi_work_flag = 0;
 extern unsigned int time_lapse(unsigned int *handle, unsigned int time_out);
 extern u32 ext_wifi_get_upload_rate(void);
 extern u32 ext_wifi_get_download_rate(void);
@@ -232,6 +237,8 @@ static int network_user_callback(void *network_ctx, enum WIFI_EVENT state, void 
 
     case WIFI_EVENT_AP_ON_ASSOC:
         struct eth_addr *hwaddr = (struct eth_addr *)network_ctx;
+        log_info("ext_network_user_callback->WIFI_EVENT_AP_ON_ASSOC hwaddr = %02x:%02x:%02x:%02x:%02x:%02x",
+                 hwaddr->addr[0], hwaddr->addr[1], hwaddr->addr[2], hwaddr->addr[3], hwaddr->addr[4], hwaddr->addr[5]);
 #if TCFG_LTE_PHY_ENABLE && IP_NAPT_EXT
         extern void check_dhcps_client_ipaddr(u8 * hwaddr);
         check_dhcps_client_ipaddr(hwaddr->addr);
@@ -255,42 +262,33 @@ static int network_user_callback(void *network_ctx, enum WIFI_EVENT state, void 
 #endif
         break;
 
+    case WIFI_EVENT_P2P_GO_STA_CONNECTED:
+    case WIFI_EVENT_P2P_GO_STA_DISCONNECTED: {
+        const char *peer_state = (state == WIFI_EVENT_P2P_GO_STA_CONNECTED) ?
+                                 "connected" : "disconnected";
+#if TCFG_AIC8800D40_ENABLE
+        /* AIC passes a temporary peer MAC in priv, valid during this callback. */
+        const struct eth_addr *peer_mac = (const struct eth_addr *)priv;
+
+        if (peer_mac) {
+            log_info("ext_network_user_callback->WIFI_EVENT_P2P_GO_STA %s, mac=%02x:%02x:%02x:%02x:%02x:%02x",
+                     peer_state,
+                     peer_mac->addr[0], peer_mac->addr[1], peer_mac->addr[2],
+                     peer_mac->addr[3], peer_mac->addr[4], peer_mac->addr[5]);
+        } else {
+            log_info("ext_network_user_callback->WIFI_EVENT_P2P_GO_STA %s, mac=unavailable", peer_state);
+        }
+#else
+        log_info("ext_network_user_callback->WIFI_EVENT_P2P_GO_STA %s", peer_state);
+#endif
+        break;
+    }
     default:
         break;
     }
 
     return 0;
 }
-
-//若需要重启wifi驱动，必须调用此接口。
-//关闭wifi： ext_wifi_off 后调用ext_wifi_power_set(0);
-//开启wifi： ext_wifi_power_set（1); 后调用ext_wifi_on
-void ext_wifi_power_set(u8 on)
-{
-    struct cfg_info info = {0};
-
-    info.port_status = on ? PORT_OUTPUT_LOW : PORT_OUTPUT_HIGH;
-    dev_ioctl(wifi_dev, DEV_SET_WIFI_POWER, (u32)&info);
-}
-
-
-void ext_wifi_on(void)
-{
-    dev_ioctl(wifi_dev, DEV_NETWORK_START, 0);
-    wifi_work_flag = 1;
-}
-
-void ext_wifi_off(void)
-{
-    dev_ioctl(wifi_dev, DEV_NETWORK_STOP, 0);
-    wifi_work_flag = 0;
-}
-
-int ext_wifi_work()
-{
-    return wifi_work_flag;
-}
-
 
 #if TCFG_NETWORK_ENABLE
 int ctp_cmd_analysis(const char *topic, char *content, void *priv);
@@ -375,12 +373,17 @@ static void ext_wifi_app_task(void *priv)
     os_time_dly(100);
 
 #if !TCFG_DASHBOARD_HARDWARE_TEST_ENABLE
-#if 1
-    wifi_dev = dev_open("wifi", NULL);
+    wifi_dev = wifi_adapter_open();
 
     info.cb = network_user_callback;
     info.net_priv = NULL;
-    dev_ioctl(wifi_dev, DEV_SET_CB_FUNC, (u32)&info);
+    wifi_adapter_set_event_callback(info.cb);
+
+#if TCFG_AIC8800D40_ENABLE && WIFI_ADAPTER_ROLE_CYCLE_TEST && \
+    !WIFI_APP_SDIO_PSRAM_DMA_TEST
+    wifi_adapter_run_cycle_test();
+    return;
+#endif
 
 #if defined(TCFG_EXT_WIFI_RST_PIN)&&(TCFG_EXT_WIFI_RST_PIN != NO_CONFIG_PORT)
     gpio_set_mode(IO_PORT_SPILT(TCFG_EXT_WIFI_RST_PIN), PORT_OUTPUT_LOW);
@@ -389,26 +392,35 @@ static void ext_wifi_app_task(void *priv)
     gpio_set_mode(IO_PORT_SPILT(TCFG_EXT_WIFI_RST_PIN), PORT_OUTPUT_HIGH);
     os_time_dly(100);
 #else
-    ext_wifi_power_set(1);
+
+    wifi_adapter_module_power_on();
+
 #endif
 
-    ext_wifi_on();
-#endif
-
-#if 1
 #if (EXT_WIFI_TEST_MODE == AP_TEST_MODE)
+#if TCFG_AIC8800D40_ENABLE
+    wifi_adapter_start_ap(info.ssid, info.pwd);
+#else
     info.mode = AP_MODE;
     info.ssid = AP_SSID;
     info.pwd  = AP_PWD;
     info.force_default_mode = 0;
     dev_ioctl(wifi_dev, DEV_AP_MODE, (u32)&info);
+#endif
 #elif (EXT_WIFI_TEST_MODE == STA_TEST_MODE)
+#if TCFG_AIC8800D40_ENABLE
+    wifi_adapter_start_sta(info.ssid, info.pwd);
+#else
     info.mode = STA_MODE;
     info.ssid = STA_SSID;
     info.pwd  = STA_PWD;
     info.force_default_mode = 1;
     dev_ioctl(wifi_dev, DEV_STA_MODE, (u32)&info);
+#endif
 #elif (EXT_WIFI_TEST_MODE == P2P_TEST_MODE)
+#if TCFG_AIC8800D40_ENABLE
+    wifi_adapter_start_ap_p2p(AP_SSID, AP_PWD, P2P_SSID);
+#else
     info.p2p_role = 1;
     info.ssid = P2P_SSID;
     info.force_default_mode = 1;

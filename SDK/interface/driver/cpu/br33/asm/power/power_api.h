@@ -20,20 +20,6 @@
 //
 //
 //******************************************************************
-//config
-enum LOWPOWER_CONFIG {
-    LOWPOWER_CLOSE,
-    SLEEP_EN,
-    DEEP_SLEEP_EN,
-};
-
-//osc_type
-enum LOWPOWER_OSC_TYPE {
-    OSC_TYPE_LRC,
-    OSC_TYPE_BT_OSC,
-    OSC_TYPE_NULL,
-};
-
 struct _power_param {
     //sleep
     u32 btosc_hz;			//蓝牙晶振频率(默认使用24M)

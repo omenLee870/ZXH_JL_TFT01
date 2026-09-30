@@ -1212,16 +1212,21 @@ static void menu_enter_app_anim_cb(int var, int v)
 
     /* 发送到GPU任务进行绘制 */
     int err, msg[32];
+    static OS_SEM sem;
     msg[0] = GPU_MSG_DRAW_LIST;
     msg[1] = (int)__this->head;
     msg[2] = (int)__this->buf_addr;
     msg[3] = (int)__this->buf_size;
-    msg[4] = 0;
+    msg[4] = (int)&sem;
 
+    os_sem_create(&sem, 0);
     err = os_taskq_post_type(GPU_TASK_NAME, msg[0], 6, &msg[1]);
     if (err != OS_NO_ERR) {
+        /* 消息未入队，GPU任务不会回发信号量，直接返回避免永久阻塞 */
         printf("Error! post taskq to gpu task faild. err: %d\n", err);
+        return;
     }
+    os_sem_pend(&sem, 0);
 }
 
 /* ------------------------------------------------------------------------------------*/

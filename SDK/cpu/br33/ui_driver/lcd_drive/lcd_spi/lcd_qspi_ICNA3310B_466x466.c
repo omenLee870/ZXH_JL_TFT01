@@ -99,7 +99,10 @@ static const u8 lcd_spi_ICNA3310B_cmd_list_poweron[] ALIGNED(4) = {
     _BEGIN_, 0x36, 0x00, _END_,
 #endif
     _BEGIN_, 0x53, 0x20, _END_,
-    _BEGIN_, 0x51, 0xff, _END_,
+    /* 亮度初值改为 0x00：面板上电不自行点亮，避免"开机/唤醒闪一下最高亮度"。
+     * 实际档位由 UI 层在 ui_sysinfo_init()（开机）和 lcd_sleep_ctrl(0)/lcd_bl_open()（唤醒）
+     * 通过 lcd_drv_backlight_ctrl() 下发，见 cpu/br33/ui_driver/lcd_drive/lcd_drive.c。 */
+    _BEGIN_, 0x51, 0x00, _END_,
     _BEGIN_, 0x63, 0xff, _END_,
     _BEGIN_, 0x2A, 0x00, 0X06, 0X01, 0Xd8, _END_, //0012,01d1
     _BEGIN_, 0x2B, 0x00, 0X00, 0X01, 0Xd1, _END_, //0006,01c8
@@ -124,7 +127,7 @@ static const u8 lcd_cmd_list_sleepout[] ALIGNED(4) = {
     _BEGIN_, 0x36, 0x00, _END_,
 #endif
     _BEGIN_, 0x53, 0x20, _END_,
-    _BEGIN_, 0x51, 0xff, _END_,
+    _BEGIN_, 0x51, 0x00, _END_,
     _BEGIN_, 0x63, 0xff, _END_,
     _BEGIN_, 0x2A, 0x00, 0X0c, 0X01, 0XD1, _END_,
     _BEGIN_, 0x2B, 0x00, 0X06, 0X01, 0Xc8, _END_,

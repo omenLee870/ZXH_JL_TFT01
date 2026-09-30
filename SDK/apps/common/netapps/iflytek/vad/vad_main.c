@@ -58,6 +58,7 @@
 #define STATUS_NED_FRAME       		3
 
 #define HEART_BEAT_REQ              "client ping"    // 服务器下发的心跳保持请求
+#define HEART_BEAT_REQ_LEN          (sizeof(HEART_BEAT_REQ) - 1)
 
 typedef enum {
     IFLY_VAD_STATUS_NULL = 0,
@@ -121,7 +122,7 @@ static u16 vad_audio_send_data(u8 *voice_buf, u16 voice_len)
 {
 #if AI_AUDIO_SAVE_TEST
     if (save_file) {
-        int wlen = fwrite(save_file, voice_buf, voice_len);
+        int wlen = fwrite(voice_buf, voice_len, 1,  save_file);
         if (wlen != voice_len) {
             log_error("save file err: %d, %d\n", wlen, voice_len);
         }
@@ -178,7 +179,8 @@ static int vad_audio_start(void)
 
 static void ifly_vad_recv_cb(u8 *j_str, u32 len, u8 type)
 {
-    log_info("recv:%s\n", j_str);
+    // websocket 层在 recv_len == buf_len 时不补 '\0'，读 j_str 必须按 len 限界
+    log_info("recv:%.*s\n", (int)len, j_str);
 
     if (vad_info.force_stop) {
         return;
@@ -186,10 +188,14 @@ static void ifly_vad_recv_cb(u8 *j_str, u32 len, u8 type)
     if (vad_info.status >= IFLY_VAD_STATUS_RECV_END) {
         return;
     }
-    if (!strcmp((char *)j_str, HEART_BEAT_REQ)) { // 保持心跳请求，不解析
+    if ((vad_info.param == NULL) || (vad_info.param->vad_res == NULL) || (vad_info.param->vad_res_len == 0)) {
         return;
     }
-    cJSON *cjson_root = cJSON_Parse((char *)j_str);  //json解析错误
+    // 心跳请求不解析。用 memcmp 限定长度，避免 strcmp 越界读
+    if ((len >= HEART_BEAT_REQ_LEN) && (memcmp(j_str, HEART_BEAT_REQ, HEART_BEAT_REQ_LEN) == 0)) {
+        return;
+    }
+    cJSON *cjson_root = cJSON_ParseWithLength((char *)j_str, len);  //json解析错误
     if (cjson_root == NULL) {
         log_error("cjson error...\r\n");
         if (vad_info.status <= IFLY_VAD_STATUS_RECV_END) {
@@ -207,6 +213,7 @@ static void ifly_vad_recv_cb(u8 *j_str, u32 len, u8 type)
             vad_info.status = IFLY_VAD_STATUS_RECV_ERROR;
         }
         vad_info.param->event_cb(IFLY_VAD_EVT_NETWORK_RECV_ERROR, vad_info.param);
+        cJSON_Delete(cjson_root);
         return;
     }
 
@@ -215,28 +222,40 @@ static void ifly_vad_recv_cb(u8 *j_str, u32 len, u8 type)
     cJSON *cjson_result = cJSON_GetObjectItem(cjson_data, "result");
     cJSON *cjson_ws = cJSON_GetObjectItem(cjson_result, "ws");
 
-    int arr_size = cJSON_GetArraySize(cjson_ws);
-    cJSON *arr_item = cjson_ws->child;
+    // ws 节点缺失(心跳/结束帧)时不能解引用，否则读地址 0x8 触发 read hmem exception
+    if (cjson_ws == NULL) {
+        log_error("no ws node\n");
+        cJSON_Delete(cjson_root);
+        return;
+    }
+
     u32 vad_res_len = strlen(vad_info.param->vad_res);
-    for (int i = 0; i < arr_size; i++) {
+    // 直接遍历链表，不依赖 arr_size，避免长度与实际节点数不一致时解引用到非法节点
+    for (cJSON *arr_item = cjson_ws->child; arr_item != NULL; arr_item = arr_item->next) {
         cJSON *cjson_cw = cJSON_GetObjectItem(arr_item, "cw");
-        int arr_size_cw = cJSON_GetArraySize(cjson_cw);
-        cJSON *arr_item_cw = cjson_cw->child;
-        for (int j = 0; j < arr_size_cw; j++) {
+        if (cjson_cw == NULL) {
+            continue;
+        }
+        for (cJSON *arr_item_cw = cjson_cw->child; arr_item_cw != NULL; arr_item_cw = arr_item_cw->next) {
             cJSON *cjson_w = cJSON_GetObjectItem(arr_item_cw, "w");
+            if (cjson_w == NULL) {
+                continue;
+            }
             char *cjson_str = cJSON_Print(cjson_w);
+            // 打印失败会返回 NULL，strlen(NULL) 会读地址 0
+            if (cjson_str == NULL) {
+                log_error("cjson print error\n");
+                continue;
+            }
             u32 json_len = strlen(cjson_str);
             if ((vad_res_len + json_len + 1) > vad_info.param->vad_res_len) {
                 log_error("len error\n");
             } else {
-                strcpy(&vad_info.param->vad_res[vad_res_len], cjson_str);
+                memcpy(&vad_info.param->vad_res[vad_res_len], cjson_str, json_len + 1);
                 vad_res_len += json_len;
             }
-            arr_item_cw = arr_item_cw->next;
             cJSON_free(cjson_str);
         }
-
-        arr_item = arr_item->next;
     }
 
     int res_len = strlen(vad_info.param->vad_res);

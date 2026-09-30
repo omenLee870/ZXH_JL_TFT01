@@ -33,6 +33,10 @@ s8 sensor_hub_cbuf_enable(u8 type, u8 index, u8 enable);
 u16 sensor_hub_get_data(u8 type, u8 index, void *buff, u16 buff_len);
 void sensor_hub_run(void);
 
+/* 抬腕检测闸门：占用方（罗盘页）置 1 期间开关变化只记意图不下发，避免抢 gsensor；
+ * 释放时置 0 并自行发 ENABLE 恢复。链路未编译时为空实现。 */
+void wrist_tilt_set_suspended(u8 suspended);
+
 
 
 void sensor_service_motion_init();

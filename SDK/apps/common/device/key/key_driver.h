@@ -202,7 +202,7 @@ struct key_event {
     u8 init;
     u8 type;
     u8 event;
-    u8 value;
+    s8 value;
     u8 long_time;
     u32 tmr;
 };

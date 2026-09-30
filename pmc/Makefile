@@ -123,6 +123,7 @@ INCLUDES := \
 	-Iinclude/system/cpu/br33 \
 	-Iinclude/utils \
 	-Iinclude/utils/generic \
+	-Iinclude/system/generic \
 	-Iapps/sensor \
 	-Iapps/sensor/driver_vc_hr_11 \
 	-Iapps/btctrler/soft_baseband \
@@ -177,6 +178,7 @@ c_SRC_FILES := \
 	apps/sensor/module/shm_algo_gsensor.c \
 	apps/sensor/module/shm_algo_heart_rate.c \
 	apps/sensor/module/shm_algo_spo2.c \
+	apps/sensor/module/shm_det_wear.c \
 	apps/sensor/module/shm_det_wrist.c \
 	apps/sensor/service/sensor_service.c \
 	apps/sensor/service/sensor_service_hr_vc30fx.c \
@@ -233,6 +235,13 @@ LFLAGS := \
 	apps/bsp/cpu/br33/liba/cpu.a \
 	apps/bsp/cpu/br33/liba/utils.a \
 	apps/bsp/cpu/br33/liba/jl_motion_v0.a \
+	apps/bsp/cpu/br33/liba/vc_lib_hr_v637_jieli_NA_01.a \
+	apps/bsp/cpu/br33/liba/vc_lib_spo2_lc11s_int_JieLi_NA_01.a \
+	apps/bsp/cpu/br33/liba/vc_lib_sportMotion_std_int_jieli_NA_01.a \
+	apps/bsp/cpu/br33/liba/lib_hr_vH102_jieli_NA_01.a \
+	apps/bsp/cpu/br33/liba/lib_Spo2_VC30FS_int_JieLi_NA_01.a \
+	apps/bsp/cpu/br33/liba/lib_BIO_v141_int_jieli_NA_01.a \
+	apps/bsp/cpu/br33/liba/lib_sportMotion_std_int_jieli_NA_01.a \
 	--end-group \
 	-Tapps/bsp/cpu/br33/p11.ld \
 	-M=apps/bsp/cpu/br33/post_build/p11.map \

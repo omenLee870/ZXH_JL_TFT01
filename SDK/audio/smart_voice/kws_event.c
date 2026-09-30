@@ -133,7 +133,10 @@ void *smart_voice_kws_dump_open(int period_time)
 
 void smart_voice_kws_dump_result_add(void *_ctx, u8 model, int kws)
 {
-    if (!config_audio_kws_event_enable || kws < 0) {
+    if (!_ctx || !config_audio_kws_event_enable || kws < 0) {
+        return;
+    }
+    if (model >= ARRAY_SIZE(kws_model_events)) {
         return;
     }
 
@@ -148,7 +151,7 @@ void smart_voice_kws_dump_result_add(void *_ctx, u8 model, int kws)
 void smart_voice_kws_dump_close(void *_ctx)
 {
     struct kws_result_context *ctx = (struct kws_result_context *)_ctx;
-    if (config_audio_kws_event_enable) {
+    if (ctx && config_audio_kws_event_enable) {
         if (ctx->timer) {
             sys_timer_del(ctx->timer);
             free(ctx);

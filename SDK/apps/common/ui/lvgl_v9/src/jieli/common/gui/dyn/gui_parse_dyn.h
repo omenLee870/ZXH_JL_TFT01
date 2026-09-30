@@ -108,6 +108,23 @@ void gui_dyn_set_bind_get_subject_cb(gui_bind_get_subject_cb_t cb);
 void gui_dyn_set_bind_get_data_cb(gui_bind_get_data_cb_t cb);
 
 /**
+ * @brief 外部 dyn 数据读取器
+ *
+ * 用于普通 fopen 打不开的路径（如 packres 归档内的表盘：
+ * storage/virfat_flash/C/watch1/watch1.dyn）。两段式调用：
+ *   buf == NULL ：返回所需字节数（>0），失败返回 -1；
+ *   buf != NULL ：写入最多 buf_size 字节并回填 *out_size，成功返回 0。
+ * 缓冲区由 gui_parse_dyn 用 lv_malloc 分配，读取器只负责填数据。
+ */
+typedef int32_t (*gui_dyn_ext_reader_t)(const char *path, void *buf, int32_t buf_size, int32_t *out_size);
+
+/**
+ * @brief 注册外部 dyn 数据读取器（未注册时行为与不带该功能时完全一致）
+ * @param reader 读取器，传 NULL 取消注册
+ */
+void gui_dyn_set_ext_reader(gui_dyn_ext_reader_t reader);
+
+/**
  * @brief Get the preview image
  * @param path dyn file path
  * @return The preview image

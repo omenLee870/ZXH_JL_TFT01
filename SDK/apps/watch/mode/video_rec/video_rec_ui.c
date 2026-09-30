@@ -29,8 +29,11 @@ static lv_timer_t *s_rec_alert_timer = NULL;
 static void *g_vrec_video_handle = NULL;
 #endif
 
-/* 竖屏面板(240x320)上把 320x240 本地录像预览旋转 90° 铺满全屏(与对讲/拍照一致)。
- * 仅当"控件尺寸 == 显示尺寸对调"时生效, 旋转在显示层由 JLGPU 完成。需 LVGL 线程调用。 */
+/* 预览旋转铺满: 控件尺寸恒等于预览源帧尺寸(lv_port_video_disp_set_src 每帧按帧尺寸
+ * 重设 img 尺寸, 无法用 lv_obj_set_size 覆盖), 故这里读到的 w/hh 就是源的真实尺寸。
+ * 仅当"控件尺寸 == 屏尺寸对调"(320x240 <-> 240x320)时旋转 90° 铺满;
+ * 源与屏同尺寸同方向时不动(旋转反而会把 320x240 变成 240x320 而铺不满)。
+ * 旋转在显示层由 JLGPU 完成, 出帧/编码尺寸不变。需 LVGL 线程调用。 */
 #if CONFIG_LVGL_UI_ENABLE
 static void video_rec_preview_rotate(lv_video_disp_handle_t *h)
 {

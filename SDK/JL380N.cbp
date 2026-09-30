@@ -29,6 +29,7 @@
 <Add option="-DSUPPORT_MS_EXTENSIONS" />
 <Add option="-fdiscrete-bitfield-abi" />
 <Add option="-DCONFIG_RELEASE_ENABLE" />
+<Add option="-DH264E_MAX_THREADS=1" />
 <Add option="-DCONFIG_CPU_BR33" />
 <Add option="-DCONFIG_IIC_VERSION2" />
 <Add option="-DCONFIG_PRINT_FLOAT_ENABLE" />
@@ -41,6 +42,21 @@
 <Add option="-DCONFIG_IPU_SID_SEN=1" />
 <Add option="-DLWIP_USE_BT" />
 <Add option="-DCONFIG_NET_ENABLE" />
+<Add option="-DCONFIG_JIELI_BR33" />
+<Add option="-DCONFIG_SDIO_SUPPORT" />
+<Add option="-DAIC_BUS_SDIO" />
+<Add option="-DCONFIG_AIC8800D80" />
+<Add option="-DCONFIG_AIC8800D80_H" />
+<Add option="-DCONFIG_LWIP" />
+<Add option="-DCONFIG_LOAD_FW=2" />
+<Add option="-DWPA_TYPES_DEFINED" />
+<Add option="-DCONFIG_SOCK_RTOS_AL" />
+<Add option="-DMAX_RTOS_SOCKETS=12" />
+<Add option="-DPLATFORM_NO_FILE" />
+<Add option="-DAIC_FEATURE_P2P" />
+<Add option="-DAIC_JIELI_STA_ROOT_CAUSE_TEST=0" />
+<Add option="-DAIC_JIELI_P2P_GO_AUTO_RECYCLE=0" />
+<Add option="-DAIC_JIELI_DEFER_STA_REUSE=1" />
 <Add option="-DCONFIG_SUPPORT_AES_CCM_FOR_EDR" />
 <Add option="-DCONFIG_AES_CCM_RXMAXBUF_EXT_MICLEN" />
 <Add option="-DCONFIG_SOFT_BASEBAND_ENABLE" />
@@ -192,6 +208,7 @@
 <Add directory="audio/effect" />
 <Add directory="interface/btstack" />
 <Add directory="interface/net/libwebsockets/include" />
+<Add directory="interface/net/lwip_2_2_0" />
 <Add directory="interface/net/lwip_2_2_0/lwip/src/include" />
 <Add directory="interface/net/lwip_2_2_0/lwip/src/include/netif" />
 <Add directory="interface/net/lwip_2_2_0/lwip/app" />
@@ -208,6 +225,11 @@
 <Add directory="interface/net/lte_module" />
 <Add directory="interface/net" />
 <Add directory="interface/net/wireless" />
+<Add directory="interface/net/wireless/aic8800/include" />
+<Add directory="interface/net/wireless/aic8800/include/inc" />
+<Add directory="interface/net/wireless/aic8800/include/drv_api/inc" />
+<Add directory="interface/net/wireless/aic8800/include/drv_wifi" />
+<Add directory="interface/net/wireless/aic8800/include/utils/inc" />
 <Add directory="interface/net/server" />
 <Add directory="interface/net/mbedtls_3_4_0" />
 <Add directory="interface/net/web_socket" />
@@ -501,6 +523,8 @@
 <Add option="cpu/br33/liba/lib_drc_advance.a" />
 <Add option="cpu/br33/liba/DynamicEQ.a" />
 <Add option="cpu/br33/liba/lib_ape_dec.a" />
+<Add option="cpu/br33/liba/lib_amr_dec.a" />
+<Add option="cpu/br33/liba/lib_amr_enc.a" />
 <Add option="cpu/br33/liba/VirtualBass.a" />
 <Add option="cpu/br33/liba/lib_plateReverb_adv.a" />
 <Add option="cpu/br33/liba/lib_reverb_cal.a" />
@@ -642,11 +666,14 @@
 <Add option="cpu/br33/liba/ui_gif.a" />
 <Add option="cpu/br33/liba/ui_lv9_fitter.a" />
 <Add option="cpu/br33/liba/ui_amap_svg_demo.a" />
+<Add option="cpu/br33/liba/iMLite_Map.a" />
 <Add option="cpu/br33/liba/video.a" />
 <Add option="--start-group " />
 <Add option="cpu/br33/liba/opt.a" />
 <Add option="cpu/br33/liba/iperf.a" />
-<Add option="cpu/br33/liba/libaicwifi.a" />
+<Add option="cpu/br33/liba/libaic8800_driver.a" />
+<Add option="cpu/br33/liba/libaic_platform.a" />
+<Add option="cpu/br33/liba/libaic_mbedtls.a" />
 <Add option="cpu/br33/liba/sdio_card.a" />
 <Add option="cpu/br33/liba/hsm_ext.a" />
 <Add option="cpu/br33/liba/ext_wifi_dev.a" />
@@ -656,6 +683,16 @@
 <Add option="cpu/br33/liba/libc.a" />
 <Add option="-Tcpu/br33/sdk.ld" />
 <Add option="-M=cpu/br33/tools/sdk.map" />
+<Add option="--wrap=aicwf_log_printf" />
+<Add option="--wrap=platform_test_module_severity" />
+<Add option="--wrap=aicwf_hal_bus_pwr_stctl" />
+<Add option="--wrap=udp_sendto" />
+<Add option="--wrap=fhost_wpa_disassociate_sta" />
+<Add option="--wrap=fhost_tx_do_sta_del" />
+<Add option="--wrap=rwnx_send_msg_tx" />
+<Add option="--wrap=aicwf_driver_unexcepted" />
+<Add option="--wrap=aicwf_hal_msg_push" />
+<Add option="--wrap=iperf_cJSON_Print" />
 <Add library="C:\JL\pi32\pi32v2-lib\r3-large\libm.a" />
 </Linker>
 <ExtraCommands>
@@ -3089,12 +3126,19 @@
 <Unit filename="apps/watch/demo/pbg_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/demo/trans_data_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/algo/shm_algo_gsensor.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/health_manager/algo_p11/shm_algo_gsensor.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/health_manager/algo_p11/shm_algo_heart_rate.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/health_manager/algo_p11/shm_algo_spo2.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/common/health_manager.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/common/shm_common_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/common/shm_file_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/common/shm_info_storage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/detect/shm_det_mense.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/health_manager/detect/shm_det_wear.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/health_manager/detect_p11/shm_det_wear.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/health_manager.h" />
+<Unit filename="apps/watch/health_manager/health_manager_test.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/health_manager/health_manager_test.h" />
 <Unit filename="apps/watch/health_manager/module/shm_mod_blood_oxygen.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/module/shm_mod_daily_active.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/health_manager/module/shm_mod_heart_rate.c"><Option compilerVer="CC"/></Unit>
@@ -3348,6 +3392,8 @@
 <Unit filename="apps/watch/sensor_hub/sensor_hal_wrist_tilt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/sensor_hub/sensor_hub.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/sensor_hub/sensor_hub.h" />
+<Unit filename="apps/watch/sensor_hub/sensor_service.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/sensor_hub/sensor_service.h" />
 <Unit filename="apps/watch/sensor_hub/sensor_service_compass.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/sensor_hub/sensor_service_motion.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/sensor_hub/sensor_service_vc_hr_spo2.c"><Option compilerVer="CC"/></Unit>
@@ -3412,7 +3458,9 @@
 <Unit filename="apps/watch/wifi/spi_net_app_task.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/wifi/stream/mpi_video_net.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/wifi/uart_net_app_task.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/wifi/wifi_adapter.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/wifi/wifi_app_task.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/wifi/wireless_main.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/CVP/audio_aec.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/CVP/audio_aec.h" />
 <Unit filename="audio/CVP/audio_cvp.c"><Option compilerVer="CC"/></Unit>
@@ -3759,6 +3807,7 @@
 <Unit filename="cpu/br33/ui_driver/gpu_demo/img_data/img_data_type_raw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br33/ui_driver/gpu_demo/img_data/img_data_type_rb_swap.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br33/ui_driver/gpu_demo/img_data/img_test.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="cpu/br33/ui_driver/interface/gpu_buf_manager.h" />
 <Unit filename="cpu/br33/ui_driver/interface/gpu_draw.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br33/ui_driver/interface/gpu_draw.h" />
 <Unit filename="cpu/br33/ui_driver/interface/gpu_exception.c"><Option compilerVer="CC"/></Unit>

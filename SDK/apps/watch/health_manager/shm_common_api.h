@@ -86,6 +86,14 @@ int sport_health_get_sport_file_id();
 int sport_health_get_sport_file_size();
 //更新算法配置
 int sport_health_gsensor_algo_cfg_update();
+//开启 gsensor 算法（大核控制小核算法开关）
+int sport_health_gsensor_algo_enable();
+//关闭 gsensor 算法
+int sport_health_gsensor_algo_disable();
+//开启床头钟 dir 算法（只控方向计算，不影响计步算法）
+int sport_health_gsensor_dir_enable();
+//关闭床头钟 dir 算法
+int sport_health_gsensor_dir_disable();
 /* ------------------------------------------------------------------------------------*/
 /**
  * @TYPE 			心率

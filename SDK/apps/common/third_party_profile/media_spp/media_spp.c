@@ -52,6 +52,20 @@ static void media_spp_state_callback(void *hdl, void *remote_addr, u8 state)
         break;
     case SPP_USER_ST_DISCONN:
         log_info("media spp disconnect#########\n");
+#if TCFG_BT_H264_SCR_ENABLE
+        {
+            int msg[2];
+            int err;
+            void screen_mirror_bt_h264_deinit(void);
+            msg[0] = (int)screen_mirror_bt_h264_deinit;
+            msg[1] = 0; /* 回调参数个数 */
+
+            err = os_taskq_post_type("app_core", Q_CALLBACK, 2, msg);
+            if (err) {
+                log_error("post h264 deinit failed: %d\n", err);
+            }
+        }
+#endif
         break;
     }
     if (g_media_spp_state_handler) {

@@ -21,6 +21,7 @@
         *(.*.text.const.cache.L1)
 
         *(.debug_code)
+		*(.debug_code_str)
         *(.debug_const)
 
 		. = ALIGN(4);

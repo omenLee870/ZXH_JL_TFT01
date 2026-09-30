@@ -4,7 +4,7 @@
 #include "chargebox.h"
 #include "clock.h"
 #include "uart.h"
-#include "asm/gpio_hw.h"
+#include "gpio.h"
 
 #if (TCFG_CHARGE_BOX_ENABLE)
 

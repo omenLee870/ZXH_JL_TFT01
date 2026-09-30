@@ -24,6 +24,9 @@
 #define RCSP_MIX_RECORD_STOP_RSP_TIMEOUT_MS    1000
 #define RCSP_MIX_RECORD_START_TIMEOUT_MS       2000
 
+/* 录音最少需要的空闲空间(KB)，低于此值不允许开始录音 */
+#define RCSP_RECORD_MIN_FREE_SPACE_KB          (1024)  /* 1M */
+
 struct rcsp_mix_record_file_handle {
     struct file_recorder *recorder;
     FILE *old_file;
@@ -380,6 +383,7 @@ static FILE *rcsp_mix_recorder_open_file(char *record_path, u16 path_size)
     char filename[9];
     char path[64] = {0};
     char *root_path;
+    u32 free_kb = 0;
     u32 timestamp = rcsp_mix_record_get_file_timestamp();
 
 #if (TCFG_NOR_REC)
@@ -405,6 +409,17 @@ static FILE *rcsp_mix_recorder_open_file(char *record_path, u16 path_size)
             record_path[0] = '\0';
         }
         log_error("rcsp recorder root path not found: %s\n", logo);
+        return NULL;
+    }
+
+    /* 空间不足时不要创建文件: fopen("w+")会建出一个0字节文件(不占簇),
+     * 编码器第一次写就分配不到簇, 结果留下一堆0KB录音 */
+    if (fget_free_space(root_path, &free_kb) != 0 ||
+        free_kb < RCSP_RECORD_MIN_FREE_SPACE_KB) {
+        if (record_path && path_size) {
+            record_path[0] = '\0';
+        }
+        log_error("rcsp recorder no space: %s free=%u KB\n", root_path, free_kb);
         return NULL;
     }
 

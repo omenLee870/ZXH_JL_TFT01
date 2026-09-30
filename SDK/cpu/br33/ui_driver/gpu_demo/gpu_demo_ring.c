@@ -2,6 +2,7 @@
 #include "asm/math_fast_function.h"
 #include "ui_draw/ui_math.h"
 #include "ui/lcd/lcd_drive.h"      /*! 引入lcd接口模块   */
+#include "gpu_buf_manager.h"
 
 static int task_id = 1;
 
@@ -31,9 +32,15 @@ void gpu_demo_create_radial_angle_grad_task_custom(pJLGPUChainHead_t head, struc
     /* ARGB8888(0xff, 0xff, 0x00, 0x00), */
     /* }; */
 
-    uint32_t *clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
-    extern int gpu_buf_add(u8 * buf, u32 size);
-    gpu_buf_add((u8 *)clut, sizeof(uint32_t) * 3);
+    struct gpu_buf *gpu_buf_t = NULL;
+
+    uint32_t *clut = NULL;
+    if (!(gpu_buf_t = gpu_buf_search(1, 1, 1))) {
+        clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
+        gpu_buf_add(1, 1, 1, (u8 *)clut, sizeof(uint32_t) * 3);
+    } else {
+        clut = (uint32_t*)gpu_buf_t->buf;
+    }
     clut[0] = 0xffffffff;
     clut[1] = 0xffffffff;
     clut[2] = 0xffffffff;
@@ -41,9 +48,13 @@ void gpu_demo_create_radial_angle_grad_task_custom(pJLGPUChainHead_t head, struc
     /* printf("%s() - %d, %08x, %08x, %08x\n", __func__, __LINE__, clut[0], clut[1], clut[2]); */
     jlgpu_task_gradient_set_clut(clut, 1, JLGPU_CLUT_FORMAT_ARGB8888);
 
-    uint32_t *radial_clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
-    extern int gpu_buf_add(u8 * buf, u32 size);
-    gpu_buf_add((u8 *)radial_clut, sizeof(uint32_t) * 3);
+    uint32_t *radial_clut = NULL;
+    if (!(gpu_buf_t = gpu_buf_search(1, 1, 2))) {
+        radial_clut = (uint32_t *)malloc(sizeof(uint32_t) * 3);
+        gpu_buf_add(1, 1, 2, (u8 *)radial_clut, sizeof(uint32_t) * 3);
+    } else {
+        radial_clut = (uint32_t*)gpu_buf_t->buf;
+    }
     radial_clut[0] = color;
     radial_clut[1] = color;
     radial_clut[2] = color;

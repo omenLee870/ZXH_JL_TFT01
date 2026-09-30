@@ -23,7 +23,7 @@ copy ..\..\stream.bin .
 copy ..\..\user_api.bin .
 copy ..\..\flash_params_v2.bin .
 copy ..\..\flash_params_v3.bin .
-copy ..\..\json.txt .
+copy ..\..\json_watch_jlui.txt json.txt
 
 copy ..\..\ui_resource\*.*   .
 
@@ -81,7 +81,7 @@ set FLASH_CMD=-flash-params flash_params_v3.bin
 
 
 
-@rem É¾³ýÁÙÊ±ÎÄ¼þ
+@rem åˆ é™¤ä¸´æ—¶æ–‡ä»¶
 if exist *.mp3 del *.mp3 
 if exist *.PIX del *.PIX
 if exist *.TAB del *.TAB
@@ -99,10 +99,10 @@ copy jl_isd.bin %PROJ_DOWNLOAD_PATH%\jl_isd.bin
 copy jl_isd.fw %PROJ_DOWNLOAD_PATH%\jl_isd.fw
 
 
-@rem ³£ÓÃÃüÁîËµÃ÷
-@rem -format vm        //²Á³ýVM ÇøÓò
-@rem -format cfg       //²Á³ýBT CFG ÇøÓò
-@rem -format 0x3f0-2   //±íÊ¾´ÓµÚ 0x3f0 ¸ö sector ¿ªÊ¼Á¬Ðø²Á³ý 2 ¸ö sector(µÚÒ»¸ö²ÎÊýÎª16½øÖÆ»ò10½øÖÆ¶¼¿É£¬µÚ¶þ¸ö²ÎÊý±ØÐëÊÇ10½øÖÆ)
+@rem å¸¸ç”¨å‘½ä»¤è¯´æ˜Ž
+@rem -format vm        //æ“¦é™¤VM åŒºåŸŸ
+@rem -format cfg       //æ“¦é™¤BT CFG åŒºåŸŸ
+@rem -format 0x3f0-2   //è¡¨ç¤ºä»Žç¬¬ 0x3f0 ä¸ª sector å¼€å§‹è¿žç»­æ“¦é™¤ 2 ä¸ª sector(ç¬¬ä¸€ä¸ªå‚æ•°ä¸º16è¿›åˆ¶æˆ–10è¿›åˆ¶éƒ½å¯ï¼Œç¬¬äºŒä¸ªå‚æ•°å¿…é¡»æ˜¯10è¿›åˆ¶)
 
 ping /n 2 127.1>null
 IF EXIST null del null

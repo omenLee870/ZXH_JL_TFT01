@@ -1,17 +1,18 @@
 #include "sdk_config.h"
 #include "sensor_driver.h"
 
-#if 1
+/* L0/L1/L2 → RAM；L3 → Flash（FIFO 类同向，函数级 AT 覆盖） */
+#if TCFG_SENSOR_GSENSOR_LEVEL <= 2
 #pragma bss_seg(".sensor_bss.L1")
 #pragma data_seg(".sensor_data.L1")
 #pragma code_seg(".sensor_code.L1")
-#pragma const_seg(".sensor_const")
 #else
 #pragma bss_seg(".sensor_bss.L2")
 #pragma data_seg(".sensor_data.L2")
 #pragma code_seg(".sensor_code.L2")
-#pragma const_seg(".sensor_const")
 #endif
+#pragma const_seg(".sensor_const")
+#include "sensor_seg.h"
 
 #define LOG_TAG_CONST       SENSOR_DRIVER
 #define LOG_TAG     		"[SENSOR_MANAGER]"
@@ -30,7 +31,8 @@
 #define IIC_ADDR_W          (0x19U << 1 | 0x0)
 #define IIC_ADDR_R          (0x19U << 1 | 0x1)
 /*******************************************************/
-static axis_data_t accel_data[50];  //accel data buffer
+/* 基准 50 帧；SENSOR_FIFO_DEPTH 按 REQ-002 预留 1.2 倍余量（50 -> 60），reader 数不变 */
+static axis_data_t accel_data[SENSOR_FIFO_DEPTH(50)];  //accel data buffer
 static p11_cbuffer_t  accel_cbuffer;
 static cbuffer_child_t entry[3];//支持3个成员读取
 static sensor_info_t sensor_info = {
@@ -52,7 +54,8 @@ static const sensor_regs_t sensor_regs_array[] = {
     {0x22, 0x00},
 };
 
-static s8 sensor_check(void)
+/* 初始化/低频函数放 flash（COLD 类，L1~L3 走 .sensor_code.L2，XIP 运行，省 SRAM） */
+AT_GSENSOR_COLD static s8 sensor_check(void)
 {
     u8 dev_id = 0;
     sensor_read(IIC_ADDR_R, 0x70, &dev_id, 1, 0);
@@ -65,7 +68,7 @@ static s8 sensor_check(void)
     return ((dev_id == 0x28 || dev_id == 0x11) && sensor_info.cbuffer) ? RET_OK : RET_ERR;
 }
 
-static s8 sensor_read_config(void)
+AT_GSENSOR_COLD static s8 sensor_read_config(void)
 {
     u8 reg_val = 0;
     for (u8 i = 0; i < sizeof(sensor_regs_array) / sizeof(sensor_regs_t); i++) {
@@ -77,7 +80,7 @@ static s8 sensor_read_config(void)
     return RET_OK;
 }
 
-static s8 sensor_open(u16 range, u16 odr)
+AT_GSENSOR_COLD static s8 sensor_open(u16 range, u16 odr)
 {
     const u8 config_range[4] = {0x00, 0x10, 0x20, 0x30};
     const u8 config_odr[4]   = {0x2F, 0x3F, 0x4F, 0x5F};
@@ -85,10 +88,28 @@ static s8 sensor_open(u16 range, u16 odr)
     u8 acc_conf_odr   = 0x3F;  //默认 25hz
     u8 acc_conf_range = 0x10;  //默认 +-4g
 
-    for (u8 i = 0; i < sizeof(sensor_regs_array) / sizeof(sensor_regs_t); i++) {
-        if (sensor_write(IIC_ADDR_W, sensor_regs_array[i].addr, (u8 *)&sensor_regs_array[i].value, 1) == RET_ERR) {
-            return RET_ERR;
+    /* SC7A20 上电后需过 tPOR 才响应 I2C，PMC 启动即访问会 NACK 致 open 失败且无自愈路径；
+     * 这里补「等芯片就绪」并整轮重试，3×20ms 覆盖 tPOR 典型值。 */
+    s8 wret = RET_ERR;
+    u8 fail_idx = 0;
+    for (u8 retry = 0; retry < 3; retry++) {
+        wret = RET_OK;
+        for (u8 i = 0; i < sizeof(sensor_regs_array) / sizeof(sensor_regs_t); i++) {
+            if (sensor_write(IIC_ADDR_W, sensor_regs_array[i].addr, (u8 *)&sensor_regs_array[i].value, 1) == RET_ERR) {
+                wret = RET_ERR;
+                fail_idx = i;
+                break;
+            }
         }
+        if (wret == RET_OK) {
+            break;
+        }
+        log_error("[SC7A20] open retry %d: reg 0x%02x write fail",
+                  retry + 1, sensor_regs_array[fail_idx].addr);
+        mdelay(20);
+    }
+    if (wret != RET_OK) {
+        return RET_ERR;
     }
 
     for (u8 i = 0; i < 4; i++) {
@@ -106,13 +127,14 @@ static s8 sensor_open(u16 range, u16 odr)
 }
 
 
-static s8 sensor_close(void)
+AT_GSENSOR_COLD static s8 sensor_close(void)
 {
     u8 val = 0;
     return sensor_write(IIC_ADDR_W, 0x20, &val, 1);
 }
 
-static s8 sensor_read_fifo_data(void *arg, u16 *len)
+/* 高频：sensor_driver_run 每 200ms 轮询调用 → FIFO 类（L0~L2 SRAM / L3 Flash） */
+AT_SENSOR_FIFO static s8 sensor_read_fifo_data(void *arg, u16 *len)
 {
     u8 fifo_len = 0;
     u8 temp_arry[6];
@@ -120,7 +142,7 @@ static s8 sensor_read_fifo_data(void *arg, u16 *len)
 
     sensor_read(IIC_ADDR_R, 0x2f, &fifo_len, 1, 0);
     fifo_len = fifo_len & 0x1f;
-    log_debug("%s fifo:%d\n", __func__, fifo_len);
+    log_debug("%s fifo:%d", __func__, fifo_len);
     for (u8 i = 0; i < fifo_len; i++) {
         sensor_read(IIC_ADDR_R, 0xa8, temp_arry, 6, 0);
         accel[i].x = (((s16)((s16)temp_arry[1] * 256 + temp_arry[0])) >> 3);
@@ -160,7 +182,7 @@ static const sensor_regs_t sensor_wakeup_regs_array[] = {
     {0x33, 0x00},
 };
 
-static s8 sensor_wakeup_enable(void)
+AT_SENSOR_COLD static s8 sensor_wakeup_enable(void)
 {
     log_info("sensor_wakeup_enable");
     for (u8 i = 0; i < sizeof(sensor_wakeup_regs_array) / sizeof(sensor_regs_t); i++) {
@@ -171,7 +193,7 @@ static s8 sensor_wakeup_enable(void)
     return RET_OK;
 }
 
-__attribute__((weak)) s8 driver_sc7a20_is_wake(void)
+AT_SENSOR_COLD __attribute__((weak)) s8 driver_sc7a20_is_wake(void)
 {
     u8 reg_val = 0;
     if (sensor_read(IIC_ADDR_R, 0x31, &reg_val, 1, 0) == RET_OK) {

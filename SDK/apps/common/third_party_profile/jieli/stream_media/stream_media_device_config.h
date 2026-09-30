@@ -92,6 +92,13 @@ extern "C" {
 #define SM_CFG_CMD_TIMEOUT_MS   1000
 #endif
 
+// 心跳间隔和设备端连续丢失阈值
+#ifndef SM_CFG_HEARTBEAT_INTERVAL_MS
+#define SM_CFG_HEARTBEAT_INTERVAL_MS  5000
+#endif
+#ifndef SM_CFG_HEARTBEAT_MISS_MAX
+#define SM_CFG_HEARTBEAT_MISS_MAX     3
+#endif
 
 // 填充设备基本信息
 void stream_media_cfg_get_device_info(u8 *chip_type, u8 *dev_type, u16 *proto_ver, u32 *fw_ver);

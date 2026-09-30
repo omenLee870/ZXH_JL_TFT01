@@ -45,6 +45,9 @@
 #define VIDEO_FILE_FMT  "VID_%04d.AVI"
 #define PHOTO_FILE_FMT  "IMG_%04d.JPG"
 #define MAX_FILE_INDEX  9999
+/* 目录扫描失败时的重试次数与间隔(os_time_dly 单位: tick) */
+#define FILE_SCAN_RETRY_TIMES   3
+#define FILE_SCAN_RETRY_DELAY   1
 #define VIDEO_CAMERA_ID                0
 #ifndef TCFG_VIDEO_SENSOR_NAME
 #define TCFG_VIDEO_SENSOR_NAME         "NT99141"
@@ -218,10 +221,96 @@ static int video_api_parse_index_with_prefix(const char *name, const char *prefi
 }
 
 /**
+ * @brief 判断文件是否已存在
+ *
+ * 录像文件名必须保证不撞已有文件: AVI_open_output_file() 内部用
+ * O_CREAT|O_TRUNC 打开, 同名文件会被直接截断, 旧录像就没了。
+ *
+ * @return true=已存在, false=不存在
+ */
+static bool video_api_file_exist(const char *path)
+{
+    FILE *fp = fopen(path, "r");
+
+    if (fp == NULL) {
+        return false;
+    }
+    fclose(fp);     /* 必须关: VFS 文件池只有 1 个槽位 */
+    return true;
+}
+
+/**
+ * @brief 扫描录像目录，统计 AVI/JPG 的最大编号
+ *
+ * 遍历方式用 fs->file_number + FSEL_BY_NUMBER(SDK 通用写法, 见 record.c),
+ * 不用 FSEL_NEXT_FILE 起步 —— 该模式下首次调用拿不到文件时整个循环一次都不进,
+ * 会一个文件都扫不到, 索引直接归零并从 VID_0000 覆盖旧录像。
+ *
+ * @param max_video  输出: AVI 最大编号, 无文件为 -1
+ * @param max_photo  输出: JPG 最大编号, 无文件为 -1
+ * @param video_cnt  输出: AVI 文件数
+ * @param photo_cnt  输出: JPG 文件数
+ * @return 0=成功, -1=扫描失败(fscan 返回 NULL)
+ */
+static int video_api_scan_index(int *max_video, int *max_photo,
+                                int *video_cnt, int *photo_cnt)
+{
+    /* -tAVIJPG: 只扫 AVI 和 JPG(驱动层过滤, 避免遍历无关文件); 不排序, 只需要最大编号 */
+    struct vfscan *fs = fscan(REC_DIR, "-tAVIJPG -sn", 1);
+
+    *max_video = -1;
+    *max_photo = -1;
+    *video_cnt = 0;
+    *photo_cnt = 0;
+
+    if (fs == NULL) {
+        return -1;
+    }
+
+    /* fscan 失败和目录为空都会走"没有文件"分支, 这里把 file_number 打出来区分 */
+    printf("[VIDEO_API] scan %s: file_number=%u\n", REC_DIR, fs->file_number);
+
+    for (u16 i = 1; i <= fs->file_number; i++) {
+        FILE *fp = fselect(fs, FSEL_BY_NUMBER, (int)i);
+        char name[64] = {0};
+        int num;
+
+        if (fp == NULL) {
+            break;
+        }
+
+        fget_name(fp, (u8 *)name, sizeof(name));
+
+        num = video_api_parse_index_with_prefix(name, "VID_");
+        if (num >= 0) {
+            if (num > *max_video) {
+                *max_video = num;
+            }
+            (*video_cnt)++;
+            fclose(fp);
+            continue;
+        }
+
+        num = video_api_parse_index_with_prefix(name, "IMG_");
+        if (num >= 0) {
+            if (num > *max_photo) {
+                *max_photo = num;
+            }
+            (*photo_cnt)++;
+        }
+        fclose(fp);
+    }
+
+    fscan_release(fs);
+    return 0;
+}
+
+/**
  * @brief 初始化文件索引
  *
- * 使用 fscan 单次扫描目录，同时查找 .AVI 和 .JPG 文件的最大编号，
- * 如果目录不存在则创建。
+ * 扫描目录查找 .AVI 和 .JPG 文件的最大编号，如果目录不存在则创建。
+ * 扫描失败时重试若干次(设备刚上电/SD 刚退出低功耗时文件系统可能未就绪),
+ * 仍失败则返回 -1 由调用方放弃本次录像/拍照, 而不是静默从 0 开始覆盖旧文件。
  *
  * @return 0=成功, -1=失败
  */
@@ -249,45 +338,28 @@ static int video_api_file_init(void)
         return 0;
     }
 
-    /* 2. 单次扫描目录，同时查找 .AVI 和 .JPG 文件的最大索引
-     *    -tAVIJPG: 只扫描 AVI 和 JPG 文件（驱动层过滤，避免遍历无关文件）
-     *    不排序：这里只需要最大编号，避免目录文件多时做无用排序。
-     */
+    /* 2. 扫描目录，统计 AVI/JPG 的最大编号 */
     {
-        struct vfscan *fs = fscan(REC_DIR, "-tAVIJPG", 1);
         int max_video = -1;
         int max_photo = -1;
         int video_cnt = 0;
         int photo_cnt = 0;
+        int scan_ok = 0;
 
-        if (fs) {
-            FILE *fp;
-            while ((fp = fselect(fs, FSEL_NEXT_FILE, 0)) != NULL) {
-                char name[64] = {0};
-                int num;
-
-                fget_name(fp, (u8 *)name, sizeof(name));
-
-                num = video_api_parse_index_with_prefix(name, "VID_");
-                if (num >= 0) {
-                    if (num > max_video) {
-                        max_video = num;
-                    }
-                    video_cnt++;
-                    fclose(fp);
-                    continue;
-                }
-
-                num = video_api_parse_index_with_prefix(name, "IMG_");
-                if (num >= 0) {
-                    if (num > max_photo) {
-                        max_photo = num;
-                    }
-                    photo_cnt++;
-                }
-                fclose(fp);
+        for (int i = 0; i < FILE_SCAN_RETRY_TIMES; i++) {
+            if (video_api_scan_index(&max_video, &max_photo,
+                                     &video_cnt, &photo_cnt) == 0) {
+                scan_ok = 1;
+                break;
             }
-            fscan_release(fs);
+            printf("[VIDEO_API] fscan %s failed, retry %d/%d\n",
+                   REC_DIR, i + 1, FILE_SCAN_RETRY_TIMES);
+            os_time_dly(FILE_SCAN_RETRY_DELAY);
+        }
+
+        if (!scan_ok) {
+            printf("[VIDEO_API] cannot scan %s, refuse to record/photo\n", REC_DIR);
+            return -1;
         }
 
         /* 设置视频文件索引 */
@@ -341,44 +413,64 @@ static int video_api_format_media_path(char *path,
  * @brief 生成下一个视频文件的完整路径
  * @param path      输出缓冲区
  * @param path_size 缓冲区大小
- * @return 0=成功, -1=索引溢出(已循环), -2=路径过长
+ * @return 0=成功, -1=找不到空闲文件名, -2=路径过长
  */
 static int video_api_get_video_path(char *path, size_t path_size)
 {
-    if (rec_path_index > MAX_FILE_INDEX) {
-        rec_path_index = 0;
+    /* 索引可能被其它流程占用(或扫描漏了文件), 逐个往后找第一个不存在的名字,
+     * 保证绝不截断已有录像; 全满时绕回 0 再找一圈 */
+    for (int tries = 0; tries <= MAX_FILE_INDEX; tries++) {
+        if (rec_path_index > MAX_FILE_INDEX) {
+            rec_path_index = 0;
+        }
+
+        if (video_api_format_media_path(path, path_size,
+                                        REC_DIR VIDEO_FILE_FMT,
+                                        rec_path_index, "video") != 0) {
+            return -2;
+        }
+
+        rec_path_index++;
+
+        if (!video_api_file_exist(path)) {
+            return 0;
+        }
+        printf("[VIDEO_API] %s already exists, skip\n", path);
     }
 
-    if (video_api_format_media_path(path, path_size,
-                                    REC_DIR VIDEO_FILE_FMT,
-                                    rec_path_index, "video") != 0) {
-        return -2;
-    }
-
-    rec_path_index++;
-    return 0;
+    printf("[VIDEO_API] no free video file name in %s\n", REC_DIR);
+    return -1;
 }
 
 /**
  * @brief 生成下一个照片文件的完整路径
  * @param path      输出缓冲区
  * @param path_size 缓冲区大小
- * @return 0=成功, -1=索引溢出(已循环), -2=路径过长
+ * @return 0=成功, -1=找不到空闲文件名, -2=路径过长
  */
 static int video_api_get_photo_path(char *path, size_t path_size)
 {
-    if (photo_path_index > MAX_FILE_INDEX) {
-        photo_path_index = 0;
+    for (int tries = 0; tries <= MAX_FILE_INDEX; tries++) {
+        if (photo_path_index > MAX_FILE_INDEX) {
+            photo_path_index = 0;
+        }
+
+        if (video_api_format_media_path(path, path_size,
+                                        REC_DIR PHOTO_FILE_FMT,
+                                        photo_path_index, "photo") != 0) {
+            return -2;
+        }
+
+        photo_path_index++;
+
+        if (!video_api_file_exist(path)) {
+            return 0;
+        }
+        printf("[VIDEO_API] %s already exists, skip\n", path);
     }
 
-    if (video_api_format_media_path(path, path_size,
-                                    REC_DIR PHOTO_FILE_FMT,
-                                    photo_path_index, "photo") != 0) {
-        return -2;
-    }
-
-    photo_path_index++;
-    return 0;
+    printf("[VIDEO_API] no free photo file name in %s\n", REC_DIR);
+    return -1;
 }
 
 /**
@@ -394,22 +486,28 @@ static int video_api_get_photo_path(char *path, size_t path_size)
  */
 static int video_api_get_cycle_video_path(char *path, size_t path_size)
 {
-    int index = rec_path_index;
+    /* 同 video_api_get_video_path(): 循环录像换段同样不能撞已有文件 */
+    for (int tries = 0; tries <= MAX_FILE_INDEX; tries++) {
+        if (rec_path_index > MAX_FILE_INDEX) {
+            rec_path_index = 0;
+        }
 
-    /* 循环录像回调中，rec_path_index 已经指向下一个索引 */
-    if (index > MAX_FILE_INDEX) {
-        index = 0;
-        rec_path_index = 0;
+        if (video_api_format_media_path(path, path_size,
+                                        REC_DIR VIDEO_FILE_FMT,
+                                        rec_path_index, "cycle") != 0) {
+            return -1;
+        }
+
+        rec_path_index++;
+
+        if (!video_api_file_exist(path)) {
+            return 0;
+        }
+        printf("[VIDEO_API] %s already exists, skip\n", path);
     }
 
-    if (video_api_format_media_path(path, path_size,
-                                    REC_DIR VIDEO_FILE_FMT,
-                                    index, "cycle") != 0) {
-        return -1;
-    }
-
-    rec_path_index++;
-    return 0;
+    printf("[VIDEO_API] no free video file name for cycle in %s\n", REC_DIR);
+    return -1;
 }
 
 /*============================================================================*/

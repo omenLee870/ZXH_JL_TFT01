@@ -7,6 +7,7 @@
 #include "key_event_deal.h"
 
 #include "health_manager/health_manager.h"
+#include "rtc/rtc_dev.h"
 
 #define LOG_TAG_CONST       SPORT_HEALTH_MANAGE
 #define LOG_TAG     		"[SHM-SPORT]"
@@ -139,9 +140,14 @@ struct sport_file_end {
 #define SPORT_FILE_MASK_CREATE	(0XFF)
 #define SPORT_FILE_MASK_END	(0XEE)
 
+/* 心率 0 表示小核本次未回传有效心率，不参与运动心率统计 */
+#define SPORT_HR_INVALID		(0)
+
 
 struct sport_value *__sport_value = NULL;
 #define __value 	(__sport_value)
+/* 运动心率均值统计的有效样本数（无效心率不计入，避免拉低均值） */
+static u32 __hr_sample_cnt = 0;
 
 
 /* ------------------------------------------------------------------------------------*/
@@ -219,6 +225,7 @@ static int shm_sport_start()
     __value->distance_s =  DISTANCE_MAP(algo_out_value.distance);
     __value->heart_min = 0xff;
     __value->heart_max = 0;
+    __hr_sample_cnt = 0;/* 新一次运动重新累计心率均值样本 */
     __value->run_status = SHM_SPORT_STATUS_RUN;
     __value->status = SHM_SPORT_STATUS_START;
     sport_value_dump(__func__, __value);
@@ -302,12 +309,19 @@ static int shm_sport_update()
         __value->calories_s += calories_dt;
         __value->distance_s += distance_dt;
         //心率计算
-        u8 hr_curr = 90 + rand32() % 20;
-        u32 hr_tmp = __value->heart_val * __value->run_sec + hr_curr;
+        /* 心率改为读取 pmc 小核真实算法值（请求-应答，返回上一次回传缓存，首次为 0）。
+         * 无有效心率时只推进运动时长，不参与均值/最值统计，避免 0 值污染。 */
+        u8 hr_curr = SPORT_HR_INVALID;
+        sport_health_manager_value_get(SHM_MOD_HEART_RATE_ALGO, SHM_GET_TYPE_REAL_VALUE, &hr_curr);
         __value->run_sec ++;	//可以用rtc和pause_sec校准
-        __value->heart_val = hr_tmp / __value->run_sec;
-        __value->heart_max = (__value->heart_max > hr_curr) ? __value->heart_max : hr_curr;
-        __value->heart_min = (__value->heart_min < hr_curr) ? __value->heart_min : hr_curr;
+        if (hr_curr != SPORT_HR_INVALID) {
+            u32 hr_tmp = (u32)__value->heart_val * __hr_sample_cnt + hr_curr;
+            __hr_sample_cnt ++;
+            __value->heart_val = hr_tmp / __hr_sample_cnt;
+            __value->heart_max = (__value->heart_max > hr_curr) ? __value->heart_max : hr_curr;
+            __value->heart_min = (__value->heart_min < hr_curr) ? __value->heart_min : hr_curr;
+            __value->heart_real = hr_curr;	//实时心率（供 sport_health_get_sport_hr_real 读取）
+        }
 
         sport_value_dump(__func__, __value);
     } else {
@@ -452,6 +466,9 @@ static int shm_sport_file_stop()
 static int shm_sport_file_data()
 {
 #if SPORT_FILE_INTERVAL
+    /* SPORT_FILE_INTERVAL 当前为 0，本函数体被预处理剔除，下面 #error 不可达
+     * （保留以提示周期性 DATA 包尚未接入）。运动记录文件由 START/PAUSE/CONTINUE/
+     * STOP 四个事件包 + 文件尾 struct sport_file_end 构成。 */
     if (!__value) {
         return -SHM_ERR_MOD_NOR_INIT;
     }
@@ -474,25 +491,52 @@ static int shm_sport_file_data()
 }
 static int shm_sport_file_get_rec_by_index(struct sport_value *value, u8 index)
 {
-    int ret = SHM_ERR_OK;
     struct sport_file_head file_head;
+    struct sport_file_end file_end;
+    int rd;
+
     void *fp	= sport_health_file_open(F_TYPE_SPORTRECORD, 0);
+    if (!fp) {
+        log_error("%s open F_TYPE_SPORTRECORD fail", __func__);
+        return -SHM_ERR_FILE_NOT_FIND;
+    }
     int id = sport_health_file_get_id(fp, index);
     if (!id) {
-        ret = SHM_ERR_FILE_NOT_FIND;
         sport_health_file_close(fp); //
-        return ret;
+        return -SHM_ERR_FILE_NOT_FIND;
     }
-    ret = sport_health_file_read(fp, (u8 *)&file_head, 0, sizeof(struct sport_file_head));
-    ASSERT(ret);
-    put_buf((u8 *)&file_head, sizeof(struct sport_file_head));
 
-    struct sport_file_end file_end;
+    /* sport_health_file_read() 返回的是**实际读取的字节数**，不是错误码：
+     * 须按长度校验后再决定 ret，直接返回会让上层误判为读盘失败。
+     * 另外 ASSERT 在 CONFIG_RELEASE_ENABLE 下编译为空，不能依赖它兜底。 */
+    rd = sport_health_file_read(fp, (u8 *)&file_head, 0, sizeof(struct sport_file_head));
+    if (rd != (int)sizeof(struct sport_file_head)) {
+        log_error("%s read head fail rd:%d want:%d", __func__, rd, (int)sizeof(struct sport_file_head));
+        sport_health_file_close(fp);
+        return -SHM_ERR_DATA_ERR;
+    }
+    log_info_hexdump((u8 *)&file_head, sizeof(struct sport_file_head));
+
+    /* 文件尾包偏移必须做下界保护：文件只写了头、还没写尾包时（运动中掉电 /
+     * 刚创建就查询），file_len - sizeof(end) 为负，会被 small_file_read 当成
+     * 巨大的 u32 长度去 zalloc。 */
     int file_len = sport_health_file_get_len(fp);
-    ret = sport_health_file_read(fp, (u8 *)&file_end, file_len - sizeof(struct sport_file_end), sizeof(struct sport_file_end));
-    ASSERT(ret);
-    log_info("%s %d ", __func__, (u32)sizeof(struct sport_file_end));
+    if (file_len < (int)(sizeof(struct sport_file_head) + sizeof(struct sport_file_end))) {
+        log_warn("%s file_len:%d too short, record not finished", __func__, file_len);
+        sport_health_file_close(fp);
+        return -SHM_ERR_DATA_ERR;
+    }
+
+    rd = sport_health_file_read(fp, (u8 *)&file_end, file_len - sizeof(struct sport_file_end),
+                                sizeof(struct sport_file_end));
+    if (rd != (int)sizeof(struct sport_file_end)) {
+        log_error("%s read end fail rd:%d want:%d file_len:%d",
+                  __func__, rd, (int)sizeof(struct sport_file_end), file_len);
+        sport_health_file_close(fp);
+        return -SHM_ERR_DATA_ERR;
+    }
     log_info_hexdump((u8 *)&file_end, sizeof(struct sport_file_end));
+
     value->type = file_head.type;
     value->steps_c = file_end.steps;
     value->calories_c = file_end.calories;
@@ -500,7 +544,7 @@ static int shm_sport_file_get_rec_by_index(struct sport_value *value, u8 index)
     value->run_sec = file_end.run_time;
     sport_health_file_close(fp);
     sport_value_dump(__func__, value);
-    return ret;
+    return SHM_ERR_OK;
 }
 
 static int shm_sport_io_crtl(int cmd, void *priv)
@@ -594,8 +638,8 @@ static int shm_sport_get_value(int type, void *priv)
 REGISTER_SPORT_HEALTH_MODULE(sport)
 {
     .module =  SHM_MOD_SPORT,
-     .io_ctrl = shm_sport_io_crtl,
-      .get_value =   shm_sport_get_value,
+    .io_ctrl = shm_sport_io_crtl,
+    .get_value =   shm_sport_get_value,
 };
 
 #endif

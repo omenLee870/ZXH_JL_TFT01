@@ -56,6 +56,7 @@
 -Iaudio/effect
 -Iinterface/btstack
 -Iinterface/net/libwebsockets/include
+-Iinterface/net/lwip_2_2_0
 -Iinterface/net/lwip_2_2_0/lwip/src/include
 -Iinterface/net/lwip_2_2_0/lwip/src/include/netif
 -Iinterface/net/lwip_2_2_0/lwip/app
@@ -72,6 +73,11 @@
 -Iinterface/net/lte_module
 -Iinterface/net
 -Iinterface/net/wireless
+-Iinterface/net/wireless/aic8800/include
+-Iinterface/net/wireless/aic8800/include/inc
+-Iinterface/net/wireless/aic8800/include/drv_api/inc
+-Iinterface/net/wireless/aic8800/include/drv_wifi
+-Iinterface/net/wireless/aic8800/include/utils/inc
 -Iinterface/net/server
 -Iinterface/net/mbedtls_3_4_0
 -Iinterface/net/web_socket

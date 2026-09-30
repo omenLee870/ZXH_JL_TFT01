@@ -18,6 +18,7 @@
 #include "bt_slience_detect.h"
 #include "poweroff.h"
 #include "bt_background.h"
+#include "audio_config.h"
 
 #if(TCFG_USER_TWS_ENABLE == 0)
 
@@ -158,6 +159,9 @@ void sys_enter_soft_poweroff(enum poweroff_reason reason)
     app_var.goto_poweroff_flag = 1;
     app_var.goto_poweroff_cnt = 0;
     sys_auto_shut_down_disable();
+
+    /* 关机前把音量立即落盘: 正常保存是"改完音量后 5s", 否则 5s 内关机这次改动就丢了 */
+    app_audio_volume_save_now();
 
 #if TCFG_APP_BT_EN
     void bt_sniff_disable();

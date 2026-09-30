@@ -3,6 +3,18 @@
 #include "includes.h"
 #include "sensor_service_wrist_tilt.h"
 #include "health_manager.h"
+/* L0/L1/L2 → RAM；L3 → Flash（FIFO/ALGO 类同向，函数级 AT 覆盖） */
+#if TCFG_SENSOR_GSENSOR_LEVEL <= 2
+#pragma bss_seg(".sensor_bss.L1")
+#pragma data_seg(".sensor_data.L1")
+#pragma code_seg(".sensor_code.L1")
+#else
+#pragma bss_seg(".sensor_bss.L2")
+#pragma data_seg(".sensor_data.L2")
+#pragma code_seg(".sensor_code.L2")
+#endif
+#pragma const_seg(".sensor_const")
+#include "sensor_seg.h"
 #define LOG_TAG_CONST       SENSOR_SERVICE
 #define LOG_TAG     		"[WRIST]"
 #define LOG_ERROR_ENABLE
@@ -31,12 +43,12 @@ static sensor_info_t sensor_info = {
     .name = "JL GESTURE V1.0",
 };
 
-static s8 wrist_tilt_online(void)
+AT_SENSOR_COLD static s8 wrist_tilt_online(void)
 {
     return RET_OK;
 }
 
-static void wrist_tilt_event_response(u32 event)
+AT_SENSOR_ALGO static void wrist_tilt_event_response(u32 event)
 {
     //获取算法数据
     struct algo_value algo_out_value;
@@ -46,18 +58,18 @@ static void wrist_tilt_event_response(u32 event)
     sport_health_manager_msg_post_self(SHM_MOD_DET_WRIST, SHM_CMD_UPDATE, priv);
 }
 
-s8 wrist_tilt_run(void *arg, u16 *len)
+AT_SENSOR_FIFO s8 wrist_tilt_run(void *arg, u16 *len)
 {
     //jl_motion_run包含手势算法
     return RET_OK;
 }
 
-static s8 wrist_tilt_open(u16 range, u16 odr)
+AT_SENSOR_COLD static s8 wrist_tilt_open(u16 range, u16 odr)
 {
     return RET_OK;
 }
 
-static s8 wrist_tilt_close(void)
+AT_SENSOR_COLD static s8 wrist_tilt_close(void)
 {
     return RET_OK;
 }

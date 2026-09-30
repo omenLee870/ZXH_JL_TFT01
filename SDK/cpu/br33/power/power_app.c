@@ -172,6 +172,13 @@ void power_early_flowing()
 
     PORT_TABLE(g);
 
+#if defined(CONFIG_UPDATE_JUMP_TO_MASK) && CONFIG_UPDATE_JUMP_TO_MASK
+    u16 update_result = update_flag_get();
+    if (update_result != UPDATA_NON && update_result != 0) {
+        latch_io_set_protect(gpio_config, STRCHANGE(CONFIG_SD_LATCH_IO));
+    }
+#endif
+
     /*init_boot_rom();*/
 
     printf("get_boot_rom(): %d", get_boot_rom());

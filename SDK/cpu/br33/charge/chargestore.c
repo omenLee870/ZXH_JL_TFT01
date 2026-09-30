@@ -2,7 +2,6 @@
 #include "gpio.h"
 #include "asm/power_interface.h"
 #include "asm/hwi.h"
-#include "asm/gpio_hw.h"
 #include "asm/charge.h"
 #include "asm/chargestore.h"
 #include "update.h"

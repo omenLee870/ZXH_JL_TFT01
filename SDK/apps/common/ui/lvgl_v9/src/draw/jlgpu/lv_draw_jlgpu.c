@@ -1302,6 +1302,20 @@ void lv_draw_jlgpu_deinit(void)
     return;
 }
 
+/* 把两条任务节点串成一条链。
+ * 显示侧的链由 lv_jlgpu_add_task_node() 维护, 走的是 unit->jlgpu_ctx->task_base;
+ * 立即绘制路径需要自建一条本地链(整批一次 jlgpu_run), 所以单独开这两个薄封装,
+ * 把 jlgpu_task_set_next/get_next 的依赖留在本文件。 */
+void lv_jlgpu_task_chain_link(void *prev_task, void *next_task)
+{
+    jlgpu_task_set_next(prev_task, next_task);
+}
+
+void *lv_jlgpu_task_chain_next(void *task)
+{
+    return jlgpu_task_get_next(task);
+}
+
 
 #if LV_USE_DRAW_JLGPU_LIST
 /**************************gpu链表管理接口****************************************/
@@ -1529,7 +1543,7 @@ uint8_t lv_jlgpu_get_gxdma_bpp(uint8_t out_format)
     return jlgpu_get_format_bpp(out_format);
 }
 
-void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint16_t in_stride, uint8_t *out_buf, uint8_t in_format, uint8_t out_format, uint8_t out_jstc_en, uint8_t out_rotate)
+void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint16_t in_stride, uint8_t *out_buf, uint8_t in_format, uint8_t out_format, uint8_t out_jstc_en, uint8_t out_rotate, const lv_area_t *frame_area)
 {
 
     os_mutex_pend(&jlgpu_mutex, 0);
@@ -1544,6 +1558,11 @@ void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint1
     gxdma_param.rot_mode = out_rotate;
     int out_w = lv_area_get_width(window);
     int out_h = lv_area_get_height(window);
+    /* 输出步长必须按"整帧"算: window 只是整帧里的一块, 目标缓存(tile 行/行缓存)的
+     * 布局由整帧尺寸决定, 按窗口尺寸算会让写进去的块与 DMM 的读法不符。
+     * frame_area 为 NULL 表示 window 就是整帧。 */
+    int frame_w = frame_area ? lv_area_get_width(frame_area) : out_w;
+    int frame_h = frame_area ? lv_area_get_height(frame_area) : out_h;
 
     u8 rotation = is_gxdma_rotate(gxdma_param.rot_mode);
 
@@ -1557,7 +1576,7 @@ void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint1
         //JSTC 压缩只支持ARGB8888/RGB888 tile格式
         gxdma_param.out_adr_mode = 0; //tile
         gxdma_param.dst_fmt = JLGPU_FORMAT_ARGB8888; //JSTC压缩输出格式只能是ARGB8888
-        gxdma_param.out_stride = (rotation ? out_h : out_w) / 8 * ((gxdma_param.jstc_mode == 2) ? 96 : 64);
+        gxdma_param.out_stride = (rotation ? frame_h : frame_w) / 8 * ((gxdma_param.jstc_mode == 2) ? 96 : 64);
     }
     if (gxdma_param.rot_mode) {
         gxdma_param.out_adr_mode = 0;
@@ -1565,7 +1584,7 @@ void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint1
     gxdma_param.dst = out_buf;
     if (gxdma_param.dst_fmt == JLGPU_FORMAT_YUV420_BT601 || gxdma_param.dst_fmt == JLGPU_FORMAT_YUV420_BT709) {
 
-        gxdma_param.dst_uv = out_buf + out_w * out_h;
+        gxdma_param.dst_uv = out_buf + frame_w * frame_h;
     }
     /* printf("gxdma_param.dst=0x%x dmm_src0_base=%x\n", (uint32_t)gxdma_param.dst, EVA_DMM->IN0_BASE); */
     gxdma_param.width = out_w;
@@ -1573,10 +1592,10 @@ void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint1
     gxdma_param.in_stride = in_stride;
     if (gxdma_param.jstc_en == 0) {
         if (gxdma_param.out_adr_mode) {
-            gxdma_param.out_stride = out_w * (jlgpu_get_format_bpp(out_format) / 8);
+            gxdma_param.out_stride = frame_w * (jlgpu_get_format_bpp(out_format) / 8);
         } else {
             //tile
-            gxdma_param.out_stride = (rotation ? out_h : out_w) * jlgpu_get_format_bpp(out_format) / 8 * ((out_format <= 0x0e) ? 8 : 16);
+            gxdma_param.out_stride = (rotation ? frame_h : frame_w) * jlgpu_get_format_bpp(out_format) / 8 * ((out_format <= 0x0e) ? 8 : 16);
         }
     }
 

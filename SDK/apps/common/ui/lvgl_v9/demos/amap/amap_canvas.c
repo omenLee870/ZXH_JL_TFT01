@@ -18,7 +18,8 @@
 // ---- 屏幕尺寸 ----
 #define LCD_W 1024//840  // 可选 1024
 #define LCD_H 600//480   // 可选 600
-
+#define AMAP_TILE_MEM_CACHE_KB      2048    // 瓦片内存缓存（KB），0 = 关闭
+#define AMAP_POI_TILE_MEM_CACHE_KB  1024    // POI 瓦片内存缓存（KB），0 = 关闭
 // ---- 在线激活 license：1=联网激活 / 0=关闭 ----
 #define GET_LICENSE 0
 #if GET_LICENSE
@@ -52,16 +53,18 @@
 // 内存占用 ≈ 槽位数 × 瓦片像素数 × 2 字节：256x256 瓦片 ≈ 128KB/槽
 // 请按剩余 PSRAM 调节（建议 4~16，至少 ≥1）
 
-// ==================== 解析/光栅化耗时打印 ====================
-// 1=开启：直接用 printf 打印每帧瓦片的解析/光栅化累计耗时（不受 AMAP_OPEN_INFO 限制，方便单独测速）
-// 0=关闭：无任何额外打印
-#define AMAP_TIME_PROFILE     1
-// ====================================================================
-
 // ---- 对象池大小（每帧最大瓦片/POI/文字数量） ----
 #define AMAP_MAX_TEXT_LABEL 128
 #define AMAP_POI_MAX 128
 #define AMAP_SVG_TILE_MAX 128
+
+// ---- SVG 瓦片渲染后端选择（draw_svg_bitmap 回调用哪个实现） ----
+// 0 = awk_render_svg_bitmap_adapter ：XML 字符串 -> LVGL 内建 SVG 解析器 -> jlgpu 矢量渲染
+// 1 = awk_render_svg_bitmap_adapter1：XML 字符串 -> nanosvg 解析 -> nanosvg 软件光栅化 -> RGB565 贴图
+// 2 = awk_render_svg_bitmap_adapter2：FlatBuffer 瓦片 -> 直接构造 LVGL SVG DOM -> jlgpu 矢量渲染
+// 3 = awk_render_svg_bitmap_adapter3：FlatBuffer 瓦片 -> 直接搭 NSVGimage -> nanosvg 软件光栅化 -> RGB565 贴图
+//     数据是 FlatBuffer 时选 2 或 3（选 2/3 会在运行时自动探测并回退到 0）。
+#define AMAP_SVG_ADAPTER_SEL  2
 
 // ---- 文件读取中转 buffer 大小（SD DMA 先读到内部 SRAM 中转，再 memcpy 到 PSRAM） ----
 #define AMAP_READ_STAGE_SIZE 512
@@ -115,13 +118,6 @@ extern void psram_heap_stats(void);
  */
 // 全局变量保存 mapId
 static uint32_t mapId = 0;
-#if AMAP_TIME_PROFILE
-// 本帧解析/光栅化耗时统计（由 awk_render_commit_drawing_adapter 汇总打印）
-static uint32_t g_prof_tile_n = 0;     // 本帧进入解析流程的瓦片数
-static uint32_t g_prof_tile_hit = 0;   // 本帧缓存命中(免解析)的瓦片数
-static uint32_t g_prof_parse_ms = 0;   // 本帧累计 nsvgParse 耗时(ms)
-static uint32_t g_prof_raster_ms = 0;  // 本帧累计 nsvgRasterize 耗时(ms)
-#endif
 static awk_context_t context;
 static int i2590 = 1;
 static bool first = 1;
@@ -548,11 +544,15 @@ static void awk_render_commit_drawing_adapter(uint32_t map_id)
     }
 
     // 隐藏本帧没用到（上一帧残留）的 SVG 瓦片。
-    // 注意：实际渲染用的是 svg_jlgpu_img 池（awk_render_svg_bitmap_adapter），
-    // svg_img_obj 是未注册的 adapter1 用的池，恒为 NULL，这里必须查对数组。
+    // 两个池都要清：svg_jlgpu_img 是矢量模式（adapter/adapter2）用的，
+    // svg_img_obj 是软件光栅化模式（adapter1/adapter3）用的。谁被注册进
+    // context.render_adapter 由 AMAP_SVG_ADAPTER_SEL 决定，另一个恒为 NULL。
     for (int i = svg_mapi; i < AMAP_SVG_TILE_MAX; i++) {
         if (svg_jlgpu_img[i] != NULL) {
             lv_obj_add_flag(svg_jlgpu_img[i], LV_OBJ_FLAG_HIDDEN);
+        }
+        if (svg_img_obj[i] != NULL) {
+            lv_obj_add_flag(svg_img_obj[i], LV_OBJ_FLAG_HIDDEN);
         }
     }
 
@@ -562,18 +562,6 @@ static void awk_render_commit_drawing_adapter(uint32_t map_id)
         return;
     }
     lv_refr_now(disp);
-
-#if AMAP_TIME_PROFILE
-    if (g_prof_tile_n || g_prof_tile_hit) {
-        printf("[amap] render: parse_tile=%u, cache_hit=%u, parse=%u ms, raster=%u ms\n",
-               g_prof_tile_n, g_prof_tile_hit, g_prof_parse_ms, g_prof_raster_ms);
-        /* 清零，避免无瓦片的那一帧把上一帧的旧统计重复打印 */
-        g_prof_tile_n = 0;
-        g_prof_tile_hit = 0;
-        g_prof_parse_ms = 0;
-        g_prof_raster_ms = 0;
-    }
-#endif
 }
 
 // 根据 amap 给的字号选择字体：AMAP_USE_FREETYPE_FONT=1 时用 SD 卡 ttf（完整字库，按字号缓存），否则用内置 CJK 字体
@@ -624,6 +612,97 @@ static const lv_font_t *amap_get_text_font(const awk_paint_style_t *style)
 #endif
 }
 
+/* ===== 文字尺寸缓存 =====
+ * lv_text_get_size() 对 freetype 字体是逐字调 lv_font_get_glyph_dsc：每个字都要
+ * FT_Set_Pixel_Sizes + FT_Get_Char_Index + FT_Get_Kerning（带互斥锁），字形缓存
+ * 未命中时还要 FT_Load_Glyph 把位图真光栅化一遍。实测一帧里高德要问 327 次，
+ * 而真正不同的字符串不到 100 个，同一段文字在一次拖动中被反复问，单这一项就吃掉
+ * 2.1s（一帧 7.8s 的 27%）。
+ * 这里按 (文字, 字号) 记住量过的结果，命中就一次 lv_text_get_size 都不做。
+ * 键用 hash 先比、再比字符串，避免 256 条线性扫描每次都跑 strcmp。 */
+#define AMAP_TEXT_SIZE_CACHE_MAX 256
+
+typedef struct {
+    char    *text;          /* 字符串副本，NULL = 空槽 */
+    uint32_t hash;          /* 字符串 FNV-1a，先比它省掉绝大多数 strcmp */
+    uint32_t font_size;     /* 字号，和 text 一起构成键 */
+    int32_t  w;
+    int32_t  h;
+    int32_t  line_height;
+} amap_text_size_cache_t;
+
+static amap_text_size_cache_t g_amap_text_size_cache[AMAP_TEXT_SIZE_CACHE_MAX];
+static uint32_t g_amap_text_size_cache_next;   /* 环形替换位置 */
+
+static uint32_t amap_text_hash(const char *text)
+{
+    uint32_t h = 2166136261u;
+
+    while (*text != '\0') {
+        h = (h ^ (uint8_t) * text) * 16777619u;
+        text++;
+    }
+    return h;
+}
+
+static amap_text_size_cache_t *amap_text_size_cache_find(const char *text, uint32_t hash, uint32_t font_size)
+{
+    for (uint32_t i = 0; i < AMAP_TEXT_SIZE_CACHE_MAX; i++) {
+        amap_text_size_cache_t *e = &g_amap_text_size_cache[i];
+
+        if (e->text != NULL && e->hash == hash && e->font_size == font_size &&
+            strcmp(e->text, text) == 0) {
+            return e;
+        }
+    }
+    return NULL;
+}
+
+static void amap_text_size_cache_put(const char *text, uint32_t hash, uint32_t font_size,
+                                     const lv_point_t *size, int32_t line_height)
+{
+    /* 拖动时字符串集合基本稳定，环形替换最老的一条即可，不必做真 LRU */
+    uint32_t slot = g_amap_text_size_cache_next;
+    g_amap_text_size_cache_next = (slot + 1) % AMAP_TEXT_SIZE_CACHE_MAX;
+
+    size_t len = strlen(text) + 1;
+    char *copy = (char *)AMAP_MALLOC(len);
+    if (copy == NULL) {
+        return;     /* 分配失败就不缓存，下次照常走真测量 */
+    }
+    memcpy(copy, text, len);
+
+    amap_text_size_cache_t *e = &g_amap_text_size_cache[slot];
+    if (e->text != NULL) {
+        AMAP_FREE(e->text);
+    }
+    e->text = copy;
+    e->hash = hash;
+    e->font_size = font_size;
+    e->w = size->x;
+    e->h = size->y;
+    e->line_height = line_height;
+}
+
+/* 量一段文字的尺寸，命中缓存就直接返回。draw_text 里那次量尺寸也走这里。 */
+static void amap_measure_text_cached(const char *text, const lv_font_t *font, uint32_t font_size,
+                                     lv_point_t *size, int32_t *line_height)
+{
+    uint32_t hash = amap_text_hash(text);
+    amap_text_size_cache_t *hit = amap_text_size_cache_find(text, hash, font_size);
+
+    if (hit != NULL) {
+        size->x = hit->w;
+        size->y = hit->h;
+        *line_height = hit->line_height;
+        return;
+    }
+
+    lv_text_get_size(size, text, font, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    *line_height = font->line_height;
+    amap_text_size_cache_put(text, hash, font_size, size, *line_height);
+}
+
 static bool awk_render_measure_text_adapter(uint32_t map_id, const char *text, const awk_paint_style_t *style, int32_t *width, int32_t *ascender, int32_t *descender)
 {
     (void)map_id;
@@ -631,13 +710,17 @@ static bool awk_render_measure_text_adapter(uint32_t map_id, const char *text, c
         return false;
     }
     const lv_font_t *font = amap_get_text_font(style);
+    uint32_t font_size = (style->text_style.font_size > 0) ? style->text_style.font_size : AMAP_FREETYPE_FONT_SIZE;
     lv_point_t size;
-    lv_text_get_size(&size, text, font, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    int32_t line_height = 0;
+
+    amap_measure_text_cached(text, font, font_size, &size, &line_height);
+
     if (width) {
         *width = size.x;
     }
     if (ascender) {
-        *ascender = font->line_height;
+        *ascender = line_height;
     }
     if (descender) {
         *descender = 0;
@@ -688,9 +771,12 @@ static void awk_render_draw_text_adapter(uint32_t map_id, awk_point_t center, co
     lv_obj_set_style_text_color(label, lv_color_make(r, g, b), LV_PART_MAIN);
     lv_obj_set_style_text_opa(label, a, LV_PART_MAIN);
 
-    // 量文字尺寸，按 align 把中心点换算成左上角
+    // 量文字尺寸，按 align 把中心点换算成左上角（走缓存，省掉 freetype 逐字量尺寸）
     lv_point_t size;
-    lv_text_get_size(&size, text, font, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    int32_t line_height = 0;
+    uint32_t font_size = (style->text_style.font_size > 0) ? style->text_style.font_size : AMAP_FREETYPE_FONT_SIZE;
+
+    amap_measure_text_cached(text, font, font_size, &size, &line_height);
 
     int32_t x = center.x;
     int32_t y = center.y - size.y / 2;
@@ -1002,8 +1088,7 @@ static void awk_render_svg_bitmap_adapter(uint32_t map_id, awk_rect_area_t area,
 {
     (void)map_id;
     (void)style;
-    os_time_dly(1);//喂狗
-    printf("svg_mapi:%d\n", svg_mapi);
+    //os_time_dly(1);//喂狗
     /* 每帧开头清理上一帧的 lv_image 对象（LVGL 堆上的小对象，直接删）。
      * svg_jlgpu_buffer[i] 不释放：按槽位只增不减，避免拖动时反复 free/malloc
      * 大块 PSRAM 导致碎片化（这正是之前内存一路下降的根因）。 */
@@ -1049,23 +1134,1744 @@ static void awk_render_svg_bitmap_adapter(uint32_t map_id, awk_rect_area_t area,
     lv_obj_set_pos(svg_jlgpu_img[svg_mapi], area.x, area.y);
     svg_mapi++;
 }
+
+/* ====================================================================================
+ * FlatBuffer 瓦片（tile.fbs）的纯 C 只读访问器
+ *
+ * 为什么不用 flatc：flatc 只生成 C++（要 flatbuffers/flatbuffers.h），C 工程用不了；
+ * flatcc 虽然生成 C，但它是另一个独立工具。其实这里根本不需要代码生成器——
+ * FlatBuffers 的二进制布局由规范固定，与用哪个编译器生成代码无关，手写一百来行就够：
+ *   buffer[0..3]      : u32 根表偏移（相对 buffer 起点）
+ *   table[0..3]       : i32 soffset，vtable = table - soffset
+ *   vtable[0..1] u16  : vtable 字节数
+ *   vtable[2..3] u16  : table 字节数
+ *   vtable[4+2*fid]   : 字段相对 table 的偏移，0 表示该字段缺省
+ * 表/向量字段的槽位里放的是 u32 偏移，相对「槽位本身」。
+ *
+ * 正确性由 842_387_10.fb 对 842_387_10_from_fbs.svg 逐字节比对验证过（282 条 path、
+ * 9 个 group、几何与配色完全一致）。
+ * ==================================================================================== */
+
+/* tile.fbs 的字段编号，取自 flatc 生成的 tile_generated.h（VT_x = 4 + 2 * 字段序号）。
+ * 换 schema 时这几个常量要跟着改。 */
+#define AMAP_FB_TILE_LAYERS        0   /* Tile.layers      : [Layer]  */
+#define AMAP_FB_LAYER_DATA_TYPE    0   /* Layer.data_type  : uint8    */
+#define AMAP_FB_LAYER_DATA         1   /* Layer.data       : LayerData(union) */
+#define AMAP_FB_SVG_WIDTH          0   /* SVGLayer.width   : uint16   */
+#define AMAP_FB_SVG_HEIGHT         1   /* SVGLayer.height  : uint16   */
+#define AMAP_FB_SVG_VIEW_BOX       2   /* SVGLayer.view_box: ViewBox  */
+#define AMAP_FB_SVG_RECT           3   /* SVGLayer.rect    : Rect     */
+#define AMAP_FB_SVG_GROUPS         4   /* SVGLayer.groups  : [Group]  */
+#define AMAP_FB_RECT_FILL          0   /* Rect.fill        : Color    */
+#define AMAP_FB_GROUP_PATHS        0   /* Group.paths      : [Path]   */
+#define AMAP_FB_GROUP_FILL         1   /* Group.fill       : Color    */
+#define AMAP_FB_GROUP_STROKE       2   /* Group.stroke     : Color    */
+#define AMAP_FB_GROUP_STROKE_W     3   /* Group.stroke_width : uint8  */
+#define AMAP_FB_GROUP_DASHARRAY    4   /* Group.stroke_dasharray : [uint8] */
+#define AMAP_FB_PATH_D             0   /* Path.d           : [uint8]  */
+
+/* union LayerData 的成员编号（NONE=0, SVGLayer=1） */
+#define AMAP_FB_LAYERDATA_SVGLayer 1
+
+/* Color 结构体：red/green/blue/alpha 各 1 字节，共 4 字节 */
+#define AMAP_FB_COLOR_SIZE         4
+
+typedef struct {
+    const uint8_t *base;    /* buffer 起点 */
+    uint32_t size;          /* buffer 长度 */
+} amap_fb_t;
+
+typedef struct {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t alpha;
+} amap_fb_color_t;
+
+/* 一律走 memcpy：pi32v2 不支持非对齐访问，直接把字节指针强转成 u32 或 u16 指针解引用会出异常 */
+static uint16_t amap_fb_u16(const uint8_t *p)
+{
+    uint16_t v;
+    memcpy(&v, p, 2);
+    return v;
+}
+
+static uint32_t amap_fb_u32(const uint8_t *p)
+{
+    uint32_t v;
+    memcpy(&v, p, 4);
+    return v;
+}
+
+static int32_t amap_fb_i32(const uint8_t *p)
+{
+    int32_t v;
+    memcpy(&v, p, 4);
+    return v;
+}
+
+/* 校验 [p, p + n) 是否完全落在 buffer 内。所有解引用前都必须过这一关，
+ * 否则拿 XML 字符串或路径串当 FlatBuffer 会直接野指针。 */
+static bool amap_fb_ok(const amap_fb_t *fb, const uint8_t *p, uint32_t n)
+{
+    if (p == NULL || p < fb->base) {
+        return false;
+    }
+    return (uint32_t)(p - fb->base) + n <= fb->size;
+}
+
+/**
+ * @brief 取根表指针
+ * @return 成功返回表地址，buffer 不是合法 FlatBuffer 时返回 NULL
+ */
+static const uint8_t *amap_fb_root(const amap_fb_t *fb)
+{
+    if (fb->size < 4) {
+        return NULL;
+    }
+    uint32_t off = amap_fb_u32(fb->base);
+    if (off < 4 || off + 4 > fb->size) {
+        return NULL;
+    }
+    return fb->base + off;
+}
+
+/**
+ * @brief 取表 tbl 里第 fid 个字段的地址
+ * @return 字段地址；字段缺省（vtable 槽位为 0）或结构非法时返回 NULL
+ *
+ * soffset 可正可负，vtable 落在表之前或之后都合法（根表的 vtable 常被放到 buffer
+ * 末尾即 soffset 为负，子表的 vtable 常在表前），所以只做范围校验、不对符号做假设。
+ */
+static const uint8_t *amap_fb_slot(const amap_fb_t *fb, const uint8_t *tbl, uint32_t fid)
+{
+    if (!amap_fb_ok(fb, tbl, 4)) {
+        return NULL;
+    }
+    int32_t so = amap_fb_i32(tbl);
+    uint32_t need = 4 + 2 * fid + 2;
+    const uint8_t *vt = (const uint8_t *)((intptr_t)tbl - (intptr_t)so);
+    if (!amap_fb_ok(fb, vt, need)) {
+        return NULL;
+    }
+    if (amap_fb_u16(vt) < need) {
+        return NULL;
+    }
+    uint16_t off = amap_fb_u16(vt + 4 + 2 * fid);
+    if (off == 0) {
+        return NULL;
+    }
+    const uint8_t *p = tbl + off;
+    if (!amap_fb_ok(fb, p, 1)) {
+        return NULL;
+    }
+    return p;
+}
+
+/* 槽位里存的是相对槽位本身的 u32 偏移，解出目标地址 */
+static const uint8_t *amap_fb_indirect(const amap_fb_t *fb, const uint8_t *slot, uint32_t n)
+{
+    if (!amap_fb_ok(fb, slot, 4)) {
+        return NULL;
+    }
+    uint32_t off = amap_fb_u32(slot);
+    if (off < 4) {
+        return NULL;
+    }
+    const uint8_t *p = slot + off;
+    if (!amap_fb_ok(fb, p, n)) {
+        return NULL;
+    }
+    return p;
+}
+
+/* 子表字段 */
+static const uint8_t *amap_fb_sub(const amap_fb_t *fb, const uint8_t *tbl, uint32_t fid)
+{
+    return amap_fb_indirect(fb, amap_fb_slot(fb, tbl, fid), 4);
+}
+
+/**
+ * @brief 取向量字段的首元素地址
+ * @param elem_size 单个元素的字节数（uoffset 向量传 4，uint8 向量传 1）
+ * @param len       输出：元素个数
+ * @return 首元素地址；字段缺省或声明长度超出 buffer 时返回 NULL 且 *len = 0
+ *
+ * 这里必须按 elem_size 把声明长度核一遍：向量头里的长度是数据里写死的，
+ * 不核对就按下标读会直接越界。
+ */
+static const uint8_t *amap_fb_vec(const amap_fb_t *fb, const uint8_t *tbl, uint32_t fid,
+                                  uint32_t elem_size, uint32_t *len)
+{
+    const uint8_t *vec = amap_fb_indirect(fb, amap_fb_slot(fb, tbl, fid), 4);
+    if (vec == NULL || elem_size == 0) {
+        *len = 0;
+        return NULL;
+    }
+    uint32_t n = amap_fb_u32(vec);
+    const uint8_t *elems = vec + 4;
+    uint32_t room = fb->size - (uint32_t)(elems - fb->base);   /* elems 已确认在 buffer 内 */
+    if (n > room / elem_size) {
+        *len = 0;
+        return NULL;
+    }
+    *len = n;
+    return elems;
+}
+
+/* 向量里第 idx 个元素（元素是子表偏移） */
+static const uint8_t *amap_fb_vec_tbl(const amap_fb_t *fb, const uint8_t *vec, uint32_t len, uint32_t idx)
+{
+    if (vec == NULL || idx >= len) {
+        return NULL;
+    }
+    return amap_fb_indirect(fb, vec + 4 * idx, 4);
+}
+
+/* 内联结构体字段（Color / ViewBox 这类没有 vtable 的） */
+static const uint8_t *amap_fb_st(const amap_fb_t *fb, const uint8_t *tbl, uint32_t fid, uint32_t n)
+{
+    const uint8_t *p = amap_fb_slot(fb, tbl, fid);
+    if (!amap_fb_ok(fb, p, n)) {
+        return NULL;
+    }
+    return p;
+}
+
+static uint16_t amap_fb_u16_field(const amap_fb_t *fb, const uint8_t *tbl, uint32_t fid, uint16_t def)
+{
+    const uint8_t *p = amap_fb_slot(fb, tbl, fid);
+    if (!amap_fb_ok(fb, p, 2)) {
+        return def;
+    }
+    return amap_fb_u16(p);
+}
+
+static uint8_t amap_fb_u8_field(const amap_fb_t *fb, const uint8_t *tbl, uint32_t fid, uint8_t def)
+{
+    const uint8_t *p = amap_fb_slot(fb, tbl, fid);
+    if (!amap_fb_ok(fb, p, 1)) {
+        return def;
+    }
+    return *p;
+}
+
+/**
+ * @brief 读一个内联 Color 结构体字段
+ * @return 0 = 字段存在（*out 已填充），-1 = 字段缺省（SVG 里等价于 "none"）
+ */
+static int amap_fb_color(const amap_fb_t *fb, const uint8_t *tbl, uint32_t fid, amap_fb_color_t *out)
+{
+    const uint8_t *p = amap_fb_st(fb, tbl, fid, AMAP_FB_COLOR_SIZE);
+    if (p == NULL) {
+        return -1;
+    }
+    out->red = p[0];
+    out->green = p[1];
+    out->blue = p[2];
+    out->alpha = p[3];
+    return 0;
+}
+
+/* ---- 手工构造 LVGL SVG DOM ---------------------------------------------------------
+ * 这里复刻的是 lv_svg_parser.c 的内存布局，格式必须完全一致，否则 lv_svg_render.c
+ * 按同样的规则去读会读错。两种属性值的约定：
+ *   val_type = DATA + class_type = INITIAL : value.uval / value.fval 直接存值
+ *   val_type = PTR  + class_type = INITIAL : value.val 指向 lv_malloc 的缓冲，
+ *                                           节点析构时会被 lv_free（所以必须用 lv_malloc）
+ *   class_type = NONE                      : 等价于 SVG 里的 "none"（不绘制）
+ */
+
+static lv_svg_attr_t *amap_svg_push_attr(lv_svg_node_t *node, lv_svg_attr_type_t id)
+{
+    lv_svg_attr_t attr;
+    lv_memzero(&attr, sizeof(attr));
+    attr.id = id;
+    if (lv_array_push_back(&node->attrs, &attr) != LV_RESULT_OK) {
+        return NULL;
+    }
+    return (lv_svg_attr_t *)lv_array_at(&node->attrs, lv_array_size(&node->attrs) - 1);
+}
+
+static void amap_svg_set_number(lv_svg_node_t *node, lv_svg_attr_type_t id, float v)
+{
+    lv_svg_attr_t *attr = amap_svg_push_attr(node, id);
+    if (attr == NULL) {
+        return;
+    }
+    attr->val_type = LV_SVG_ATTR_VALUE_DATA;
+    attr->class_type = LV_SVG_ATTR_VALUE_INITIAL;
+    attr->value.fval = v;
+}
+
+/**
+ * @brief 设置 fill / stroke 颜色
+ * @param node       目标节点
+ * @param paint_id   LV_SVG_ATTR_FILL 或 LV_SVG_ATTR_STROKE
+ * @param opacity_id 对应的 FILL_OPACITY / STROKE_OPACITY
+ * @param c          FlatBuffer 里的颜色；NULL 表示 SVG 中是 "none"
+ *
+ * 注意：渲染层对纯色属性是写死 opa = LV_OPA_COVER 的（颜色里的 alpha 会被丢掉），
+ * 透明度只能通过独立的 *-opacity 属性传，所以这里 alpha < 255 时补一条 opacity。
+ */
+static void amap_svg_set_paint(lv_svg_node_t *node, lv_svg_attr_type_t paint_id,
+                               lv_svg_attr_type_t opacity_id, const amap_fb_color_t *c)
+{
+    lv_svg_attr_t *attr = amap_svg_push_attr(node, paint_id);
+    if (attr == NULL) {
+        return;
+    }
+    /* val_type 固定为 DATA，避免析构时把 union 当指针 lv_free */
+    attr->val_type = LV_SVG_ATTR_VALUE_DATA;
+
+    if (c == NULL || c->alpha == 0) {
+        attr->class_type = LV_SVG_ATTR_VALUE_NONE;   /* 不绘制 */
+        return;
+    }
+
+    attr->class_type = LV_SVG_ATTR_VALUE_INITIAL;
+    attr->value.uval = ((uint32_t)c->alpha << 24) |
+                       ((uint32_t)c->red   << 16) |
+                       ((uint32_t)c->green <<  8) |
+                       ((uint32_t)c->blue);
+
+    if (c->alpha < 255) {
+        amap_svg_set_number(node, opacity_id, (float)c->alpha / 255.0f);
+    }
+}
+
+/**
+ * @brief 查一条 FBS 路径指令的参数个数和转换到 LVGL 后的点数
+ *
+ * FBS 的 Path.d 是 [cmd, arg0, arg1, ...] 的扁平字节数组，每个参数 1 字节（0..255）。
+ * 参数个数与点数不是同一个东西：HLINE_TO 只有 1 个参数但产出 1 个点，
+ * SQUARD_TO 有 2 个参数却要产出 2 个点（补出来的反射控制点）。
+ *
+ * @param cmd  FBS 的 SVGCommandType
+ * @param args 输出：参数个数
+ * @param pts  输出：写进 LVGL 路径的点数（CLOSE 也占 1 个点，渲染层是按点步进的）
+ * @return 0 = 已知指令，-1 = 未知指令
+ */
+static int amap_fbs_path_cmd_info(uint8_t cmd, uint8_t *args, uint8_t *pts)
+{
+    switch (cmd) {
+    case 0:
+        *args = 0;
+        *pts = 1;
+        return 0;   /* CMD_CLOSE     */
+    case 2:
+        *args = 2;
+        *pts = 1;
+        return 0;   /* CMD_MOVE_TO   x,y               */
+    case 4:
+        *args = 2;
+        *pts = 1;
+        return 0;   /* CMD_LINE_TO   x,y               */
+    case 6:
+        *args = 1;
+        *pts = 1;
+        return 0;   /* CMD_HLINE_TO  x                 */
+    case 8:
+        *args = 1;
+        *pts = 1;
+        return 0;   /* CMD_VLINE_TO  y                 */
+    case 10:
+        *args = 4;
+        *pts = 2;
+        return 0;   /* CMD_QUARD_TO  cx,cy,x,y         */
+    case 12:
+        *args = 6;
+        *pts = 3;
+        return 0;   /* CMD_CUBIC_TO  c1x,c1y,c2x,c2y,x,y */
+    case 14:
+        *args = 2;
+        *pts = 2;
+        return 0;   /* CMD_SQUARD_TO x,y（控制点反射） */
+    case 16:
+        *args = 4;
+        *pts = 3;
+        return 0;   /* CMD_SCUBIC_TO c2x,c2y,x,y（首控制点反射） */
+    default:
+        return -1;
+    }
+}
+
+/**
+ * @brief 把 FlatBuffer 的 Path.d 字节流转成 lv_svg_attr_values_list_t
+ *
+ * 输出格式（与 lv_svg_parser.c 完全一致）：
+ *   | length(4B, 段数) | seg0 | seg1 | ... |
+ *   seg = | cmd(4B) | point0(8B) | point1(8B) | ... |
+ *
+ * 坐标全是绝对的 0..255 整数，所以 HLINE/VLINE 缺的那一维直接用当前点补全，
+ * SQUARD/SCUBIC 缺的控制点按 SVG 规范用上一个同类控制点关于当前点做反射。
+ * 样本瓦片里只出现了 M/L/H/V/Z，曲线分支没有实测数据覆盖。
+ *
+ * @return 成功返回 lv_malloc 的列表（随节点一起析构释放），失败返回 NULL
+ */
+static lv_svg_attr_values_list_t *amap_fbs_build_path_list(const uint8_t *d, uint32_t len)
+{
+    if (d == NULL || len == 0) {
+        return NULL;
+    }
+
+    /* 第一遍：校验指令流合法并统计段数/字节数。任何一条对不上就整块放弃，
+     * 不猜、不截断——宁可不画这个瓦片，也不能按错误的步长读越界。 */
+    uint32_t i = 0;
+    uint32_t seg_cnt = 0;
+    uint32_t seg_bytes = 0;
+    while (i < len) {
+        uint8_t args, pts;
+        if (amap_fbs_path_cmd_info(d[i], &args, &pts) != 0) {
+            printf("fbs path: unknown cmd %u at %u/%u, drop tile\n", d[i], (unsigned)i, (unsigned)len);
+            return NULL;
+        }
+        i++;
+        if (i + (uint32_t)args > len) {
+            printf("fbs path: truncated at %u/%u, drop tile\n", (unsigned)i, (unsigned)len);
+            return NULL;
+        }
+        i += args;
+        seg_cnt++;
+        seg_bytes += sizeof(uint32_t) + sizeof(lv_svg_point_t) * pts;
+    }
+    if (seg_cnt == 0) {
+        return NULL;
+    }
+
+    lv_svg_attr_values_list_t *list = lv_malloc(sizeof(lv_svg_attr_values_list_t) - 1 + seg_bytes);
+    if (list == NULL) {
+        printf("fbs path: lv_malloc %u failed\n", (unsigned)(sizeof(lv_svg_attr_values_list_t) - 1 + seg_bytes));
+        return NULL;
+    }
+    list->length = seg_cnt;
+
+    uint8_t *out = (uint8_t *)(&list->data);
+    float cx = 0.0f, cy = 0.0f;     /* 当前点 */
+    float mx = 0.0f, my = 0.0f;     /* 当前子路径起点（MOVE_TO 记录，CLOSE 回退到它） */
+    float qx = 0.0f, qy = 0.0f;     /* 上一个二次贝塞尔控制点 */
+    float sx = 0.0f, sy = 0.0f;     /* 上一个三次贝塞尔第二控制点 */
+    uint8_t prev = 0xFF;            /* 上一条 FBS 指令，用于判断能否反射 */
+
+    i = 0;
+    while (i < len) {
+        uint8_t cmd = d[i++];
+        uint8_t args, pts;
+        if (amap_fbs_path_cmd_info(cmd, &args, &pts) != 0) {
+            lv_free(list);      /* 第一遍已校验，正常到不了这里 */
+            return NULL;
+        }
+        uint8_t a0 = (args > 0) ? d[i + 0] : 0;
+        uint8_t a1 = (args > 1) ? d[i + 1] : 0;
+        uint8_t a2 = (args > 2) ? d[i + 2] : 0;
+        uint8_t a3 = (args > 3) ? d[i + 3] : 0;
+        uint8_t a4 = (args > 4) ? d[i + 4] : 0;
+        uint8_t a5 = (args > 5) ? d[i + 5] : 0;
+        i += args;
+
+        lv_svg_attr_path_value_t *seg = (lv_svg_attr_path_value_t *)out;
+        lv_svg_point_t *pt = (lv_svg_point_t *)(&seg->data);
+
+        switch (cmd) {
+        case 0:  /* CMD_CLOSE */
+            seg->cmd = LV_SVG_PATH_CMD_CLOSE;
+            pt[0].x = 0.0f;     /* 渲染层对 CLOSE 也会步进 1 个点，占位即可 */
+            pt[0].y = 0.0f;
+            cx = mx;
+            cy = my;
+            break;
+
+        case 2:  /* CMD_MOVE_TO */
+            seg->cmd = LV_SVG_PATH_CMD_MOVE_TO;
+            pt[0].x = mx = cx = (float)a0;
+            pt[0].y = my = cy = (float)a1;
+            break;
+
+        case 4:  /* CMD_LINE_TO */
+            seg->cmd = LV_SVG_PATH_CMD_LINE_TO;
+            pt[0].x = cx = (float)a0;
+            pt[0].y = cy = (float)a1;
+            break;
+
+        case 6:  /* CMD_HLINE_TO：只有 x，y 沿用当前点 */
+            seg->cmd = LV_SVG_PATH_CMD_LINE_TO;
+            pt[0].x = cx = (float)a0;
+            pt[0].y = cy;
+            break;
+
+        case 8:  /* CMD_VLINE_TO：只有 y，x 沿用当前点 */
+            seg->cmd = LV_SVG_PATH_CMD_LINE_TO;
+            pt[0].x = cx;
+            pt[0].y = cy = (float)a0;
+            break;
+
+        case 10: /* CMD_QUARD_TO：cx,cy,x,y */
+            seg->cmd = LV_SVG_PATH_CMD_QUAD_TO;
+            pt[0].x = qx = (float)a0;
+            pt[0].y = qy = (float)a1;
+            pt[1].x = cx = (float)a2;
+            pt[1].y = cy = (float)a3;
+            break;
+
+        case 14: /* CMD_SQUARD_TO：控制点是上一个二次控制点关于当前点的反射 */
+            seg->cmd = LV_SVG_PATH_CMD_QUAD_TO;
+            if (prev == 10 || prev == 14) {
+                pt[0].x = qx = 2.0f * cx - qx;
+                pt[0].y = qy = 2.0f * cy - qy;
+            } else {
+                pt[0].x = qx = cx;      /* 上一段不是二次曲线时，控制点即当前点 */
+                pt[0].y = qy = cy;
+            }
+            pt[1].x = cx = (float)a0;
+            pt[1].y = cy = (float)a1;
+            break;
+
+        case 12: /* CMD_CUBIC_TO：c1x,c1y,c2x,c2y,x,y */
+            seg->cmd = LV_SVG_PATH_CMD_CURVE_TO;
+            pt[0].x = (float)a0;
+            pt[0].y = (float)a1;
+            pt[1].x = sx = (float)a2;
+            pt[1].y = sy = (float)a3;
+            pt[2].x = cx = (float)a4;
+            pt[2].y = cy = (float)a5;
+            break;
+
+        case 16: /* CMD_SCUBIC_TO：c2x,c2y,x,y，第一控制点是上一个第二控制点的反射 */
+            seg->cmd = LV_SVG_PATH_CMD_CURVE_TO;
+            if (prev == 12 || prev == 16) {
+                pt[0].x = 2.0f * cx - sx;
+                pt[0].y = 2.0f * cy - sy;
+            } else {
+                pt[0].x = cx;
+                pt[0].y = cy;
+            }
+            pt[1].x = sx = (float)a0;
+            pt[1].y = sy = (float)a1;
+            pt[2].x = cx = (float)a2;
+            pt[2].y = cy = (float)a3;
+            break;
+
+        default:
+            lv_free(list);
+            return NULL;
+        }
+
+        prev = cmd;
+        out += sizeof(uint32_t) + sizeof(lv_svg_point_t) * pts;
+    }
+    return list;
+}
+
+/**
+ * @brief 把 stroke_dasharray 的 uint8 数组转成 LVGL 需要的 float 列表
+ * @return 成功返回 lv_malloc 的列表，失败返回 NULL（调用方应放弃该瓦片）
+ */
+static lv_svg_attr_values_list_t *amap_fbs_build_dash_list(const uint8_t *v, uint32_t len)
+{
+    if (v == NULL || len == 0) {
+        return NULL;
+    }
+    lv_svg_attr_values_list_t *list = lv_malloc(sizeof(lv_svg_attr_values_list_t) - 1 + sizeof(float) * len);
+    if (list == NULL) {
+        return NULL;
+    }
+    list->length = len;
+    float *dashs = (float *)(&list->data);
+    for (uint32_t i = 0; i < len; i++) {
+        dashs[i] = (float)v[i];
+    }
+    return list;
+}
+
+/* ====================================================================================
+ * FlatBuffer 的 SVGLayer -> nanosvg 的 NSVGimage
+ *
+ * 这里刻意不走 XML：nsvgParse 只吃 SVG 文本，喂 XML 就等于把 FlatBuffer 省下来的
+ * 解析开销原样加回去一遍（见 awk_render_svg_bitmap_adapter2 开头那段注释）。
+ * 所以直接按 nsvgParse 内部的约定把 NSVGimage / NSVGshape / NSVGpath 搭出来，
+ * 只借 nanosvg 的软件光栅化器（nsvgRasterize），跳过它全部的解析和 DOM 构建。
+ *
+ * 与 amap_fbs_build_svg_doc 是同一份字段映射的两种出口，改一边必须同步改另一边：
+ *   SVGLayer     -> NSVGimage.width/height（可选底色 rect -> 一个 shape）
+ *   Group        -> NSVGshape（fill / stroke / stroke-width / stroke-dasharray）
+ *   Path.d       -> NSVGpath.pts（三次贝塞尔点串）
+ *
+ * 用到的几个 nanosvg 内部符号（nsvg__curveBounds / NSVG_FLAGS_VISIBLE / NSVG_RGB /
+ * NSVG_PAINT_*）都来自本文件顶部 #include 的 nanosvg.h，NANOSVG_IMPLEMENTATION 已开，
+ * 是同一个编译单元里的 static 函数和宏，可以直接用。
+ * ==================================================================================== */
+
+/* ====================================================================================
+ * 每块瓦片一个的 PSRAM bump 分配器
+ *
+ * 一块瓦片要建 ~300 个 NSVGpath，外加同样多的 pts 数组和转换用的临时缓冲。逐个
+ * malloc/free 有两个问题：
+ *   1) 文件开头 91-95 行的重定向只包住了 nanosvg.h/nanosvgrast.h 那一段，到这里
+ *      早就 #undef 了。裸 malloc 走的是标准堆，也就是本平台 ~1MB 的 internal SRAM。
+ *      一块瓦片几百次分配直接把物理内存打爆，表现就是刷屏的 [P_MEM]no physics
+ *      memory!!!。所以这里必须用 AMAP_MALLOC（= malloc_psram）。
+ *   2) 就算换成 PSRAM，拖动时每秒上万次的 free/malloc 也会把堆碎掉——文件里
+ *      svg_temp_buffer「只增不减」那段注释记的就是同一个坑。
+ *
+ * 所以瓦片的 NSVG 节点统一从一块按需增长的 PSRAM 区域里切：一块瓦片只分配少数几个
+ * 大块，画完一次性全部归还。arena 由调用方（adapter3）放在栈上，和 NSVGimage 的
+ * 生命周期完全绑定，不可能忘记释放。
+ * ==================================================================================== */
+#define AMAP_NSVG_ARENA_CHUNK (32 * 1024)
+
+typedef struct amap_nsvg_arena_block {
+    struct amap_nsvg_arena_block *next;
+    size_t used;
+    size_t cap;
+    /* 数据紧跟在本结构之后 */
+} amap_nsvg_arena_block_t;
+
+typedef struct {
+    amap_nsvg_arena_block_t *head;  /* 当前块，永远从它往上切 */
+} amap_nsvg_arena_t;
+
+/* 按 4 字节对齐切。NSVGimage / NSVGshape / NSVGpath / float 数组最宽的成员就是
+ * 指针和 float，4 字节够了；块头 sizeof 本身也是 4 的倍数（32 位上 12 字节），
+ * 所以「块头之后」天然就是 4 字节对齐的。 */
+static void *amap_nsvg_arena_alloc(amap_nsvg_arena_t *a, size_t size)
+{
+    amap_nsvg_arena_block_t *b = a->head;
+    size_t need = (size + 3u) & ~(size_t)3u;
+
+    if (b == NULL || b->cap - b->used < need) {
+        /* 单笔就超过一个整块（比如特别长的 pts）时，为它单独开一块够大的 */
+        size_t cap = need > AMAP_NSVG_ARENA_CHUNK ? need : AMAP_NSVG_ARENA_CHUNK;
+        b = (amap_nsvg_arena_block_t *)AMAP_MALLOC(sizeof(*b) + cap);
+        if (b == NULL) {
+            return NULL;
+        }
+        b->next = a->head;
+        b->used = 0;
+        b->cap = cap;
+        a->head = b;
+    }
+
+    void *p = (uint8_t *)(b + 1) + b->used;
+    b->used += need;
+    return p;
+}
+
+static void amap_nsvg_arena_reset(amap_nsvg_arena_t *a)
+{
+    amap_nsvg_arena_block_t *b = a->head;
+
+    while (b != NULL) {
+        amap_nsvg_arena_block_t *next = b->next;
+        AMAP_FREE(b);
+        b = next;
+    }
+    a->head = NULL;
+}
+
+/* NSVGpath.pts 是「1 + 3N 个点」的三次贝塞尔串：首点是起点，之后每 3 个点
+ * （控制点1、控制点2、终点）构成一段。一条 d 里可能有多个子路径，累积过程用
+ * 这个结构做临时缓冲，提交时再拷成正好大小的 NSVGpath。 */
+typedef struct {
+    float *pts;         /* 2 * npts 个 float */
+    int npts;
+    int cap;            /* 已分配的点数（不是 float 数） */
+    bool bad;           /* 分配失败，本段作废 */
+    amap_nsvg_arena_t *arena;   /* pts 从哪个 arena 切，整条流水线共用 */
+} amap_nsvg_path_t;
+
+static bool amap_nsvg_path_reserve(amap_nsvg_path_t *p, int need)
+{
+    if (need <= p->cap) {
+        return true;
+    }
+    int cap = p->cap > 0 ? p->cap : 64;
+    while (cap < need) {
+        cap *= 2;
+    }
+    float *n = (float *)amap_nsvg_arena_alloc(p->arena, (size_t)cap * 2 * sizeof(float));
+    if (n == NULL) {
+        return false;
+    }
+    if (p->pts != NULL) {
+        /* 旧缓冲不单独释放：在 arena 里，整块瓦片画完一起还。翻倍扩容最多浪费
+         * 一份旧缓冲，比每次 free 省得多。 */
+        memcpy(n, p->pts, (size_t)p->npts * 2 * sizeof(float));
+    }
+    p->pts = n;
+    p->cap = cap;
+    return true;
+}
+
+static void amap_nsvg_path_push(amap_nsvg_path_t *p, float x, float y)
+{
+    if (p->bad || !amap_nsvg_path_reserve(p, p->npts + 1)) {
+        p->bad = true;
+        return;
+    }
+    p->pts[p->npts * 2 + 0] = x;
+    p->pts[p->npts * 2 + 1] = y;
+    p->npts++;
+}
+
+/**
+ * @brief 追加一段三次贝塞尔（起点是当前最后一点）
+ *
+ * 直线（L/H/V）也走这里：两个控制点都压在端点上，退化成的三次曲线就是直线，
+ * 这样下游只要处理一种段型。二次曲线（Q/T）按 SVG 规范转成三次：
+ *   c1 = p0 + 2/3 * (q - p0)，c2 = p1 + 2/3 * (q - p1)
+ */
+static void amap_nsvg_path_cubic(amap_nsvg_path_t *p, float c1x, float c1y,
+                                 float c2x, float c2y, float x, float y)
+{
+    amap_nsvg_path_push(p, c1x, c1y);
+    amap_nsvg_path_push(p, c2x, c2y);
+    amap_nsvg_path_push(p, x, y);
+}
+
+static void amap_nsvg_path_line(amap_nsvg_path_t *p, float x0, float y0, float x, float y)
+{
+    amap_nsvg_path_cubic(p, x0, y0, x, y, x, y);
+}
+
+static void amap_nsvg_path_quad(amap_nsvg_path_t *p, float x0, float y0,
+                                float qx, float qy, float x, float y)
+{
+    amap_nsvg_path_cubic(p,
+                         x0 + (qx - x0) * 2.0f / 3.0f, y0 + (qy - y0) * 2.0f / 3.0f,
+                         x  + (qx - x)  * 2.0f / 3.0f, y  + (qy - y)  * 2.0f / 3.0f,
+                         x, y);
+}
+
+/* 从一组路径点算包围盒。用 nanosvg 自己的 nsvg__curveBounds（和 nsvg__addPath
+ * 内部用的是同一个函数），保证和 nsvgParse 出来的 bounds 完全一致。 */
+static void amap_nsvg_path_bounds(NSVGpath *path)
+{
+    for (int i = 0; i < path->npts - 1; i += 3) {
+        float b[4];
+        nsvg__curveBounds(b, &path->pts[i * 2]);
+        if (i == 0) {
+            path->bounds[0] = b[0];
+            path->bounds[1] = b[1];
+            path->bounds[2] = b[2];
+            path->bounds[3] = b[3];
+        } else {
+            path->bounds[0] = nsvg__minf(path->bounds[0], b[0]);
+            path->bounds[1] = nsvg__minf(path->bounds[1], b[1]);
+            path->bounds[2] = nsvg__maxf(path->bounds[2], b[2]);
+            path->bounds[3] = nsvg__maxf(path->bounds[3], b[3]);
+        }
+    }
+}
+
+/**
+ * @brief 校验 FBS 的 Path.d 指令流能完整走完
+ * @return 0 = 合法（且非空），-1 = 指令未知或参数被截断
+ *
+ * 与 amap_fbs_build_path_list 第一遍的校验规则相同。那边还要同时统计段数和字节数，
+ * 所以没法直接共用，这里保留一份独立的校验。先整条校验再建节点，就不会出现
+ * 「建到一半发现数据坏了、已经挂上去的子路径收不回来」的情况。
+ */
+static int amap_fbs_path_check(const uint8_t *d, uint32_t len)
+{
+    uint32_t i = 0;
+
+    if (d == NULL || len == 0) {
+        return -1;
+    }
+    while (i < len) {
+        uint8_t args, pts;
+        if (amap_fbs_path_cmd_info(d[i], &args, &pts) != 0) {
+            return -1;
+        }
+        i++;
+        if (i + (uint32_t)args > len) {
+            return -1;
+        }
+        i += args;
+    }
+    return 0;
+}
+
+/* 把累积中的子路径提交成 NSVGpath 挂到 shape 上。
+ * 提交规则逐条对齐 nanosvg 的 nsvg__addPath：点数不足 4 个直接丢；closed 时先补一段
+ * 回起点的直线（描边要用，填充那边 nsvg__flattenShape 自己会闭合）；点数不是 1+3N 就丢。
+ * 注意本函数不释放 p->pts，缓冲留给下一条子路径复用。 */
+static void amap_nsvg_commit_subpath(NSVGshape *shape, amap_nsvg_path_t *p, bool closed)
+{
+    if (p->bad || p->npts < 4) {
+        p->npts = 0;
+        p->bad = false;
+        return;
+    }
+    if (closed) {
+        amap_nsvg_path_line(p, p->pts[(p->npts - 1) * 2], p->pts[(p->npts - 1) * 2 + 1],
+                            p->pts[0], p->pts[1]);
+    }
+    if (!p->bad && (p->npts % 3) == 1) {
+        NSVGpath *path = (NSVGpath *)amap_nsvg_arena_alloc(p->arena, sizeof(NSVGpath));
+        if (path != NULL) {
+            memset(path, 0, sizeof(NSVGpath));
+            path->pts = (float *)amap_nsvg_arena_alloc(p->arena,
+                        (size_t)p->npts * 2 * sizeof(float));
+            if (path->pts == NULL) {
+                /* arena 满了：path 本身留在 arena 里不回收，反正是整块一起还 */
+                p->bad = true;
+            } else {
+                memcpy(path->pts, p->pts, (size_t)p->npts * 2 * sizeof(float));
+                path->npts = p->npts;
+                path->closed = closed ? 1 : 0;
+                amap_nsvg_path_bounds(path);
+                path->next = shape->paths;
+                shape->paths = path;
+            }
+        } else {
+            p->bad = true;
+        }
+    }
+    p->npts = 0;
+    p->bad = false;
+}
+
+/**
+ * @brief 把一条 Path.d 翻成若干个 NSVGpath 挂到 shape 上
+ *
+ * 指令编号与 SVG 的对应关系见 amap_fbs_path_cmd_info：
+ *   0->Z  2->M  4->L  6->H  8->V  10->Q  12->C  14->T  16->S
+ * HLINE/VLINE 缺的那一维用当前点补全；SQUARD/SCUBIC 缺的控制点按 SVG 规范用上一个
+ * 同类控制点关于当前点做反射——反射公式和 amap_fbs_build_path_list 里那套完全一致，
+ * 两条路画出来的几何必须一样。
+ *
+ * 子路径切分对齐 nsvgParse 的 nsvg__parsePath：M 提交上一条并开新的一条；Z 提交并把
+ * 当前点拉回子路径起点、从那里再起一条新子路径；结尾提交剩余部分。
+ *
+ * @param arena 本块瓦片的 NSVG 节点 arena，pts/NSVGpath 都从它切
+ * @return 0 = 已处理，-1 = 指令流非法（整条丢弃，不猜不截断）
+ */
+static int amap_fbs_path_to_nsvg(const uint8_t *d, uint32_t len, NSVGshape *shape,
+                                 amap_nsvg_arena_t *arena)
+{
+    amap_nsvg_path_t cur;
+    uint32_t i = 0;
+    float cx = 0.0f, cy = 0.0f;     /* 当前点 */
+    float qx = 0.0f, qy = 0.0f;     /* 上一个二次贝塞尔控制点 */
+    float sx = 0.0f, sy = 0.0f;     /* 上一个三次贝塞尔第二控制点 */
+    uint8_t prev = 0xFF;            /* 上一条 FBS 指令，用于判断能否反射 */
+    bool started = false;           /* 已经吃到 MOVE_TO */
+    bool closed_flag = false;
+
+    if (amap_fbs_path_check(d, len) != 0) {
+        return -1;
+    }
+
+    memset(&cur, 0, sizeof(cur));
+    cur.arena = arena;
+
+    while (i < len) {
+        uint8_t cmd = d[i++];
+        uint8_t args, pts;
+        const uint8_t *a;
+
+        amap_fbs_path_cmd_info(cmd, &args, &pts);
+        a = d + i;
+        i += args;
+
+        if (cmd != 2 && !started) {
+            /* 首个 MOVE_TO 之前不允许画线（与 nsvgParse 的 initPoint 检查同规则）。
+             * cur.pts 是 arena 内存，不用单独释放。 */
+            return -1;
+        }
+
+        switch (cmd) {
+        case 2:     /* CMD_MOVE_TO：提交上一条子路径，开新的 */
+            if (started) {
+                amap_nsvg_commit_subpath(shape, &cur, closed_flag);
+            }
+            closed_flag = false;
+            cx = (float)a[0];
+            cy = (float)a[1];
+            amap_nsvg_path_push(&cur, cx, cy);
+            started = true;
+            break;
+
+        case 0:     /* CMD_CLOSE：提交并把当前点拉回子路径起点 */
+            closed_flag = true;
+            if (cur.npts > 0) {
+                cx = cur.pts[0];
+                cy = cur.pts[1];
+            }
+            amap_nsvg_commit_subpath(shape, &cur, closed_flag);
+            closed_flag = false;
+            /* nsvgParse 在 Z 之后从闭合点再起一条子路径 */
+            amap_nsvg_path_push(&cur, cx, cy);
+            break;
+
+        case 4:     /* CMD_LINE_TO x,y */
+            amap_nsvg_path_line(&cur, cx, cy, (float)a[0], (float)a[1]);
+            cx = (float)a[0];
+            cy = (float)a[1];
+            break;
+
+        case 6:     /* CMD_HLINE_TO x：y 沿用当前点 */
+            amap_nsvg_path_line(&cur, cx, cy, (float)a[0], cy);
+            cx = (float)a[0];
+            break;
+
+        case 8:     /* CMD_VLINE_TO y：x 沿用当前点 */
+            amap_nsvg_path_line(&cur, cx, cy, cx, (float)a[0]);
+            cy = (float)a[0];
+            break;
+
+        case 10:    /* CMD_QUARD_TO cx,cy,x,y */
+            qx = (float)a[0];
+            qy = (float)a[1];
+            amap_nsvg_path_quad(&cur, cx, cy, qx, qy, (float)a[2], (float)a[3]);
+            cx = (float)a[2];
+            cy = (float)a[3];
+            break;
+
+        case 14:    /* CMD_SQUARD_TO x,y：控制点由上一个二次控制点反射而来 */
+            if (prev == 10 || prev == 14) {
+                qx = 2.0f * cx - qx;
+                qy = 2.0f * cy - qy;
+            } else {
+                qx = cx;        /* 上一段不是二次曲线时，控制点即当前点 */
+                qy = cy;
+            }
+            amap_nsvg_path_quad(&cur, cx, cy, qx, qy, (float)a[0], (float)a[1]);
+            cx = (float)a[0];
+            cy = (float)a[1];
+            break;
+
+        case 12:    /* CMD_CUBIC_TO c1x,c1y,c2x,c2y,x,y */
+            sx = (float)a[2];
+            sy = (float)a[3];
+            amap_nsvg_path_cubic(&cur, (float)a[0], (float)a[1], sx, sy, (float)a[4], (float)a[5]);
+            cx = (float)a[4];
+            cy = (float)a[5];
+            break;
+
+        case 16: {  /* CMD_SCUBIC_TO c2x,c2y,x,y：第一控制点由上一个第二控制点反射而来 */
+            float c1x, c1y;
+            if (prev == 12 || prev == 16) {
+                c1x = 2.0f * cx - sx;
+                c1y = 2.0f * cy - sy;
+            } else {
+                c1x = cx;
+                c1y = cy;
+            }
+            sx = (float)a[0];
+            sy = (float)a[1];
+            amap_nsvg_path_cubic(&cur, c1x, c1y, sx, sy, (float)a[2], (float)a[3]);
+            cx = (float)a[2];
+            cy = (float)a[3];
+        }
+        break;
+
+        default:
+            return -1;
+        }
+
+        prev = cmd;
+    }
+
+    if (cur.npts > 0) {
+        amap_nsvg_commit_subpath(shape, &cur, closed_flag);
+    }
+    return 0;
+}
+
+/* 把一条 Path.d 挂到 shape 上。指令流非法就整条跳过，不连累别的 path。 */
+static void amap_nsvg_shape_add_fbs_path(NSVGshape *shape, const uint8_t *d, uint32_t dlen,
+        amap_nsvg_arena_t *arena)
+{
+    amap_fbs_path_to_nsvg(d, dlen, shape, arena);
+}
+
+/**
+ * @brief 按 FBS 的 Color 填一个 NSVGpaint
+ *
+ * nanosvg 的 alpha 走颜色最高字节（nsvg__addShape 里是 fillOpacity*255 << 24），
+ * 所以 alpha == 0 直接置成 NSVG_PAINT_NONE，比塞一个全透明色更省事也更快。
+ */
+static void amap_nsvg_set_paint(NSVGpaint *paint, const amap_fb_color_t *c)
+{
+    if (c == NULL || c->alpha == 0) {
+        paint->type = NSVG_PAINT_NONE;
+        return;
+    }
+    paint->type = NSVG_PAINT_COLOR;
+    paint->color = NSVG_RGB(c->red, c->green, c->blue) | ((unsigned int)c->alpha << 24);
+}
+
+/* shape->bounds = 各 path 包围盒的并集（与 nsvg__addShape 一致） */
+static void amap_nsvg_shape_bounds(NSVGshape *shape)
+{
+    NSVGpath *path = shape->paths;
+
+    if (path == NULL) {
+        memset(shape->bounds, 0, sizeof(shape->bounds));
+        return;
+    }
+    memcpy(shape->bounds, path->bounds, sizeof(shape->bounds));
+    for (path = path->next; path != NULL; path = path->next) {
+        shape->bounds[0] = nsvg__minf(shape->bounds[0], path->bounds[0]);
+        shape->bounds[1] = nsvg__minf(shape->bounds[1], path->bounds[1]);
+        shape->bounds[2] = nsvg__maxf(shape->bounds[2], path->bounds[2]);
+        shape->bounds[3] = nsvg__maxf(shape->bounds[3], path->bounds[3]);
+    }
+}
+
+/* 按 SVG 文档顺序把 shape 挂到链表尾部。
+ *
+ * nanosvg 的光栅化器是**按链表顺序**逐个绘制的（nsvgRasterize 里从 image->shapes
+ * 顺着 next 走），所以链表顺序就是绘制顺序。头插会让顺序整个反过来：底色 rect 本来
+ * 最先画，反了之后变成最后画，直接把整块瓦片的地物全盖住；面状地物和路网也会颠倒，
+ * 路被地物压在下面。必须尾插，才能和 nsvgParse 出来的顺序一致。
+ *
+ * *tail 是尾指针缓存，调用方置 NULL 起步，函数负责维护。不缓存的话每次都要从头走到
+ * 尾，一条 path 一个 shape 时是 300 个节点，O(n^2) 就是 4.5 万次 PSRAM 读，白扔。 */
+static void amap_nsvg_image_add_shape(NSVGimage *image, NSVGshape **tail, NSVGshape *shape)
+{
+    shape->next = NULL;
+    if (*tail == NULL) {
+        image->shapes = shape;
+    } else {
+        (*tail)->next = shape;
+    }
+    *tail = shape;
+}
+
+/* 底色矩形：FBS 的 Rect 只有一个 fill，几何就是整块瓦片 */
+static NSVGshape *amap_nsvg_make_rect_shape(float w, float h, const amap_fb_color_t *fill,
+        amap_nsvg_arena_t *arena)
+{
+    NSVGshape *shape = (NSVGshape *)amap_nsvg_arena_alloc(arena, sizeof(NSVGshape));
+    amap_nsvg_path_t p;
+
+    if (shape == NULL) {
+        return NULL;
+    }
+    memset(shape, 0, sizeof(NSVGshape));
+    shape->opacity = 1.0f;
+    shape->fillRule = NSVG_FILLRULE_NONZERO;
+    shape->flags = NSVG_FLAGS_VISIBLE;
+    amap_nsvg_set_paint(&shape->fill, fill);
+    shape->stroke.type = NSVG_PAINT_NONE;
+
+    memset(&p, 0, sizeof(p));
+    p.arena = arena;
+    amap_nsvg_path_push(&p, 0.0f, 0.0f);
+    amap_nsvg_path_line(&p, 0.0f, 0.0f, w, 0.0f);
+    amap_nsvg_path_line(&p, w, 0.0f, w, h);
+    amap_nsvg_path_line(&p, w, h, 0.0f, h);
+    amap_nsvg_commit_subpath(shape, &p, true);
+    if (shape->paths == NULL) {
+        return NULL;
+    }
+    amap_nsvg_shape_bounds(shape);
+    return shape;
+}
+
+/**
+ * @brief 把一个 Group 的样式套到一个新建的 NSVGshape 上
+ *
+ * 一个 Group 下的每条 Path 都要单独建 shape（见 amap_fbs_build_nsvg_image 里那段
+ * 为什么必须一 path 一 shape 的说明），而它们照抄的是同一份样式，所以抽出来共用。
+ *
+ * @param fill/stroke   group 的填充/描边色，has_fill/has_stroke 为 false 表示该字段缺失
+ * @param stroke_w      stroke-width，0 表示不描边（SVG 里 stroke-width=0 就是不画）
+ * @param dash/dash_len stroke-dasharray，dash_len 为 0 表示实线
+ */
+static void amap_nsvg_apply_group_style(NSVGshape *shape,
+                                        const amap_fb_color_t *fill, bool has_fill,
+                                        const amap_fb_color_t *stroke, bool has_stroke,
+                                        uint8_t stroke_w,
+                                        const uint8_t *dash, uint32_t dash_len)
+{
+    memset(shape, 0, sizeof(NSVGshape));
+    shape->opacity = 1.0f;
+    shape->fillRule = NSVG_FILLRULE_NONZERO;
+    shape->flags = NSVG_FLAGS_VISIBLE;
+    shape->strokeLineJoin = NSVG_JOIN_MITER;
+    shape->strokeLineCap = NSVG_CAP_BUTT;
+    shape->miterLimit = 4.0f;
+
+    amap_nsvg_set_paint(&shape->fill, has_fill ? fill : NULL);
+    amap_nsvg_set_paint(&shape->stroke, has_stroke ? stroke : NULL);
+
+    if (stroke_w > 0) {
+        shape->strokeWidth = (float)stroke_w;
+    } else {
+        shape->stroke.type = NSVG_PAINT_NONE;
+    }
+
+    if (dash != NULL && dash_len > 0) {
+        /* strokeDashArray 只有 8 个槽位，多出来的截断——SVG 里超过 8 段的虚线本来就
+         * 罕见，nanosvg 自己也是这个上限。 */
+        uint32_t n = dash_len > 8 ? 8 : dash_len;
+        for (uint32_t k = 0; k < n; k++) {
+            shape->strokeDashArray[k] = (float)dash[k];
+        }
+        shape->strokeDashCount = (char)n;
+    }
+}
+
+/**
+ * @brief 把一块瓦片（可能含多个 SVGLayer）搭成 NSVGimage
+ *
+ * 多个 SVGLayer 合并进同一个 NSVGimage：它们本来就共享瓦片坐标系，合并后一次
+ * 光栅化。width/height 取第一个尺寸合法的 SVGLayer（离线包里一块瓦片实测只有
+ * 一个 SVGLayer；真出现多个且尺寸不一致时以第一个为准）。
+ *
+ * 一条 Path 建一个 NSVGshape，而不是一个 Group 建一个——nsvgParse 对 <path> 就是
+ * 这么建的，两边必须一致。一个 Group 下的多条 Path 若合进同一个 shape，重叠部分会被
+ * 当成一条闭合轮廓按非零环绕规则一次填出并集；SVG 的语义是每条 path 各自填充再依次
+ * 叠加。实测（256x256 样本瓦片，与 nsvgParse 结果逐像素对比）合并建模在 795 个抗锯齿
+ * 边缘像素上有 1~38 个色阶的偏差，拆开后完全一致。adapter1 走的就是 nsvgParse，
+ * shape 数量也是这么多，性能上不是新开销。
+ *
+ * 所有节点都从 arena 切，返回 NULL 时 arena 里已经切出去的部分由调用方统一 reset。
+ *
+ * @return 成功返回 NSVGimage，失败返回 NULL
+ */
+static NSVGimage *amap_fbs_build_nsvg_image(const amap_fb_t *fb, const uint8_t *layers,
+        uint32_t nlayers, amap_nsvg_arena_t *arena)
+{
+    NSVGimage *image;
+    NSVGshape *tail = NULL;     /* shape 链表尾，见 amap_nsvg_image_add_shape */
+    float w = 0.0f, h = 0.0f;
+    bool have_size = false;
+
+    /* 先定尺寸 */
+    for (uint32_t i = 0; i < nlayers && !have_size; i++) {
+        const uint8_t *ly = amap_fb_vec_tbl(fb, layers, nlayers, i);
+        const uint8_t *sv;
+        uint16_t cw, ch;
+
+        if (ly == NULL || amap_fb_u8_field(fb, ly, AMAP_FB_LAYER_DATA_TYPE, 0) != AMAP_FB_LAYERDATA_SVGLayer) {
+            continue;
+        }
+        sv = amap_fb_sub(fb, ly, AMAP_FB_LAYER_DATA);
+        if (sv == NULL) {
+            continue;
+        }
+        cw = amap_fb_u16_field(fb, sv, AMAP_FB_SVG_WIDTH, 0);
+        ch = amap_fb_u16_field(fb, sv, AMAP_FB_SVG_HEIGHT, 0);
+        if (cw == 0 || ch == 0) {
+            continue;
+        }
+        w = (float)cw;
+        h = (float)ch;
+        have_size = true;
+    }
+    if (!have_size) {
+        printf("fbs: bad svg layer size, drop tile\n");
+        return NULL;
+    }
+
+    image = (NSVGimage *)amap_nsvg_arena_alloc(arena, sizeof(NSVGimage));
+    if (image == NULL) {
+        return NULL;
+    }
+    memset(image, 0, sizeof(NSVGimage));
+    image->width = w;
+    image->height = h;
+
+    /* 逐个 SVGLayer 展开，shape 按文档顺序尾插（底色 rect 先画，之后是各 group 的各
+     * path）。顺序必须和 SVG 里一致，见 amap_nsvg_image_add_shape 的说明。 */
+    for (uint32_t i = 0; i < nlayers; i++) {
+        const uint8_t *ly = amap_fb_vec_tbl(fb, layers, nlayers, i);
+        const uint8_t *sv;
+        const uint8_t *rc;
+        uint32_t ngroups = 0;
+        const uint8_t *groups;
+
+        if (ly == NULL || amap_fb_u8_field(fb, ly, AMAP_FB_LAYER_DATA_TYPE, 0) != AMAP_FB_LAYERDATA_SVGLayer) {
+            continue;
+        }
+        sv = amap_fb_sub(fb, ly, AMAP_FB_LAYER_DATA);
+        if (sv == NULL) {
+            continue;
+        }
+
+        rc = amap_fb_sub(fb, sv, AMAP_FB_SVG_RECT);
+        if (rc != NULL) {
+            amap_fb_color_t rc_fill;
+            if (amap_fb_color(fb, rc, AMAP_FB_RECT_FILL, &rc_fill) == 0) {
+                NSVGshape *s = amap_nsvg_make_rect_shape(w, h, &rc_fill, arena);
+                if (s != NULL) {
+                    amap_nsvg_image_add_shape(image, &tail, s);
+                }
+            }
+        }
+
+        groups = amap_fb_vec(fb, sv, AMAP_FB_SVG_GROUPS, 4, &ngroups);
+        for (uint32_t g = 0; g < ngroups; g++) {
+            const uint8_t *gr = amap_fb_vec_tbl(fb, groups, ngroups, g);
+            amap_fb_color_t g_fill, g_stroke;
+            bool has_fill, has_stroke;
+            uint8_t sw;
+            uint32_t dl = 0;
+            const uint8_t *da;
+            uint32_t np = 0;
+            const uint8_t *paths;
+
+            if (gr == NULL) {
+                continue;
+            }
+
+            /* 一个 Group 的样式读一次，下面每条 Path 建 shape 时照抄 */
+            has_fill = (amap_fb_color(fb, gr, AMAP_FB_GROUP_FILL, &g_fill) == 0);
+            has_stroke = (amap_fb_color(fb, gr, AMAP_FB_GROUP_STROKE, &g_stroke) == 0);
+            sw = amap_fb_u8_field(fb, gr, AMAP_FB_GROUP_STROKE_W, 0);
+            da = amap_fb_vec(fb, gr, AMAP_FB_GROUP_DASHARRAY, 1, &dl);
+
+            paths = amap_fb_vec(fb, gr, AMAP_FB_GROUP_PATHS, 4, &np);
+            for (uint32_t p = 0; p < np; p++) {
+                const uint8_t *pa = amap_fb_vec_tbl(fb, paths, np, p);
+                uint32_t dlen = 0;
+                const uint8_t *d;
+                NSVGshape *shape;
+
+                if (pa == NULL) {
+                    continue;
+                }
+                d = amap_fb_vec(fb, pa, AMAP_FB_PATH_D, 1, &dlen);
+                if (d == NULL || dlen == 0) {
+                    continue;
+                }
+
+                shape = (NSVGshape *)amap_nsvg_arena_alloc(arena, sizeof(NSVGshape));
+                if (shape == NULL) {
+                    break;
+                }
+                amap_nsvg_apply_group_style(shape, &g_fill, has_fill, &g_stroke, has_stroke,
+                                            sw, da, dl);
+                amap_nsvg_shape_add_fbs_path(shape, d, dlen, arena);
+
+                /* 指令流非法（shape->paths 仍为空）就丢掉这条，不挂进链表。shape 本身
+                 * 留在 arena 里，整块瓦片画完统一还。 */
+                if (shape->paths == NULL) {
+                    continue;
+                }
+                amap_nsvg_shape_bounds(shape);
+                amap_nsvg_image_add_shape(image, &tail, shape);
+            }
+        }
+    }
+
+    if (image->shapes == NULL) {
+        return NULL;
+    }
+    return image;
+}
+/**
+ * @brief FlatBuffer 的 SVGLayer 直接构造出等价的 LVGL SVG DOM
+ *
+ * 对应关系：SVGLayer -> <svg width height viewBox>（可选 <rect> 底色）
+ *           Group    -> <g fill stroke stroke-width stroke-dasharray>
+ *           Path     -> <path d>
+ *
+ * @return 成功返回根节点（调用方用 lv_svg_node_delete 释放），失败返回 NULL
+ */
+static lv_svg_node_t *amap_fbs_build_svg_doc(const amap_fb_t *fb, const uint8_t *sv)
+{
+    uint16_t w = amap_fb_u16_field(fb, sv, AMAP_FB_SVG_WIDTH, 0);
+    uint16_t h = amap_fb_u16_field(fb, sv, AMAP_FB_SVG_HEIGHT, 0);
+    if (w == 0 || h == 0) {
+        printf("fbs: bad svg layer size %ux%u\n", w, h);
+        return NULL;
+    }
+
+    lv_svg_node_t *doc = lv_svg_node_create(NULL);
+    if (doc == NULL) {
+        return NULL;
+    }
+    doc->type = LV_SVG_TAG_SVG;
+
+    /* 顺序不能换：_set_viewport_attr 处理 viewBox 时要用已解析的 width/height
+     * 算缩放比，所以 WIDTH/HEIGHT 必须排在 VIEWBOX 前面。 */
+    amap_svg_set_number(doc, LV_SVG_ATTR_WIDTH, (float)w);
+    amap_svg_set_number(doc, LV_SVG_ATTR_HEIGHT, (float)h);
+
+    /* viewBox 用 (0, 0, max_x, max_y)。schema 里 ViewBox 只存 max，min 恒为 0。
+     * max 为 0 时退化成 (0,0,w,h)，否则 scale = w/0 会算出 inf 把整幅图放大到看不见。 */
+    const uint8_t *vb = amap_fb_st(fb, sv, AMAP_FB_SVG_VIEW_BOX, 4);
+    float vbw = (float)w, vbh = (float)h;
+    if (vb != NULL && amap_fb_u16(vb) != 0 && amap_fb_u16(vb + 2) != 0) {
+        vbw = (float)amap_fb_u16(vb);
+        vbh = (float)amap_fb_u16(vb + 2);
+    }
+    float *view_box = lv_malloc_zeroed(sizeof(float) * 4);
+    if (view_box == NULL) {
+        lv_svg_node_delete(doc);
+        return NULL;
+    }
+    view_box[0] = 0.0f;
+    view_box[1] = 0.0f;
+    view_box[2] = vbw;
+    view_box[3] = vbh;
+    lv_svg_attr_t *attr = amap_svg_push_attr(doc, LV_SVG_ATTR_VIEWBOX);
+    if (attr == NULL) {
+        lv_free(view_box);
+        lv_svg_node_delete(doc);
+        return NULL;
+    }
+    attr->val_type = LV_SVG_ATTR_VALUE_PTR;     /* 析构时由 lv_free 释放，必须是 lv_malloc 的 */
+    attr->class_type = LV_SVG_ATTR_VALUE_INITIAL;
+    attr->value.val = view_box;
+
+    /* 底色矩形（整块瓦片的背景色）。没有该字段就不画。 */
+    const uint8_t *rc = amap_fb_sub(fb, sv, AMAP_FB_SVG_RECT);
+    if (rc != NULL) {
+        amap_fb_color_t rc_fill;
+        if (amap_fb_color(fb, rc, AMAP_FB_RECT_FILL, &rc_fill) == 0) {
+            lv_svg_node_t *rect = lv_svg_node_create(doc);
+            if (rect == NULL) {
+                lv_svg_node_delete(doc);
+                return NULL;
+            }
+            rect->type = LV_SVG_TAG_RECT;
+            amap_svg_set_number(rect, LV_SVG_ATTR_X, 0.0f);
+            amap_svg_set_number(rect, LV_SVG_ATTR_Y, 0.0f);
+            amap_svg_set_number(rect, LV_SVG_ATTR_WIDTH, (float)w);
+            amap_svg_set_number(rect, LV_SVG_ATTR_HEIGHT, (float)h);
+            amap_svg_set_paint(rect, LV_SVG_ATTR_FILL, LV_SVG_ATTR_FILL_OPACITY, &rc_fill);
+        }
+    }
+
+    uint32_t ngroups = 0;
+    const uint8_t *groups = amap_fb_vec(fb, sv, AMAP_FB_SVG_GROUPS, 4, &ngroups);
+    for (uint32_t g = 0; g < ngroups; g++) {
+        const uint8_t *gr = amap_fb_vec_tbl(fb, groups, ngroups, g);
+        if (gr == NULL) {
+            continue;
+        }
+
+        lv_svg_node_t *gnode = lv_svg_node_create(doc);
+        if (gnode == NULL) {
+            lv_svg_node_delete(doc);
+            return NULL;
+        }
+        gnode->type = LV_SVG_TAG_G;
+
+        amap_fb_color_t g_fill, g_stroke;
+        bool has_fill = (amap_fb_color(fb, gr, AMAP_FB_GROUP_FILL, &g_fill) == 0);
+        bool has_stroke = (amap_fb_color(fb, gr, AMAP_FB_GROUP_STROKE, &g_stroke) == 0);
+        amap_svg_set_paint(gnode, LV_SVG_ATTR_FILL, LV_SVG_ATTR_FILL_OPACITY, has_fill ? &g_fill : NULL);
+        amap_svg_set_paint(gnode, LV_SVG_ATTR_STROKE, LV_SVG_ATTR_STROKE_OPACITY, has_stroke ? &g_stroke : NULL);
+
+        /* stroke_width = 0 在 SVG 里等价于不描边，不推该属性即可。 */
+        uint8_t sw = amap_fb_u8_field(fb, gr, AMAP_FB_GROUP_STROKE_W, 0);
+        if (sw > 0) {
+            amap_svg_set_number(gnode, LV_SVG_ATTR_STROKE_WIDTH, (float)sw);
+        }
+
+        uint32_t dl = 0;
+        const uint8_t *da = amap_fb_vec(fb, gr, AMAP_FB_GROUP_DASHARRAY, 1, &dl);
+        if (dl > 0) {
+            lv_svg_attr_values_list_t *dash = amap_fbs_build_dash_list(da, dl);
+            if (dash == NULL) {
+                lv_svg_node_delete(doc);
+                return NULL;
+            }
+            lv_svg_attr_t *dattr = amap_svg_push_attr(gnode, LV_SVG_ATTR_STROKE_DASH_ARRAY);
+            if (dattr == NULL) {
+                lv_free(dash);
+                lv_svg_node_delete(doc);
+                return NULL;
+            }
+            dattr->val_type = LV_SVG_ATTR_VALUE_PTR;
+            dattr->class_type = LV_SVG_ATTR_VALUE_INITIAL;
+            dattr->value.val = dash;
+        }
+
+        uint32_t np = 0;
+        const uint8_t *paths = amap_fb_vec(fb, gr, AMAP_FB_GROUP_PATHS, 4, &np);
+        for (uint32_t p = 0; p < np; p++) {
+            const uint8_t *pa = amap_fb_vec_tbl(fb, paths, np, p);
+            if (pa == NULL) {
+                continue;
+            }
+            uint32_t dlen = 0;
+            const uint8_t *d = amap_fb_vec(fb, pa, AMAP_FB_PATH_D, 1, &dlen);
+            lv_svg_attr_values_list_t *list = amap_fbs_build_path_list(d, dlen);
+            if (list == NULL) {
+                /* 单条路径坏掉就跳过这条，不连累整块瓦片 */
+                continue;
+            }
+
+            lv_svg_node_t *pnode = lv_svg_node_create(gnode);
+            if (pnode == NULL) {
+                lv_free(list);
+                lv_svg_node_delete(doc);
+                return NULL;
+            }
+            pnode->type = LV_SVG_TAG_PATH;
+            lv_svg_attr_t *dattr = amap_svg_push_attr(pnode, LV_SVG_ATTR_D);
+            if (dattr == NULL) {
+                lv_free(list);
+                lv_svg_node_delete(doc);
+                return NULL;
+            }
+            dattr->val_type = LV_SVG_ATTR_VALUE_PTR;
+            dattr->class_type = LV_SVG_ATTR_VALUE_INITIAL;
+            dattr->value.val = list;
+        }
+    }
+
+    return doc;
+}
+
+/**
+ * @brief FlatBuffer 瓦片渲染（jlgpu 矢量路径）
+ *
+ * bitmap.buffer 是 FlatBuffer 二进制（不是 XML 字符串），直接解。
+ *
+ * 渲染方式：借用主 canvas 建一个 layer，把 layer 的裁剪区收窄到这块瓦片可见的部分，
+ * 然后走 lv_draw_vector -> LV_DRAW_TASK_TYPE_VECTOR -> lv_draw_jlgpu_vector。
+ * 这里不复用 lv_image + SVG 解码器，是因为那会强制走一遍 lv_svg_load_data 的 XML
+ * 解析，正好把 FlatBuffer 省下来的开销又加回去。
+ */
+
+static void awk_render_svg_bitmap_adapter2(uint32_t map_id, awk_rect_area_t area, awk_bitmap_t bitmap, const awk_paint_style_t *style)
+{
+    (void)map_id;
+    (void)style;
+
+    if (canvas == NULL || bitmap.buffer == NULL || bitmap.buffer_size == 0) {
+        return;
+    }
+
+    if (svg_mapi >= AMAP_SVG_TILE_MAX) {
+        return;
+    }
+    svg_mapi++;
+
+    amap_fb_t fb = { bitmap.buffer, bitmap.buffer_size };
+    const uint8_t *tile = amap_fb_root(&fb);
+    if (tile == NULL) {
+        return;
+    }
+
+    /* 设备离线包（.SVT）里的根表比 flatc/tile.fbs 的 Tile 多出 x/y/z 三个字段
+     * （x/y/z 就是瓦片行列号和层级，实测 44,66 -> 13491,6202,14），layers 因此被
+     * 挤到第 4 个字段。两个编号都试一遍，哪个解得出来用哪个。
+     *
+     * 顺序不能反：字段 0 在离线包里是 x，把 x 当向量偏移解，只要 x 足够小就会落进
+     * buffer 内部、解出一个非空的垃圾向量，把真正的 layers 挡掉，那张瓦片就静默不画。
+     * 先试字段 3 就没有这个问题；tile.fbs 那种单字段根表在这里会因为 vtable 放不下
+     * 第 4 个槽位而直接返回 NULL，正好落到字段 0 上。 */
+    uint32_t nlayers = 0;
+    const uint8_t *layers = amap_fb_vec(&fb, tile, 3, 4, &nlayers);
+    if (nlayers == 0) {
+        uint32_t n2 = 0;
+        const uint8_t *l2 = amap_fb_vec(&fb, tile, AMAP_FB_TILE_LAYERS, 4, &n2);
+        if (l2 != NULL && n2 > 0) {
+            layers = l2;
+            nlayers = n2;
+        }
+    }
+
+    /* 一个瓦片包里可能有多层，把所有 SVGLayer 依次画进同一个 layer 即可 */
+    int vis_w = 0, vis_h = 0;
+    for (uint32_t i = 0; i < nlayers; i++) {
+        const uint8_t *ly = amap_fb_vec_tbl(&fb, layers, nlayers, i);
+        if (ly == NULL) {
+            continue;
+        }
+        if (amap_fb_u8_field(&fb, ly, AMAP_FB_LAYER_DATA_TYPE, 0) != AMAP_FB_LAYERDATA_SVGLayer) {
+            continue;
+        }
+        const uint8_t *sv = amap_fb_sub(&fb, ly, AMAP_FB_LAYER_DATA);
+        if (sv == NULL) {
+            continue;
+        }
+
+        lv_svg_node_t *doc = amap_fbs_build_svg_doc(&fb, sv);
+        if (doc == NULL) {
+            continue;
+        }
+        lv_svg_render_obj_t *list = lv_svg_render_create(doc);
+        lv_svg_node_delete(doc);        /* DOM 已经转成渲染对象，可以立刻释放 */
+        if (list == NULL) {
+            continue;
+        }
+
+        /* 瓦片超出地图可视区的部分直接裁掉，别让 jlgpu 去光栅化看不见的区域 */
+        int clip_left   = (area.x < 0) ? -area.x : 0;
+        int clip_top    = (area.y < 0) ? -area.y : 0;
+        int clip_right  = (area.x + area.width  > map_hor) ? (area.x + area.width  - map_hor) : 0;
+        int clip_bottom = (area.y + area.height > map_ver) ? (area.y + area.height - map_ver) : 0;
+        vis_w = area.width  - clip_left - clip_right;
+        vis_h = area.height - clip_top  - clip_bottom;
+        if (vis_w <= 0 || vis_h <= 0) {
+            lv_svg_render_delete(list);
+            continue;
+        }
+        int posx1 = area.x + clip_left;
+        int posy1 = area.y + clip_top;
+
+        lv_layer_t layer;
+        lv_canvas_init_layer(canvas, &layer);
+
+        /* lv_draw_vector_dsc_create 会用 layer->_clip_area 初始化 scissor，
+         * 所以裁剪区要在建 dsc 之前改好。 */
+        lv_area_t tile_clip = {posx1, posy1, posx1 + vis_w - 1, posy1 + vis_h - 1};
+        layer._clip_area = tile_clip;
+        layer.phy_clip_area = tile_clip;
+
+        lv_draw_vector_dsc_t *dsc = lv_draw_vector_dsc_create(&layer);
+        if (dsc == NULL) {
+            lv_svg_render_delete(list);
+            lv_canvas_finish_layer(canvas, &layer);
+            continue;
+        }
+        dsc->ctx->scissor_area = tile_clip;
+
+        /* SVG 里的坐标是相对瓦片左上角的，平移到屏幕上的瓦片位置 */
+        lv_matrix_t matrix;
+        lv_matrix_identity(&matrix);
+        lv_matrix_translate(&matrix, (float)area.x, (float)area.y);
+        lv_draw_vector_dsc_set_transform(dsc, &matrix);
+
+        lv_draw_svg_render(dsc, list);
+        lv_draw_vector(dsc);
+        lv_draw_vector_dsc_delete(dsc);
+
+        lv_canvas_finish_layer(canvas, &layer);
+        lv_svg_render_delete(list);
+    }
+}
+
+/**
+ * @brief FlatBuffer 瓦片渲染（nanosvg 软件光栅化路径）
+ *
+ * 和 adapter2 吃同一份 FlatBuffer，区别只在出口：
+ *   adapter2：FlatBuffer -> LVGL SVG DOM -> lv_draw_vector -> jlgpu 硬件矢量渲染
+ *   adapter3：FlatBuffer -> NSVGimage（直接搭，不过 XML）-> nsvgRasterize -> RGB565 -> lv_img 贴图
+ * 用途：不依赖 jlgpu 矢量单元就能验证 FlatBuffer 解码本身画得对不对，
+ * 也方便和 adapter2 对比软/硬两条路径的速度与效果。
+ *
+ * 上屏部分复用 adapter1 的池（svg_img_obj / svg_img_dsc / svg_temp_buffer）和
+ * nanosvg 光栅化器单例（rast），两者互斥——同时只会有一个被注册进
+ * context.render_adapter.draw_svg_bitmap。
+ *
+ * NSVG 节点（image/shape/path/pts）全部从本函数栈上的 arena 切，函数返回前一次性
+ * 归还。注意不能用 nsvgDelete：它内部调的是标准 free（internal SRAM），和这里的
+ * AMAP_MALLOC（PSRAM）不是一个堆。
+ */
+static void awk_render_svg_bitmap_adapter3(uint32_t map_id, awk_rect_area_t area, awk_bitmap_t bitmap, const awk_paint_style_t *style)
+{
+    amap_nsvg_arena_t arena = {0};
+
+    (void)map_id;
+    (void)style;
+    os_time_dly(1);//喂狗
+
+    if (canvas == NULL || bitmap.buffer == NULL || bitmap.buffer_size == 0) {
+        return;
+    }
+    if (svg_mapi >= AMAP_SVG_TILE_MAX) {
+        return;
+    }
+
+    /* 每帧第一次进来先清掉上一帧的 lv_img 对象（与 adapter1 同一套池，规则也一致） */
+    if (svg_mapi == 0) {
+        for (int i = 0; i < AMAP_SVG_TILE_MAX; i++) {
+            if (svg_img_obj[i]) {
+                lv_obj_del(svg_img_obj[i]);
+                svg_img_obj[i] = NULL;
+            }
+            if (svg_img_dsc[i]) {
+                AMAP_FREE(svg_img_dsc[i]);
+                svg_img_dsc[i] = NULL;
+            }
+            /* svg_temp_buffer[i] 不释放：只增不减，避免拖动时反复 free/malloc 大块导致碎片化 */
+        }
+    }
+
+    amap_fb_t fb = { bitmap.buffer, bitmap.buffer_size };
+    const uint8_t *tile = amap_fb_root(&fb);
+    if (tile == NULL) {
+        return;
+    }
+
+    /* 与 adapter2 相同的字段号探测：设备离线包（.SVT）的根表比 tile.fbs 的 Tile
+     * 多出 x/y/z 三个字段，layers 被挤到第 4 个。先试字段 3，解不出再回落到字段 0。 */
+    uint32_t nlayers = 0;
+    const uint8_t *layers = amap_fb_vec(&fb, tile, 3, 4, &nlayers);
+    if (nlayers == 0) {
+        uint32_t n2 = 0;
+        const uint8_t *l2 = amap_fb_vec(&fb, tile, AMAP_FB_TILE_LAYERS, 4, &n2);
+        if (l2 != NULL && n2 > 0) {
+            layers = l2;
+            nlayers = n2;
+        }
+    }
+    if (nlayers == 0) {
+        return;
+    }
+
+    /* 瓦片裁剪到地图窗口范围（与 adapter1 一致） */
+    int clip_left   = area.x < 0 ? -area.x : 0;
+    int clip_top    = area.y < 0 ? -area.y : 0;
+    int clip_right  = (area.x + area.width  > map_hor) ? (area.x + area.width  - map_hor) : 0;
+    int clip_bottom = (area.y + area.height > map_ver) ? (area.y + area.height - map_ver) : 0;
+
+    int r_malloc_w = area.width  - clip_left - clip_right;
+    int r_malloc_h = area.height - clip_top  - clip_bottom;
+    if (r_malloc_w <= 0 || r_malloc_h <= 0) {
+        return;
+    }
+
+    int posx1 = area.x + clip_left;
+    int posy1 = area.y + clip_top;
+    int raster_w = area.width;
+    int raster_h = area.height;
+    int src_x = clip_left;
+    int src_y = clip_top;
+    int buf_size = r_malloc_w * r_malloc_h * 2;
+
+    /* FlatBuffer -> NSVGimage：跳过 nsvgParse，直接搭出光栅化器认的结构。
+     * 节点全在 arena 里，任何一条提前返回的路都必须先 reset。 */
+    NSVGimage *image = amap_fbs_build_nsvg_image(&fb, layers, nlayers, &arena);
+    if (image == NULL) {
+        amap_nsvg_arena_reset(&arena);
+        return;
+    }
+
+    if (image->width <= 0.0f || image->height <= 0.0f) {
+        amap_nsvg_arena_reset(&arena);
+        return;
+    }
+
+    /* 复杂度阈值：与 adapter1 同规则。nanosvg 内部点/边池会随复杂度膨胀，
+     * 超阈值直接放弃这块瓦片，从源头封死 internal SRAM 耗尽。 */
+    int total_pts = 0;
+    int bad_bounds = 0;
+    for (NSVGshape *sh = image->shapes; sh; sh = sh->next) {
+        if (!(sh->bounds[0] > -1e7f && sh->bounds[0] < 1e7f &&
+              sh->bounds[1] > -1e7f && sh->bounds[1] < 1e7f &&
+              sh->bounds[2] > -1e7f && sh->bounds[2] < 1e7f &&
+              sh->bounds[3] > -1e7f && sh->bounds[3] < 1e7f)) {
+            bad_bounds = 1;
+            break;
+        }
+        for (NSVGpath *ph = sh->paths; ph; ph = ph->next) {
+            total_pts += ph->npts;
+        }
+    }
+    if (bad_bounds || total_pts > SVG_MAX_TOTAL_PTS) {
+        INFO_PRINTF("adapter3: svg too complex: bad_bounds=%d pts=%d\n", bad_bounds, total_pts);
+        amap_nsvg_arena_reset(&arena);
+        return;
+    }
+
+    /* 根据 SVG 尺寸算光栅化缩放比例（瓦片是正方形，取较小的那个保证不裁切） */
+    float scale_w = (float)raster_w / image->width;
+    float scale_h = (float)raster_h / image->height;
+    float sc = scale_w < scale_h ? scale_w : scale_h;
+    if (!(sc > 0.0f) || !(sc < 1e6f)) {
+        INFO_PRINTF("adapter3: invalid scale=%f\n", sc);
+        amap_nsvg_arena_reset(&arena);
+        return;
+    }
+
+    if (first_polyline) {
+        rast = nsvgCreateRasterizer();
+        if (rast == NULL) {
+            INFO_PRINTF("adapter3: nsvgCreateRasterizer fail\n");
+            amap_nsvg_arena_reset(&arena);
+            return;
+        }
+        linenum = 0;
+        first_polyline = 0;
+    }
+
+    /* RGBA 中间缓冲（与 adapter1 共用的按需扩容单例） */
+    int rgba_size = raster_w * raster_h * 4;
+    if (s_svg_rgba_cap < rgba_size) {
+        if (s_svg_rgba) {
+            AMAP_FREE(s_svg_rgba);
+            s_svg_rgba = NULL;
+        }
+        s_svg_rgba = (unsigned char *)AMAP_MALLOC(rgba_size);
+        if (s_svg_rgba == NULL) {
+            s_svg_rgba_cap = 0;
+            amap_nsvg_arena_reset(&arena);
+            return;
+        }
+        s_svg_rgba_cap = rgba_size;
+    }
+
+    /* 本槽位的显示 buffer（只增不减） */
+    if (svg_temp_buffer[svg_mapi] == NULL || svg_temp_buffer_size[svg_mapi] < buf_size) {
+        if (svg_temp_buffer[svg_mapi]) {
+            AMAP_FREE(svg_temp_buffer[svg_mapi]);
+        }
+        svg_temp_buffer[svg_mapi] = AMAP_MALLOC(buf_size);
+        svg_temp_buffer_size[svg_mapi] = buf_size;
+    }
+    uint8_t *dst = svg_temp_buffer[svg_mapi];
+    if (dst == NULL) {
+        svg_temp_buffer_size[svg_mapi] = 0;
+        INFO_PRINTF("adapter3: temp buffer malloc fail\n");
+        amap_nsvg_arena_reset(&arena);
+        return;
+    }
+
+    nsvgRasterize(rast, image, 0, 0, sc, s_svg_rgba, raster_w, raster_h, raster_w * 4);
+    /* 光栅化完 image 就没用了：整块 arena 一次性归还，比逐节点 free 快得多也不碎堆 */
+    amap_nsvg_arena_reset(&arena);
+
+    /* 只把可见区域转 RGB565 上屏，看不见的部分不转 */
+    amap_svg_rgba_to_rgb565(s_svg_rgba, raster_w, raster_h, src_x, src_y, r_malloc_w, r_malloc_h, dst);
+
+    if (svg_img_dsc[svg_mapi] == NULL) {
+        svg_img_dsc[svg_mapi] = AMAP_MALLOC(sizeof(lv_img_dsc_t));
+    }
+    if (svg_img_dsc[svg_mapi] == NULL) {
+        INFO_PRINTF("adapter3: lv_img_dsc malloc fail\n");
+        return;
+    }
+
+    lv_img_dsc_t *dsc = svg_img_dsc[svg_mapi];
+    memset(dsc, 0, sizeof(lv_img_dsc_t));
+    dsc->header.cf = LV_COLOR_FORMAT_RGB565;
+    dsc->header.w = r_malloc_w;
+    dsc->header.h = r_malloc_h;
+    dsc->data_size = buf_size;
+    dsc->data = dst;
+
+    if (svg_img_obj[svg_mapi] == NULL) {
+        svg_img_obj[svg_mapi] = lv_img_create(lv_scr_act());
+        lv_obj_remove_flag(svg_img_obj[svg_mapi], LV_OBJ_FLAG_SCROLLABLE);
+    }
+
+    lv_obj_t *img = svg_img_obj[svg_mapi];
+    lv_obj_remove_flag(img, LV_OBJ_FLAG_HIDDEN);
+    lv_img_set_src(img, dsc);
+    lv_obj_set_pos(img, posx1, posy1);
+
+    svg_mapi++;
+}
+
 static void awk_render_svg_bitmap_adapter1(uint32_t map_id, awk_rect_area_t area, awk_bitmap_t bitmap, const awk_paint_style_t *style)
 {
     (void)map_id;
     (void)style;
     os_time_dly(1);//喂狗
+    /* 槽位越界保护：本函数所有池都按 svg_mapi 索引，越界会直接踩到相邻的 PSRAM
+     * 全局变量（见 svg_jlgpu_img 那段注释）。adapter2/adapter3 都有这道闸。 */
+    if (svg_mapi >= AMAP_SVG_TILE_MAX) {
+        return;
+    }
     /* 每帧开头重建 LVGL 图片对象：直接复用 img 对象会让上一帧的旧图/旧尺寸/旧位置残留在
      * 屏幕上，拖动时出现花屏。lv_img_create/lv_obj_del 都是 LVGL 堆上的小对象，不占 PSRAM。
      * 大块 svg_temp_buffer 保持按槽位只增不减（不 free），消除拖动时的 PSRAM 碎片化——
      * 这才是之前内存一路下降的根因，跟对象复用无关。 */
     if (svg_mapi == 0) {
-#if AMAP_TIME_PROFILE
-        /* 新的一帧开始，清零本帧耗时统计（等 commit 时打印汇总） */
-        g_prof_tile_n = 0;
-        g_prof_tile_hit = 0;
-        g_prof_parse_ms = 0;
-        g_prof_raster_ms = 0;
-#endif
         for (int i = 0; i < AMAP_SVG_TILE_MAX; i++) {
             if (svg_img_obj[i]) {
                 lv_obj_del(svg_img_obj[i]);
@@ -1152,19 +2958,12 @@ static void awk_render_svg_bitmap_adapter1(uint32_t map_id, awk_rect_area_t area
         svg_key = amap_svg_content_hash((const char *)bitmap.buffer, bitmap.buffer_size);
         cache_ent = amap_svg_cache_find(svg_key, bitmap.buffer_size, raster_w, raster_h);
         if (cache_ent) {
-#if AMAP_TIME_PROFILE
-            g_prof_tile_hit++;
-#endif
             amap_svg_copy_visible(cache_ent->rgb565, raster_w, raster_h,
                                   src_x, src_y, r_malloc_w, r_malloc_h, dst);
             goto svg_img_tail;
         }
     }
 #endif /* AMAP_TILE_CACHE_EN */
-
-#if AMAP_TIME_PROFILE
-    g_prof_tile_n++;   // 走到这里 = 缓存未命中（或缓存关闭），本瓦片需要完整解析
-#endif
 
     /* ---- 解析 + 光栅化（只对缓存未命中的瓦片执行） ---- */
     {
@@ -1194,9 +2993,6 @@ static void awk_render_svg_bitmap_adapter1(uint32_t map_id, awk_rect_area_t area
 
         uint32_t t_parse1 = get_system_ms();
 
-#if AMAP_TIME_PROFILE
-        g_prof_parse_ms += (uint32_t)(t_parse1 - t_parse0);
-#endif
         INFO_PRINTF("svg parse time=%u ms\n", t_parse1 - t_parse0);
 
         if (!image) {
@@ -1270,14 +3066,7 @@ static void awk_render_svg_bitmap_adapter1(uint32_t map_id, awk_rect_area_t area
         unsigned char *rgba = s_svg_rgba;
 
         /* SVG 光栅化 */
-#if AMAP_TIME_PROFILE
-        uint32_t t_rast0 = get_system_ms();
         nsvgRasterize(rast, image, 0, 0, scale, rgba, raster_w, raster_h, raster_w * 4);
-        uint32_t t_rast1 = get_system_ms();
-        g_prof_raster_ms += (uint32_t)(t_rast1 - t_rast0);
-#else
-        nsvgRasterize(rast, image, 0, 0, scale, rgba, raster_w, raster_h, raster_w * 4);
-#endif
 
         /* RGBA → RGB565 */
 #if AMAP_TILE_CACHE_EN
@@ -1394,7 +3183,6 @@ static uint64_t awk_get_system_time_adapter(void)
 static int awk_printf_adapter(const char *__fmt, ...)
 {
 #if OPEN_INFO
-    INFO_PRINTF("printf start\n");
     va_list args;
     va_start(args, __fmt);
     int ret = vprintf(__fmt, args);
@@ -1808,13 +3596,13 @@ static void touch_cb(lv_event_t *e)
         return;
     }
 
-#if OPEN_INFO
+//#if OPEN_INFO
     int a = get_system_ms();
-#endif
+//#endif
     awk_map_do_render();
-#if OPEN_INFO
-    INFO_PRINTF("运行时间：%dms\n", get_system_ms() - a);
-#endif
+//#if OPEN_INFO
+    printf("运行时间：%dms\n", get_system_ms() - a);
+//#endif
 }
 /*空函数，用来查看链接前的资源消耗时打开
 int32_t awk_init(awk_context_t *context){}
@@ -2048,10 +3836,189 @@ void amap_jlgpu_vector_test(void)
     INFO_PRINTF("jlgpu vector test: direct circle + rect drawn\n");
 }
 
+/*==========================================================================
+ * FlatBuffer 瓦片文件自测
+ *
+ * 读 storage/res_nor_mode/C/lvgl/svg.fb，用手写的纯 C 读取器解成 LVGL SVG DOM，
+ * 再走 lv_draw_vector -> LV_DRAW_TASK_TYPE_VECTOR -> lv_draw_jlgpu_vector 画到
+ * 一块独立的 canvas 上，肉眼确认解析出来的图形对不对。
+ *
+ * 用法：把 AMAP_FBS_FILE_TEST 置 1，AMAP_USE_TILE_DEMO 开头会自动调用并 return。
+ *       默认 0 关闭，不影响地图渲染。
+ *==========================================================================*/
+#define AMAP_FBS_FILE_TEST  0
+#define AMAP_FBS_FILE_PATH  "storage/res_nor_mode/C/lvgl/temp.fb"
+#define AMAP_FBS_FILE_MAX   (1024 * 1024)   /* 超过这个大小就不读了，防呆 */
+
+void amap_fbs_file_test(void)
+{
+    FILE *fp = fopen(AMAP_FBS_FILE_PATH, "r");
+    if (fp == NULL) {
+        printf("fbsfile: 打不开 %s\n", AMAP_FBS_FILE_PATH);
+        return;
+    }
+    size_t sz = flen(fp);
+    printf("fbsfile: %s size=%u\n", AMAP_FBS_FILE_PATH, (unsigned)sz);
+    if (sz < 12 || sz > AMAP_FBS_FILE_MAX) {
+        printf("fbsfile: 大小异常，放弃\n");
+        fclose(fp);
+        return;
+    }
+
+    /* 读进 PSRAM。走 awk_file_read_adapter 是为了复用它的内部 SRAM 中转 buffer：
+     * SD 的 DMA 直接写 PSRAM 会绕过 CPU cache，数据会错乱。 */
+    uint8_t *buf = (uint8_t *)AMAP_MALLOC(sz);
+    if (buf == NULL) {
+        printf("fbsfile: malloc %u 失败\n", (unsigned)sz);
+        fclose(fp);
+        return;
+    }
+    size_t got = awk_file_read_adapter(buf, sz, fp);
+    fclose(fp);
+    printf("fbsfile: read=%u\n", (unsigned)got);
+    if (got != sz) {
+        printf("fbsfile: 读取不完整，放弃\n");
+        AMAP_FREE(buf);
+        return;
+    }
+
+    amap_fb_t fb = { buf, (uint32_t)sz };
+    const uint8_t *tile = amap_fb_root(&fb);
+    if (tile == NULL) {
+        AMAP_FREE(buf);
+        return;
+    }
+
+    /* 两个候选字段号：
+     *   0 = tile.fbs 的 Tile.layers
+     *   3 = 离线包（根表多出 x/y/z 三个字段）的 layers */
+    static const uint32_t cand[2] = { AMAP_FB_TILE_LAYERS, 3 };
+    uint32_t nlayers = 0;
+    const uint8_t *layers = NULL;
+    for (uint32_t c = 0; c < 2 && nlayers == 0; c++) {
+        uint32_t n = 0;
+        const uint8_t *l = amap_fb_vec(&fb, tile, cand[c], 4, &n);
+        printf("fbsfile: 字段 %u 当 layers -> n=%u\n", cand[c], n);
+        if (l != NULL && n > 0) {
+            layers = l;
+            nlayers = n;
+        }
+    }
+    if (nlayers == 0) {
+        printf("fbsfile: 两个字段号都解不出 layers\n");
+        AMAP_FREE(buf);
+        return;
+    }
+
+    lv_obj_t *tc = NULL;
+    uint8_t *tbuf = NULL;
+    int drawn = 0;
+
+    for (uint32_t i = 0; i < nlayers; i++) {
+        const uint8_t *ly = amap_fb_vec_tbl(&fb, layers, nlayers, i);
+        if (ly == NULL) {
+            printf("fbsfile: layer[%u] 表指针为空\n", i);
+            continue;
+        }
+        uint8_t dt = amap_fb_u8_field(&fb, ly, AMAP_FB_LAYER_DATA_TYPE, 0);
+        const uint8_t *sv = amap_fb_sub(&fb, ly, AMAP_FB_LAYER_DATA);
+
+        uint16_t w = 0, h = 0;
+        uint32_t ng = 0, np = 0;
+        if (sv != NULL) {
+            w = amap_fb_u16_field(&fb, sv, AMAP_FB_SVG_WIDTH, 0);
+            h = amap_fb_u16_field(&fb, sv, AMAP_FB_SVG_HEIGHT, 0);
+            const uint8_t *groups = amap_fb_vec(&fb, sv, AMAP_FB_SVG_GROUPS, 4, &ng);
+            for (uint32_t g = 0; g < ng; g++) {
+                const uint8_t *gr = amap_fb_vec_tbl(&fb, groups, ng, g);
+                if (gr == NULL) {
+                    continue;
+                }
+                uint32_t n = 0;
+                amap_fb_vec(&fb, gr, AMAP_FB_GROUP_PATHS, 4, &n);
+                np += n;
+            }
+        }
+        printf("fbsfile: layer[%u] type=%u sv=%p %ux%u groups=%u paths=%u\n",
+               i, dt, (const void *)sv, w, h, ng, np);
+
+        if (dt != AMAP_FB_LAYERDATA_SVGLayer || sv == NULL) {
+            continue;
+        }
+        if (w == 0 || h == 0 || w > 2048 || h > 2048) {
+            printf("fbsfile: layer[%u] 尺寸异常 %ux%u，跳过\n", i, w, h);
+            continue;
+        }
+
+        lv_svg_node_t *doc = amap_fbs_build_svg_doc(&fb, sv);
+        if (doc == NULL) {
+            printf("fbsfile: layer[%u] DOM 构造失败\n", i);
+            continue;
+        }
+        lv_svg_render_obj_t *list = lv_svg_render_create(doc);
+        lv_svg_node_delete(doc);        /* DOM 已经转成渲染对象，可以立刻释放 */
+        if (list == NULL) {
+            printf("fbsfile: layer[%u] 渲染对象构造失败\n", i);
+            continue;
+        }
+
+        /* 第一层建 canvas，后面的层叠画在同一块上（多层的 .fb 本来就该叠着看） */
+        if (tc == NULL) {
+            tbuf = (uint8_t *)AMAP_MALLOC((uint32_t)w * h * 2);
+            if (tbuf == NULL) {
+                printf("fbsfile: canvas buffer %ux%u 分配失败\n", w, h);
+                lv_svg_render_delete(list);
+                break;
+            }
+            memset(tbuf, 0xFF, (uint32_t)w * h * 2);
+            tc = lv_canvas_create(lv_scr_act());
+            lv_obj_remove_flag(tc, LV_OBJ_FLAG_SCROLLABLE);
+            lv_canvas_set_buffer(tc, tbuf, w, h, LV_COLOR_FORMAT_RGB565);
+            lv_obj_set_pos(tc, 0, 0);
+            printf("fbsfile: canvas %ux%u @0,0\n", w, h);
+        }
+
+        lv_layer_t layer;
+        lv_canvas_init_layer(tc, &layer);
+        lv_draw_vector_dsc_t *dsc = lv_draw_vector_dsc_create(&layer);
+        if (dsc == NULL) {
+            lv_svg_render_delete(list);
+            lv_canvas_finish_layer(tc, &layer);
+            continue;
+        }
+        /* SVG 坐标就是瓦片坐标，直接画在 canvas 原点 */
+        lv_matrix_t matrix;
+        lv_matrix_identity(&matrix);
+        lv_draw_vector_dsc_set_transform(dsc, &matrix);
+
+        lv_draw_svg_render(dsc, list);
+        lv_draw_vector(dsc);
+        lv_draw_vector_dsc_delete(dsc);
+        lv_canvas_finish_layer(tc, &layer);
+        lv_svg_render_delete(list);
+        drawn++;
+    }
+
+    lv_disp_t *disp = lv_disp_get_default();
+    if (disp != NULL) {
+        lv_refr_now(disp);
+    }
+    printf("fbsfile: drawn=%d\n", drawn);
+
+    /* buf 故意不释放：渲染对象里可能还留着指向它的引用，自测入口一直持有到进程结束。 */
+    (void)buf;
+}
+
 void AMAP_USE_TILE_DEMO(void)
 {
     psram_heap_stats();
     INFO_PRINTF("LCD Width: %d, Height: %d\n", LCD_W, LCD_H);
+
+#if AMAP_FBS_FILE_TEST
+    /* FlatBuffer 瓦片文件自测：读 storage/res_nor_mode/C/lvgl/svg.fb 并画出来 */
+    amap_fbs_file_test();
+    return;
+#endif
 
 #if AMAP_JLGPU_VECTOR_TEST
     /* JLGPU 矢量/SVG 渲染自测：默认关闭，需验证时置 AMAP_JLGPU_VECTOR_TEST 为 1 */
@@ -2082,14 +4049,15 @@ void AMAP_USE_TILE_DEMO(void)
     context.key = "6953e70e8ce4789125e3dcb6bafa3e09";
     context.root_dir = "storage/sd1/C/SVG";            //SDK内部文件夹根路径
     context.offline_map_dir = "storage/sd1/C/svgoff"; // 离线文件路径
-    context.tile_mem_cache_max_size = 0;     //栅格图内存缓存限值，单位：KB
+    context.tile_mem_cache_max_size = AMAP_TILE_MEM_CACHE_KB;     //栅格图内存缓存限值，单位：KB
     context.tile_disk_cache_max_size = 200;  //栅格图磁盘缓存限值，单位：MB
-    //context.poi_tile_mem_cache_max_size = 4 * 1024;  // POI 瓦片内存缓存，单位：KB（避免拖动时反复解析 .pbf，可调大）
-    //context.poi_tile_disk_cache_max_size = 200;      // POI 瓦片磁盘缓存，单位：MB（落盘不占 RAM）
+    context.poi_tile_mem_cache_max_size = AMAP_POI_TILE_MEM_CACHE_KB;  // POI 瓦片内存缓存，单位：KB（避免拖动时反复解析 .pbf，可调大）
+    context.poi_tile_disk_cache_max_size = 200;      // POI 瓦片磁盘缓存，单位：MB（落盘不占 RAM）
     context.tile_cache_decoded_bitmap = true;  // 缓存解码后的位图，减少重复解析/光栅化
-    context.tile_clip_load = true;             // 加载瓦片时就裁剪（tile_mem_cache_max_size=0 时才有效）
+    context.tile_clip_load = (AMAP_TILE_MEM_CACHE_KB == 0);             // 加载瓦片时就裁剪（tile_mem_cache_max_size=0 时才有效）
     context.tile_load_mode = AWK_MAP_TILE_LOAD_OFFLINE;    //离线模式
     context.tile_style = AWK_MAP_TILE_STYLE_VECTOR_OP;//AWK_MAP_TILE_STYLE_VECTOR;
+    context.svg_tile_data_type = AWK_MAP_TILE_SVG_DATA_FBS;  //数据类型选择FBS，默认XML
     //内存相关适配
     context.memory_adapter.mem_malloc = awk_mem_malloc_adapter;
     context.memory_adapter.mem_free = awk_mem_free_adapter;
@@ -2129,7 +4097,19 @@ void AMAP_USE_TILE_DEMO(void)
     context.render_adapter.draw_polygon = awk_render_polygon_adapter;
     context.render_adapter.draw_bitmap = awk_render_bitmap_adapter;
     context.render_adapter.draw_color = awk_render_color_adapter;
+#if AMAP_SVG_ADAPTER_SEL == 2
+    /* FlatBuffer 瓦片 -> 手工构造 SVG DOM -> jlgpu 矢量渲染（见 awk_render_svg_bitmap_adapter2） */
+    context.render_adapter.draw_svg_bitmap = awk_render_svg_bitmap_adapter2;
+#elif AMAP_SVG_ADAPTER_SEL == 3
+    /* FlatBuffer 瓦片 -> 生成 SVG XML -> nanosvg 软件光栅化 -> RGB565 贴图 */
+    context.render_adapter.draw_svg_bitmap = awk_render_svg_bitmap_adapter3;
+#elif AMAP_SVG_ADAPTER_SEL == 1
+    /* XML 瓦片 -> nanosvg 软件光栅化 -> RGB565 贴图 */
+    context.render_adapter.draw_svg_bitmap = awk_render_svg_bitmap_adapter1;
+#else
+    /* XML 瓦片 -> LVGL 内建 SVG 解析器 -> jlgpu 矢量渲染 */
     context.render_adapter.draw_svg_bitmap = awk_render_svg_bitmap_adapter;
+#endif
     context.render_adapter.draw_text = awk_render_draw_text_adapter;
     context.render_adapter.measure_text = awk_render_measure_text_adapter;
 

@@ -72,14 +72,26 @@ u8 kid_settings_get_rec_recyle_sec(void)
 extern void rtc_read_time(struct sys_time *time);
 extern void fat_set_datetime_info(u16 year, u8 month, u8 day, u8 hour, u8 minute, u8 second);
 
-/* 显示属性 (LCD preview): 摄像头预览保持 320x240(传感器 4:3 等比画面),
- * 预览 fb 与 LVGL 视频控件同尺寸 */
+/* 预览源尺寸。必须与"屏的方向"一致: 传感器能出的像素就这么多, 显示层旋转只搬像素、
+ * 不会凭空造像素, 源与屏宽高比不符时必然留白或裁切。
+ *   儿童照相机(宏=0): 屏 320x240 横 -> 源取 240x320 竖, 旋转 90° 后正好等比铺满
+ *   儿童对讲机(宏=1): 屏 240x320 竖 -> 源取 320x240 横, 旋转 90° 后正好等比铺满
+ * 旋转由 video_rec_ui.c 的 video_rec_preview_rotate() 在显示层完成。 */
+#if defined(TCFG_KID_CAMERA_UI_INTERCOM) && TCFG_KID_CAMERA_UI_INTERCOM
+#define VREC_PREVIEW_WIDTH      320
+#define VREC_PREVIEW_HEIGHT     240
+#else
+#define VREC_PREVIEW_WIDTH      240
+#define VREC_PREVIEW_HEIGHT     320
+#endif
+
+/* 显示属性 (LCD preview): 预览 fb 与 LVGL 视频控件同尺寸 */
 #if TCFG_CAMERA_DVP_ENABLE
 static const app_camera_display_attr_t g_rec_disp_attr = {
     .fb_name = "fb5",
     .fb_num = 2,
-    .width = 320,
-    .height = 240,
+    .width = VREC_PREVIEW_WIDTH,
+    .height = VREC_PREVIEW_HEIGHT,
 };
 #elif (TCFG_HOST_UVC_ENABLE && TCFG_USB_HOST_ENABLE)
 typedef struct {
@@ -91,8 +103,8 @@ typedef struct {
 static const video_rec_uvc_disp_attr_t g_rec_disp_attr = {
     .fb_name = "fb5",
     .fb_num = 2,
-    .width = 320,
-    .height = 240,
+    .width = VREC_PREVIEW_WIDTH,
+    .height = VREC_PREVIEW_HEIGHT,
 };
 #endif
 

@@ -56,8 +56,10 @@ enum WAKEUP_REASON {
     PWR_RTC_WK_REASON_2HZ, 						//RTC 2Hz时基唤醒复位
     PWR_RTC_WK_REASON_1HZ, 						//RTC 1Hz时基唤醒复位
 
-    PWR_WKUP_REASON_RESERVE = 63,
+    PWR_RTC_WK_LPTMR_WKUP,                      //RTC_LPTMR rsc pnd
+    PWR_RTC_WK_LPTMR_TIMEOUT,                   //RTC_LPTMR rsc pnd
 
+    PWR_WKUP_REASON_RESERVE = 63,
 };
 
 //
@@ -67,6 +69,7 @@ enum WAKEUP_REASON {
 //
 //
 //******************************************************************
+//每个滤波参数不一样
 typedef enum {
     RISING_EDGE = 1,
     FALLING_EDGE,
@@ -77,8 +80,12 @@ typedef enum {
     PORT_FLT_DISABLE,
     PORT_FLT_16us,
     PORT_FLT_128us,
+    PORT_FLT_256us,
+    PORT_FLT_512us,
     PORT_FLT_1ms,
+    PORT_FLT_2ms,
     PORT_FLT_4ms,
+    PORT_FLT_8ms,
     PORT_FLT_16ms,
 } P33_IO_WKUP_FLT;
 
@@ -129,9 +136,31 @@ void p33_io_wakeup_port_init(const struct _p33_io_wakeup_config *const config);
 void p33_io_wakeup_port_uninit(u32 gpio);
 
 void p33_io_wakeup_filter(u32 gpio, P33_IO_WKUP_FLT filter);
+void p33_io_wakeup_edge(u32 gpio, P33_IO_WKUP_EDGE edge);
 void p33_io_wakeup_enable(u32 gpio, u32 enable);
 void p33_io_wakeup_set_callback(u32 gpio, void (*callback)(P33_IO_WKUP_EDGE edge));
 
 void p33_io_wakeup_gpio_config_soff(u32 *gpio_config);
+//
+//
+//                    pinr
+//
+//
+//
+//******************************************************************
+void gpio_longpress_pin0_reset_config(u32 pin, u32 level, u32 time, u32 release, enum gpio_mode pullup_down_mode, u32 latch_en);
+void gpio_longpress_pin1_reset_config(u32 pin, u32 level, u32 time, u32 release);
+//
+//
+//                    mclr
+//
+//
+//
+//******************************************************************
+void mclr_sw(u32 en);
+u32 is_mclr_en(void);
+
+
+
 
 #endif

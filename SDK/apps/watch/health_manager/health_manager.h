@@ -3,6 +3,9 @@
 #include "app_config.h"
 #include "system/includes.h"
 #include "data_storage/data_storage.h"
+/* Cross-core module IDs. Must stay value-identical to
+ * pmc/C51/br33_pmc_q32f/apps/sensor/health_manager.h, SHM_MOD_* is carried in
+ * health_data_msg_t.module and matched on the other core. Append only. */
 typedef enum {
     SHM_MOD_BEGIN,					//开始
     //algo_mod
@@ -33,11 +36,17 @@ typedef enum {
 
     SHM_MOD_END,					//结束
 } SHM_MOD;/*update sec 时 按BEGIN -> END顺序执行*/
+/* Cross-core commands. Must stay value-identical to
+ * pmc/C51/br33_pmc_q32f/apps/sensor/health_manager.h, SHM_CMD_* is carried in the
+ * M2P/P2M control payload and matched on the other core. 新增命令一律追加在
+ * SHM_CMD_MAX 之前，不要插到已有项中间：值一旦位移，两核固件版本不同步时会把
+ * 命令解析成相邻的另一条，且不会报错。 */
 typedef enum {
     SHM_CMD_INIT,
     SHM_CMD_RELEASE,
     SHM_CMD_ENABLE,
     SHM_CMD_DISABLE,
+    SHM_CMD_DISBALE = SHM_CMD_DISABLE,/* 历史拼写兼容（心率/血氧模块沿用） */
     SHM_CMD_REC_ENABLE,
     SHM_CMD_REC_DISABLE,
 
@@ -63,8 +72,19 @@ typedef enum {
 
     SHM_CMD_PRIV,
 
+    /* 追加区：以下命令只能加在本区末尾，不要插到已有项之间（见文件头 SHM_CMD 值对齐约定） */
+    // 大核内部专用命令（不跨核；与 sdk 大核 health_manager.h 末尾保持一致，两核 SHM_CMD 值对齐）
+    SHM_CMD_UPDATE_VAILE_P11,   // 小核(pmc)算法数据回填（pmc_gsensor）
+    SHM_CMD_UPDATE_SAMPLE_P11,  // 采样缓存整包投递（仅大核内部用：sensor_driver_p11 → 数据模块）
+    // 床头钟 dir 算法独立开关（跨核：大核 UI → 小核算法；与计步总闸 gsensor_algo_enable 解耦）
+    SHM_CMD_DIR_ENABLE,
+    SHM_CMD_DIR_DISABLE,
+
     SHM_CMD_MAX,
 } SHM_CMD;
+/* Cross-core value types. Must stay value-identical to
+ * pmc/C51/br33_pmc_q32f/apps/sensor/health_manager.h, SHM_GET_TYPE_* is carried in
+ * health_data_msg_t.type and matched on the other core. Append only. */
 typedef enum {
     SHM_GET_TYPE_REAL_VALUE,		//当前/实时数据
     SHM_GET_TYPE_MAX_VALUE,			//最大
@@ -79,6 +99,11 @@ typedef enum {
     SHM_GET_TYPE_STORAGE_ID,		//存储文件id
     SHM_GET_TYPE_WEEK_DATA,			//周数据
     SHM_GET_TYPE_DATA_ANALYSIS,		//数据分析
+
+    // 小核(pmc)采样缓存拉取：请求体与应答体都是 struct shm_sample_pack，
+    // 必须排在 SHM_GET_TYPE_MAX 之前（模块分发会用它做上界校验）
+    SHM_GET_TYPE_SAMPLE_BUF,		//采样缓存整包
+
     SHM_GET_TYPE_MAX,
 } SHM_TYPE;
 typedef enum {
@@ -137,6 +162,53 @@ struct algo_value {
 
 #endif
 #define DISTANCE_MAP(dist) ((dist))
+
+/* 心率/血氧结构（对齐 pmc health_manager.h，P11 数据回填用） */
+struct heart_data {
+    u8 real;
+    u8 max;
+    u8 min;
+    u8 avg;
+};
+struct spo2_data {
+    u8 real;
+    u8 max;
+    u8 min;
+    u8 avg;
+};
+
+/* 小核(pmc)采样缓存交互。采样过程在 pmc 完成，大核整点拉取整包后落盘。
+ * 以下宏与结构体必须与 pmc/C51/br33_pmc_q32f/apps/sensor/health_manager.h 逐字一致。 */
+#define SHM_SAMPLE_INTERVAL_MIN     (5)								//采样间隔(分钟)：整点对齐，每小时 12 个刻度
+#define SHM_SAMPLE_NUM              (60 / SHM_SAMPLE_INTERVAL_MIN)	//每小时采样点数(12)
+#define SHM_SAMPLE_DURATION_SEC     (30)							//单次采样窗时长(秒)
+#define SHM_SAMPLE_DATA_LEN         (16)							//数据区长度(>= SHM_SAMPLE_NUM 且为 2 的幂，兼作 pmc 环形缓存长度)
+
+/* 交互数据封装：总长度(1B) + 采样间隔(1B) + 数据
+ * 18B < sizeof(struct algo_value) 38B，放进 health_data_u 不撑大 union，
+ * health_data_msg_t 仍是 56B，跨核 IPC 报文尺寸不变。 */
+struct shm_sample_pack {
+    u8 data_size;						//本次回传点数 = 环内最新 data_size 个刻度（0=环内尚空）
+    u8 sample_int;						//采样间隔(分钟)
+    u8 data[SHM_SAMPLE_DATA_LEN];		//由旧到新的采样点（pmc 环形取最近 SHM_SAMPLE_NUM 个）
+};
+
+/* 小核(pmc)跨核算法数据上报结构（对齐 pmc health_manager.h） */
+typedef union {
+    struct algo_value acceler;      /* gsensor 算法数据 */
+    struct heart_data hr_data;
+    struct spo2_data spo2_data;
+    u8 dir;                         /* 小核 gsensor 方向（G_SENSOR_DIR_*，bedside 用） */
+    struct shm_sample_pack sample;  /* 小核采样缓存整包（整点拉取） */
+} health_data_u;
+
+typedef struct {
+    int msg;
+    int module;
+    int type;
+    int time;
+    health_data_u data;
+} health_data_msg_t;
 
 struct daily_active {
     u32 steps: 17;		//步数预留13万步
@@ -278,9 +350,18 @@ struct shm_file_ops {
 
 int sport_health_manager_init();
 int sport_health_manager_release();
+/* 主动关机前统一落盘入口：逐个模块请求把当前数据写入文件，总等待时长有上限，
+ * 超时即放弃剩余模块，保证关机不被拖死。由关机路径调用。 */
+int sport_health_manager_save_all_on_poweroff(void);
 int sport_health_manager_value_get(int module, int type, void *priv);
 int sport_health_manager_msg_post(int module, int cmd, void *priv, int need_pend);
 int sport_health_manager_msg_post_self(int module, int cmd, void *priv);
+
+/* 床头时钟方向接口。P11 模式由 health_manager/algo_p11/shm_algo_gsensor.c
+ * 提供，master 直连模式由 sensor_hub/sensor_service_motion.c 提供，两者互斥编译。 */
+u8 gsensor_dir_get(void);
+/* 小核方向回传入口（P11 模式），仅 algo_p11 与 sensor_driver_p11 使用 */
+void shm_algo_gsensor_dir_update(u8 dir);
 
 void *sport_health_alloc(u32 size);
 void sport_health_free(void *p);

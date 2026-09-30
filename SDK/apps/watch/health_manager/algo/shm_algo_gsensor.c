@@ -7,6 +7,7 @@
 
 #include "health_manager/health_manager.h"
 #include "sensor_hub.h"
+#include "sensor_service.h"
 
 #define LOG_TAG_CONST       SPORT_HEALTH_MANAGE
 #define LOG_TAG     		"[SHM-ALGO_GSENSOR]"
@@ -24,10 +25,13 @@
 #pragma code_seg(".health_manager.text")
 #endif
 
-#if (TCFG_SPORT_HEALTH_ENABLE&& TCFG_SPORT_HEALTH_ALGO_GSENSOR)
+/* P11 模式用 algo_p11/，master 直连才编本文件 */
+#if (TCFG_SPORT_HEALTH_ENABLE && TCFG_SPORT_HEALTH_ALGO_GSENSOR && !TCFG_SENSOR_HUB_P11)
 
 
-#define SPORT_HEALTH_ALGO_TEST_ENABLE		(!TCFG_SENSOR_HUB)
+/* 算法自测：0=关闭（交付态，走真实数据）；1=用模拟步数跑算法
+ * 原为 (!TCFG_SENSOR_HUB) —— 关掉 sensor hub 反而会打开自测，交付前一律置 0 */
+#define SPORT_HEALTH_ALGO_TEST_ENABLE		(0)
 
 
 static algo_out gsensor_algo_info = {0};
@@ -46,7 +50,8 @@ static int shm_algo_gsensor_init()
     //get personal info from vm
     log_debug("%s %d", __func__, __LINE__);
 #if !SPORT_HEALTH_ALGO_TEST_ENABLE
-    sensor_service_motion_init();
+    /* 经 sensor_service 函数指针表调用，不直接引用符号 */
+    sensor_service_init(SHM_MOD_GSENSOR_ALGO);
 #endif
     return ret;
 }
@@ -71,7 +76,8 @@ static  int shm_algo_gsensor_update()
 #if SPORT_HEALTH_ALGO_TEST_ENABLE
     shm_algo_test(&gsensor_algo_info);
 #else
-    sensor_service_motion_get(&gsensor_algo_info);
+    /* 经 sensor_service 函数指针表调用，不直接引用符号 */
+    sensor_service_get_result(SHM_MOD_GSENSOR_ALGO, SHM_GET_TYPE_REAL_VALUE, &gsensor_algo_info);
 #endif
     return ret;
 }
@@ -80,7 +86,8 @@ static  int shm_algo_gsensor_set(void *priv)
     int ret = SHM_ERR_OK;
     //更新配置信息
 #if !SPORT_HEALTH_ALGO_TEST_ENABLE
-    sensor_service_motion_cfg_update();
+    /* 经 sensor_service 函数指针表调用，不直接引用符号 */
+    sensor_service_set_config(SHM_MOD_GSENSOR_ALGO, SHM_CMD_INFO_SET, priv);
 #endif
     return ret;
 }
@@ -107,6 +114,14 @@ static int shm_algo_gsensor_io_crtl(int cmd, void *priv)
     case SHM_CMD_UPDATE_ALL:
         ret = shm_algo_gsensor_update();
         break;
+    case SHM_CMD_UPDATE_VAILE_P11:  /* 小核(pmc)算法数据回填 */
+        if (priv != NULL) {
+            memcpy(&gsensor_algo_info, priv, sizeof(algo_out));
+            gsensor_algo_info.update.all = 1;
+        } else {
+            ret = -SHM_ERR_MOD_INVALID_PARAM;
+        }
+        break;
     case SHM_CMD_INFO_SET:
         ret = shm_algo_gsensor_set(priv);
         break;
@@ -122,6 +137,7 @@ static int shm_algo_gsensor_get_value(int type, void *priv)
     switch (type) {
     case SHM_GET_TYPE_INFO:
         if (priv != NULL) {
+            /* 本文件守卫已排除 TCFG_SENSOR_HUB_P11，P11 拉取路径见 algo_p11/shm_algo_gsensor.c */
             memcpy(priv, &gsensor_algo_info, sizeof(algo_out));
         } else {
             ret = -SHM_ERR_MOD_INVALID_PARAM;
@@ -137,8 +153,8 @@ static int shm_algo_gsensor_get_value(int type, void *priv)
 REGISTER_SPORT_HEALTH_MODULE(gsensor_algo)
 {
     .module = SHM_MOD_GSENSOR_ALGO,
-     .io_ctrl = shm_algo_gsensor_io_crtl,
-      .get_value = shm_algo_gsensor_get_value,
+    .io_ctrl = shm_algo_gsensor_io_crtl,
+    .get_value = shm_algo_gsensor_get_value,
 };
 
 #endif

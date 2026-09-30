@@ -72,6 +72,8 @@ typedef struct {
 typedef struct {
     int32_t mode: 8;                        /* 动画模式 */
     int32_t dir: 8;                         /* 滑动方向 */
+    uint32_t loop_head: 1;                  /* 允许在第一页时继续向前切换到最后一页 */
+    uint32_t loop_tail: 1;                  /* 允许在最后一页时继续向后切换到第一页 */
     int32_t src_id;                         /* 按下的页面ID */
     void *e;                                /* 事件对象 */
     void (*load_scr)(int32_t cur_scr);      /* 加载页面回调 */
@@ -97,6 +99,19 @@ int32_t gui_scr_switch_move(gui_scr_switch_t *scr_switch, int32_t mode);
  * @return int32_t
  */
 int32_t gui_scr_switch_move_anim(gui_scr_switch_anim_t *anim);
+
+/**
+ * 设置页面切换使用的特效
+ * @param anim_type 取 LV_SCR_LOAD_ANIM_OTHER_PAGE ~ LV_SCR_LOAD_ANIM_USER 之间的值走 JLGPU 特效；
+ *                  其余值（含 LV_SCREEN_LOAD_ANIM_NONE）保持原有的手写补间动画
+ */
+void gui_scr_switch_set_anim_type(lv_screen_load_anim_t anim_type);
+
+/**
+ * 获取当前页面切换使用的特效
+ * @return 当前的特效类型
+ */
+lv_screen_load_anim_t gui_scr_switch_get_anim_type(void);
 
 /**
  * 检查当前页面是否可以进行切换

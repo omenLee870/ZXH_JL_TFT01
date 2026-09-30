@@ -89,6 +89,7 @@ typedef struct {
  **********************/
 
 static char *get_dyn_data(const char *path, int32_t *size);
+static char *get_dyn_data_ext(const char *path, int32_t *size);
 static void free_dyn_data(char *buf);
 static dyn_err_t parse_file_view(const uint8_t *buf, uint32_t size, dyn_file_view_t *file);
 static dyn_err_t parse_section_dir(const uint8_t *buf, const uint8_t *file_end, uint32_t dir_offset,
@@ -135,6 +136,7 @@ static void log_dyn_error(dyn_err_t err, const char *path);
 
 static lv_ll_t dyn_path_id_ll;
 static bool s_dyn_is_fread_buf = false; /* fread 兜底时为 true，页面对象会注册 LV_EVENT_DELETE 回调释放缓冲 */
+static gui_dyn_ext_reader_t s_dyn_ext_reader = NULL; /* 应用层注册的外部读取器（packres 归档等），默认未注册 */
 
 /**********************
  *      MACROS
@@ -333,6 +335,11 @@ void gui_dyn_set_bind_get_data_cb(gui_bind_get_data_cb_t cb)
     bind_set_get_data_cb(cb);
 }
 
+void gui_dyn_set_ext_reader(gui_dyn_ext_reader_t reader)
+{
+    s_dyn_ext_reader = reader;
+}
+
 lv_image_dsc_t *gui_dyn_get_preview(const char *path)
 {
     int32_t size;
@@ -392,9 +399,58 @@ static void dyn_fread_buf_free_cb(lv_event_t *e)
  * @param size 输出缓冲区大小
  * @return 文件数据缓冲区
  */
+/**
+ * @brief 通过应用层注册的读取器读取 dyn（packres 归档等普通 fopen 打不开的路径）。
+ *
+ * 缓冲区由本模块用 lv_malloc 分配，与 free_dyn_data() / 页面删除回调的
+ * lv_free 配对，内存所有权与 fread 兜底路径完全一致；读取器只负责填数据。
+ */
+static char *get_dyn_data_ext(const char *path, int32_t *size)
+{
+    int32_t need;
+    char *buf;
+
+    if (s_dyn_ext_reader == NULL) {
+        return NULL;
+    }
+
+    need = s_dyn_ext_reader(path, NULL, 0, NULL);
+    if (need <= 0) {
+        LV_LOG_WARN("dyn ext reader: get size failed: %s", path);
+        return NULL;
+    }
+
+    buf = lv_malloc((size_t)need);
+    if (buf == NULL) {
+        LV_LOG_ERROR("dyn ext reader: lv_malloc %d failed", (int)need);
+        return NULL;
+    }
+
+    if (s_dyn_ext_reader(path, buf, need, size) != 0) {
+        lv_free(buf);
+        return NULL;
+    }
+
+    s_dyn_is_fread_buf = true;
+    return buf;
+}
+
 static char *get_dyn_data(const char *path, int32_t *size)
 {
     s_dyn_is_fread_buf = false;
+
+    /* 先问应用层注册的外部读取器（packres 归档等）。
+     *
+     * 必须放在 fopen 之前：实测 vitfat 的 FS 对归档路径 …/C/watch1/watch1.dyn
+     * 会 fopen 成功，但返回的是归档文件本身的 sclust/fsize，不是内部 .dyn 的数据。
+     * 读取器只接管它认得路径（返回 >0），其余返回 <=0，交回下面的原有逻辑
+     * （含 flash XIP 直读），因此未注册或路径不匹配时行为与改造前一致。 */
+    if (s_dyn_ext_reader != NULL) {
+        char *ext = get_dyn_data_ext(path, size);
+        if (ext != NULL) {
+            return ext;
+        }
+    }
 
     FILE *fp = fopen(path, "r");
     if (!fp) {

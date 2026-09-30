@@ -2,11 +2,117 @@
 
 #if TCFG_NETWORK_ENABLE
 #include <stdlib.h>
+#include <string.h>
 #include "os/os_api.h"
 #include "lwip/sockets.h"
+#include "system/task.h"
 
 
 extern int iperf_main(int argc, char **argv);
+extern char *__real_iperf_cJSON_Print(const void *item);
+
+static int g_iperf_reverse;
+static unsigned long long g_iperf_local_bytes;
+
+static const char *iperf_json_key(const char *s, const char *key)
+{
+    const char *p = strstr(s, key);
+
+    if (!p) {
+        return NULL;
+    }
+    p = strchr(p, ':');
+    return p ? p + 1 : NULL;
+}
+
+static unsigned long long iperf_json_u64(const char *p)
+{
+    unsigned long long v = 0;
+
+    while (*p == ' ' || *p == '\t') {
+        p++;
+    }
+    while (*p >= '0' && *p <= '9') {
+        v = v * 10u + (unsigned)(*p - '0');
+        p++;
+    }
+    return v;
+}
+
+static double iperf_json_f64(const char *p)
+{
+    double v = 0;
+    double frac = 0.1;
+    int dot = 0;
+
+    while (*p == ' ' || *p == '\t') {
+        p++;
+    }
+    while ((*p >= '0' && *p <= '9') || *p == '.') {
+        if (*p == '.') {
+            dot = 1;
+            p++;
+            continue;
+        }
+        if (!dot) {
+            v = v * 10.0 + (*p - '0');
+        } else {
+            v += (*p - '0') * frac;
+            frac *= 0.1;
+        }
+        p++;
+    }
+    return v;
+}
+
+char *__wrap_iperf_cJSON_Print(const void *item)
+{
+    char *out = __real_iperf_cJSON_Print(item);
+    const char *p;
+    const char *ep;
+
+    if (!out) {
+        return NULL;
+    }
+
+    p = iperf_json_key(out, "\"reverse\"");
+    if (p) {
+        while (*p == ' ' || *p == '\t') {
+            p++;
+        }
+        g_iperf_reverse = (strncmp(p, "true", 4) == 0);
+    }
+
+    p = iperf_json_key(out, "\"bytes\"");
+    if (!p) {
+        return out;
+    }
+
+    ep = iperf_json_key(out, "\"end_time\"");
+    if (!ep) {
+        g_iperf_local_bytes = iperf_json_u64(p);
+        return out;
+    }
+
+    {
+        double sec = iperf_json_f64(ep);
+        unsigned long long bytes = g_iperf_reverse ? iperf_json_u64(p) : g_iperf_local_bytes;
+        unsigned long bps;
+
+        if (bytes == 0) {
+            bytes = iperf_json_u64(p);
+        }
+        if (sec > 0.01) {
+            bps = (unsigned long)((double)bytes * 8.0 / sec);
+            printf("[iperf] %s bytes=%llu time=%.3fs rate=%lu.%02lu Mbps\n",
+                   g_iperf_reverse ? "TX" : "RX",
+                   bytes, sec,
+                   bps / 1000000ul,
+                   (bps % 1000000ul) / 10000ul);
+        }
+    }
+    return out;
+}
 
 static void iperf_test_thread(void *priv)
 {
@@ -50,7 +156,8 @@ void iperf_test(void)
     static int iperf_test_pid;
     if (iperf_test_pid == 0) {
         //thread_fork("iperf_test", 16, 1024, 0, &iperf_test_pid, iperf_test_thread, "5001");
-        os_task_create(iperf_test_thread, "5001", 16, 1024,  0, "iperf_test");
+        //os_task_create(iperf_test_thread, "5001", 16, 1024,  0, "iperf_test");
+        task_create(iperf_test_thread, "5001", "iperf_test");
         os_time_dly(2); //防止iperf_main 重入
         //thread_fork("iperf_test2", 16, 1024, 0, 0, iperf_test_thread, "5000");
     }

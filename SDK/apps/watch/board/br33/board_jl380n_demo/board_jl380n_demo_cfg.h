@@ -791,6 +791,12 @@
 #define TCFG_NETWORK_ENABLE                 (TCFG_BT_NET_ENABLE || TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE || TCFG_LTE_PHY_ENABLE)  // 网络能力
 #define TCFG_WIFI_NET_ENABLE                (TCFG_EXT_WIFI_ENABLE || TCFG_UART_NET_ENABLE || TCFG_SPI_NET_ENABLE)  // WIFI类型网络(外挂WIFI/UART网卡/SPI网卡)
 
+#if TCFG_EXT_WIFI_ENABLE
+#define TCFG_EXT_WIFI_P2P_IP0                     192              // P2P GO IPv4
+#define TCFG_EXT_WIFI_P2P_IP1                     168
+#define TCFG_EXT_WIFI_P2P_IP2                     49
+#define TCFG_EXT_WIFI_P2P_IP3                     1
+#endif
 
 #define TCFG_AI_INTERACTION_ENABLE          DISABLE // APP版科大讯飞
 

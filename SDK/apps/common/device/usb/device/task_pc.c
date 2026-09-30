@@ -29,6 +29,7 @@
 #endif
 #include "usb/usb_config.h"
 #include "usb/device/usb_stack.h"
+#include "usb/device/descriptor.h"
 #include "usb/usb_task.h"
 #include "utils/resource_multiplex.h"
 #include "usb_multiplex.h"
@@ -230,53 +231,10 @@ static void printer_rx_handler(struct usb_device_t *usb_device)
 void usb_start(const usb_dev usbfd)
 {
     log_info("enter usb slave mode");
-    u32 class = 0;
+    /* class 位图统一由 descriptor.c 的 usb_slave_class_config() 提供：PC 枚举时使用的
+     * PID 也按同一份位图推算，两处分开维护会导致枚举出的 PID 与上报值对不上。 */
+    u32 class = usb_slave_class_config();
 
-#if TCFG_USB_SLAVE_MSD_ENABLE
-    class |= MASSSTORAGE_CLASS;
-#endif
-#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
-    class |= SPEAKER_CLASS;
-#endif
-#if TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
-    class |= MIC_CLASS;
-#endif
-#if TCFG_USB_SLAVE_HID_ENABLE
-    class |= HID_CLASS;
-#endif
-#if TCFG_USB_SLAVE_CDC_ENABLE
-    class |= CDC_CLASS;
-#endif
-#if TCFG_USB_CUSTOM_HID_ENABLE
-    class |= CUSTOM_HID_CLASS;
-#endif
-#if TCFG_USB_SLAVE_MTP_ENABLE
-    class |= MTP_CLASS;
-#endif
-#if TCFG_USB_SLAVE_MIDI_ENABLE
-    class |= MIDI_CLASS;
-#endif
-#if TCFG_USB_SLAVE_PRINTER_ENABLE
-    class |= PRINTER_CLASS;
-#endif
-#if TCFG_USB_APPLE_DOCK_EN
-    class |= IAP_CLASS;
-#endif
-#if TCFG_USB_WEBUSB_ENABLE
-    class |= WEBUSB_CLASS;
-#endif
-#if TCFG_USB_SLAVE_HCI_ENABLE
-    class |= HCI_CLASS;
-#endif
-    /* Xbox360 手柄（XInput）与其配套的标准键鼠 HID。
-     * 注意：xbox360 独占 EP1~EP4、hid_kbmouse 占 EP3，与 MSD(EP1)/HID(EP2)/UAC(EP3)
-     * 的端点硬冲突，必须互斥使能；同时开启会导致端点被覆盖、描述符与端点不符。 */
-#if TCFG_USB_SLAVE_XBOX360_ENABLE
-    class |= XBOX360_CLASS;
-#endif
-#if TCFG_USB_SLAVE_HID_KBMOUSE_ENABLE
-    class |= HID_KBMOUSE_CLASS;
-#endif
     g_printf("USB_DEVICE_CLASS_CONFIG:%x", class);
     usb_device_mode(usbfd, class);
 

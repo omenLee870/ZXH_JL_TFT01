@@ -20,6 +20,7 @@ extern void video_dec_dispatch_back(void);
 extern void video_dec_dispatch_show_del_menu(void);
 extern void video_dec_skip_corrupt(u32 gen);
 extern void video_dec_err_recover(u32 gen);
+extern int video_dec_play(int index);   /* 播放指定文件索引(相册列表 OK 键) */
 
 int video_dec_app_msg_handler(int *msg)
 {
@@ -37,6 +38,15 @@ int video_dec_app_msg_handler(int *msg)
             break;
         }
         video_dec_dispatch_play();
+        break;
+    case APP_MSG_VIDEO_DEC_PLAY_INDEX:
+        printf("[DEC_HANDLER] -> play index %d", msg[1]);
+        if (video_dec_get_state() == VIDEO_DEC_STATE_SCANNING ||
+            video_dec_get_state() == VIDEO_DEC_STATE_DELETE_CONFIRM) {
+            printf(" (ignored: busy)\n");
+            break;
+        }
+        video_dec_play(msg[1]);
         break;
     case APP_MSG_VIDEO_DEC_NEXT:
         printf("[DEC_HANDLER] -> next");

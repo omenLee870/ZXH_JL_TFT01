@@ -16,11 +16,20 @@
 
 #if TCFG_MIX_RECORD_ENABLE
 
+/* 录音最少需要的空闲空间(KB)，低于此值不允许开始录音 */
+#define MIN_FREE_SPACE_KB_FOR_RECORD       (1024)  /* 1M */
+/* 录音过程中低于此值立即停止，预留空间完成文件封头保存 */
+#define MIN_FREE_SPACE_KB_RECORD_CRITICAL  (256)   /* 256K */
+/* 录音中剩余空间检查间隔(ms) */
+#define RECORD_SPACE_CHECK_INTERVAL_MS     5000
+
 struct mix_recode_handle {
     void *recorder;
     FILE *old_file;
     FILE *new_file;
     char logo[20];
+    char path[64];		//当前录音文件的完整路径, 用于停止时清理空文件
+    u16 space_timer;	//剩余空间检查定时器ID
     int status;
     const char *suffix;
 };
@@ -54,6 +63,48 @@ int mix_record_device_msg_handler(int *msg)
     return false;
 }
 
+//检查录音目标设备的剩余空间是否充足
+static bool mix_recorder_check_free_space(const char *root_path, u32 need_kb)
+{
+    u32 free_kb = 0;
+
+    if (!root_path) {
+        printf("[MIX_REC] no active device, cannot get free space\n");
+        return false;
+    }
+    if (fget_free_space(root_path, &free_kb) != 0) {
+        printf("[MIX_REC] failed to get free space from %s\n", root_path);
+        return false;
+    }
+    if (free_kb < need_kb) {
+        printf("[MIX_REC] low storage: free=%u KB, need=%u KB\n", free_kb, need_kb);
+        return false;
+    }
+    return true;
+}
+
+//删除停止录音后残留的0字节文件(SD卡满时编码器一帧都没写进去, 只留下一个空目录项)
+static void mix_recorder_remove_empty_file(const char *path)
+{
+    FILE *file;
+    u32 size;
+
+    if (!path || !path[0]) {
+        return;
+    }
+    file = fopen(path, "r");
+    if (!file) {
+        return;
+    }
+    size = flen(file);
+    fclose(file);
+
+    if (size == 0) {
+        printf("[MIX_REC] remove empty file: %s\n", path);
+        fdelete_by_name(path);
+    }
+}
+
 static FILE *mix_recorder_open_file(void)
 {
     FILE *file;
@@ -81,16 +132,47 @@ static FILE *mix_recorder_open_file(void)
         return NULL;
     }
 
+    //空间不足时不要创建文件: fopen("w+")能建出一个0字节文件(不占簇),
+    //但编码器第一次写就分配不到簇, 文件既不能播放又占着目录项, 所以先判断再创建
+    if (!mix_recorder_check_free_space(root_path, MIN_FREE_SPACE_KB_FOR_RECORD)) {
+        printf("recorder no space: %s\n", root_path);
+        g_rec_hdl.path[0] = '\0';
+        return NULL;
+    }
+
     snprintf(path, sizeof(path), "%s%s/%s.%s", root_path, folder,
              filename, g_rec_hdl.suffix);
     file = fopen(path, "w+");
     if (!file) {
         printf("recorder_open_file_faild: %s\n", path);
+        g_rec_hdl.path[0] = '\0';
     } else {
+        //先存完整路径(下面 fget_name 会把 path 覆盖成纯文件名)
+        snprintf(g_rec_hdl.path, sizeof(g_rec_hdl.path), "%s", path);
         fget_name(file, (u8 *)path, sizeof(path));
         printf("recorder_open_file_suss: %s\n", path);
     }
     return file;
+}
+
+//录音中定时检查剩余空间，不足则立即停止录音(保证文件正常封头保存)
+static void mix_record_free_space_timer(void *priv)
+{
+    char *root_path;
+
+    if (!g_rec_hdl.recorder) {
+        //录音已停止(如设备离线)，删除自身定时器
+        if (g_rec_hdl.space_timer) {
+            sys_timer_del(g_rec_hdl.space_timer);
+            g_rec_hdl.space_timer = 0;
+        }
+        return;
+    }
+    root_path = dev_manager_get_root_path_by_logo(g_rec_hdl.logo);
+    if (!mix_recorder_check_free_space(root_path, MIN_FREE_SPACE_KB_RECORD_CRITICAL)) {
+        printf("[MIX_REC] critically low storage, stopping record\n");
+        mix_recorder_stop();
+    }
 }
 
 static void file_ops_in_app_task(void *p)
@@ -194,16 +276,30 @@ void mix_recorder_start(void)
     if (err) {
         printf("file_recorder_err: %d\n", err);
         file_recorder_close(recorder, 1);
+        mix_recorder_remove_empty_file(g_rec_hdl.path);
+        g_rec_hdl.path[0] = '\0';
         return;
     }
     g_rec_hdl.status = 1;
     g_rec_hdl.recorder = recorder;
+
+    //启动剩余空间定时检查，录音过程中空间不足立即停止
+    if (g_rec_hdl.space_timer == 0) {
+        g_rec_hdl.space_timer = sys_timer_add(NULL, mix_record_free_space_timer,
+                                              RECORD_SPACE_CHECK_INTERVAL_MS);
+    }
     mem_stats();
 }
 
 void mix_recorder_stop(void)
 {
-    file_recorder_stop(g_rec_hdl.recorder, 1);
+    void *recorder = g_rec_hdl.recorder;
+
+    if (g_rec_hdl.space_timer) {
+        sys_timer_del(g_rec_hdl.space_timer);
+        g_rec_hdl.space_timer = 0;
+    }
+    file_recorder_stop(recorder, 1);
     g_rec_hdl.status = 0;
     os_time_dly(1);
 
@@ -215,8 +311,14 @@ void mix_recorder_stop(void)
         fdelete(g_rec_hdl.new_file);
         g_rec_hdl.new_file = NULL;
     }
-    file_recorder_release(g_rec_hdl.recorder);
+    file_recorder_release(recorder);
     g_rec_hdl.recorder = NULL;
+
+    //录到一半空间不足直接停止时, 一帧都没写进去的文件要清掉
+    if (recorder) {
+        mix_recorder_remove_empty_file(g_rec_hdl.path);
+    }
+    g_rec_hdl.path[0] = '\0';
 }
 
 int get_mix_recorder_status(void)

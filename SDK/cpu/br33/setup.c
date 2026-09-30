@@ -459,7 +459,6 @@ void setup_arch(void)
 {
     /* io_toggle(); */
     /* asm("trigger"); */
-    boot_power_init();
 
     //system_start();
 
@@ -498,6 +497,8 @@ void setup_arch(void)
     sdfile_init();
     syscfg_tools_init();
 
+    boot_power_init();
+
 #if TCFG_CLOCK_OSC_ADJUST_ENABLE
     xosc_set_cap(TCFG_CLOCK_OSC_CAP, TCFG_CLOCK_OSC_CAP);
     xosc_set_cap_fine(TCFG_CLOCK_OSC_CAP_FINE, TCFG_CLOCK_OSC_CAP_FINE);
@@ -508,6 +509,8 @@ void setup_arch(void)
 #if TCFG_FIX_CLOCK_FREQ
     clk_set_api("sys", TCFG_FIX_CLOCK_FREQ);
 #endif
+
+    tzflash_change_mode();//dtr(clk),continue,wps
 
     perf_counter_init();
 

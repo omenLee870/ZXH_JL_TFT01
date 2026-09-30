@@ -12,6 +12,7 @@
 */
 #include "sdk_config.h"
 #include "sensor_driver.h"
+#include "sensor_seg.h"
 #include "vcHr11Hci.h"
 
 #if CONFIG_SENSOR_DRIVER_ENABLE && TCFG_VCHR11S_ENABLE
@@ -27,7 +28,8 @@ const uint16_t mcuI2cClock     = 400;     // MCU I2C clock frequency
 
 static vcHr11_t vcHr11;
 
-static s16             sensor_data[50 * 2];
+/* 基准 50 帧（每帧 2 个 s16）；SENSOR_FIFO_DEPTH 预留 1.2 倍余量（50*2 -> 60*2），reader 数不变 */
+static s16             sensor_data[SENSOR_FIFO_DEPTH(50) * 2];
 static p11_cbuffer_t       sensor_cbuffer;
 static cbuffer_child_t entry[1];//支持3个成员读取
 

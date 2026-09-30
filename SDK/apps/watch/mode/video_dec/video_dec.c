@@ -55,8 +55,16 @@ extern void app_playback_demux_frame_queue_pool_release(void);
  *==============================================================================*/
 #define VDEC_PB_FB_NAME        "fb5"
 #define VDEC_PB_FB_NUM         2
+/* 回放预览源尺寸。必须与"屏的方向"一致(与 video_rec/video_photo 同源同规则):
+ *   儿童照相机(宏=0): 屏 320x240 横 -> 240x320 竖, 旋转 90° 正好等比铺满
+ *   儿童对讲机(宏=1): 屏 240x320 竖 -> 320x240 横, 旋转 90° 正好等比铺满 */
+#if defined(TCFG_KID_CAMERA_UI_INTERCOM) && TCFG_KID_CAMERA_UI_INTERCOM
 #define VDEC_PB_WIDTH          320
 #define VDEC_PB_HEIGHT         240
+#else
+#define VDEC_PB_WIDTH          240
+#define VDEC_PB_HEIGHT         320
+#endif
 #define VDEC_VIDEO_BUF_SIZE    (128u * 1024u) /* 帧池实测41KB/JPEG 33~44KB, 256KB过量挤压物理池 */
 #define VDEC_AUDIO_BUF_SIZE    (16u * 1024u)
 /*==============================================================================

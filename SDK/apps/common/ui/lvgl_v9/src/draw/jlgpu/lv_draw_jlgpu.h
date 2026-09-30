@@ -54,6 +54,8 @@ extern "C" {
 #define MATH_ACOSF(x) acosf(x)
 #define MATH_FABSF(x) fabsf(x)
 #define MATH_SQRTF(x) sqrtf(x)
+#define MATH_FLOORF(x) floorf(x)
+#define MATH_CEILF(x) ceilf(x)
 
 #define MATH_RADIANS(deg) ((deg) * DEG_TO_RAD)
 #define MATH_DEGREES(rad) ((rad) * RAD_TO_DEG)
@@ -271,6 +273,11 @@ void lv_page_effect_set_page_index(lv_screen_load_anim_t page_mode, uint32_t pag
 void lv_page_effect_set_bg_obj(lv_obj_t *obj);
 
 uint8_t lv_jlgpu_get_gxdma_bpp(uint8_t out_format);
+/* 把两条任务节点串成一条链。用于"立即绘制"路径自建一条本地任务链,
+ * 与显示侧那条 lv_jlgpu_add_task_node() 维护的链互不影响。 */
+void lv_jlgpu_task_chain_link(void *prev_task, void *next_task);
+/* 取任务链上的下一个节点, 到链尾返回 NULL */
+void *lv_jlgpu_task_chain_next(void *task);
 #if LV_USE_DRAW_JLGPU_LIST
 void lv_jlgpu_add_task_node(lv_draw_jlgpu_unit_t *unit, void *new_task);
 void lv_jlgpu_insert_task_head(lv_draw_jlgpu_unit_t *unit, void *new_task);
@@ -312,7 +319,9 @@ void lv_jlgpu_task_list_scale_global_alpha(lv_jlgpu_ctx_t *jlgpu_ctx, uint8_t sc
 void lv_jlgpu_task_list_set_blend_src_over(lv_jlgpu_ctx_t *jlgpu_ctx);
 /* 释放快照(不碰任务链), 与任务链释放路径配对 */
 void lv_jlgpu_task_list_snapshot_free(lv_jlgpu_ctx_t *jlgpu_ctx);
-void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint16_t in_stride, uint8_t *out_buf, uint8_t in_format, uint8_t out_format, uint8_t out_jstc_en, uint8_t out_rotate);
+/* frame_area: 输出步长按整帧算而不是按 window 算(窗口只是整帧里的一块),
+ * 传 NULL 表示 window 就是整帧。 */
+void lv_jlgpu_gxdma_sfr_set(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint16_t in_stride, uint8_t *out_buf, uint8_t in_format, uint8_t out_format, uint8_t out_jstc_en, uint8_t out_rotate, const lv_area_t *frame_area);
 void lv_jlgpu_list_uninit(lv_draw_jlgpu_unit_t *unit, lv_area_t *window, uint8_t *out_buf, uint8_t out_format);
 void lv_jlgpu_mem_pool_init(lv_draw_jlgpu_unit_t *unit, uint8_t *pool_buf, uint16_t buf_size);
 void lv_jlgpu_mem_pool_uninit(lv_draw_jlgpu_unit_t *unit);

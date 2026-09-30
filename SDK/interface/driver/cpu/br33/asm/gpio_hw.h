@@ -2,77 +2,85 @@
 #define  __GPIO_HW_H__
 
 #include "typedef.h"
+#include "asm/power/pmc/pmc_sfr.h"
+#ifdef PMC_PORTP
+#define  JL_PORTP  PMC_PORTP
+#endif
+#include "asm/hal/crossbar_def.h"
+
+#define     CONFIG_GPIO_CODE_SECTION  //AT(.gpio.text.cache.L2) // soundbox
+#define     assert_gpio(a,...)    ASSERT(a, __VA_ARGS__)
 
 
-#define IO_PORTA_00 				(GPIOA + 0)
-#define IO_PORTA_01 				(GPIOA + 1)
-#define IO_PORTA_02 				(GPIOA + 2)
-#define IO_PORTA_03 				(GPIOA + 3)
-#define IO_PORTA_04 				(GPIOA + 4)
-#define IO_PORTA_05 				(GPIOA + 5)
-#define IO_PORTA_06 				(GPIOA + 6)
-#define IO_PORTA_07 				(GPIOA + 7)
-#define IO_PORTA_08 				(GPIOA + 8)
-#define IO_PORTA_09 				(GPIOA + 9)
-#define IO_PORTA_10 				(GPIOA + 10)
-#define IO_PORTA_11 				(GPIOA + 11)
-#define IO_PORTA_12 				(GPIOA + 12)
-#define IO_PORTA_13 				(GPIOA + 13)
+#define IO_PORTA_00 				(IO_GROUP_NUM * GPIOA_INDEX + 0)
+#define IO_PORTA_01 				(IO_GROUP_NUM * GPIOA_INDEX + 1)
+#define IO_PORTA_02 				(IO_GROUP_NUM * GPIOA_INDEX + 2)
+#define IO_PORTA_03 				(IO_GROUP_NUM * GPIOA_INDEX + 3)
+#define IO_PORTA_04 				(IO_GROUP_NUM * GPIOA_INDEX + 4)
+#define IO_PORTA_05 				(IO_GROUP_NUM * GPIOA_INDEX + 5)
+#define IO_PORTA_06 				(IO_GROUP_NUM * GPIOA_INDEX + 6)
+#define IO_PORTA_07 				(IO_GROUP_NUM * GPIOA_INDEX + 7)
+#define IO_PORTA_08 				(IO_GROUP_NUM * GPIOA_INDEX + 8)
+#define IO_PORTA_09 				(IO_GROUP_NUM * GPIOA_INDEX + 9)
+#define IO_PORTA_10 				(IO_GROUP_NUM * GPIOA_INDEX + 10)
+#define IO_PORTA_11 				(IO_GROUP_NUM * GPIOA_INDEX + 11)
+#define IO_PORTA_12 				(IO_GROUP_NUM * GPIOA_INDEX + 12)
+#define IO_PORTA_13 				(IO_GROUP_NUM * GPIOA_INDEX + 13)
 #define IO_PORTA_MASK              0x3fff
 
-#define IO_PORTB_00 				(GPIOB + 0)
-#define IO_PORTB_01 				(GPIOB + 1)
-#define IO_PORTB_02 				(GPIOB + 2)
-#define IO_PORTB_03 				(GPIOB + 3)
-#define IO_PORTB_04 				(GPIOB + 4)
-#define IO_PORTB_05 				(GPIOB + 5)
-#define IO_PORTB_06 				(GPIOB + 6)
-#define IO_PORTB_07 				(GPIOB + 7)
-#define IO_PORTB_08 				(GPIOB + 8)
-#define IO_PORTB_09 				(GPIOB + 9)
-#define IO_PORTB_10 				(GPIOB + 10)
-#define IO_PORTB_11 				(GPIOB + 11)
-#define IO_PORTB_12 				(GPIOB + 12) // 没有PB12
+#define IO_PORTB_00 				(IO_GROUP_NUM * GPIOB_INDEX + 0)
+#define IO_PORTB_01 				(IO_GROUP_NUM * GPIOB_INDEX + 1)
+#define IO_PORTB_02 				(IO_GROUP_NUM * GPIOB_INDEX + 2)
+#define IO_PORTB_03 				(IO_GROUP_NUM * GPIOB_INDEX + 3)
+#define IO_PORTB_04 				(IO_GROUP_NUM * GPIOB_INDEX + 4)
+#define IO_PORTB_05 				(IO_GROUP_NUM * GPIOB_INDEX + 5)
+#define IO_PORTB_06 				(IO_GROUP_NUM * GPIOB_INDEX + 6)
+#define IO_PORTB_07 				(IO_GROUP_NUM * GPIOB_INDEX + 7)
+#define IO_PORTB_08 				(IO_GROUP_NUM * GPIOB_INDEX + 8)
+#define IO_PORTB_09 				(IO_GROUP_NUM * GPIOB_INDEX + 9)
+#define IO_PORTB_10 				(IO_GROUP_NUM * GPIOB_INDEX + 10)
+#define IO_PORTB_11 				(IO_GROUP_NUM * GPIOB_INDEX + 11)
+#define IO_PORTB_12 				(IO_GROUP_NUM * GPIOB_INDEX + 12) // 没有PB12
 #define IO_PORTB_MASK              0x0fff
 
-#define IO_PORTC_00 				(GPIOC + 0)
-#define IO_PORTC_01 				(GPIOC + 1)
-#define IO_PORTC_02 				(GPIOC + 2)
-#define IO_PORTC_03 				(GPIOC + 3)
-#define IO_PORTC_04 				(GPIOC + 4)
-#define IO_PORTC_05 				(GPIOC + 5)
-#define IO_PORTC_06 				(GPIOC + 6)
-#define IO_PORTC_07 				(GPIOC + 7)
-#define IO_PORTC_08 				(GPIOC + 8)
-#define IO_PORTC_09 				(GPIOC + 9)
-#define IO_PORTC_10 				(GPIOC + 10)
-#define IO_PORTC_11 				(GPIOC + 11)
-#define IO_PORTC_12 				(GPIOC + 12)
-#define IO_PORTC_13 				(GPIOC + 13)
-#define IO_PORTC_14 				(GPIOC + 14)
-#define IO_PORTC_15 				(GPIOC + 15)
+#define IO_PORTC_00 				(IO_GROUP_NUM * GPIOC_INDEX + 0)
+#define IO_PORTC_01 				(IO_GROUP_NUM * GPIOC_INDEX + 1)
+#define IO_PORTC_02 				(IO_GROUP_NUM * GPIOC_INDEX + 2)
+#define IO_PORTC_03 				(IO_GROUP_NUM * GPIOC_INDEX + 3)
+#define IO_PORTC_04 				(IO_GROUP_NUM * GPIOC_INDEX + 4)
+#define IO_PORTC_05 				(IO_GROUP_NUM * GPIOC_INDEX + 5)
+#define IO_PORTC_06 				(IO_GROUP_NUM * GPIOC_INDEX + 6)
+#define IO_PORTC_07 				(IO_GROUP_NUM * GPIOC_INDEX + 7)
+#define IO_PORTC_08 				(IO_GROUP_NUM * GPIOC_INDEX + 8)
+#define IO_PORTC_09 				(IO_GROUP_NUM * GPIOC_INDEX + 9)
+#define IO_PORTC_10 				(IO_GROUP_NUM * GPIOC_INDEX + 10)
+#define IO_PORTC_11 				(IO_GROUP_NUM * GPIOC_INDEX + 11)
+#define IO_PORTC_12 				(IO_GROUP_NUM * GPIOC_INDEX + 12)
+#define IO_PORTC_13 				(IO_GROUP_NUM * GPIOC_INDEX + 13)
+#define IO_PORTC_14 				(IO_GROUP_NUM * GPIOC_INDEX + 14)
+#define IO_PORTC_15 				(IO_GROUP_NUM * GPIOC_INDEX + 15)
 #define IO_PORTC_MASK              0xffff
 
-#define IO_PORTD_00 				(GPIOD + 0)
-#define IO_PORTD_01 				(GPIOD + 1)
-#define IO_PORTD_02 				(GPIOD + 2)
-#define IO_PORTD_03 				(GPIOD + 3)
-#define IO_PORTD_04 				(GPIOD + 4)
-#define IO_PORTD_05 				(GPIOD + 5)
-#define IO_PORTD_06 				(GPIOD + 6)
-#define IO_PORTD_07 				(GPIOD + 7)
-#define IO_PORTD_08 				(GPIOD + 8)
-#define IO_PORTD_09 				(GPIOD + 9)
-#define IO_PORTD_10 				(GPIOD + 10)
-#define IO_PORTD_11 				(GPIOD + 11)
-#define IO_PORTD_12 				(GPIOD + 12)
+#define IO_PORTD_00 				(IO_GROUP_NUM * GPIOD_INDEX + 0)
+#define IO_PORTD_01 				(IO_GROUP_NUM * GPIOD_INDEX + 1)
+#define IO_PORTD_02 				(IO_GROUP_NUM * GPIOD_INDEX + 2)
+#define IO_PORTD_03 				(IO_GROUP_NUM * GPIOD_INDEX + 3)
+#define IO_PORTD_04 				(IO_GROUP_NUM * GPIOD_INDEX + 4)
+#define IO_PORTD_05 				(IO_GROUP_NUM * GPIOD_INDEX + 5)
+#define IO_PORTD_06 				(IO_GROUP_NUM * GPIOD_INDEX + 6)
+#define IO_PORTD_07 				(IO_GROUP_NUM * GPIOD_INDEX + 7)
+#define IO_PORTD_08 				(IO_GROUP_NUM * GPIOD_INDEX + 8)
+#define IO_PORTD_09 				(IO_GROUP_NUM * GPIOD_INDEX + 9)
+#define IO_PORTD_10 				(IO_GROUP_NUM * GPIOD_INDEX + 10)
+#define IO_PORTD_11 				(IO_GROUP_NUM * GPIOD_INDEX + 11)
+#define IO_PORTD_12 				(IO_GROUP_NUM * GPIOD_INDEX + 12)
 #define IO_PORTD_MASK              0x1fff
 
-#define IO_PORTE_00 				(GPIOE + 0)
-#define IO_PORTE_01 				(GPIOE + 1)
-#define IO_PORTE_02 				(GPIOE + 2)
-#define IO_PORTE_03 				(GPIOE + 3)
-#define IO_PORTE_04 				(GPIOE + 4)
+#define IO_PORTE_00 				(IO_GROUP_NUM * GPIOE_INDEX + 0)
+#define IO_PORTE_01 				(IO_GROUP_NUM * GPIOE_INDEX + 1)
+#define IO_PORTE_02 				(IO_GROUP_NUM * GPIOE_INDEX + 2)
+#define IO_PORTE_03 				(IO_GROUP_NUM * GPIOE_INDEX + 3)
+#define IO_PORTE_04 				(IO_GROUP_NUM * GPIOE_INDEX + 4)
 #define IO_PORTE_MASK              0x001f
 
 //pmc io:pf
@@ -84,21 +92,21 @@
 #define IO_PORTF_05 				(IO_GROUP_NUM * GPIOF_INDEX + 5) // pmc io
 // #define IO_PORTF_MASK              0x003f
 
-#define IO_PORTG_00 				(GPIOG + 0)
-#define IO_PORTG_01 				(GPIOG + 1)
-#define IO_PORTG_02 				(GPIOG + 2)
-#define IO_PORTG_03 				(GPIOG + 3)
+#define IO_PORTG_00 				(IO_GROUP_NUM * GPIOG_INDEX + 0)
+#define IO_PORTG_01 				(IO_GROUP_NUM * GPIOG_INDEX + 1)
+#define IO_PORTG_02 				(IO_GROUP_NUM * GPIOG_INDEX + 2)
+#define IO_PORTG_03 				(IO_GROUP_NUM * GPIOG_INDEX + 3)
 #define IO_PORTG_MASK              0x000f
 
-#define IO_PORTH_00 				(GPIOH + 0)
-#define IO_PORTH_01 				(GPIOH + 1)
-#define IO_PORTH_02 				(GPIOH + 2)
-#define IO_PORTH_03 				(GPIOH + 3)
-#define IO_PORTH_04 				(GPIOH + 4)
-#define IO_PORTH_05 				(GPIOH + 5)
-#define IO_PORTH_06 				(GPIOH + 6)
-#define IO_PORTH_07 				(GPIOH + 7)
-#define IO_PORTH_08 				(GPIOH + 8)
+#define IO_PORTH_00 				(IO_GROUP_NUM * GPIOH_INDEX + 0)
+#define IO_PORTH_01 				(IO_GROUP_NUM * GPIOH_INDEX + 1)
+#define IO_PORTH_02 				(IO_GROUP_NUM * GPIOH_INDEX + 2)
+#define IO_PORTH_03 				(IO_GROUP_NUM * GPIOH_INDEX + 3)
+#define IO_PORTH_04 				(IO_GROUP_NUM * GPIOH_INDEX + 4)
+#define IO_PORTH_05 				(IO_GROUP_NUM * GPIOH_INDEX + 5)
+#define IO_PORTH_06 				(IO_GROUP_NUM * GPIOH_INDEX + 6)
+#define IO_PORTH_07 				(IO_GROUP_NUM * GPIOH_INDEX + 7)
+#define IO_PORTH_08 				(IO_GROUP_NUM * GPIOH_INDEX + 8)
 #define IO_PORTH_MASK              0x01ff
 
 //pmc io:pp
@@ -148,6 +156,9 @@
 
 
 
+#define GPIO_PX_HVT_REG_NUM 1
+#define GPIO_PX_DDR_REG_NUM 1
+#define GPIO_PX_PMC_REG_NUM 1
 #define GPIO_NEW_PUPDHD_EN 1 //new pu pd hd(需usb,pr,px都支持新上下拉,sh59)
 
 #define PORT_INPUT_PULLUP_5K   PORT_INPUT_PULLUP_LEVEL1
@@ -245,6 +256,9 @@ enum INPUT_CH_TYPE {
     // INPUT_CH_TYPE_WL_LNAE,
     INPUT_CH_TYPE_MAX,
 };
+
+//兼容公共gpio驱动中的旧命名
+#define ICH_TYPE_GP_ICH        INPUT_CH_TYPE_GP_ICH
 
 enum INPUT_CH_SIGNAL {
     //ICH_CON0
@@ -470,8 +484,110 @@ enum gpio_function {
 #define __struct(x) (x##_TypeDef *)
 #define _struct(x) __struct(x)
 
+
+#ifdef JL_PORTA
+#define GPIOA                       (IO_GROUP_NUM * GPIOA_INDEX)
+#endif
+#ifdef JL_PORTB
+#define GPIOB                       (IO_GROUP_NUM * GPIOB_INDEX)
+#endif
+#ifdef JL_PORTC
+#define GPIOC                       (IO_GROUP_NUM * GPIOC_INDEX)
+#endif
+#ifdef JL_PORTD
+#define GPIOD                       (IO_GROUP_NUM * GPIOD_INDEX)
+#endif
+#ifdef JL_PORTE
+#define GPIOE                       (IO_GROUP_NUM * GPIOE_INDEX)
+#endif
+#ifdef JL_PORTF
+#define GPIOF                       (IO_GROUP_NUM * GPIOF_INDEX) //pmc io
+#endif
+#ifdef JL_PORTG
+#define GPIOG                       (IO_GROUP_NUM * GPIOG_INDEX)
+#endif
+#ifdef JL_PORTH
+#define GPIOH                       (IO_GROUP_NUM * GPIOH_INDEX)
+#endif
+#ifdef JL_PORTI
+#define GPIOI                       (IO_GROUP_NUM * GPIOI_INDEX)
+#endif
+#ifdef JL_PORTJ
+#define GPIOJ                       (IO_GROUP_NUM * GPIOJ_INDEX)
+#endif
+#ifdef JL_PORTK
+#define GPIOK                       (IO_GROUP_NUM * GPIOK_INDEX)
+#endif
+#ifdef JL_PORTL
+#define GPIOL                       (IO_GROUP_NUM * GPIOL_INDEX)
+#endif
+#ifdef JL_PORTM
+#define GPIOM                       (IO_GROUP_NUM * GPIOM_INDEX)
+#endif
+
+#ifdef JL_PORTP
+#define GPIOP                       (IO_GROUP_NUM * GPIOP_INDEX) //pmc io
+#endif
+#ifdef JL_PORTUSB
+#define GPIOUSB                     (IO_GROUP_NUM * GPIOUSB_INDEX)
+#endif
+#ifdef JL_PORTR
+#define GPIOR                       (IO_GROUP_NUM * GPIOR_INDEX) //br35 no pr
+#endif
+
+enum gpio_port {
+#ifdef GPIOA
+    PORTA = 0,
+#endif
+#ifdef GPIOB
+    PORTB = 1,
+#endif
+#ifdef GPIOC
+    PORTC = 2,
+#endif
+#ifdef GPIOD
+    PORTD = 3,
+#endif
+#ifdef GPIOE
+    PORTE = 4,
+#endif
+#ifdef GPIOF
+    PORTF = 5,
+#endif
+#ifdef GPIOG
+    PORTG = 6,
+#endif
+#ifdef GPIOH
+    PORTH = 7,
+#endif
+#ifdef GPIOI
+    PORTI = 8,
+#endif
+#ifdef GPIOJ
+    PORTJ = 9,
+#endif
+#ifdef GPIOK
+    PORTK = 10,
+#endif
+#ifdef GPIOL
+    PORTL = 11,
+#endif
+#ifdef GPIOM
+    PORTM = 12,
+#endif
+#ifdef GPIOP
+    PORTP = 13, // PMC_PORTP
+#endif
+#ifdef GPIOUSB
+    PORTUSB = 14,
+#endif
 #ifdef GPIOR
-#define JL_PORTPR ((struct port_pr_reg *)R3_PR_IO_P)
+    PORTR = 15,
+#endif
+};
+
+#ifdef GPIOR
+#define JL_PORTR ((struct port_pr_reg *)R3_PR_IO_P)
 #endif
 #ifdef GPIOUSB
 // #define JL_PORTUSB (JL_PORTUSB)
@@ -480,13 +596,17 @@ enum gpio_function {
 #define _toggle_port(port,pin) __toggle_port(port,pin)
 
 //log:
-#define __portx(x,y) __PORT##x->y
-#define _portx(x,y)  __portx(x,y)
 #define GPIO_NO_SUPPORT_FUN "------"
 #if defined(GPIO_NEW_PUPDHD_EN) && GPIO_NEW_PUPDHD_EN
+#if GPIO_PX_PMC_REG_NUM
 #define GPIO_LOG_ITEM "port   :in      out     dir     die     dieh    pu          pd          hd          spl     sel"
 #define GPIO_LOG_FORMAT "0x%04x  0x%04x  0x%04x  0x%04x  0x%04x  0x%08x  0x%08x  0x%08x  0x%04x  0x%04x"
 #define GPIO_LOG_PORT(x,y) JL_PORT##x->IN&y,JL_PORT##x->OUT&y,JL_PORT##x->DIR&y,JL_PORT##x->DIE&y,JL_PORT##x->DIEH&y,JL_PORT##x->PU&0xffffffff,JL_PORT##x->PD&0xffffffff,JL_PORT##x->HD&0xffffffff,JL_PORT##x->SPL&y,JL_PORT##x->SEL&y
+#else
+#define GPIO_LOG_ITEM "port   :in      out     dir     die     dieh    pu          pd          hd          spl"
+#define GPIO_LOG_FORMAT "0x%04x  0x%04x  0x%04x  0x%04x  0x%04x  0x%08x  0x%08x  0x%08x  0x%04x"
+#define GPIO_LOG_PORT(x,y) JL_PORT##x->IN&y,JL_PORT##x->OUT&y,JL_PORT##x->DIR&y,JL_PORT##x->DIE&y,JL_PORT##x->DIEH&y,JL_PORT##x->PU&0xffffffff,JL_PORT##x->PD&0xffffffff,JL_PORT##x->HD&0xffffffff,JL_PORT##x->SPL&y
+#endif
 #else
 #define GPIO_LOG_ITEM "port   :in      out     dir     die     dieh    pu0   ,pu1     pd0   ,pd1     hd0   ,hd1     spl"
 #define GPIO_LOG_FORMAT "0x%04x  0x%04x  0x%04x  0x%04x  0x%04x  0x%04x,0x%04x  0x%04x,0x%04x  0x%04x,0x%04x  0x%04x"
@@ -499,14 +619,15 @@ enum gpio_function {
 #ifdef GPIOUSB
 #if defined(GPIO_NEW_PUPDHD_EN) && GPIO_NEW_PUPDHD_EN
 #else
+#define __portx(x,y) JL_PORTUSB->y
+#define _portx(x,y)  __portx(x,y)
 #define GPIO_LOG_FORMAT_U "0x%04x  0x%04x  0x%04x  0x%04x  0x%04x  0x%04x,%s  0x%04x,%s  %s,%s  0x%04x"
-#define GPIO_LOG_PORTU _portx(PU,in),_portx(PU,out),_portx(PU,dir),_portx(PU,die),_portx(PU,dieh),_portx(PU,pu0),GPIO_NO_SUPPORT_FUN,_portx(PU,pd0),GPIO_NO_SUPPORT_FUN,GPIO_NO_SUPPORT_FUN,GPIO_NO_SUPPORT_FUN,_portx(PU,spl)
+#define GPIO_LOG_PORTU _portx(PU,IN),_portx(PU,OUT),_portx(PU,DIR),_portx(PU,DIE),_portx(PU,DIEH),_portx(PU,PU0),GPIO_NO_SUPPORT_FUN,_portx(PU,PD0),GPIO_NO_SUPPORT_FUN,GPIO_NO_SUPPORT_FUN,GPIO_NO_SUPPORT_FUN,_portx(PU,SPL)
 #endif
 #endif
 
 /*************************function*************************/
 void usb_iomode(const u32 enable);
-
 
 /**************************************************************/
 /*********************multi pin interface***************************/

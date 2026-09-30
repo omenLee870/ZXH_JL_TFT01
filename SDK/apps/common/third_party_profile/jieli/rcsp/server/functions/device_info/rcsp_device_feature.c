@@ -18,8 +18,9 @@
 #include "JL_rcsp_attr.h"
 #include "rcsp_functions/rcsp_config.h"
 #include "app_task.h"
+#include "usb/device/descriptor.h"
 
-#define LOG_TAG_CONST       RCSP
+//#define LOG_TAG_CONST       RCSP
 #define LOG_TAG     		"[dev feature]"
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
@@ -106,6 +107,7 @@ static u32 target_feature_attr_platform(void *priv, u8 attr, u8 *buf, u16 buf_si
     u32 rlen = 0;
     return rlen;
 }
+
 static u32 target_feature_function_info(void *priv, u8 attr, u8 *buf, u16 buf_size, u32 offset)
 {
     struct RcspModel *rcspModel = (struct RcspModel *)priv;
@@ -114,19 +116,49 @@ static u32 target_feature_function_info(void *priv, u8 attr, u8 *buf, u16 buf_si
     }
 
     u32 rlen = 0;
-    u8 tmp_buf[6] = {0};
     u32 func_mask = app_htonl(rcspModel->function_mask);
 #if RCSP_DEVICE_STATUS_ENABLE
     u8 cur_fun = rcsp_get_cur_mode(app_get_curr_task());
 #else
     u8 cur_fun = BT_FUNCTION;
 #endif
+
+#if TCFG_USB_SLAVE_ENABLE
+    /* 当 PC从机模式(BIT9)使能时，需在 Byte5 拓展位之后追加 USB VID / USB PID。
+     * VID / PID 统一由 descriptor.c 提供（基准值 + class 偏移收敛在那里），
+     * 保证与 PC 枚举时看到的值一致；小端 -> 大端，RCSP 协议要求。
+     * 这里用编译期 class 位图而不是 usb_get_pid()，因为拔线后 usb_pause() 会
+     * 把 wDeviceClass 清零，导致上报值随插拔状态变化。
+     * 注意：descriptor.c 的这几个接口只在 USB 从机使能时编译，这里必须同宏保护。 */
+    if (rcspModel->function_mask & BIT(9)) {
+        u8 tmp_buf[10] = {0};
+        u16 usb_vid_host = usb_get_vid();
+        u16 usb_pid_host = usb_pid_from_class(usb_slave_class_config());
+        u16 usb_vid = app_htons(usb_vid_host);
+        u16 usb_pid = app_htons(usb_pid_host);
+        log_info("[func_info] USB VID: 0x%04X -> be 0x%04X, PID: 0x%04X -> be 0x%04X\n",
+                 usb_vid_host, usb_vid, usb_pid_host, usb_pid);
+        log_info("[func_info] tmp_buf[6~9]: %02X %02X %02X %02X\n",
+                 ((u8 *)&usb_vid)[0], ((u8 *)&usb_vid)[1],
+                 ((u8 *)&usb_pid)[0], ((u8 *)&usb_pid)[1]);
+        memcpy(tmp_buf, (u8 *)&func_mask, 4);
+        memcpy(tmp_buf + 4, &cur_fun, 1);
+        tmp_buf[5] = rcspModel->music_icon_mask | BIT(7); /* BIT(7): 后续有拓展区 */
+        memcpy(tmp_buf + 6, (u8 *)&usb_vid, 2);
+        memcpy(tmp_buf + 8, (u8 *)&usb_pid, 2);
+        return add_one_attr(buf, buf_size, offset, attr, tmp_buf, sizeof(tmp_buf));
+    }
+#endif
+
+    u8 tmp_buf[6] = {0};
     memcpy(tmp_buf, (u8 *)&func_mask, 4);
     memcpy(tmp_buf + 4, &cur_fun, 1);
     memcpy(tmp_buf + 5, &rcspModel->music_icon_mask, 1);
     rlen = add_one_attr(buf, buf_size, offset, attr, tmp_buf, sizeof(tmp_buf));
+
     return rlen;
 }
+
 static u32 target_feature_dev_version(void *priv, u8 attr, u8 *buf, u16 buf_size, u32 offset)
 {
     u32 rlen = 0;

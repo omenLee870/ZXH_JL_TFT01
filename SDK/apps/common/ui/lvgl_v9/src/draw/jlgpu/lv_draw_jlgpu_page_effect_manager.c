@@ -96,6 +96,19 @@
 #error "jlgpu_ctx_list 槽位不够: 背景槽会被倒影面占用, 需扩 jlgpu_ctx_list 数组并调整 LV_PAGE_EFFECT_BG_SLOT"
 #endif
 
+/* ---- 面表(page_id[] 槽位)的空标记 ----
+ * 不是合法页面 id: 静态页的 GUI_SCREEN_* 都 >= 0, 动态页从 0x80000000 起。
+ * 收面时 ui_get_setup_scr_obj() 查不到 -> 该面不收集任务(空面);
+ * 点按时 get_face_scr_id() 返回 -1 -> timer_cb 的点击分支不跳页。 */
+#define LV_PAGE_EFFECT_EMPTY_PAGE_ID   0xFFFFFFFFu
+
+/* ---- 面表里的动态页(.dyn 表盘) ----
+ * 动态页 id 从 DYN_RUNTIME_ID_START(0x80000000) 起(gui_parse_dyn.c), 落在 int32_t 上是负数;
+ * 静态页的 GUI_SCREEN_* 都 >= 0。判断"这个 id 的页面还在不在"只能靠 gui_scr_get() 去查,
+ * 不能看 id 的符号 —— gui_scr_get_id() 只对 NULL 返回 -1, 拿负数当无效会把表盘整页误判掉。 */
+#define LV_PAGE_EFFECT_IS_DYN_ID(id) \
+    ((int32_t)(id) < 0 && (uint32_t)(id) != LV_PAGE_EFFECT_EMPTY_PAGE_ID)
+
 #if LV_PAGE_INERTIA_DBG
 #define INERTIA_LOG(fmt, ...)  printf("[IN] " fmt "\n", ##__VA_ARGS__)
 #else
@@ -170,6 +183,14 @@ lv_jlgpu_ctx_t *jlgpu_ctx_list_ori = NULL;
 static lv_page_inertia_t s_inertia = {0};
 /* 背景对象(裸指针, 不持有)。非 NULL 时特效期间整屏 blit 它, 否则回落纯黑底 */
 static lv_obj_t *s_page_effect_bg_obj = NULL;
+
+/* 应用层可实现此弱钩子，让来电等紧急页面在不直接释放动画的情况下，
+ * 促使跟手特效走既有的“抬手 -> 动画完成 -> scr_anim_completed”收尾路径。 */
+__attribute__((weak))
+bool lv_page_effect_force_touch_release(void)
+{
+    return false;
+}
 
 /* 定点缩放特效的缩放中心 = 上一次「点击」的坐标。刻意放在 g_page_effect_state 之外:
  * 该结构体在特效退场时被整体清零, 而"上一次点击"必须跨特效会话存活(滑动手势要复用它)。 */
@@ -298,11 +319,13 @@ static void lv_page_effect_make_front(void)
 
     // 反查当前页 page_id
     gui_scr_t *scr = gui_scr_get_by_obj(g_page_effect_state.act_scr);
-    int32_t target_id = gui_scr_get_id(scr);
-
-    if (target_id < 0) {
+    if (scr == NULL) {
         return;
     }
+    /* 判据只能是"查不到", 不能是 target_id < 0: 动态页(表盘)的 id 是负数,
+     * 判 < 0 会把"当前页是表盘"当成无效 id 直接返回, 六个面槽一个都不改,
+     * 正面还停在面表里原有的那一页 —— 表现就是表盘从多面体上整个消失。 */
+    int32_t target_id = gui_scr_get_id(scr);
 
     uint32_t buf[16];
     ops->get_page_id(buf);
@@ -315,6 +338,23 @@ static void lv_page_effect_make_front(void)
 
     if (front_idx < 0 || front_idx >= id_count) {
         front_idx = 0;
+    }
+
+    /* 先压掉已失效的动态页槽位, 空出来的槽位置空槽标记。
+     * 动态页每次卸载重载都会重新分配 id(dyn_runtime_id_get() 的映射随页面删除一起释放),
+     * 旧 id 留在面表里既查不到 gui_scr、收面时也拿不到页面对象, 那个面就是个空面;
+     * 不压的话每重载一次表盘还会多挤掉一个静态页, 面表很快全是死槽。
+     * 当前页一定不会被压掉: 上面刚用它的页面对象反查到了 gui_scr。 */
+    int live_cnt = 0;
+    for (int i = 0; i < id_count; i++) {
+        if (LV_PAGE_EFFECT_IS_DYN_ID(buf[i]) && gui_scr_get((int32_t)buf[i]) == NULL) {
+            continue;
+        }
+        buf[live_cnt] = buf[i];
+        live_cnt++;
+    }
+    for (int i = live_cnt; i < id_count; i++) {
+        buf[i] = LV_PAGE_EFFECT_EMPTY_PAGE_ID;
     }
 
     // 查找 target_id 是否已在数组中
@@ -1978,10 +2018,22 @@ static void timer_cb(lv_timer_t *timer)
     uint8_t status;
     static uint8_t first_down = 0;
     static uint8_t g_prev_touch_status = 0; //上一轮触摸状态
+    static uint8_t force_release_logged = 0;
     static int32_t g_first_touch_x = 0; //记录定时器首次按下坐标(x)
     static int32_t g_first_touch_y = 0; //记录定时器首次按下坐标(y)
 
     get_touch_x_y_status(&x, &y, &status);
+    if (lv_page_effect_force_touch_release()) {
+        if (!force_release_logged) {
+            LV_LOG_USER("[PHONE_TAKEOVER] page_effect_force_release tick=%lu raw_status=%u busy=%u",
+                        (unsigned long)lv_tick_get(), (unsigned int)status,
+                        (unsigned int)g_page_effect_state.effect_busy);
+            force_release_logged = 1;
+        }
+        status = 0;
+    } else {
+        force_release_logged = 0;
+    }
     //printf("-----x,y,status= %d,%d,%d\n",x,y,status);
 
     //针对sticky特效

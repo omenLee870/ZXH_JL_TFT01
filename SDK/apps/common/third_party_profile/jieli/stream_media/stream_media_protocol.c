@@ -81,11 +81,11 @@ int stream_media_build_enter_cmd(u8 *buf, u16 buf_size, u8 sn, u8 phone_type)
     return (int)(p - buf);
 }
 
-int stream_media_build_enter_resp(u8 *buf, u16 buf_size, u8 sn, u8 status,
-                                  u8 chip_type, u8 dev_type, u16 proto_ver, u32 fw_ver)
+int stream_media_build_enter_resp(u8 *buf, u16 buf_size, u8 sn, u8 status, u8 chip_type,
+                                  u8 dev_type, u16 proto_ver, u32 fw_ver, u16 heartbeat_interval_ms)
 {
-    // LTV: 芯片类型 3B + 设备类型 3B + 协议版本号 4B + 固件版本号 6B = 16B
-    u16 ltv_len = 3 + 3 + 4 + 6;
+    // LTV: 芯片类型 3B + 设备类型 3B + 协议版本号 4B + 固件版本号 6B + 心跳间隔 4B = 20B
+    u16 ltv_len = (status == STREAM_MEDIA_ERR_OK) ? (3 + 3 + 4 + 6 + 4) : 0;
     u16 payload_len = 1 + ltv_len; // status + LTV
     if (buf_size < STREAM_MEDIA_CMD_MIN_LEN + payload_len) {
         return -1;
@@ -110,7 +110,27 @@ int stream_media_build_enter_resp(u8 *buf, u16 buf_size, u8 sn, u8 status,
         *p++ = 5;
         *p++ = LTV_TYPE_FW_VER;
         p = wr32(p, fw_ver);
+        // LTV: 心跳间隔
+        *p++ = 3;
+        *p++ = LTV_TYPE_HEARTBEAT_INTERVAL;
+        p = wr16(p, heartbeat_interval_ms);
     }
+    *p++ = STREAM_MEDIA_TAIL;
+    return (int)(p - buf);
+}
+
+int stream_media_build_heartbeat_resp(u8 *buf, u16 buf_size, u8 sn, u8 status)
+{
+    u16 payload_len = 1;
+    u8 *p;
+
+    if (!buf || buf_size < STREAM_MEDIA_CMD_MIN_LEN + payload_len) {
+        return -1;
+    }
+
+    p = write_cmd_header(buf, STREAM_MEDIA_OPCODE_HEARTBEAT, 0x00, sn,
+                         payload_len);
+    *p++ = status;
     *p++ = STREAM_MEDIA_TAIL;
     return (int)(p - buf);
 }

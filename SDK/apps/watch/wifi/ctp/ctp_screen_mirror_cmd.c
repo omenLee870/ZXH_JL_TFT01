@@ -14,6 +14,7 @@
 #include "lcd_conf.h"
 #include <ctype.h>
 #include "wifi_connect.h"
+#include "wifi_adapter.h"
 
 static u8 scr_quality = 7;  //JPEG默认压缩率为70%, JLJPEG为Q值
 struct __NET_SCR_CFG g_scr_cfg = {0};
@@ -52,13 +53,13 @@ int net_scr_ctp_disconnect_event_handle(u8 cli_num)
         net_scr_stop();
     }
     /* CTP断开时主动重启P2P */
-    struct WIFI_INIT_INFO *wifi_info = ext_get_cur_wifi_info();
+    //struct WIFI_INIT_INFO *wifi_info = ext_get_cur_wifi_info();
 
-    printf("cur mode : %d, role: %d, ssid: %s \n", wifi_info->mode, wifi_info->p2p_role, wifi_info->ssid[P2P_MODE]);
+    //printf("cur mode : %d, role: %d, ssid: %s \n", wifi_info->mode, wifi_info->p2p_role, wifi_info->ssid[P2P_MODE]);
 
-    if (ext_get_cur_wifi_info()->mode == P2P_MODE && cli_num == 0) {
-        wifi_network_enter_p2p(wifi_info->p2p_role,
-                               (const unsigned char *)wifi_info->ssid[P2P_MODE]);
+    if (cli_num == 0) {
+        wifi_adapter_stop_ap_p2p();
+        wifi_adapter_start_ap_p2p(TCFG_EXT_WIFI_AP_SSID, TCFG_EXT_WIFI_AP_PWD, TCFG_EXT_WIFI_P2P_SSID);
     }
     return 0;
 

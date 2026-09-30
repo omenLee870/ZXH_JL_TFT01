@@ -150,10 +150,10 @@ __sport_info_sync_sync_start_exercise_nodify_end:
 static void sport_info_sync_start_exercise(void *priv, u8 OpCode, u8 OpCode_SN, u8 *data, u16 len)
 {
     // app触发开始运动
-    u8 sport_status = __execise_hd->execise_ctrl_status_get();
-    if (sport_status == 0) {
-        __execise_hd->execise_ctrl_status_set(data[0], RCSP_SPORT_STATUS_START);
-    }
+    /* 修复(手机下发运动不唤起手表端).
+     * 重复下发不会使状态错乱：shm_sport_start() 显式置 run_status=RUN/status=START，
+     * 确定性收敛，与当前处于何种状态无关。 */
+    __execise_hd->execise_ctrl_status_set(data[0], RCSP_SPORT_STATUS_START);
 
     int ret = sport_info_sync_start_exercise_rcsp(data, &len);
     log_debug("%s mode:%d", __func__, data[0]);

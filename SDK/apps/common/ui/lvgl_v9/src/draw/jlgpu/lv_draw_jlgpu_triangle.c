@@ -189,16 +189,20 @@ void lv_draw_jlgpu_triangle(lv_draw_task_t *t, const lv_draw_triangle_dsc_t *dsc
 
         lv_grad_dir_t grad_dir = dsc->grad.dir;
 
+        /* 渐变起止点按三角形外接矩形(tri_area)算, 不能用裁剪后的 blend_area(= clip_area):
+         * 脏区渲染时 clip 只覆盖三角形的一部分, 拿它当渐变范围会把整条渐变压缩进这块脏区,
+         * 起点的颜色/透明度就算错了, 同一块渐变分散在不同帧里画时还会互相对不上。
+         * 与 lv_draw_sw_triangle.c 的做法一致(那边用 tri_area 建渐变表)。 */
         if (grad_dir == LV_GRAD_DIR_HOR) {
-            lineargrad_param.point_start.x = blend_area.x1;
-            lineargrad_param.point_start.y = blend_area.y1;
-            lineargrad_param.point_end.x = blend_area.x2 + 1;
-            lineargrad_param.point_end.y = blend_area.y1;
+            lineargrad_param.point_start.x = tri_area.x1;
+            lineargrad_param.point_start.y = tri_area.y1;
+            lineargrad_param.point_end.x = tri_area.x2 + 1;
+            lineargrad_param.point_end.y = tri_area.y1;
         } else {
-            lineargrad_param.point_start.x = blend_area.x1;
-            lineargrad_param.point_start.y = blend_area.y1;
-            lineargrad_param.point_end.x = blend_area.x1;
-            lineargrad_param.point_end.y = blend_area.y2 + 1;
+            lineargrad_param.point_start.x = tri_area.x1;
+            lineargrad_param.point_start.y = tri_area.y1;
+            lineargrad_param.point_end.x = tri_area.x1;
+            lineargrad_param.point_end.y = tri_area.y2 + 1;
         }
 
         lineargrad_param.spread_mode = JLGPU_COLOR_RAMP_SPREAD_REPEAT;

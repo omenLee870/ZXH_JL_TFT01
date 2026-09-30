@@ -57,6 +57,8 @@ typedef enum {
     SLEEP_STAGE_LIGHT,
     SLEEP_STAGE_DEEP,
     SLEEP_STAGE_REM,
+    SLEEP_STAGE_BLOCK_END = 0XFE, 	//数据段尾，清醒
+    SLEEP_STAGE_AWAKE_FILE = 0XFF,	//文件存储的清醒值
 } sleep_type;
 
 typedef struct {

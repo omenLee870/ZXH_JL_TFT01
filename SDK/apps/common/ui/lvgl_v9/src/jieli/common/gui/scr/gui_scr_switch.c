@@ -23,6 +23,15 @@
         reset_scr_state(new_prev_scr, GUI_SCR_MOVE_MODE_CUSTOM); \
     }
 
+/* 是否使用 JLGPU 硬件页面特效（lv_screen_load_anim_t 中 OTHER_PAGE~USER 段）。
+ * 该段枚举只在打开 JLGPU 时才存在，所以判断要一并包在同一个宏里。 */
+#if defined(LV_USE_DRAW_JLGPU) && LV_USE_DRAW_JLGPU
+#define GUI_SCR_SWITCH_IS_PAGE_EFFECT(t) \
+    ((t) >= LV_SCR_LOAD_ANIM_OTHER_PAGE && (t) <= LV_SCR_LOAD_ANIM_USER)
+#else
+#define GUI_SCR_SWITCH_IS_PAGE_EFFECT(t) false
+#endif
+
 /**********************
  *      TYPEDEFS
  **********************/
@@ -62,6 +71,9 @@ static gui_scr_switch_get_scr_cb_t get_setuped_scr_cb = NULL;
 static gui_scr_manager_t *switch_manager = NULL;
 static lv_obj_t *bg_scr = NULL;
 
+/* 当前使用的页面切换特效，取值见 gui_scr_switch_set_anim_type() */
+static lv_screen_load_anim_t switch_anim_type = LV_SCREEN_LOAD_ANIM_NONE;
+
 /**********************
  *      MACROS
  **********************/
@@ -75,6 +87,13 @@ int32_t gui_scr_switch_move(gui_scr_switch_t *scr_switch, int32_t mode)
     if (get_setuped_scr_cb == NULL) {
         LV_LOG_WARN("get_scr_cb is NULL");
         return -1;
+    }
+
+    /* JLGPU 特效模式下，跟手过程完全交给 lv_draw_jlgpu_page_effect_manager.c 的 timer_cb 处理
+     * （它自己读触摸、自己算偏移、自己判松手吸附），这里不能再去动 disp->prev_scr / 页面位置，
+     * 否则会覆盖掉特效管理器已经设好的状态，且 lv_screen_load_anim() 入口处本来也会把这些清掉。 */
+    if (GUI_SCR_SWITCH_IS_PAGE_EFFECT(switch_anim_type)) {
+        return 0;
     }
 
     int32_t xoffset = scr_switch->cur_pos.x - scr_switch->start_pos.x;
@@ -119,7 +138,6 @@ int32_t gui_scr_switch_move(gui_scr_switch_t *scr_switch, int32_t mode)
         xoffset = LV_CLAMP(-scr_width, xoffset,
                            scr_width); /* 限制偏移量在屏幕宽度范围内，避免从第一个页面直接切换显示前后第二个页面 */
         lv_display_t *disp = lv_display_get_default();
-        int32_t act_scr_pos = lv_obj_get_x(disp->act_scr);
 
         if (xoffset > 0) {
             if (prev_screen != NULL) {
@@ -324,6 +342,53 @@ int32_t gui_scr_switch_move_anim(gui_scr_switch_anim_t *anim)
         return -1;
     }
 
+    /* JLGPU 特效分支：不使用 disp->prev_scr（特效路径下它一直是 NULL，而且
+     * lv_screen_load_anim() 也会把它清掉），目标页面直接由「方向 + 页面管理器」推出来，
+     * 再交给 load_scr 回调去启动特效。必须在这里就把目标定下来：特效跑起来之后
+     * scr_anim_completed() 会把 d->prev_scr 置 NULL，那时再想反推目标页就晚了。 */
+    if (GUI_SCR_SWITCH_IS_PAGE_EFFECT(switch_anim_type)) {
+        if (anim == NULL || anim->load_scr == NULL) {
+            return -1;
+        }
+
+        int32_t cur_id = gui_scr_get_id(gui_scr_get_act());
+        /* 哨兵必须判 == -1，不能判 < 0。
+         * gui_scr_get_id() 只对 NULL 返回 -1；而动态页（.dyn 表盘）的 id 从
+         * 0x80000000 起（gui_parse_dyn.c 的 DYN_RUNTIME_ID_START），落在 int32_t
+         * 上是负数。用 < 0 会把"当前页是表盘"误判成"id 无效"直接 return -1，
+         * 表现就是表盘上怎么滑都不切页。 */
+        if (cur_id == -1) {
+            return -1;
+        }
+
+        /* 方向语义与 gui_scr_switch_move() 保持一致：
+         * 向右滑（xoffset > 0）取前一页，向左滑（xoffset < 0）取后一页。 */
+        int32_t dest_id;
+        if (anim->dir & LV_DIR_RIGHT) {
+            dest_id = gui_scr_manager_prev(switch_manager, cur_id);
+            if (dest_id == -1 && anim->loop_head) {
+                dest_id = gui_scr_manager_tail(switch_manager);
+            }
+        } else if (anim->dir & LV_DIR_LEFT) {
+            dest_id = gui_scr_manager_next(switch_manager, cur_id);
+            if (dest_id == -1 && anim->loop_tail) {
+                dest_id = gui_scr_manager_head(switch_manager);
+            }
+        } else {
+            /* 没有明确左右方向：默认向后翻一页 */
+            dest_id = gui_scr_manager_next(switch_manager, cur_id);
+        }
+
+        /* 目标页推不出来（环里没有当前页 / 已是边界且没开 loop）就放弃。
+         * dest_id == cur_id 是防"环里只有一个成员"时自己切自己。 */
+        if (dest_id == -1 || dest_id == cur_id) {
+            return -1;
+        }
+
+        anim->load_scr(dest_id);
+        return 0;
+    }
+
     lv_obj_t *act_scr = disp->act_scr;
     lv_obj_t *prev_scr = disp->prev_scr;
     if (act_scr == NULL || prev_scr == NULL || act_scr == prev_scr) {
@@ -367,6 +432,16 @@ void gui_scr_switch_set_get_scr_cb(gui_scr_switch_get_scr_cb_t get_scr_cb)
 void gui_scr_switch_set_manager(gui_scr_manager_t *manager)
 {
     switch_manager = manager;
+}
+
+void gui_scr_switch_set_anim_type(lv_screen_load_anim_t anim_type)
+{
+    switch_anim_type = anim_type;
+}
+
+lv_screen_load_anim_t gui_scr_switch_get_anim_type(void)
+{
+    return switch_anim_type;
 }
 
 lv_dir_t gui_scr_switch_get_dir(lv_point_t *start_pos, lv_point_t *end_pos)

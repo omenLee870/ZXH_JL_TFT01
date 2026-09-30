@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SENSOR_DRIVER_P11_H
+#define SENSOR_DRIVER_P11_H
+
 #include "includes.h"
 #include "sensor_hub.h"
 #include "circular_buf.h"
@@ -28,3 +30,7 @@ void sensor_driver_p11_init(sensor_type_t type, u8 enable, u16 range, u8 odr);
 void sensor_driver_p11_timer_modify(u16 msec);
 u16 sensor_driver_p11_cbuf_mult_entry_enable(sensor_type_t type, u8 index, u8 enable);
 void sensor_driver_p11_sleep(u8 type, u8 enable);
+int sensor_driver_p11_get_data(u8 module, u8 type);
+int sensor_driver_p11_ctrl(u8 module, u8 cmd);
+
+#endif /* SENSOR_DRIVER_P11_H */

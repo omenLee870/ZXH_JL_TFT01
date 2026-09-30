@@ -71,12 +71,14 @@ void lv_draw_jlgpu_line(lv_draw_task_t *t, const lv_draw_line_dsc_t *dsc)
 
     float half_w = dsc->width * 0.5f;
 
-    lv_area_t rel_clip_area;
-    rel_clip_area.x1 = (int32_t)(LV_MIN(p1_x, p2_x) - half_w);
-    rel_clip_area.x2 = (int32_t)(LV_MAX(p1_x, p2_x) + half_w);
-    rel_clip_area.y1 = (int32_t)(LV_MIN(p1_y, p2_y) - half_w);
-    rel_clip_area.y2 = (int32_t)(LV_MAX(p1_y, p2_y) + half_w);
+    /* 线自己的外接矩形(未裁剪), is_slender 要按它判断 */
+    lv_area_t line_area;
+    line_area.x1 = (int32_t)(LV_MIN(p1_x, p2_x) - half_w);
+    line_area.x2 = (int32_t)(LV_MAX(p1_x, p2_x) + half_w);
+    line_area.y1 = (int32_t)(LV_MIN(p1_y, p2_y) - half_w);
+    line_area.y2 = (int32_t)(LV_MAX(p1_y, p2_y) + half_w);
 
+    lv_area_t rel_clip_area = line_area;
     if (!lv_area_intersect(&rel_clip_area, &rel_clip_area, &t->clip_area)) {
         return; /*Fully clipped, nothing to do*/
     }
@@ -100,7 +102,10 @@ void lv_draw_jlgpu_line(lv_draw_task_t *t, const lv_draw_line_dsc_t *dsc)
     int height = lv_area_get_height(&blend_area);
 
     //两个像素以内无需计算path直接填充即可
-    if (width <= 2 || height <= 2) {
+    /* 必须按线自己的尺寸判断, 不能用裁剪后的窗口尺寸: 窗口可能把一条斜线裁成很窄的一条,
+     * 用窗口尺寸会把斜线误判成"细线", 于是跳过矢量路径、直接按矩形填充整个窗口,
+     * 画出来的就不是这条线了。 */
+    if (lv_area_get_width(&line_area) <= 2 || lv_area_get_height(&line_area) <= 2) {
         is_slender = true;
     }
 

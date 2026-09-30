@@ -40,8 +40,11 @@ static const u8 lcd_mcu_st7789v_cmdlist[] ALIGNED(4) = {
     /* _BEGIN_, REGFLAG_DELAY, 120, _END_,	// delay 120ms */
     _BEGIN_, 0xB2, 0x0C, 0x0C, 0x00, 0x33, 0x33, _END_,
     _BEGIN_, 0x35, 0x00, _END_,
-    // _BEGIN_, 0x36, 0x60, _END_, // 旧: MX|MV 旋转90°横屏(320x240)
-    _BEGIN_, 0x36, 0x00, _END_, // MADCTL: 原生竖屏(物理240x320→显示240x320)
+#if defined(TCFG_KID_CAMERA_UI_INTERCOM) && TCFG_KID_CAMERA_UI_INTERCOM
+    _BEGIN_, 0x36, 0x00, _END_, // MADCTL: 原生竖屏(物理240x320→显示240x320, 儿童对讲机)
+#else
+    _BEGIN_, 0x36, 0x60, _END_, // MADCTL: MX|MV 旋转90°横屏(物理240x320→显示320x240, 儿童照相机)
+#endif
     _BEGIN_, 0x3A, 0x05, _END_,
     _BEGIN_, 0xB7, 0x74, _END_,
     _BEGIN_, 0xBB, 0x1E, _END_,

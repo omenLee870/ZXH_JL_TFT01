@@ -8,7 +8,7 @@
 
 #if TCFG_IFLYTEK_ENABLE
 
-#define IFLY_DEMO_TEST    1
+#define IFLY_DEMO_TEST    0
 
 #if IFLY_DEMO_TEST
 
@@ -80,7 +80,7 @@ static int ifly_vad_event_cb(ifly_vad_event_enum evt, void *param)  //vad任务�
         break;
     case IFLY_VAD_EVT_EXIT:   //vad结束，开启ai
         p_ifly_net->ai_param.ai_res = p_ifly_net->ai_text;
-        p_ifly_net->ai_param.ai_res_len = MAX_SPARKDESK_LEN;
+        p_ifly_net->ai_param.ai_res_len = sizeof(p_ifly_net->ai_text);
         p_ifly_net->ai_param.event_cb = ifly_ai_event_cb;
         p_ifly_net->ai_param.content = p_ifly_net->local_text;
         p_ifly_net->ai_param.ai_res[0] = 0;

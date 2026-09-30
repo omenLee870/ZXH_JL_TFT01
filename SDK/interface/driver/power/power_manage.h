@@ -24,6 +24,68 @@ extern const struct lp_target lp_target_end[];
 #define list_for_each_lp_target(p) \
     for (p = lp_target_begin; p < lp_target_end; p++)
 
+
+/*************************************************************************************
+ *低功耗线程请求进入低功耗, 主动发出
+ */
+struct lp_request {
+    char *name;
+    u8(*request_enter)(u32 timeout);
+    u8(*request_exit)(u32 timeout);
+};
+
+#define REGISTER_LP_REQUEST(target) \
+        const struct lp_request lp_request_##target sec(.lp_request)
+
+extern const struct lp_request lp_request_begin[];
+extern const struct lp_request lp_request_end[];
+
+#define list_for_each_lp_request(p) \
+    for (p = lp_request_begin; p < lp_request_end; p++)
+
+
+u8 low_power_sys_request_enter(u32 timeout);
+u8 low_power_sys_request_exit(u32 timeout);
+
+/**************************************************************************************
+ * deepsleep register
+ */
+struct deepsleep_target {
+    char *name;
+    u8(*enter)(void);
+    u8(*exit)(void);
+    u8(*post)(void);
+};
+
+#define DEEPSLEEP_TARGET_REGISTER(target) \
+        const struct deepsleep_target target sec(.deepsleep_target)
+
+extern const struct deepsleep_target deepsleep_target_begin[];
+extern const struct deepsleep_target deepsleep_target_end[];
+
+#define list_for_each_deepsleep_target(p) \
+    for (p = deepsleep_target_begin; p < deepsleep_target_end; p++)
+
+void deepsleep_target_dump();
+
+/**************************************************************************************
+ * sleep register
+ */
+struct sleep_target {
+    char *name;
+    u8(*enter)(void);
+    u8(*exit)(void);
+};
+
+#define SLEEP_TARGET_REGISTER(target) \
+        const struct sleep_target target sec(.sleep_target)
+
+extern const struct sleep_target sleep_target_begin[];
+extern const struct sleep_target sleep_target_end[];
+
+#define list_for_each_sleep_target(p) \
+    for (p = sleep_target_begin; p < sleep_target_end; p++)
+
 u32 lower_power_sys_group_query();
 u32 lower_power_bt_group_query();
 u32 low_power_sys_not_idle_cnt(void);
@@ -62,61 +124,6 @@ void low_power_resume_post(u32 usec);
 void low_power_sys_resume(u32 usec);
 void low_power_sys_resume_post(u32 usec);
 
-//******************************************************************************************
-/*低功耗线程请求进入低功耗, 主动发出
- */
-struct lp_request {
-    char *name;
-    u8(*request_enter)(u32 timeout);
-    u8(*request_exit)(u32 timeout);
-};
-
-#define REGISTER_LP_REQUEST(target) \
-        const struct lp_request target sec(.lp_request)
-
-extern const struct lp_request lp_request_begin[];
-extern const struct lp_request lp_request_end[];
-
-#define list_for_each_lp_request(p) \
-    for (p = lp_request_begin; p < lp_request_end; p++)
-
-u8 low_power_sys_request_enter(u32 timeout);
-u8 low_power_sys_request_exit(u32 timeout);
-
-//******************************************************************************************
-/*
- * deepsleep register
- */
-struct deepsleep_target {
-    char *name;
-    u8(*enter)(void);
-    u8(*exit)(void);
-    u8(*post)(void);
-};
-
-#define DEEPSLEEP_TARGET_REGISTER(target) \
-        const struct deepsleep_target target SEC_USED(.deepsleep_target)
-
-extern const struct deepsleep_target deepsleep_target_begin[];
-extern const struct deepsleep_target deepsleep_target_end[];
-
-#define list_for_each_deepsleep_target(p) \
-    for (p = deepsleep_target_begin; p < deepsleep_target_end; p++)
-
-void deepsleep_target_dump();
-
-//******************************************************************************************
-struct power {
-    struct list_head entry;
-    void *priv;
-    const struct low_power_operation *ops;
-};
-
-struct low_power_group {
-    /* struct list_head head_on; */
-    struct list_head request_head;
-    u32 timeout;
-};
 
 
 //******************************************************************************************

@@ -16,6 +16,12 @@
 #include "periph/pwm_interface.h"
 #include "tp_api.h"
 
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define LOG_CLI_ENABLE
+#include "debug.h"
+
 #if (TCFG_UI_ENABLE && TCFG_SPI_LCD_ENABLE)
 #define lcd_debug printf
 
@@ -788,6 +794,15 @@ int lcd_dmm_link_init(uint16_t width, uint16_t height, uint8_t jstc_en, uint8_t 
     //spi屏和mcu屏采用单帧模式，其余的屏是连续帧模式
     reg_common_param.continue_mode = (__this->lcd_type == LCD_TYPE_SPI || __this->lcd_type == LCD_TYPE_MCU) ? 0 : 1;
 
+    /* SPI/MCU 屏下 __lcd_dbi_link_run() 走的是"先 wait_done 再 run"。
+     * 首帧之前没有任何帧跑过、不会有 frame end 中断来 post 信号量, 这里预置 1
+     * 让首帧的 wait_done 立即返回, 不必干等 50ms 超时。
+     * 本函数从第二帧起会在开头提前 return, 所以这段只执行一次 —— 这正是要的:
+     * 之后的帧由上一帧的 frame end 中断正常 post。 */
+    if (__this->lcd_type == LCD_TYPE_SPI || __this->lcd_type == LCD_TYPE_MCU) {
+        JLDMM_set_frame_sem(1);
+    }
+
     reg_area_src0_param.x_min = 0;
     reg_area_src0_param.x_max = width;
     reg_area_src0_param.y_min = 0;
@@ -1032,8 +1047,18 @@ static int __lcd_dbi_link_run(u8 *buf, int xstart, int xend, int ystart, int yen
         }
         dmm_set_src_adr_param(&reg_adr_param);
         /* dmm_debug_sfr_param(); */
-        JLDMM_run();
-        JLDMM_wait_done();
+
+
+        /* SPI/MCU 屏(单帧模式): 先等上一帧结束, 再 kick 新的一帧 */
+        if (__this->lcd_type == LCD_TYPE_SPI || __this->lcd_type == LCD_TYPE_MCU) {
+            JLDMM_wait_done();
+            JLDMM_run();
+        } else {
+            JLDMM_run();
+            JLDMM_wait_done();
+        }
+
+
         return 1;
     } else if (EVA_DBI->DMA_CON.linkage_mode && EVA_DVBUS_TSEL->DPU_TID_DBI == DPU_SID_GPU) {
         //TODO: gpu run
@@ -1315,6 +1340,16 @@ static void tp_drv_power_on()
  * 				3、lcd_sleep_in 记录LCD的休眠状态
  *********************************************************************************************************
  */
+/* 由上层(UI)实现：返回用户设定亮度百分比(0~100)。
+ * 未实现（返回 0）时，调用方回退到 backlight_status 缓存。
+ * apps/watch/ui/jlui_app/ui_sys_param_api.c 提供了 strong 实现，按 VM 里的 LightLevel 档位换算。
+ * 注意：本定义必须位于 lcd_sleep_ctrl() 之前 —— 后者内部的亮屏恢复流程会调用它，
+ * 而本工程按 C99 编译（-Werror,-Wimplicit-function-declaration），后置定义会报隐式声明。 */
+__attribute__((weak)) u8 lcd_user_brightness_percent(void)
+{
+    return 0;
+}
+
 int lcd_sleep_ctrl(u8 enter)
 {
     struct lcd_sleep_headler *p;
@@ -1379,6 +1414,14 @@ int lcd_sleep_ctrl(u8 enter)
         lcd_sleep_in = false;
 #endif
 
+        u8 bl = lcd_user_brightness_percent();
+        if (!bl) {
+            bl = backlight_status;
+        }
+        if (bl) {
+            lcd_drv_backlight_ctrl(bl);
+        }
+
 #if TP_POWER_DOWN_EN
         tp_drv_power_on();
 #endif
@@ -1399,7 +1442,7 @@ int lcd_sleep_ctrl(u8 enter)
             }
         }
 
-        /* lcd_drv_backlight_ctrl_base(backlight_status); */
+        /* 背光已在本分支开头 lcd_drv_power_on() 之后立刻恢复，此处不再重复。 */
     }
 
     is_lcd_busy = 0;
@@ -1409,7 +1452,16 @@ int lcd_sleep_ctrl(u8 enter)
 void lcd_bl_open()
 {
     /* lcd_pwm_init(); */
-    lcd_drv_backlight_ctrl_base(backlight_status);
+    u8 bl = lcd_user_brightness_percent();
+    if (!bl) {
+        bl = backlight_status;
+    }
+    if (bl) {
+        lcd_drv_backlight_ctrl(bl);
+    } else {
+        /* lcd_drv_backlight_ctrl(0) 会下发 0x28(Display OFF)，而本函数语义是"开背光"，
+         * 故为 0 时不下发，保持面板现状。正常情况下 bl 由档位换算恒 >= 10。 */
+    }
 }
 
 

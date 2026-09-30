@@ -211,6 +211,12 @@ const u8 config_icache_run_data_code_enable = 0;
 //============================================================================//
 const u32 total_stack_heap_size = TCFG_TOTAL_STACK_HEAP_SIZE;
 
+//============================================================================//
+//配置任务是否使用动态栈        			                                  //
+// 0：静态栈；1：动态栈(默认)
+//============================================================================//
+const u32 config_task_used_dynamic_stack = 1;
+
 /**
  * @brief Log (Verbose/Debug/Info/Warn/Error/Char)
  */

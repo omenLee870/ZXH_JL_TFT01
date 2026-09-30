@@ -190,11 +190,17 @@ c_SRC_FILES := \
 	apps/watch/demo/pbg_demo.c \
 	apps/watch/demo/trans_data_demo.c \
 	apps/watch/health_manager/algo/shm_algo_gsensor.c \
+	apps/watch/health_manager/algo_p11/shm_algo_gsensor.c \
+	apps/watch/health_manager/algo_p11/shm_algo_heart_rate.c \
+	apps/watch/health_manager/algo_p11/shm_algo_spo2.c \
 	apps/watch/health_manager/common/health_manager.c \
 	apps/watch/health_manager/common/shm_common_api.c \
 	apps/watch/health_manager/common/shm_file_api.c \
 	apps/watch/health_manager/common/shm_info_storage.c \
 	apps/watch/health_manager/detect/shm_det_mense.c \
+	apps/watch/health_manager/detect/shm_det_wear.c \
+	apps/watch/health_manager/detect_p11/shm_det_wear.c \
+	apps/watch/health_manager/health_manager_test.c \
 	apps/watch/health_manager/module/shm_mod_blood_oxygen.c \
 	apps/watch/health_manager/module/shm_mod_daily_active.c \
 	apps/watch/health_manager/module/shm_mod_heart_rate.c \
@@ -284,6 +290,7 @@ c_SRC_FILES := \
 	apps/watch/sensor_hub/sensor_hal_vc_hr_11.c \
 	apps/watch/sensor_hub/sensor_hal_wrist_tilt.c \
 	apps/watch/sensor_hub/sensor_hub.c \
+	apps/watch/sensor_hub/sensor_service.c \
 	apps/watch/sensor_hub/sensor_service_compass.c \
 	apps/watch/sensor_hub/sensor_service_motion.c \
 	apps/watch/sensor_hub/sensor_service_vc_hr_spo2.c \
@@ -323,7 +330,9 @@ c_SRC_FILES := \
 	apps/watch/wifi/spi_net_app_task.c \
 	apps/watch/wifi/stream/mpi_video_net.c \
 	apps/watch/wifi/uart_net_app_task.c \
+	apps/watch/wifi/wifi_adapter.c \
 	apps/watch/wifi/wifi_app_task.c \
+	apps/watch/wifi/wireless_main.c \
 	cpu/br33/bp_table.c \
 	cpu/br33/charge/charge.c \
 	cpu/br33/charge/charge_config.c \
@@ -543,6 +552,8 @@ LFLAGS := \
 	cpu/br33/liba/lib_drc_advance.a \
 	cpu/br33/liba/DynamicEQ.a \
 	cpu/br33/liba/lib_ape_dec.a \
+	cpu/br33/liba/lib_amr_dec.a \
+	cpu/br33/liba/lib_amr_enc.a \
 	cpu/br33/liba/VirtualBass.a \
 	cpu/br33/liba/lib_plateReverb_adv.a \
 	cpu/br33/liba/lib_reverb_cal.a \
@@ -684,11 +695,14 @@ LFLAGS := \
 	cpu/br33/liba/ui_gif.a \
 	cpu/br33/liba/ui_lv9_fitter.a \
 	cpu/br33/liba/ui_amap_svg_demo.a \
+	cpu/br33/liba/iMLite_Map.a \
 	cpu/br33/liba/video.a \
 	--start-group  \
 	cpu/br33/liba/opt.a \
 	cpu/br33/liba/iperf.a \
-	cpu/br33/liba/libaicwifi.a \
+	cpu/br33/liba/libaic8800_driver.a \
+	cpu/br33/liba/libaic_platform.a \
+	cpu/br33/liba/libaic_mbedtls.a \
 	cpu/br33/liba/sdio_card.a \
 	cpu/br33/liba/hsm_ext.a \
 	cpu/br33/liba/ext_wifi_dev.a \
@@ -698,6 +712,16 @@ LFLAGS := \
 	cpu/br33/liba/libc.a \
 	-Tcpu/br33/sdk.ld \
 	-M=cpu/br33/tools/sdk.map \
+	--wrap=aicwf_log_printf \
+	--wrap=platform_test_module_severity \
+	--wrap=aicwf_hal_bus_pwr_stctl \
+	--wrap=udp_sendto \
+	--wrap=fhost_wpa_disassociate_sta \
+	--wrap=fhost_tx_do_sta_del \
+	--wrap=rwnx_send_msg_tx \
+	--wrap=aicwf_driver_unexcepted \
+	--wrap=aicwf_hal_msg_push \
+	--wrap=iperf_cJSON_Print \
 	--plugin-opt=mcpu=r3 \
 	--plugin-opt=-mattr=+fprev1 \
 

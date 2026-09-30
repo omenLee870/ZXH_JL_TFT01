@@ -235,11 +235,8 @@ static int custom_att_write_callback(void *hdl, hci_con_handle_t connection_hand
 static u8 custom_fill_adv_data(u8 *adv_data)
 {
     u8 offset = 0;
-    const char *name_p = bt_get_local_name();
-    int name_len = strlen(name_p);
-    offset += make_eir_packet_data(&adv_data[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)name_p, name_len);
     if (offset > ADV_RSP_PACKET_MAX) {
-        puts("***rsp_data overflow!!!!!!\n");
+        puts("***adv_data overflow!!!!!!\n");
         return 0;
     }
     return offset;
@@ -247,7 +244,15 @@ static u8 custom_fill_adv_data(u8 *adv_data)
 
 static u8 custom_fill_rsp_data(u8 *rsp_data)
 {
-    return 0;
+    u8 offset = 0;
+    const char *name_p = bt_get_local_name();
+    int name_len = strlen(name_p);
+    offset += make_eir_packet_data(&rsp_data[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)name_p, name_len);
+    if (offset > ADV_RSP_PACKET_MAX) {
+        puts("***rsp_data overflow!!!!!!\n");
+        return 0;
+    }
+    return offset;
 }
 
 

@@ -428,7 +428,11 @@ static void _jlgpu_draw_image_normal_helper(lv_draw_task_t *t, const lv_draw_ima
         render_params.global_alpha = dsc->opa / 2;
     }
 
-    int32_t short_side = LV_MIN(width, height);
+    /* 圆角裁剪要按图像自己的外接矩形算, 不能用裁剪后的窗口:
+     * 脏区渲染时窗口可能只覆盖图像的一部分, 拿窗口算会把圆角画到窗口的角上。 */
+    int img_w = lv_area_get_width(&rel_image_tf_area);
+    int img_h = lv_area_get_height(&rel_image_tf_area);
+    int32_t short_side = LV_MIN(img_w, img_h);
     int32_t rout = LV_MIN(dsc->clip_radius, short_side >> 1);
 
     int edge_num = 0;
@@ -464,12 +468,12 @@ static void _jlgpu_draw_image_normal_helper(lv_draw_task_t *t, const lv_draw_ima
             jlgpu_matrix_set_identity(&matrix);
 
             //圆角矩圆中心点
-            roundgrad_param.point_center.x = blend_area.x1 + width / 2;
-            roundgrad_param.point_center.y = blend_area.y1 + height / 2;
+            roundgrad_param.point_center.x = rel_image_tf_area.x1 + img_w / 2;
+            roundgrad_param.point_center.y = rel_image_tf_area.y1 + img_h / 2;
 
             //内框
-            roundgrad_param.in_width  = (width - 2 * rout);
-            roundgrad_param.in_height = (height - 2 * rout);
+            roundgrad_param.in_width  = (img_w - 2 * rout);
+            roundgrad_param.in_height = (img_h - 2 * rout);
 
             //内外
             roundgrad_param.in_radius  = rout;
@@ -520,7 +524,7 @@ static void _jlgpu_draw_image_normal_helper(lv_draw_task_t *t, const lv_draw_ima
             jlgpu_vec_t *rect_path = lv_jlgpu_path_get(u);
             lv_jlgpu_path_set_bez_div(rect_path, LV_MIN(path_div, global_max_bez_div));
 
-            jlgpu_path_append_rect(rect_path, (float)blend_area.x1, (float)blend_area.y1, width, height, rout);
+            jlgpu_path_append_rect(rect_path, (float)rel_image_tf_area.x1, (float)rel_image_tf_area.y1, img_w, img_h, rout);
             jlgpu_path_end(rect_path);
 
             edge_num = rect_path->edge_num;
@@ -1132,7 +1136,7 @@ static bool _jlgpu_draw_image_transform_helper(lv_draw_task_t *t, const lv_draw_
             jlgpu_vec_t *rect_path = lv_jlgpu_path_get(u);
             lv_jlgpu_path_set_bez_div(rect_path, LV_MIN(path_div, global_max_bez_div));
 
-            jlgpu_path_append_rect(rect_path, (float)blend_area.x1, (float)blend_area.y1, width, height, rout);
+            jlgpu_path_append_rect(rect_path, (float)src_area.x1, (float)src_area.y1, src_width, src_height, rout);
             jlgpu_path_end(rect_path);
 
             edge_num = rect_path->edge_num;

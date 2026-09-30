@@ -29,8 +29,8 @@
 
 #define VC30Fx_FREQUENCY_MAX 20000
 #define VC30Fx_FREQUENCY_MIN 19900
-//#define VC30Fx_CFG_MCU_TICK_FREQUENCY 32000 // counter 32K
-extern unsigned short int VC30Fx_CFG_MCU_TICK_FREQUENCY; /* extern unsigned short int VC30Fx_CFG_MCU_TICK_FREQUENCY; */
+/* MCU tick 频率，定义在 vc30fx_hw_driver.c；须与 vc30fx_get_cputimer_tick() 的 /20 一致 */
+extern unsigned short int VC30Fx_CFG_MCU_TICK_FREQUENCY;
 #define VC30Fx_CFG_MCU_TICK_MAX 0xffffff    // 24-bit counters
 #define VC30Fx_CFG_CLK_CALC_DEVIATION 3
 #define VC30Fx_CFG_CLK_CALC_GAPTIME 10 // interrupt gap times( 25hz_fifo_irq:20*40~0.4sec; 5hz_fifo_irq: 20*200 ~ 2sec; 1.25hz_fifo_irq: 10*800 ~ 8sec )

@@ -161,6 +161,12 @@
 #define M2P_AES128     								    M2P_MESSAGE_ACCESS(105)
 #define M2P_CCM_V3     								    M2P_MESSAGE_ACCESS(106)
 
+//==================edr start info==========================
+#define M2P_EDR_START_INFO_ADDR0                            M2P_MESSAGE_ACCESS(107)
+#define M2P_EDR_START_INFO_ADDR1                            M2P_MESSAGE_ACCESS(108)
+#define M2P_EDR_START_INFO_ADDR2                            M2P_MESSAGE_ACCESS(109)
+#define M2P_EDR_START_INFO_ADDR3                            M2P_MESSAGE_ACCESS(110)
+
 //===========================================================================//
 //                              P2P MESSAGE TABLE                            //
 //===========================================================================//
@@ -212,6 +218,7 @@ enum {
     M2P_VAD_INDEX = F_M2P_INT_OFFSET_START * 2, // int8
     M2P_F_APP_INDEX,
     M2P_F_POWER_INDEX,
+    M2P_F_BT_IOCTL_INDEX,
 };
 
 #define M2P_IDX_MASK_CMAC_S	(0x00000003)

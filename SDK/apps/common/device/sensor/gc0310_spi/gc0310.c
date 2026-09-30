@@ -669,10 +669,10 @@ static void GC0310_reset(u8 isp_dev)
 
 s32 GC0310_check(u8 isp_dev, u32 _reset_gpio, u32 _power_gpio, char *iic_name)
 {
-    if (iic_init_state == -1) {
-        /* 摄像头 VCC 上电 */
-        GC0310_vcc_power_set(1);
+    /* disable_dev 会断电但不重置 iic_init_state, 每次 check 都要重新上电 */
+    GC0310_vcc_power_set(1);
 
+    if (iic_init_state == -1) {
         struct iic_master_config iic_config = {
             .role = IIC_MASTER,
             .scl_io = TCFG_CAMERA_SPI_SCL,
@@ -693,6 +693,7 @@ s32 GC0310_check(u8 isp_dev, u32 _reset_gpio, u32 _power_gpio, char *iic_name)
 
     if (iic_init_state != IIC_OK) {
         printf("GC0310 iic open err!!!\n\n");
+        GC0310_vcc_power_set(0);
         return -1;
     }
 
@@ -702,6 +703,7 @@ s32 GC0310_check(u8 isp_dev, u32 _reset_gpio, u32 _power_gpio, char *iic_name)
         printf("-------not GC0310------\n\n");
         iic_deinit(iic_dev);
         iic_init_state = -1;
+        GC0310_vcc_power_set(0);
         return -1;
     }
 

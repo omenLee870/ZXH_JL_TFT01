@@ -31,6 +31,8 @@
 #include "app_ancbox.h"
 #endif
 
+#include "health_manager/health_manager.h"
+
 #define LOG_TAG             "[APP_IDLE]"
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
@@ -434,6 +436,16 @@ static void app_idle_enter_softoff(void)
     //power off前的ui处理
     power_off_wait_ui();
     //ui_update_status(STATUS_POWEROFF);
+
+#if TCFG_SPORT_HEALTH_ENABLE && TCFG_SPORT_HEALTH_SAVE_ON_POWEROFF
+    /* pmc_gsensor: 主动关机前把运动健康数据落盘（REQ-006）。
+     * 本函数是 PLAY_POWEROFF / WAIT_POWEROFF(TWS) / 非BT 三条关机路径的唯一汇聚点。
+     * 内部带总等待上限（SHM_POWEROFF_SAVE_BUDGET_MS），超时即放弃继续关机。
+     * 失败只告警不阻断关机：优先保证关机不被拖死。 */
+    if (sport_health_manager_save_all_on_poweroff()) {
+        log_warn("health data save on poweroff incomplete");
+    }
+#endif
 
 #if TCFG_CHARGE_ENABLE
     if (get_lvcmp_det() && (0 == get_charge_full_flag())) {

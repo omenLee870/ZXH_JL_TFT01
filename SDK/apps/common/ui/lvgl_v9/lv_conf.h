@@ -438,6 +438,17 @@
 #define JLGPU_RENDER_QUALITY  JLGPU_RENDERING_QUALITY_MSAA_8X
 #define JLGPU_PATH_MSAA_LVL  JLGPU_RENDERING_QUALITY_MSAA_8X
 
+/*
+ * 矢量绘制优化开关(仅影响非显示缓冲区目标, 即 layer/canvas 的立即绘制路径):
+ *   1 = 按每条 path 的真实包围盒收窄 render_area, 并把整批 path 合并成一次 jlgpu_run;
+ *   0 = 旧行为: 每条 path 一次同步 GPU 全流程(ctx init + GPU 复位 + 阻塞 run + teardown)。
+ * 置 0 仅用于对比验证。
+ */
+#define JLGPU_VEC_BATCH_EN 1
+
+/* 单批最多挂多少个任务节点。uint8_t 的任务计数约定上限为 255, 且限制单批的边缘内存占用。 */
+#define JLGPU_VEC_BATCH_CHUNK 255
+
 //lvgl内存池使用psram
 #define LV_USE_STDLIB_MALLOC_FROM_PSRAM 0
 
@@ -1100,8 +1111,12 @@
 #define LV_FREETYPE_USE_LVGL_PORT 0
 
 /** Cache count of glyphs in FreeType, i.e. number of glyphs that can be cached.
- *  The higher the value, the more memory will be used. */
-#define LV_FREETYPE_CACHE_FT_GLYPH_CNT 64
+ *  The higher the value, the more memory will be used.
+ *  注意这是"允许缓存多少条"的上限, lv_cache 按需增长, 不会预分配。
+ *  地图上一屏中文 label 的去重字符数在 200 上下, 原来的 64 会让两个缓存
+ *  (glyph dsc = 本值*2, 字形位图 = 本值)每帧反复抖动; 而 ttf 在 SD 卡上,
+ *  每次抖动都要按 glyph 偏移随机读 glyf 表, 实测约 12ms/字形。 */
+#define LV_FREETYPE_CACHE_FT_GLYPH_CNT 512
 #endif
 
 /** Built-in TTF decoder */
@@ -1635,6 +1650,9 @@
 #define LV_USE_DEMO_AMAP 0
 #define AMAP_USE_CANVAS 1
 #define AMAP_OPEN_INFO 0
+
+/* iMLite Map (圆周率) map demo*/
+#define LV_USE_DEMO_iMLite_Map 0
 
 /*--END OF LV_CONF_H--*/
 

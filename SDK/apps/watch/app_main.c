@@ -209,16 +209,23 @@ const struct task_info task_info_table[] = {
 #if TCFG_NETWORK_ENABLE
     {"tcpip_thread",    11,  1,  1024,  256},
 #if TCFG_EXT_WIFI_ENABLE
+    {"iperf_test",    11,  1,  1024,  0},
     {"sdio_irq_thread",    8,  1,  1024,  256},
     {"ext_wifi_app_task",    10,  1,  1024,  64},
 #if TCFG_AIC8800D40_ENABLE
-    {"sdio_rx_task",	9, 	1,	2048,	256},
+    /* Must match the vendor rtos_al.c task_create/task_kill resource model. */
+    {"aicwf_sdio_rx_task", 9,  1,  2048, 256},
     {"fhost_cntrl_task",    9,  1,  2048,   256},
     {"fhost_rx_task",    9,  1,  2048,   256},
-    {"fhost_wpa_task",    8,  1,  2048,   256},
+    {"fhost_wpa_task",     8,  1,  4096, 256},
     {"fhost_tx_task",    8,  1,  2048,   256},
     {"cli_cmd_task",    5,  1,  2048,   256},
-    {"apm_staloss_task",    8,  1,  2048,  256},
+    {"apm_task",           8,  1,  2048, 256},
+    {"rwnx_timer_task",    8,  1,  1024, 128},
+    {"p2p_dhcp_tx",        7,  1,  1024, 128},
+    {"aic_ap_evt",         5,  1,  1024, 128},
+    {"ap_p2p_life",        5,  1,  1024, 128},
+    {"aic_p2p_go",         5,  1,  2048, 128},
 #elif TCFG_RTL8733BS_ENABLE
     /* RTL8733BS WiFi driver threads */
     {"usb_recv_task",           7,     1,  1024,  0},
@@ -449,7 +456,7 @@ static struct app_mode *app_task_init()
     do_early_initcall();
     board_init();
 
-    tzflash_change_mode();//dtr(clk),continue,wps
+    /* tzflash_change_mode();//dtr(clk),continue,wps */
 
     do_platform_initcall();
 
@@ -811,6 +818,9 @@ int app_get_message(int *msg, int max_num, const struct key_remap_table *key_tab
 void mem_printf(void *priv)
 {
     mem_stats();
+    /* wifi驱动内存使用情况 */
+    //extern void aicwf_rtos_wifi_heap_dump(const char *tag);
+    //aicwf_rtos_wifi_heap_dump(NULL);
 }
 
 void task_info_cb(void *p)
@@ -825,7 +835,7 @@ static void app_task_loop(void *p)
 
     printf("app_task_loop\n");
 
-    /* sys_timer_add(NULL, mem_printf, 1000); */
+    //sys_timer_add(NULL, mem_printf, 1000);
     mode = app_task_init();
 
     /* sys_timer_add(NULL, task_info_cb, 500); */

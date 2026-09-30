@@ -6,199 +6,199 @@
 
 typedef struct {
     volatile unsigned int dmm_en : 1;
-        volatile unsigned int sfr_update : 1;
-        volatile unsigned int sfr_busy : 1;
-        volatile unsigned int dmm_busy : 1;
-        volatile unsigned int dmm_kst : 1;
-        volatile unsigned int dmm_continuous : 1;
-        volatile unsigned int dmm_stop : 1;
-        volatile unsigned int sw_ctl : 1;
-        volatile unsigned int sw_done : 1;
-        volatile unsigned int unuse0 : 23;
-    } DMM_CON0;
+    volatile unsigned int sfr_update : 1;
+    volatile unsigned int sfr_busy : 1;
+    volatile unsigned int dmm_busy : 1;
+    volatile unsigned int dmm_kst : 1;
+    volatile unsigned int dmm_continuous : 1;
+    volatile unsigned int dmm_stop : 1;
+    volatile unsigned int sw_ctl : 1;
+    volatile unsigned int sw_done : 1;
+    volatile unsigned int unuse0 : 23;
+} DMM_CON0;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int fst_ie : 1;
-        volatile unsigned int sfr_ie : 1;
-        volatile unsigned int fend_ie : 1;
-        volatile unsigned int line_ie : 1;
-        volatile unsigned int buf_ie : 1;
-        volatile unsigned int soft_ie : 1;
-        volatile unsigned int stop_ie : 1;
-        volatile unsigned int unuse0 : 25;
-    } DMM_PND_IE;
+    volatile unsigned int sfr_ie : 1;
+    volatile unsigned int fend_ie : 1;
+    volatile unsigned int line_ie : 1;
+    volatile unsigned int buf_ie : 1;
+    volatile unsigned int soft_ie : 1;
+    volatile unsigned int stop_ie : 1;
+    volatile unsigned int unuse0 : 25;
+} DMM_PND_IE;
 
 
-    typedef struct {
+typedef struct {
     volatile unsigned int fst_clr : 1;
-        volatile unsigned int sfr_clr : 1;
-        volatile unsigned int fend_clr : 1;
-        volatile unsigned int line_clr : 1;
-        volatile unsigned int buf_clr : 1;
-        volatile unsigned int soft_clr : 1;
-        volatile unsigned int stop_clr : 1;
-        volatile unsigned int unuse0 : 25;
-    } DMM_PND_CLR;
+    volatile unsigned int sfr_clr : 1;
+    volatile unsigned int fend_clr : 1;
+    volatile unsigned int line_clr : 1;
+    volatile unsigned int buf_clr : 1;
+    volatile unsigned int soft_clr : 1;
+    volatile unsigned int stop_clr : 1;
+    volatile unsigned int unuse0 : 25;
+} DMM_PND_CLR;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int fst_pnd : 1;
-        volatile unsigned int sfr_pnd : 1;
-        volatile unsigned int fend_pnd : 1;
-        volatile unsigned int line_pnd : 1;
-        volatile unsigned int buf_pnd : 1;
-        volatile unsigned int soft_pnd : 1;
-        volatile unsigned int stop_pnd : 1;
-        volatile unsigned int unuse0 : 25;
-    } DMM_PND;
+    volatile unsigned int sfr_pnd : 1;
+    volatile unsigned int fend_pnd : 1;
+    volatile unsigned int line_pnd : 1;
+    volatile unsigned int buf_pnd : 1;
+    volatile unsigned int soft_pnd : 1;
+    volatile unsigned int stop_pnd : 1;
+    volatile unsigned int unuse0 : 25;
+} DMM_PND;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int line : 13;
-        volatile unsigned int unuse0 : 19;
-    } DMM_Line_TAR;
+    volatile unsigned int unuse0 : 19;
+} DMM_Line_TAR;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int slice_buf : 1;
-        volatile unsigned int slice_first : 1;
-        volatile unsigned int slice_last : 1;
-        volatile unsigned int slice_width : 13;
-        volatile unsigned int slice_height : 13;
-        volatile unsigned int unuse0 : 3;
-    } DMM_SLICE_CON;
+    volatile unsigned int slice_first : 1;
+    volatile unsigned int slice_last : 1;
+    volatile unsigned int slice_width : 13;
+    volatile unsigned int slice_height : 13;
+    volatile unsigned int unuse0 : 3;
+} DMM_SLICE_CON;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int slice_adr : 32;
-    } DMM_SLICE_ADR;
+} DMM_SLICE_ADR;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in_color_fmt : 5;
-        volatile unsigned int in_big_endian : 1;
-        volatile unsigned int in_rb_swap : 1;
-        volatile unsigned int in_alpha_end : 1;
-        volatile unsigned int in_adr_mode : 1;
-        volatile unsigned int in_src_mode : 2;
-        volatile unsigned int in_jstc_en : 1;
-        volatile unsigned int unuse0 : 4;
-        volatile unsigned int out_color_fmt : 5;
-        volatile unsigned int out_big_endian : 1;
-        volatile unsigned int out_rb_swap : 1;
-        volatile unsigned int dither_en : 1;
-        volatile unsigned int out_buf_line : 5;
-        volatile unsigned int unuse1 : 3;
-    } DMM_CON1;
+    volatile unsigned int in_big_endian : 1;
+    volatile unsigned int in_rb_swap : 1;
+    volatile unsigned int in_alpha_end : 1;
+    volatile unsigned int in_adr_mode : 1;
+    volatile unsigned int in_src_mode : 2;
+    volatile unsigned int in_jstc_en : 1;
+    volatile unsigned int unuse0 : 4;
+    volatile unsigned int out_color_fmt : 5;
+    volatile unsigned int out_big_endian : 1;
+    volatile unsigned int out_rb_swap : 1;
+    volatile unsigned int dither_en : 1;
+    volatile unsigned int out_buf_line : 5;
+    volatile unsigned int unuse1 : 3;
+} DMM_CON1;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in0_x_st : 13;
-        volatile unsigned int unuse0 : 3;
-        volatile unsigned int in0_y_st : 13;
-        volatile unsigned int unuse1 : 3;
-    } DMM_IN0_ST;
+    volatile unsigned int unuse0 : 3;
+    volatile unsigned int in0_y_st : 13;
+    volatile unsigned int unuse1 : 3;
+} DMM_IN0_ST;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in0_x_end : 13;
-        volatile unsigned int unuse0 : 3;
-        volatile unsigned int in0_y_end : 13;
-        volatile unsigned int unuse1 : 3;
-    } DMM_IN0_END;
+    volatile unsigned int unuse0 : 3;
+    volatile unsigned int in0_y_end : 13;
+    volatile unsigned int unuse1 : 3;
+} DMM_IN0_END;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in0_stride : 17;
-        volatile unsigned int unuse0 : 15;
-    } DMM_IN0_STRIDE;
+    volatile unsigned int unuse0 : 15;
+} DMM_IN0_STRIDE;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in0_base : 32;
-    } DMM_IN0_BASE;
+} DMM_IN0_BASE;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in0_base_uv : 32;
-    } DMM_IN0_BASE_UV;
+} DMM_IN0_BASE_UV;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in1_x_st : 13;
-        volatile unsigned int unuse0 : 3;
-        volatile unsigned int in1_y_st : 13;
-        volatile unsigned int unuse1 : 3;
-    } DMM_IN1_ST;
+    volatile unsigned int unuse0 : 3;
+    volatile unsigned int in1_y_st : 13;
+    volatile unsigned int unuse1 : 3;
+} DMM_IN1_ST;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in1_x_end : 13;
-        volatile unsigned int unuse0 : 3;
-        volatile unsigned int in1_y_end : 13;
-        volatile unsigned int unuse1 : 3;
-    } DMM_IN1_END;
+    volatile unsigned int unuse0 : 3;
+    volatile unsigned int in1_y_end : 13;
+    volatile unsigned int unuse1 : 3;
+} DMM_IN1_END;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in1_stride : 17;
-        volatile unsigned int unuse0 : 15;
-    } DMM_IN1_STRIDE;
+    volatile unsigned int unuse0 : 15;
+} DMM_IN1_STRIDE;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in1_base : 32;
-    } DMM_IN1_BASE;
+} DMM_IN1_BASE;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int in1_base_uv : 32;
-    } DMM_IN1_BASE_UV;
+} DMM_IN1_BASE_UV;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int out_stride : 15;
-        volatile unsigned int unuse0 : 17;
-    } DMM_OUT_STRIDE;
+    volatile unsigned int unuse0 : 17;
+} DMM_OUT_STRIDE;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int out_base : 32;
-    } DMM_OUT_BASE0;
+} DMM_OUT_BASE0;
 
-    typedef struct {
+typedef struct {
     volatile unsigned int out_base : 32;
-    } DMM_OUT_BASE1;
+} DMM_OUT_BASE1;
 
-    typedef struct {
+typedef struct {
     volatile int ccm00 : 16;
-        volatile int ccm01 : 16;
-    } DMM_CCM0_CON0;
+    volatile int ccm01 : 16;
+} DMM_CCM0_CON0;
 
-    typedef struct {
+typedef struct {
     volatile int ccm02 : 16;
-        volatile unsigned int unuse0 : 16;
-    } DMM_CCM0_CON1;
+    volatile unsigned int unuse0 : 16;
+} DMM_CCM0_CON1;
 
-    typedef struct {
+typedef struct {
     volatile int ccm03 : 22;
-        volatile unsigned int unuse0 : 10;
-    } DMM_CCM0_CON2;
+    volatile unsigned int unuse0 : 10;
+} DMM_CCM0_CON2;
 
-    typedef struct {
+typedef struct {
     volatile int ccm10 : 16;
-        volatile int ccm11 : 16;
-    } DMM_CCM1_CON0;
+    volatile int ccm11 : 16;
+} DMM_CCM1_CON0;
 
-    typedef struct {
+typedef struct {
     volatile int ccm12 : 16;
-        volatile unsigned int unuse0 : 16;
-    } DMM_CCM1_CON1;
+    volatile unsigned int unuse0 : 16;
+} DMM_CCM1_CON1;
 
-    typedef struct {
+typedef struct {
     volatile int ccm13 : 22;
-        volatile unsigned int unuse0 : 10;
-    } DMM_CCM1_CON2;
+    volatile unsigned int unuse0 : 10;
+} DMM_CCM1_CON2;
 
-    typedef struct {
+typedef struct {
     volatile int ccm20 : 16;
-        volatile int ccm21 : 16;
-    } DMM_CCM2_CON0;
+    volatile int ccm21 : 16;
+} DMM_CCM2_CON0;
 
-    typedef struct {
+typedef struct {
     volatile int ccm22 : 16;
-        volatile unsigned int unuse0 : 16;
-    } DMM_CCM2_CON1;
+    volatile unsigned int unuse0 : 16;
+} DMM_CCM2_CON1;
 
-    typedef struct {
+typedef struct {
     volatile int ccm23 : 22;
-        volatile unsigned int unuse0 : 10;
-    } DMM_CCM2_CON2;
+    volatile unsigned int unuse0 : 10;
+} DMM_CCM2_CON2;
 
-    typedef struct {
+typedef struct {
     uint8_t gamma_lut[256];
 } DMM_LUT_DATA;
 
@@ -401,6 +401,9 @@ int JLDMM_run_slice();
 int JLDMM_wait_done_slice();
 int JLDMM_wait_sfr_finish();
 void JLDMM_set_no_wait_vsync(uint8_t no_wait_vsync);
+/* 预置 JLDMM_wait_done() 所用 frame 信号量的计数: SPI/MCU 屏(单帧模式)首帧置 1,
+ * 让"先 wait_done 再 run"的首帧不必等一个还没发生的 frame end */
+void JLDMM_set_frame_sem(uint8_t cnt);
 
 int JLDMM_register_callback(const dmm_callback_t *callbacks);
 

@@ -446,6 +446,35 @@
 #define TCFG_IMUSENSOR_ENABLE					DISABLE_THIS_MOUDLE
 #endif
 
+/* PMC(小核) 算法总开关及 P11 侧运动健康算法/佩戴检测开关，未定义时默认关闭 */
+#ifndef TCFG_SPORT_HEALTH_PMC_ALGO
+#define TCFG_SPORT_HEALTH_PMC_ALGO				DISABLE_THIS_MOUDLE
+#endif
+#ifndef TCFG_SPORT_HEALTH_P11_ALGO_GSENSOR
+#define TCFG_SPORT_HEALTH_P11_ALGO_GSENSOR		TCFG_SPORT_HEALTH_PMC_ALGO
+#endif
+#ifndef TCFG_SPORT_HEALTH_P11_ALGO_HEART_RATE
+#define TCFG_SPORT_HEALTH_P11_ALGO_HEART_RATE	TCFG_SPORT_HEALTH_PMC_ALGO
+#endif
+#ifndef TCFG_SPORT_HEALTH_P11_ALGO_SPO2
+#define TCFG_SPORT_HEALTH_P11_ALGO_SPO2			TCFG_SPORT_HEALTH_PMC_ALGO
+#endif
+#ifndef TCFG_SPORT_HEALTH_P11_DET_WEAR
+#define TCFG_SPORT_HEALTH_P11_DET_WEAR			TCFG_SPORT_HEALTH_PMC_ALGO
+#endif
+#ifndef TCFG_SPORT_HEALTH_DET_WEAR
+#define TCFG_SPORT_HEALTH_DET_WEAR				DISABLE_THIS_MOUDLE
+#endif
+/* 关机前保存 sensor 数据：默认打开。实际生效还须 TCFG_SPORT_HEALTH_ENABLE 打开，
+ * 两条件都满足才会在关机路径请求各模块落盘（见 mode/idle/idle.c）。 */
+#ifndef TCFG_SPORT_HEALTH_SAVE_ON_POWEROFF
+#define TCFG_SPORT_HEALTH_SAVE_ON_POWEROFF		ENABLE
+#endif
+/* pmc 算法数据更新节奏 ms，默认 1s */
+#ifndef TCFG_SPORT_HEALTH_UPDATE_PERIOD_MS
+#define TCFG_SPORT_HEALTH_UPDATE_PERIOD_MS		1000
+#endif
+
 //*********************************************************************************//
 //						        BT CONFIG                                          //
 //*********************************************************************************//

@@ -72,6 +72,10 @@ LOG_TAG_CONST_DECLARE(LOG_CHAR,     LOG_TAG_CONST);
     if (LOG_IS_ENABLE(LOG_DEBUG)) \
         printf_buf(x, y)
 
+#define log_warn(format, ...)       \
+    if (LOG_IS_ENABLE(LOG_WARN)) \
+        log_print("[Warn] " _LOG_TAG format "\r\n", ## __VA_ARGS__)
+
 #define log_error(format, ...)       \
     if (LOG_IS_ENABLE(LOG_ERROR)) \
         log_print("<Error> " _LOG_TAG format "\r\n", ## __VA_ARGS__)

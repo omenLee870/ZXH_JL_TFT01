@@ -4,7 +4,7 @@
 #include "system/event.h"
 
 #define DIAL_PRJ_UUDI_LEN   (36+1)  //Example: "c0f95f48-14fd-4344-9fbf-effbb701473c"
-#define DIAL_VERSION_ID     (4+1)   //Example: "W003"
+#define DIAL_VERSION_ID     (4+1)   //Example: "W004"
 
 
 //*----------------------------------------------------------------------------*/

@@ -503,6 +503,13 @@ void jlgpu_path_reset(jlgpu_vec_t *path)
     path->total_len = 0;
     path->edge_num = 0;
     /*path->bez_div = bez_div;*/
+
+    /* path_bbox 必须一起清零: 复用的 global_path 靠它给出"本条路径"的包围盒,
+     * 漏掉这步会跨路径累加, 包围盒只增不减。 */
+    path->path_bbox.x_min = JLGPU_FLOAT32_MAX;
+    path->path_bbox.y_min = JLGPU_FLOAT32_MAX;
+    path->path_bbox.x_max = JLGPU_FLOAT32_MIN;
+    path->path_bbox.y_max = JLGPU_FLOAT32_MIN;
 }
 
 void jlgpu_path_append_arc_right_angle(jlgpu_vec_t *path,
@@ -648,7 +655,10 @@ static void jlgpu_path_reserve_space(jlgpu_vec_t *path, int size)
         /*printf("size == %d\n",size);*/
         printf("fixme\n");
         // 所需内存大于当前path容量，需重新申请。合理配置 JLGPU_PATH_DEFAULT_SIZE 和 JLGPU_PATH_GROWTH_STEPS 可以减少进这个if
-        void *old_path = path->base; // 原先的path先记录下来
+        uint8_t *old_path = path->base; // 原先的path先记录下来
+        size_t seg_ofs = (size_t)(path->cur_seg - old_path);
+        size_t coord_ofs = (size_t)((uint8_t *)path->cur_coord - old_path);
+
         if (size < JLGPU_PATH_GROWTH_STEPS) {
             path->capacity += JLGPU_PATH_GROWTH_STEPS; // 如果要预留的size小于增长步进，则增长一个步进
         } else {
@@ -660,6 +670,8 @@ static void jlgpu_path_reserve_space(jlgpu_vec_t *path, int size)
         path->base = lv_malloc_zeroed(path->capacity); // 申请新的缓存buf
 
         memcpy(path->base, old_path, path->total_len); // 把旧的path拷贝到新的缓存buf
+        path->cur_seg = path->base + seg_ofs;
+        path->cur_coord = (int16_t *)(path->base + coord_ofs);
         lv_free(old_path); // 释放原先的path
     }
 

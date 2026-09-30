@@ -99,7 +99,7 @@
 #define	FTS_MAX_POINTS_SUPPORT						1
 
 #define TP_FPS			60
-#define TP_HOLD_MOVE_TOLERANCE	5	/*! HOLD 事件判定: 允许的抖动像素容差 */
+#define TP_HOLD_MOVE_TOLERANCE	8	/*! HOLD 事件判定: 允许的抖动像素容差 */
 
 
 #define VK_MIN			(VK_X < VK_Y ? VK_X : VK_Y)

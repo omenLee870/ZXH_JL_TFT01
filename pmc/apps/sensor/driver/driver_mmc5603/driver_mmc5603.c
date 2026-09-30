@@ -1,5 +1,6 @@
 #include "sdk_config.h"
 #include "sensor_driver.h"
+#include "sensor_seg.h"
 
 #if CONFIG_SENSOR_DRIVER_ENABLE && TCFG_MMC5603_ENABLE
 
@@ -8,9 +9,10 @@
 #define IIC_ADDR_W          (0x30 << 1 | 0x0)
 #define IIC_ADDR_R          (0x30 << 1 | 0x1)
 
-static axis_data_t sensor_data[50];
+/* 基准 50 帧；SENSOR_FIFO_DEPTH 按 REQ-002 预留 1.2 倍余量（50 -> 60），reader 数不变 */
+static axis_data_t sensor_data[SENSOR_FIFO_DEPTH(50)];
 static cbuffer_t   sensor_cbuffer;
-static cbuffer_child_t entry[1];//支持3个成员读取
+static cbuffer_child_t entry[1];//支持1个成员读取
 
 static sensor_info_t sensor_info = {
     .type    = SENSOR_DRV_MAGNETIC,

@@ -252,10 +252,12 @@ int rcsp_make_set_rsp_data(void)
 #endif
 
 
-    u8 name_len = strlen(edr_name) + 1;
-    if (offset + 2 + name_len > ADV_RSP_PACKET_MAX) {
-        log_error("***rsp_data overflow!!!!!!\n");
-        return -1;
+//更新ble蓝牙名限制
+    u8 name_len = strlen(edr_name);
+    u8 name_max = (offset + 2 < ADV_RSP_PACKET_MAX) ? (ADV_RSP_PACKET_MAX - offset - 2) : 0;
+    if (name_len > name_max) {
+        log_error("rsp_data name truncate: %d -> %d\n", (int)name_len, (int)name_max);
+        name_len = name_max;
     }
     offset += make_eir_packet_data(&buf[offset], offset, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME, (void *)edr_name, name_len);
     scan_rsp_data_len = offset;

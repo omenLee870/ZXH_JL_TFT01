@@ -244,13 +244,18 @@ void user_get_bt_music_info(u8 type, u32 time, u8 *info, u16 len)
     }
 #if TCFG_BT_SUPPORT_BIP == 1
     if (type == 3) {
-        static u8 music_id_3[255] = {0};
-        if (memcmp(music_id_3, info, len) != 0) {
-            printf("get image");
-            /* bt_cmd_prepare(USER_CTRL_BIP_GET_IMAGE, 0, NULL); */
-            bip_update_pic_file();
+        static u8 music_id_3[255] = { 0 };
+
+        /* 有时候会收到一些乱码数据，len 超过缓冲区长度会导致越界访问触发 mmu 异常，
+         * 这里统一做长度限制，memcmp / memcpy 都要在范围内操作 */
+        if (len <= sizeof(music_id_3)) {
+            if (memcmp(music_id_3, info, len) != 0) {
+                printf("get image");
+                /* bt_cmd_prepare(USER_CTRL_BIP_GET_IMAGE, 0, NULL); */
+                bip_update_pic_file();
+            }
+            memcpy(music_id_3, info, len);
         }
-        memcpy(music_id_3, info, len);
     }
 #endif
 

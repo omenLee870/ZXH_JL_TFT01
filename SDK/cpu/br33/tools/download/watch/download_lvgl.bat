@@ -12,11 +12,13 @@ del stream.bin
 del tone_en.cfg
 del tone_zh.cfg
 
-@rem ¼ì²é²¢É¾³ý ui_lvgl_res ÎÄ¼þ¼Ð£¨Èç¹û´æÔÚ£©
+@rem æ£€æŸ¥å¹¶åˆ é™¤ ui_lvgl_resã€ui_dial_res æ–‡ä»¶å¤¹ï¼ˆå¦‚æžœå­˜åœ¨ï¼‰
 if exist ui_lvgl_res (
     rmdir /s /q ui_lvgl_res
 )
-
+if exist ui_dial_res (
+    rmdir /s /q ui_dial_res
+)
 
 mkdir ui_lvgl_res
 
@@ -29,11 +31,26 @@ copy ..\..\isd_config.ini .
 copy ..\..\p11_code.bin .
 copy ..\..\flash_params_v2.bin .
 copy ..\..\flash_params_v3.bin .
-copy ..\..\json.txt .
+copy ..\..\json_watch_lvgl.txt json.txt
 copy ..\..\cfg_tool.bin watch.bin
 
-
+@rem å…ˆæŠŠå¤–éƒ¨ ui_lvgl_res èµ„æºå…¨éƒ¨å¤åˆ¶è¿›æ¥
 copy ..\..\ui_lvgl_res\*.*   .\ui_lvgl_res\
+
+@rem ============================================================
+@rem æ£€æµ‹ ui_lvgl_res ä¸‹æ˜¯å¦æœ‰ .dyn / .json æ–‡ä»¶
+@rem æœ‰åˆ™åˆ›å»º ui_dial_resï¼Œå¹¶ä»¥å‰ªåˆ‡æ–¹å¼ç§»å…¥
+@rem ============================================================
+set HAS_DIAL_RES=
+for %%F in (ui_lvgl_res\*.dyn ui_lvgl_res\*.json) do (
+    if exist "%%F" set HAS_DIAL_RES=1
+)
+
+if defined HAS_DIAL_RES (
+    mkdir ui_dial_res
+    move /y ui_lvgl_res\*.dyn ui_dial_res\ >nul 2>nul
+    move /y ui_lvgl_res\*.json ui_dial_res\ >nul 2>nul
+)
 
 
 ..\..\json_to_res.exe json.txt
@@ -64,6 +81,16 @@ if %FORMAT_ALL_ENABLE%A==1A set FORMAT=-format all
 
 ..\..\packres.exe -keep-suffix-case ui_lvgl_res -n lvgl -o lvgl
 
+@rem ============================================================
+@rem ä»…å½“ HAS_DIAL_RES å­˜åœ¨æ—¶ï¼Œæ‰æ‰§è¡Œè¡¨ç›˜èµ„æºæ‰“åŒ…ä¸Ž watch.bin ç”Ÿæˆ
+@rem ============================================================
+if defined HAS_DIAL_RES (
+    ..\..\packres.exe -keep-suffix-case ui_dial_res\watch1.dyn ui_dial_res\watch1.json -n res -o watch1
+    ..\..\packres.exe -keep-suffix-case ui_dial_res\watch2.dyn ui_dial_res\watch2.json -n res -o watch2
+    ::..\..\packres.exe -keep-suffix-case ui_dial_res\watch3.dyn ui_dial_res\watch3.json -n res -o watch3
+    ..\..\fat_comm.exe -pad-backup2 -force-align-fat -out watch.bin -image-size 8 -filelist watch1 watch2 -remove-empty -remove-bpb -mark-bad-after 0x528000  -address 0
+)
+
 copy /B lvgl mode.bin
 ..\..\packres.exe -n resfs -o resfs.bin -keep-suffix-case watch -aligned 4096 -normal
 
@@ -79,12 +106,9 @@ set RES_FILE_CMD=-res cfg_tool.bin p11_code.bin stream.bin config.dat
 set OUTPUT_CMD=-output-fw jl_isd.fw -output-ufw update.ufw
 set FLASH_CMD=-flash-params flash_params_v3.bin
 
-..\..\isd_download.exe %CHIP_CMD% -tone %TONE_FILES% %RES_FILE_CMD% %KEY_FILE% %FLASH_CMD% %OUTPUT_CMD% %FORMAT%
+..\..\isd_download.exe %CHIP_CMD% -tone %TONE_FILES% %RES_FILE_CMD% %KEY_FILE% %EX_FLASH_CMD% %FLASH_CMD% %OUTPUT_CMD% %FORMAT%
 
-
-
-
-@rem É¾³ýÁÙÊ±ÎÄ¼þ
+@rem åˆ é™¤ä¸´æ—¶æ–‡ä»¶
 if exist *.mp3 del *.mp3 
 if exist *.PIX del *.PIX
 if exist *.TAB del *.TAB
@@ -95,17 +119,14 @@ if exist *.anim del *.anim
 if exist *.view del *.view
 if exist *.json del *.json
 
-
-
 copy update.ufw %PROJ_DOWNLOAD_PATH%\update.ufw
 copy jl_isd.bin %PROJ_DOWNLOAD_PATH%\jl_isd.bin
 copy jl_isd.fw %PROJ_DOWNLOAD_PATH%\jl_isd.fw
 
-
-@rem ³£ÓÃÃüÁîËµÃ÷
-@rem -format vm        //²Á³ýVM ÇøÓò
-@rem -format cfg       //²Á³ýBT CFG ÇøÓò
-@rem -format 0x3f0-2   //±íÊ¾´ÓµÚ 0x3f0 ¸ö sector ¿ªÊ¼Á¬Ðø²Á³ý 2 ¸ö sector(µÚÒ»¸ö²ÎÊýÎª16½øÖÆ»ò10½øÖÆ¶¼¿É£¬µÚ¶þ¸ö²ÎÊý±ØÐëÊÇ10½øÖÆ)
+@rem å¸¸ç”¨å‘½ä»¤è¯´æ˜Ž
+@rem -format vm        //æ“¦é™¤VM åŒºåŸŸ
+@rem -format cfg       //æ“¦é™¤BT CFG åŒºåŸŸ
+@rem -format 0x3f0-2   //è¡¨ç¤ºä»Žç¬¬ 0x3f0 ä¸ª sector å¼€å§‹è¿žç»­æ“¦é™¤ 2 ä¸ª sector(ç¬¬ä¸€ä¸ªå‚æ•°ä¸º16è¿›åˆ¶æˆ–10è¿›åˆ¶éƒ½å¯ï¼Œç¬¬äºŒä¸ªå‚æ•°å¿…é¡»æ˜¯10è¿›åˆ¶)
 
 ping /n 2 127.1>null
 IF EXIST null del null

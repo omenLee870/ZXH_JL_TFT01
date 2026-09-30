@@ -52,6 +52,11 @@ SECTIONS
         sport_health_module_end = .;
 
 		. = ALIGN(4);
+        sensor_service_begin = .;
+		KEEP(*(.sensor_service))
+        sensor_service_end = .;
+
+		. = ALIGN(4);
         sensor_dev_begin = .;
 		KEEP(*(.sensor_dev))
         sensor_dev_end = .;

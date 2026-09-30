@@ -81,6 +81,8 @@ void stream_media_set_offline_nav_cb(stream_media_offline_nav_cb_t cb)
 static u8  g_proto_state = STREAM_STATE_IDLE;
 static u8  g_cmd_sn = 0;
 static u16 g_negotiated_mtu = 512;      // 协商后的流媒体传输 MTU
+static u16 g_heartbeat_timeout_id;
+static u8  g_heartbeat_session_active;
 
 u8 stream_media_core_get_state(void)
 {
@@ -102,6 +104,54 @@ static void set_state(u8 new_state)
     if (g_state_change_cb) {
         g_state_change_cb(old, new_state);
     }
+}
+
+static void heartbeat_watch_stop(void)
+{
+    g_heartbeat_session_active = 0;
+    if (g_heartbeat_timeout_id) {
+        sys_timeout_del(g_heartbeat_timeout_id);
+        g_heartbeat_timeout_id = 0;
+    }
+}
+
+static void heartbeat_timeout(void *priv)
+{
+    u8 was_streaming;
+
+    (void)priv;
+    g_heartbeat_timeout_id = 0;
+    if (!g_heartbeat_session_active) {
+        return;
+    }
+
+    g_heartbeat_session_active = 0;
+    was_streaming = (g_proto_state == STREAM_STATE_STREAMING);
+    printf("[SM] heartbeat timeout, stop session\n");
+    set_state(STREAM_STATE_IDLE);
+    if (was_streaming && g_stream_stop_cb) {
+        g_stream_stop_cb();
+    }
+}
+
+static void heartbeat_watch_arm(void)
+{
+    u32 timeout_ms = (u32)SM_CFG_HEARTBEAT_INTERVAL_MS *
+                     (u32)SM_CFG_HEARTBEAT_MISS_MAX;
+
+    if (g_heartbeat_timeout_id) {
+        sys_timeout_del(g_heartbeat_timeout_id);
+    }
+    g_heartbeat_timeout_id = sys_timeout_add(NULL, heartbeat_timeout,
+                             timeout_ms);
+}
+
+// 开启心跳会话（仅置标志，不启动看门狗）
+// 看门狗由 APP 的首个心跳触发：旧版 APP 不支持心跳，
+// 若 ENTER/START 后立即计时会被误判掉线而强制断流
+static void heartbeat_watch_start(void)
+{
+    g_heartbeat_session_active = 1;
 }
 
 // ============================================================================
@@ -167,12 +217,13 @@ static void handle_enter_cmd(const u8 *payload, u16 payload_len, u8 sn, u8 need_
 
         stream_media_cfg_get_device_info(&chip_type, &dev_type, &proto_ver, &fw_ver);
 
-        int total = stream_media_build_enter_resp(buf, sizeof(buf), sn, status, chip_type, dev_type, proto_ver, fw_ver);
+        int total = stream_media_build_enter_resp(buf, sizeof(buf), sn, status, chip_type, dev_type, proto_ver, fw_ver, SM_CFG_HEARTBEAT_INTERVAL_MS);
         if (total > 0) {
             send_cmd_resp(buf, total);
         }
     }
     set_state(STREAM_STATE_ENTERED);
+    heartbeat_watch_start();
 }
 
 static void handle_ctrl_query(const u8 *payload, u16 payload_len, u8 sn, u8 need_rsp)
@@ -237,6 +288,7 @@ static void handle_ctrl_start(const u8 *payload, u16 payload_len, u8 sn, u8 need
     }
     if (status == STREAM_MEDIA_ERR_OK) {
         set_state(STREAM_STATE_STREAMING);
+        heartbeat_watch_start();
         if (g_stream_start_cb) {
             g_stream_start_cb(&cfg);
         }
@@ -245,6 +297,7 @@ static void handle_ctrl_start(const u8 *payload, u16 payload_len, u8 sn, u8 need
 
 static void handle_ctrl_stop(const u8 *payload, u16 payload_len, u8 sn, u8 is_cmd)
 {
+    u8 was_streaming = (g_proto_state == STREAM_STATE_STREAMING);
     (void)payload;
     (void)payload_len;
     if (is_cmd) {
@@ -254,10 +307,35 @@ static void handle_ctrl_stop(const u8 *payload, u16 payload_len, u8 sn, u8 is_cm
             send_cmd_resp(buf, total);
         }
     }
-    if (g_stream_stop_cb) {
+    heartbeat_watch_stop();
+    if (was_streaming && g_stream_stop_cb) {
         g_stream_stop_cb();
     }
-    set_state(STREAM_STATE_ENTERED);
+    if (g_proto_state != STREAM_STATE_IDLE) {
+        set_state(STREAM_STATE_ENTERED);
+    }
+}
+
+static void handle_heartbeat_cmd(u16 payload_len, u8 sn)
+{
+    u8 buf[STREAM_MEDIA_CMD_MIN_LEN + 1];
+    u8 status = STREAM_MEDIA_ERR_OK;
+    int total;
+
+    printf("[SM] heartbeat recv, sn=0x%02x\n", sn);
+
+    if (payload_len != 0 || !g_heartbeat_session_active) {
+        status = STREAM_MEDIA_ERR_FAIL;
+    }
+
+    total = stream_media_build_heartbeat_resp(buf, sizeof(buf), sn, status);
+    if (total > 0) {
+        send_cmd_resp(buf, total);
+    }
+
+    if (status == STREAM_MEDIA_ERR_OK) {
+        heartbeat_watch_arm();
+    }
 }
 
 static void handle_ctrl_abnormal(const u8 *payload, u16 payload_len)
@@ -356,6 +434,11 @@ static void process_cmd_packet(const u8 *data, u16 data_len)
     case STREAM_MEDIA_OPCODE_OFFLINE_NAV:
         if (is_cmd) {
             handle_offline_nav_cmd(payload, payload_len, sn);
+        }
+        break;
+    case STREAM_MEDIA_OPCODE_HEARTBEAT:
+        if (is_cmd) {
+            handle_heartbeat_cmd(payload_len, sn);
         }
         break;
     default:
@@ -578,6 +661,8 @@ void stream_media_core_init(void)
     }
     g_core_inited = 1;
     g_negotiated_mtu = 512;
+    g_heartbeat_timeout_id = 0;
+    g_heartbeat_session_active = 0;
     set_state(STREAM_STATE_IDLE);
     g_cmd_sn = 0;
     media_spp_recv_handler_register(media_spp_on_recv_adapt);
@@ -585,12 +670,15 @@ void stream_media_core_init(void)
 
 void stream_media_core_exit(void)
 {
+    u8 was_streaming;
     if (!g_core_inited) {
         return;
     }
+    was_streaming = (g_proto_state == STREAM_STATE_STREAMING);
     g_core_inited = 0;
     media_spp_recv_handler_register(NULL);
-    if (g_stream_stop_cb) {
+    heartbeat_watch_stop();
+    if (was_streaming && g_stream_stop_cb) {
         g_stream_stop_cb();
     }
     set_state(STREAM_STATE_IDLE);

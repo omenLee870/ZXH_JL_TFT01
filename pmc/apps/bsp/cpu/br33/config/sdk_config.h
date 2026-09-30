@@ -17,6 +17,8 @@
 #define CONFIG_DEBUG_UART_TX_PIN                IO_PORTD_01
 #define CONFIG_DEBUG_UART_BAUD    		        1000000L
 
+#define TCFG_EXCEPTION_CODE_AT_FLASH            1 // 异常代码放FLASH
+
 //==========================================================//
 //                  AEC数据导出UART配置                     //
 // 参照 uartPcmSender.h 中 PCM_UART1_TX_PORT/BAUDRATE 模式  //
@@ -59,39 +61,82 @@
 //==========================================================//
 //                 		SENSOR驱动                      	//
 //==========================================================//
-//运动健康管理模块
+//★ 运动健康相关开关默认关闭（交付态保持 0），需要时按功能逐项打开
+//运动健康管理模块（总开关，0 = 关闭整条 sensor 链路）
 #define CONFIG_SPORT_HEALTH_MANAGER_ENABLE	0
 
 //common
 #define CONFIG_SENSOR_DRIVER_ENABLE         CONFIG_SPORT_HEALTH_MANAGER_ENABLE
 #define TCFG_SENSOR_HUB						CONFIG_SPORT_HEALTH_MANAGER_ENABLE
-#define CONFIG_SPORT_HEALTH_MANAGER_DEBUG	0//BIT(0)|BIT(1)|BIT(2)//数据模拟 GSENSOR BIT(0) HEART BIT(1) SPO2  BIT(2)
-#define TCFG_SENSOR_IIC_HW_EN				1 //硬件iic使能
+
+#define CONFIG_SPORT_HEALTH_MANAGER_DEBUG	0//数据模拟 GSENSOR BIT(0) HEART BIT(1) SPO2  BIT(2)（pmc_gsensor 心率血氧模拟打通）
+
+#define CONFIG_SPORT_HEALTH_UPDATE_PERIOD	1000//pmc算法数据更新节奏ms，默认1s（与大核 TCFG_SPORT_HEALTH_UPDATE_PERIOD_MS 对应）
+#define CONFIG_SPORT_HEALTH_GSENSOR_DIR_PERIOD	1000//gsensor方向更新周期ms，默认1s（bedside用）
+#define CONFIG_SENSOR_DRIVER_TIMER_PERIOD	200 //sensor FIFO取数周期ms，默认200
+
+#define TCFG_SENSOR_IIC_HW_EN				CONFIG_SPORT_HEALTH_MANAGER_ENABLE //硬件iic使能
+
 #define CONFIG_SENSOR_SLEEP_ENABLE        	0 //自动让SENSOR睡眠，需要SENSOR支持唤醒检测并IO中断唤醒MCU
+
 //MODULE
-#define TCFG_SENSOR_ALGO_GSENSOR_ENABLE		1
+#define TCFG_SENSOR_ALGO_GSENSOR_ENABLE		0
 #define TCFG_SENSOR_ALGO_HEART_RATE_EN		0
 #define TCFG_SENSOR_ALGO_SPO2_ENABLE		0
 #define TCFG_SENSOR_DET_WRIST_ENABLE		0
 #define TCFG_SENSOR_DET_WEAR_ENABLE			0
+
+//sample
+#define TCFG_SENSOR_HR_SAMPLE_ENABLE		0	//心率后台周期采数
+#define TCFG_SENSOR_SPO2_SAMPLE_ENABLE		0	//血氧后台周期采数
+
 //service
 #define TCFG_SENSOR_SERVICE_MOTION_ENABLE	TCFG_SENSOR_ALGO_GSENSOR_ENABLE
-#define TCFG_SENSOR_SERVICE_WRITE_ENABLE	0//(TCFG_SENSOR_ALGO_GSENSOR_ENABLE&&TCFG_SENSOR_DET_WRIST_ENABLE)	//缺算法
-#define TCFG_SENSOR_SERVICE_VC_HR_SPO2_EN	(TCFG_SENSOR_ALGO_HEART_RATE_EN	||TCFG_SENSOR_ALGO_SPO2_ENABLE)
+#define TCFG_SENSOR_SERVICE_WRITE_ENABLE	(TCFG_SENSOR_ALGO_GSENSOR_ENABLE&&TCFG_SENSOR_DET_WRIST_ENABLE)//抬腕检测（jl_motion_run 内嵌 wrist_raise）
+#define TCFG_SENSOR_SERVICE_VC_HR_SPO2_EN	0	//VCHR11 旧方案专用；本项目 HR/SPO2/wear 均由 VC30FX 提供
 #define TCFG_SENSOR_SERVICE_WEAR_ENABLE		TCFG_SENSOR_DET_WEAR_ENABLE
+
 //hal
 #define TCFG_SENSOR_HAL_ACCELER_ENABLE		TCFG_SENSOR_ALGO_GSENSOR_ENABLE
-#define TCFG_SENSOR_HAL_VCHR11_ENABLE		(TCFG_SENSOR_ALGO_HEART_RATE_EN	||TCFG_SENSOR_ALGO_SPO2_ENABLE)
+#define TCFG_SENSOR_HAL_VCHR11_ENABLE		0
 
 //driver
 #define TCFG_SC7A20_ENABLE                	TCFG_SENSOR_ALGO_GSENSOR_ENABLE
 
 #define TCFG_MMC5603_ENABLE               	0
 
-#define TCFG_VC30fx_ENABLE               	0
+/* HR 与 SPO2 共用 VC30FX 一颗传感器：任一算法开启都要把驱动编进来，不能只跟 HR
+ * ——否则「只开血氧」时驱动缺失、上层 service 仍在，链路静默失效 */
+#define TCFG_VC30fx_ENABLE               	(TCFG_SENSOR_ALGO_HEART_RATE_EN || TCFG_SENSOR_ALGO_SPO2_ENABLE)
 #define TCFG_VCHR11S_ENABLE               	0
 #define TCFG_HRS3602_ENABLE               	0
 #define TCFG_HR_SENSOR_READ_BY_INT        	0
+
+/*==========================================================*/
+/*          心率传感器取数方式（二选一）                     */
+/*  0 = 定时器取数（默认）：小核 usr_timer 按 FIFO 周期轮询  */
+/*  1 = IO 中断取数：VC30FX INT 引脚下降沿唤醒（当前无实现） */
+/*==========================================================*/
+#define TCFG_HR_SENSOR_SAMPLE_BY_IO_INT   	0
+
+
+/*==========================================================*/
+/*        SENSOR 代码段放置（RAM / Flash）配置               */
+/*  段名只有 .sensor_code.L1(RAM) / .sensor_code.L2(Flash)， */
+/*    L0 = 全部 RAM                                          */
+/*    L1 = 取数/算法接口 RAM，初始化 Flash                   */
+/*    L2 = 取数接口 RAM，初始化/算法 Flash（默认档）          */
+/*    L3 = 全部 Flash                                        */
+/*==========================================================*/
+
+/* gsensor 链路（含 sensor common 4 文件）代码段放置档位 */
+#define TCFG_SENSOR_GSENSOR_LEVEL          2
+
+/* hrsensor 链路代码段放置：0 = 全部 Flash（默认）；1 = 全部 RAM
+ * vc30fx 驱动+算法/sensor_hal_vc30fx/sensor_service_hr_vc30fx/
+ * shm_algo_heart_rate/shm_algo_spo2；全 RAM 约增 13KB code
+ */
+#define TCFG_SENSOR_HR_CODE_IN_RAM        	0
 
 
 //==========================================================//

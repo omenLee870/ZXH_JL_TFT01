@@ -11,6 +11,26 @@
 #include "vc30fx_core.h"
 #include "vc30fx_core_com.h"
 
+#define LOG_TAG_CONST       SENSOR_DRIVER
+#define LOG_TAG     		"[vc30fx_core]"
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define __DEBUG
+#include "log.h"
+
+#if TCFG_SENSOR_HR_CODE_IN_RAM
+#pragma bss_seg(".sensor_bss.L1")
+#pragma data_seg(".sensor_data.L1")
+#pragma code_seg(".sensor_code.L1")
+#pragma const_seg(".sensor_const")
+#else
+#pragma bss_seg(".sensor_bss.L2")
+#pragma data_seg(".sensor_data.L2")
+#pragma code_seg(".sensor_code.L2")
+#pragma const_seg(".sensor_const")
+#endif
+
 #if TCFG_VC30fx_ENABLE
 
 
@@ -89,7 +109,7 @@ const struct vc30fx_core_res_table vc30fx_res_table[] = {
 };
 #endif
 
-CORE30Fx_FUNC_RAM_SECTION static unsigned char get_level_by_res_rxgain(unsigned char pdres, unsigned char rxgain)
+static unsigned char get_level_by_res_rxgain(unsigned char pdres, unsigned char rxgain)
 {
     unsigned char index = 0;
     for (index = 0; index < sizeof(vc30fx_res_table) / sizeof(vc30fx_res_table[0]); index++) {
@@ -99,7 +119,7 @@ CORE30Fx_FUNC_RAM_SECTION static unsigned char get_level_by_res_rxgain(unsigned 
     }
     return 0;
 }
-CORE30Fx_FUNC_RAM_SECTION static int get_res_rxgain_by_level(unsigned char level, unsigned char *ppdres, unsigned char *prxgain)
+static int get_res_rxgain_by_level(unsigned char level, unsigned char *ppdres, unsigned char *prxgain)
 {
     *ppdres = vc30fx_res_table[level].pdres;
     *prxgain = vc30fx_res_table[level].rxgain;
@@ -109,7 +129,7 @@ CORE30Fx_FUNC_RAM_SECTION static int get_res_rxgain_by_level(unsigned char level
  * CORE_API.read()
  * read IC event or sample data
  ***************************************************************/
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_software_version(char **ppver)
+int __core30fx_read_software_version(char **ppver)
 {
     if (ppver) {
         *ppver = (char *)CORE30Fx_VERSION;
@@ -118,18 +138,21 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_software_version(char **ppver)
     return -1;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_id(unsigned char *pid1, unsigned char *pid2) //
+int __core30fx_read_id(unsigned char *pid1, unsigned char *pid2) //
 {
-    int ret = 0;
+    int ret1 = 0;
+    int ret2 = 0;
     if ((NULL == pid1) || (NULL == pid2)) {
         return 1;
     }
-    ret = vc30fx_read_register(CORE30Fx_DEV_VER_ID_H_ADDR, pid1, 1);
-    ret = vc30fx_read_register(CORE30Fx_FDY_EXT_ID_L_ADDR, pid2, 1);
-    return ret;
+    ret1 = vc30fx_read_register(CORE30Fx_DEV_VER_ID_H_ADDR, pid1, 1);   /* reg 0x00 -> chip_id */
+    ret2 = vc30fx_read_register(CORE30Fx_FDY_EXT_ID_L_ADDR, pid2, 1);   /* reg 0x01 -> vers_id */
+    log_debug("read_id reg0x00 ret=%d chip_id=0x%02x | reg0x01 ret=%d vers_id=0x%02x",
+              ret1, *pid1, ret2, *pid2);
+    return (ret1 && ret2) ? 1 : 0;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_event_status(vc30fx_sample_info_t *psample_ret, unsigned char *pevt, unsigned char *povsta, unsigned char *pwindex_bak, unsigned char *pwindex_rel)
+int __core30fx_read_event_status(vc30fx_sample_info_t *psample_ret, unsigned char *pevt, unsigned char *povsta, unsigned char *pwindex_bak, unsigned char *pwindex_rel)
 {
     int ret = 0;
     unsigned char reg[4] = {0};
@@ -151,7 +174,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_event_status(vc30fx_sample_info_t 
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_rcosc_tick(vc30fx_sample_info_t *psample_ret, unsigned short int *ptick0, unsigned short int *ptick1)
+int __core30fx_read_rcosc_tick(vc30fx_sample_info_t *psample_ret, unsigned short int *ptick0, unsigned short int *ptick1)
 {
     int ret = 0;
     unsigned char reg[4] = {0};
@@ -172,7 +195,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_rcosc_tick(vc30fx_sample_info_t *p
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_output(vc30fx_sample_info_t *psample_ret)
+int __core30fx_read_output(vc30fx_sample_info_t *psample_ret)
 {
     int ret = 0;
     unsigned char read_addr = 0x09;
@@ -217,7 +240,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_output(vc30fx_sample_info_t *psamp
 /*-------------------------------------------------------------------------------------------------------------------------------------
 fifo 解析数据相关的函数功能模块
 -------------------------------------------------------------------------------------------------------------------------------------*/
-CORE30Fx_FUNC_RAM_SECTION static inline int fifo_calc_sample_slot_nums(vc30fx_sample_info_t *psample_ret, unsigned char *p_ppgfreq_slotnum, unsigned char *p_psfreq_slotnum)
+static inline int fifo_calc_sample_slot_nums(vc30fx_sample_info_t *psample_ret, unsigned char *p_ppgfreq_slotnum, unsigned char *p_psfreq_slotnum)
 {
     /* 1 ppg slot infomation */
     if (psample_ret->slot_result[0].slot_enwork == 1) {
@@ -239,11 +262,11 @@ CORE30Fx_FUNC_RAM_SECTION static inline int fifo_calc_sample_slot_nums(vc30fx_sa
             (*p_psfreq_slotnum)++;
         }
     }
-    CORE30Fx_DEBUG_LOG("slotnum_ppgfreq[%d],slotnum_psfreq[%d]", *p_ppgfreq_slotnum, *p_psfreq_slotnum);
+    log_debug("slotnum_ppgfreq[%d],slotnum_psfreq[%d]", *p_ppgfreq_slotnum, *p_psfreq_slotnum);
     return 0;
 }
 
-CORE30Fx_FUNC_RAM_SECTION static inline int read_data_from_fifo_buffer(const unsigned char *pbuffer, unsigned char *poffset)
+static inline int read_data_from_fifo_buffer(const unsigned char *pbuffer, unsigned char *poffset)
 {
     int data = 0;
     data = (pbuffer[(*poffset)] << 8) + pbuffer[(*poffset) + 1];
@@ -251,7 +274,7 @@ CORE30Fx_FUNC_RAM_SECTION static inline int read_data_from_fifo_buffer(const uns
     return data;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *psample_ret, unsigned char *pread_fifoaddr, unsigned char read_windex) //
+int __core30fx_read_fifo_data(vc30fx_sample_info_t *psample_ret, unsigned char *pread_fifoaddr, unsigned char read_windex) //
 {
     int ret = 0;
     unsigned char i = 0, j = 0;
@@ -282,7 +305,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
     } else {
         addr_max = 0x60;
     }
-    CORE30Fx_DEBUG_LOG("psample_ret=%x addr_max=%d read_windex=%d", psample_ret, addr_max, read_windex);
+    log_debug("psample_ret=%x addr_max=%d read_windex=%d", (u32)psample_ret, addr_max, read_windex);
     if (read_windex > addr_max) {
         return -1;
     }
@@ -293,7 +316,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
     ps_freq_array_len += (ps_freq_slot_num * 2);
     group_len = ppg_freq_array_len * ppg_ps_fifo_ratio + ps_freq_array_len;
     fifo_bytes = group_len * psample_ret->fifo_div;
-    CORE30Fx_DEBUG_LOG("group_len(%d)=(%d*%d)+%d", group_len, ppg_freq_array_len, ppg_ps_fifo_ratio, ps_freq_array_len);
+    log_debug("group_len(%d)=(%d*%d)+%d", group_len, ppg_freq_array_len, ppg_ps_fifo_ratio, ps_freq_array_len);
     if (group_len == 0 || fifo_bytes == 0) {
         return -1;
     }
@@ -301,7 +324,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
     /* group=[ ppg0(slot0,slot1)+ppg1(slot0,slot1)+...ppgN(slot0,slot1)+ps(ps,bioinn,bioext) ]
        fifo =[ group0,group1... ]n */
     if (0 == psample_ret->fifo_enable) {
-        CORE30Fx_DEBUG_LOG("psample_ret->fifo_enable=%d", psample_ret->fifo_enable);
+        log_debug("psample_ret->fifo_enable=%d", psample_ret->fifo_enable);
         rindex = 0x00; /*disable fifo:fifo=ps频率，数据始于,0x00 */
     }
     if (read_windex == rindex) { /* 数据溢出或则无数据 */
@@ -313,13 +336,13 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
         wait_size = addr_max - rindex + read_windex;
     }
     if (wait_size < fifo_bytes) {
-        CORE30Fx_DEBUG_ERR("[%x~%x]waite_size=%d, fifo_bytes=%d", rindex, read_windex, wait_size, fifo_bytes);
+        log_error("[%x~%x]waite_size=%d, fifo_bytes=%d", rindex, read_windex, wait_size, fifo_bytes);
         return -3;
     }
     /* windex error process, the windex cover all fifo area and more than the rindex. */
     if (wait_size % fifo_bytes) {
         read_size = (wait_size / fifo_bytes) * fifo_bytes;
-        CORE30Fx_DEBUG_ERR("waite_read_fifo_bytes(%d)/fifo_bytes(%d) != 0 read_size[%d]", wait_size, fifo_bytes, read_size);
+        log_error("waite_read_fifo_bytes(%d)/fifo_bytes(%d) != 0 read_size[%d]", wait_size, fifo_bytes, read_size);
         ret = 1;
         /* 如果是新版带windex_bak的,一定是错位了，直接返回，不再读取错误的fifo */
         if (VC30FS_FDY_VER_ID1 == psample_ret->ic_FICV || VC30FC_FDY_VER_ID1 == psample_ret->ic_FICV) {
@@ -335,10 +358,10 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
     }
     vc30fx_read_register(CORE30Fx_FIFO_DATA_ADDR, &fifo_data[0], read_size);
 
-    CORE30Fx_DEBUG_LOG("[%x]-[%x],fifo_bytes=%d,", rindex, read_windex, read_size);
-    CORE30Fx_DEBUG_LOG("PPG_data[0- 8]:0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x", fifo_data[0], fifo_data[1], fifo_data[2], fifo_data[3], fifo_data[4], fifo_data[5], fifo_data[6], fifo_data[7]);
-    CORE30Fx_DEBUG_LOG("PPG_data[9-16]:0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x", fifo_data[8], fifo_data[9], fifo_data[10], fifo_data[11], fifo_data[12], fifo_data[13], fifo_data[14], fifo_data[15]);
-    CORE30Fx_DEBUG_LOG("..............:0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x", fifo_data[read_size - 8], fifo_data[read_size - 7], fifo_data[read_size - 6], fifo_data[read_size - 5], fifo_data[read_size - 4], fifo_data[read_size - 3], fifo_data[read_size - 2], fifo_data[read_size - 1]);
+    log_debug("[%x]-[%x],fifo_bytes=%d,", rindex, read_windex, read_size);
+    log_debug("PPG_data[0- 8]:0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x", fifo_data[0], fifo_data[1], fifo_data[2], fifo_data[3], fifo_data[4], fifo_data[5], fifo_data[6], fifo_data[7]);
+    log_debug("PPG_data[9-16]:0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x", fifo_data[8], fifo_data[9], fifo_data[10], fifo_data[11], fifo_data[12], fifo_data[13], fifo_data[14], fifo_data[15]);
+    log_debug("..............:0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x", fifo_data[read_size - 8], fifo_data[read_size - 7], fifo_data[read_size - 6], fifo_data[read_size - 5], fifo_data[read_size - 4], fifo_data[read_size - 3], fifo_data[read_size - 2], fifo_data[read_size - 1]);
     /******** 3.group,array,cell analysis ********/
     group_num = read_size / group_len;
     for (i = 0; i < group_num; i++) { /* i=0~N，每次所有通道的采样PPG群数，每个群的处理 */
@@ -353,7 +376,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
                     }
                     psample_ret->slot_result[slot_index].ppg_num += 1;
                     psample_ret->slot_result[slot_index].ppg_buffer[i * ppg_ps_fifo_ratio + j] = read_data_from_fifo_buffer(fifo_data, &array_offset);
-                    CORE30Fx_DEBUG_LOG("slot_result[%d].ppg_data[%d]=%d", slot_index, i * ppg_ps_fifo_ratio + j, psample_ret->slot_result[slot_index].ppg_buffer[i * ppg_ps_fifo_ratio + j]);
+                    log_debug("slot_result[%d].ppg_data[%d]=%d", slot_index, i * ppg_ps_fifo_ratio + j, psample_ret->slot_result[slot_index].ppg_buffer[i * ppg_ps_fifo_ratio + j]);
                 }
             }
         }
@@ -366,7 +389,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
                 }
                 psample_ret->slot_result[2].ppg_num += 1;
                 psample_ret->slot_result[2].ppg_buffer[i] = read_data_from_fifo_buffer(fifo_data, &array_offset);
-                CORE30Fx_DEBUG_LOG("slot_result[2].ps_data[%d]=%d", i, psample_ret->slot_result[2].ppg_buffer[i]);
+                log_debug("slot_result[2].ps_data[%d]=%d", i, psample_ret->slot_result[2].ppg_buffer[i]);
             }
             if ((1 == psample_ret->extra_result.bioinn_enwork || 1 == psample_ret->extra_result.bioext_enwork) && VC30Fx_IN_STORE == psample_ret->extra_result.biodata_storefifo) {
                 if (i >= VC30Fx_PS2SLOT_BUFFER_NUM || array_offset >= 127) {
@@ -375,14 +398,14 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
                 psample_ret->extra_result.bio_fifo_num += 1;
                 if (1 == psample_ret->extra_result.bioinn_enwork) {
                     psample_ret->extra_result.bioinn_buffer[i] = read_data_from_fifo_buffer(fifo_data, &array_offset);
-                    CORE30Fx_DEBUG_LOG("result.bioinn_buffer[%d]=%d", i, psample_ret->extra_result.bioinn_buffer[i]);
+                    log_debug("result.bioinn_buffer[%d]=%d", i, psample_ret->extra_result.bioinn_buffer[i]);
                 }
                 if (i >= VC30Fx_PS2SLOT_BUFFER_NUM || array_offset >= 127) {
                     return 2;
                 }
                 if (1 == psample_ret->extra_result.bioext_enwork) {
                     psample_ret->extra_result.bioext_buffer[i] = read_data_from_fifo_buffer(fifo_data, &array_offset);
-                    CORE30Fx_DEBUG_LOG("result.bioext_buffer[%d]=%d", i, psample_ret->extra_result.bioext_buffer[i]);
+                    log_debug("result.bioext_buffer[%d]=%d", i, psample_ret->extra_result.bioext_buffer[i]);
                 }
             }
         } else {
@@ -393,14 +416,14 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
                 psample_ret->extra_result.bio_fifo_num += 1;
                 if (1 == psample_ret->extra_result.bioinn_enwork) {
                     psample_ret->extra_result.bioinn_buffer[i] = read_data_from_fifo_buffer(fifo_data, &array_offset);
-                    CORE30Fx_DEBUG_LOG("result.bioinn_buffer[%d]=%d", i, psample_ret->extra_result.bioinn_buffer[i]);
+                    log_debug("result.bioinn_buffer[%d]=%d", i, psample_ret->extra_result.bioinn_buffer[i]);
                 }
                 if (i >= VC30Fx_PS2SLOT_BUFFER_NUM || array_offset >= 127) {
                     return 2;
                 }
                 if (1 == psample_ret->extra_result.bioext_enwork) {
                     psample_ret->extra_result.bioext_buffer[i] = read_data_from_fifo_buffer(fifo_data, &array_offset);
-                    CORE30Fx_DEBUG_LOG("result.bioext_buffer[%d]=%d", i, psample_ret->extra_result.bioext_buffer[i]);
+                    log_debug("result.bioext_buffer[%d]=%d", i, psample_ret->extra_result.bioext_buffer[i]);
                 }
             }
             if (i >= VC30Fx_PS2SLOT_BUFFER_NUM || array_offset >= 127) {
@@ -409,7 +432,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
             if (2 == psample_ret->slot_result[2].slot_enwork && VC30Fx_IN_STORE == psample_ret->slot_result[2].slot_storefifo) {
                 psample_ret->slot_result[2].ppg_num += 1;
                 psample_ret->slot_result[2].ppg_buffer[i] = read_data_from_fifo_buffer(fifo_data, &array_offset);
-                CORE30Fx_DEBUG_LOG("slot_result[2].ps_data[%d]=%d", i, psample_ret->slot_result[2].ppg_buffer[i]);
+                log_debug("slot_result[2].ps_data[%d]=%d", i, psample_ret->slot_result[2].ppg_buffer[i]);
             }
         }
     } /* end of for(i<group_num), all fifodata */
@@ -421,7 +444,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_fifo_data(vc30fx_sample_info_t *ps
  * slot configuration,adjust current,resistance and sampleTime
  * write or set config registers
  ***************************************************************/
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_slot_enable_config(VC30Fx_PPG_SLOT_I slot_index, VC30Fx_CFG_FUNC config_enable)
+int __core30fx_set_slot_enable_config(VC30Fx_PPG_SLOT_I slot_index, VC30Fx_CFG_FUNC config_enable)
 {
     int ret = 0;
     core30fx_slot_config_t slotcfg = {0};
@@ -432,7 +455,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_slot_enable_config(VC30Fx_PPG_SLOT_
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_slot_fix_param_config(VC30Fx_PPG_SLOT_I slot_index, unsigned char rxgain, VC30Fx_PPG_TXCH_I txslot, VC30Fx_CFG_FUNC deps_en,
+int __core30fx_set_slot_fix_param_config(VC30Fx_PPG_SLOT_I slot_index, unsigned char rxgain, VC30Fx_PPG_TXCH_I txslot, VC30Fx_CFG_FUNC deps_en,
         unsigned char oversample_psdirturb, VC30Fx_SAMPLE_TIM sample_tim, unsigned char ic_type, unsigned char ic_ficv)
 {
     int ret = 0;
@@ -495,7 +518,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_slot_fix_param_config(VC30Fx_PPG_SL
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_psslot_storefifo_config(VC30Fx_STORE_FIFO infifo)
+int __core30fx_set_psslot_storefifo_config(VC30Fx_STORE_FIFO infifo)
 {
     int ret = 0;
     core30fx_slot_config_t slotcfg = {0};
@@ -506,7 +529,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_psslot_storefifo_config(VC30Fx_STOR
 }
 
 /* PPG通道及调整的函数接口 */
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_slot_adjust_param(unsigned char *pmax_res, unsigned char *pmin_res, unsigned char *pmax_curr, unsigned char *pmin_curr)
+int __core30fx_read_slot_adjust_param(unsigned char *pmax_res, unsigned char *pmin_res, unsigned char *pmax_curr, unsigned char *pmin_curr)
 {
     *pmax_res = MAX_RES_LEVEL;
     *pmin_res = MIN_RES_LEVEL;
@@ -516,7 +539,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_slot_adjust_param(unsigned char *p
 }
 
 /* 电流+电阻等级的读写,这部分是在使用过程中会反复调用的 */
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_slot_current_res(VC30Fx_PPG_SLOT_I slot_index, unsigned char *pslot_curr, unsigned char *pslot_reslvl)
+int __core30fx_read_slot_current_res(VC30Fx_PPG_SLOT_I slot_index, unsigned char *pslot_curr, unsigned char *pslot_reslvl)
 {
     int ret = 0;
     core30fx_slot_config_t slotcfg = {0};
@@ -538,7 +561,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_read_slot_current_res(VC30Fx_PPG_SLOT_I
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_ppgslot_current(VC30Fx_PPG_SLOT_I slot_index, unsigned char current)
+int __core30fx_set_ppgslot_current(VC30Fx_PPG_SLOT_I slot_index, unsigned char current)
 {
     int ret = 0;
     core30fx_slot_config_t slotcfg = {0};
@@ -548,7 +571,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_ppgslot_current(VC30Fx_PPG_SLOT_I s
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_ppgslot_resistance(VC30Fx_PPG_SLOT_I slot_index, unsigned char res_level, unsigned char allow_oversample, unsigned char type)  //
+int __core30fx_set_ppgslot_resistance(VC30Fx_PPG_SLOT_I slot_index, unsigned char res_level, unsigned char allow_oversample, unsigned char type)  //
 {
     int ret = 0;
     unsigned char res = 0, rxgain = 0;
@@ -578,7 +601,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_ppgslot_resistance(VC30Fx_PPG_SLOT_
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_common_config(vc30fx_sample_info_t *psample_ret, VC30Fx_CFG_FUNC deenv_en, VC30Fx_CFG_FUNC fifo_en, unsigned char adcspeed, unsigned char cpd)
+int __core30fx_set_common_config(vc30fx_sample_info_t *psample_ret, VC30Fx_CFG_FUNC deenv_en, VC30Fx_CFG_FUNC fifo_en, unsigned char adcspeed, unsigned char cpd)
 {
     int ret = 0;
     core30fx_com_cfgbit com_config = {0};
@@ -603,7 +626,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_common_config(vc30fx_sample_info_t 
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_sample_frequency(vc30fx_sample_info_t *psample_ret)
+int __core30fx_set_sample_frequency(vc30fx_sample_info_t *psample_ret)
 {
     int ret = 0;
     unsigned char freq_config[4] = {0};
@@ -623,7 +646,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_sample_frequency(vc30fx_sample_info
     ret = vc30fx_write_register(0x4D, freq_config, sizeof(freq_config));
     return ret;
 }
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_div_frequency(unsigned char div_index, unsigned short int div)
+int __core30fx_set_div_frequency(unsigned char div_index, unsigned short int div)
 {
     int ret = 0;
     unsigned char div1_config[2] = {0};
@@ -650,7 +673,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_div_frequency(unsigned char div_ind
  * txchx_comconfig & ppg threshold configuration
  * write or set config registers
  ***************************************************************/
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_threshold_config(unsigned char ppgth_h, unsigned char ppgth_l)
+int __core30fx_set_threshold_config(unsigned char ppgth_h, unsigned char ppgth_l)
 {
     int ret = 0;
     core30fx_ppgth_cfgbit ppgth_config = {0};
@@ -664,7 +687,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_threshold_config(unsigned char ppgt
  * extra(ADC,BIO,temperature,AT/DT) configuration
  * write or set config registers
  ***************************************************************/
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_interrupt_config(VC30Fx_IO_MODE int_mode, VC30Fx_IO_DIR int_dir, VC30Fx_IO_PULSE_TIM int_len, unsigned char evt_en)
+int __core30fx_set_interrupt_config(VC30Fx_IO_MODE int_mode, VC30Fx_IO_DIR int_dir, VC30Fx_IO_PULSE_TIM int_len, unsigned char evt_en)
 {
     int ret = 0;
     core30fx_int_cfgbit int_config = {0};
@@ -687,7 +710,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_interrupt_config(VC30Fx_IO_MODE int
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_bioslot_config(VC30Fx_CFG_FUNC bioinn_en, VC30Fx_CFG_FUNC bioext_en, VC30Fx_STORE_FIFO biofifo_store, VC30Fx_CFG_FUNC biomode, unsigned char biofreq, unsigned char biocap, unsigned char biotime) //
+int __core30fx_set_bioslot_config(VC30Fx_CFG_FUNC bioinn_en, VC30Fx_CFG_FUNC bioext_en, VC30Fx_STORE_FIFO biofifo_store, VC30Fx_CFG_FUNC biomode, unsigned char biofreq, unsigned char biocap, unsigned char biotime) //
 {
     int ret = 0;
     core30fx_bio_cfg0bit bio_config0 = {0};
@@ -706,7 +729,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_bioslot_config(VC30Fx_CFG_FUNC bioi
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_bioinn_addcap(unsigned char biocap)
+int __core30fx_set_bioinn_addcap(unsigned char biocap)
 {
     int ret = 0;
     core30fx_bio_cfg1bit bio_config1 = {0};
@@ -716,7 +739,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_bioinn_addcap(unsigned char biocap)
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_temperature_config(VC30Fx_CFG_FUNC tempext_en, VC30Fx_CFG_FUNC tempinn_en, unsigned char current)
+int __core30fx_set_temperature_config(VC30Fx_CFG_FUNC tempext_en, VC30Fx_CFG_FUNC tempinn_en, unsigned char current)
 {
     int ret = 0;
     core30fx_temp_cfgbit temp_config = {0};
@@ -727,7 +750,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_temperature_config(VC30Fx_CFG_FUNC 
     return ret;
 }
 
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_rcosc_frequency(unsigned char oscset, unsigned char type)
+int __core30fx_set_rcosc_frequency(unsigned char oscset, unsigned char type)
 {
     int ret = 0;
     if (VC30Fx_IC_TYPE_VC30FS == type) {
@@ -742,7 +765,7 @@ CORE30Fx_FUNC_RAM_SECTION int __core30fx_set_rcosc_frequency(unsigned char oscse
  * workmode,debug_config
  * write or set config registers
  ***************************************************************/
-CORE30Fx_FUNC_RAM_SECTION int __core30fx_write_work_cmd(VC30Fx_WORK_CMD cmd) //
+int __core30fx_write_work_cmd(VC30Fx_WORK_CMD cmd) //
 {
     int ret = 0;
     unsigned char wcmd = 0;

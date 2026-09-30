@@ -10,7 +10,7 @@
 #include "asm/dac.h"
 #include "media/includes.h"
 #include "math.h"
-#include "asm/gpio_hw.h"
+#include "gpio.h"
 #include "audio_splicing.h"
 
 #define PLNK_DEBUG_ENABLE

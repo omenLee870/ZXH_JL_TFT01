@@ -5,6 +5,26 @@
 #include "vc30fx_user_app.h"
 #include "vc30fx_sample_result.h"
 
+#define LOG_TAG_CONST       SENSOR_DRIVER
+#define LOG_TAG     		"[vc30fx]"
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define __DEBUG
+#include "log.h"
+
+#if TCFG_SENSOR_HR_CODE_IN_RAM
+#pragma bss_seg(".sensor_bss.L1")
+#pragma data_seg(".sensor_data.L1")
+#pragma code_seg(".sensor_code.L1")
+#pragma const_seg(".sensor_const")
+#else
+#pragma bss_seg(".sensor_bss.L2")
+#pragma data_seg(".sensor_data.L2")
+#pragma code_seg(".sensor_code.L2")
+#pragma const_seg(".sensor_const")
+#endif
+
 #if TCFG_VC30fx_ENABLE
 // 设备信息
 static sensor_info_t vc30fx_info = {
@@ -114,7 +134,9 @@ static s8 vc30fx_driver_online(void)
 {
     // 尝试读取设备ID
     extern u8 vc30fx_online(void);
+    log_debug("driver_online enter");
     u8 online =   vc30fx_online();
+    log_debug("driver_online exit online=%d", online);
     if (online != 0) {
         vc30fx_info.state = SENSOR_STATE_ONLINE;
         return RET_OK;
@@ -140,7 +162,7 @@ static s8 vc30fx_driver_sleep(void)
 // 获取原始数据
 u16 vc30fx_driver_get_raw_data(vc30fx_raw_data_t *data)
 {
-#if !PMC_DEVELOP_ENABLE
+#if 0     /* 开发态空实现 */
     if (data == NULL) {
         return 0;
     }

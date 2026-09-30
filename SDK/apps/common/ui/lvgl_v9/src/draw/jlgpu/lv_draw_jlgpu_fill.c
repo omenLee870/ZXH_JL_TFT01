@@ -574,7 +574,9 @@ void lv_draw_jlgpu_fill(lv_draw_task_t *t, const lv_draw_fill_dsc_t *dsc, const 
     uint32_t color;
     lv_draw_jlgpu_premult_and_swizzle(&color, dsc->color, dsc->opa);
 
-    int32_t short_side = LV_MIN(width, height);
+    /* 圆角半径要按控件自己的尺寸夹, 不能用裁剪后的窗口尺寸:
+     * 脏区渲染时窗口可能远小于控件, 会把半径夹小 → 圆角画错。 */
+    int32_t short_side = LV_MIN(fill_width, fill_height);
     int32_t rout = LV_MIN(dsc->radius, short_side >> 1);
 
     jlgpu_draw_fill_t draw_fill_params = {0};
@@ -824,7 +826,9 @@ static void lv_draw_jlgpu_fill_with_grad(lv_draw_task_t *t, const lv_draw_fill_d
         clut_data = clut_data_2;
     }
 
-    int32_t short_side = LV_MIN(width, height);
+    /* 圆角半径要按控件自己的尺寸夹, 不能用裁剪后的窗口尺寸:
+     * 脏区渲染时窗口可能远小于控件, 会把半径夹小 → 圆角画错。 */
+    int32_t short_side = LV_MIN(fill_width, fill_height);
     int32_t rout = LV_MIN(dsc->radius, short_side >> 1);
 
     jlgpu_draw_grad_t draw_grad = {0};
@@ -840,16 +844,19 @@ static void lv_draw_jlgpu_fill_with_grad(lv_draw_task_t *t, const lv_draw_fill_d
 
     lv_grad_dir_t grad_dir = dsc->grad.dir;
 
+    /* 渐变起止点必须按控件自己的区域(coords)算, 不能用裁剪后的 blend_area:
+     * 脏区渲染时 clip 只覆盖控件的一部分, 拿 blend_area 会把整条渐变压缩进这块脏区,
+     * 起点的颜色/透明度就算错了; 同一块渐变分散在不同帧里画时还会互相对不上, 出现断层。 */
     if (grad_dir == LV_GRAD_DIR_HOR) {
-        lineargrad_param.point_start.x = blend_area.x1;
-        lineargrad_param.point_start.y = blend_area.y1;
-        lineargrad_param.point_end.x = blend_area.x2 + 1;
-        lineargrad_param.point_end.y = blend_area.y1;
+        lineargrad_param.point_start.x = coords->x1;
+        lineargrad_param.point_start.y = coords->y1;
+        lineargrad_param.point_end.x = coords->x2 + 1;
+        lineargrad_param.point_end.y = coords->y1;
     } else {
-        lineargrad_param.point_start.x = blend_area.x1;
-        lineargrad_param.point_start.y = blend_area.y1;
-        lineargrad_param.point_end.x = blend_area.x1;
-        lineargrad_param.point_end.y = blend_area.y2 + 1;
+        lineargrad_param.point_start.x = coords->x1;
+        lineargrad_param.point_start.y = coords->y1;
+        lineargrad_param.point_end.x = coords->x1;
+        lineargrad_param.point_end.y = coords->y2 + 1;
     }
 
     lineargrad_param.spread_mode = JLGPU_COLOR_RAMP_SPREAD_REPEAT;
@@ -1050,7 +1057,9 @@ static void lv_draw_jlgpu_fill_with_roundgrad(lv_draw_task_t *t, const lv_draw_f
         clut_data = clut_data_2;
     }
 
-    int32_t short_side = LV_MIN(width, height);
+    /* 圆角半径要按控件自己的尺寸夹, 不能用裁剪后的窗口尺寸:
+     * 脏区渲染时窗口可能远小于控件, 会把半径夹小 → 圆角画错。 */
+    int32_t short_side = LV_MIN(fill_width, fill_height);
     int32_t rout = LV_MIN(dsc->radius, short_side >> 1);
 
     jlgpu_draw_grad_t draw_grad = {0};

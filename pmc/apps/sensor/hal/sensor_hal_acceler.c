@@ -1,16 +1,17 @@
 #include "health_manager.h"
 #include "sensor_driver.h"
-#if 1
+/* L0/L1/L2 → RAM；L3 → Flash（FIFO 类同向，函数级 AT 覆盖） */
+#if TCFG_SENSOR_GSENSOR_LEVEL <= 2
 #pragma bss_seg(".sensor_bss.L1")
 #pragma data_seg(".sensor_data.L1")
 #pragma code_seg(".sensor_code.L1")
-#pragma const_seg(".sensor_const")
 #else
 #pragma bss_seg(".sensor_bss.L2")
 #pragma data_seg(".sensor_data.L2")
 #pragma code_seg(".sensor_code.L2")
-#pragma const_seg(".sensor_const")
 #endif
+#pragma const_seg(".sensor_const")
+#include "sensor_seg.h"
 #define LOG_TAG_CONST      	SENSOR_HAL
 #define LOG_TAG     		"[SENSOR_HAL_ACC]"
 #define LOG_ERROR_ENABLE
@@ -25,7 +26,7 @@
 
 #define THIS_SENSOR_TYPE  SENSOR_DRV_ACCELER
 
-static sensor_info_t *sensor_info(void)
+AT_GSENSOR_COLD static sensor_info_t *sensor_info(void)
 {
     static sensor_info_t *info = NULL;
 
@@ -35,13 +36,13 @@ static sensor_info_t *sensor_info(void)
     return info;
 }
 
-static s8 sensor_enable(u8 enable)
+AT_GSENSOR_COLD static s8 sensor_enable(u8 enable)
 {
     sensor_driver_init(THIS_SENSOR_TYPE, enable, 4, 25);
     return RET_OK;
 }
 
-static s8 sensor_cbuf_enable(u8 index, u8 enable)
+AT_GSENSOR_COLD static s8 sensor_cbuf_enable(u8 index, u8 enable)
 {
     void sensor_driver_cbuf_enable(u8 type, u8 index, u8 enable);
     sensor_driver_cbuf_enable(THIS_SENSOR_TYPE, index, enable);
@@ -54,7 +55,7 @@ static s8 sensor_cbuf_enable(u8 index, u8 enable)
 #define SLEEP_TIME   (30*25)
 
 static short last_x = 0, last_y = 0, last_z = 0, last_len = 0;
-static bool sensor_sleep(axis_data_t *axis, u16 len)
+AT_SENSOR_FIFO static bool sensor_sleep(axis_data_t *axis, u16 len)
 {
     static u16 still_count = 0;
     static u8  sleep_mode  = 0;
@@ -85,7 +86,7 @@ static bool sensor_sleep(axis_data_t *axis, u16 len)
     return sleep_mode;
 }
 
-static u16 sensor_last_data_get(axis_data_t *axis, u16 len)
+AT_SENSOR_FIFO static u16 sensor_last_data_get(axis_data_t *axis, u16 len)
 {
     if (len == 0) {
         for (u16 i = 0; i < last_len; i++) {
@@ -98,12 +99,18 @@ static u16 sensor_last_data_get(axis_data_t *axis, u16 len)
     return len;
 }
 #endif
-static u16 sensor_raw_data_get(u8 index, void *data_buff, u16 data_len)
+AT_SENSOR_FIFO static u16 sensor_raw_data_get(u8 index, void *data_buff, u16 data_len)
 {
     u16 len = 0;
     SENSOR_INTERFACE *sensor_driver = sensor_driver_find(THIS_SENSOR_TYPE);
     p11_cbuffer_t *cbuffer = sensor_driver->info->cbuffer;
     u16 get_len  = cbuf_mult_read_get_data_len(cbuffer, index);
+    /* cbuf 容量已按 SENSOR_FIFO_DEPTH() 预留余量（大于调用方的基准帧数），
+     * 而读侧缓冲区仍是基准帧数：必须按调用方给的 data_len 截断。否则读侧一旦
+     * 滞后、环内积满余量，下面会把超出读侧缓冲区的部分一并 memcpy 出去踩坏栈。 */
+    if (get_len > data_len) {
+        get_len = data_len;
+    }
     len = cbuf_mult_read_alloc_len(cbuffer, index, data_buff, get_len);
     if (len) {
         cbuf_mult_read_alloc_len_updata(cbuffer, index, len);

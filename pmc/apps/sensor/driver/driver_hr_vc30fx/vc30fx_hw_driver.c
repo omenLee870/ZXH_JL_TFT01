@@ -14,6 +14,26 @@
 #include "vc30fx_driver_config.h"
 #include "vc30fx_hw_driver.h"
 
+#define LOG_TAG_CONST       SENSOR_DRIVER
+#define LOG_TAG     		"[vc30fx_hw]"
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define __DEBUG
+#include "log.h"
+
+#if TCFG_SENSOR_HR_CODE_IN_RAM
+#pragma bss_seg(".sensor_bss.L1")
+#pragma data_seg(".sensor_data.L1")
+#pragma code_seg(".sensor_code.L1")
+#pragma const_seg(".sensor_const")
+#else
+#pragma bss_seg(".sensor_bss.L2")
+#pragma data_seg(".sensor_data.L2")
+#pragma code_seg(".sensor_code.L2")
+#pragma const_seg(".sensor_const")
+#endif
+
 #if TCFG_VC30fx_ENABLE
 #if (VC30Fx_CFG_WEAR_BIOALGO_EN==VC30Fx_FUNC_ENABLE)
 #include "BIODetect_V14_1.h"
@@ -32,7 +52,7 @@
 #define VC30FC_ENV_CONVERT( hex_env ) (((hex_env)>>4)*12.5f+((hex_env)&0xf))
 #endif
 
-unsigned short int VC30Fx_CFG_MCU_TICK_FREQUENCY = 25000; /* extern unsigned short int VC30Fx_CFG_MCU_TICK_FREQUENCY; */
+unsigned short int VC30Fx_CFG_MCU_TICK_FREQUENCY = 50 * 1000; /* 20us/tick, 与 vc30fx_get_cputimer_tick() 的 /20 换算保持一致 */
 unsigned short int VC30Fx_WEAR_PARAM_BIO_ABS_HOLD = 200; /* extern unsigned short int VC30Fx_WEAR_PARAM_BIO_ABS_HOLD;  */
 unsigned short int VC30Fx_WEAR_PARAM_BIO_ABS_DROP = 160; /* extern unsigned short int VC30Fx_WEAR_PARAM_BIO_ABS_DROP;  */
 
@@ -95,42 +115,42 @@ int vc30fx_drv_memroy_alloc(void)
 #if (VC30Fx_USE_MEMORY_SELECT == VC30Fx_USE_FIXDYNC_MEMORY)
     sample_info_handle = vc30fx_malloc(sizeof(vc30fx_sample_info_t));
     if (NULL == sample_info_handle) {
-        VCARE_DBG_ERR("sample_info_handle malloc failed");
+        log_error("sample_info_handle malloc failed");
         goto SAMPLE_INFO_MEM_ERROR;
     }
     vcare_memset(sample_info_handle, 0, sizeof(vc30fx_sample_info_t));
 
     adjust_info_handle[0] = vc30fx_malloc(sizeof(vc30fx_adjust_info));
     if (NULL == adjust_info_handle[0]) {
-        VCARE_DBG_ERR("adjust_info_handle[0] malloc failed");
+        log_error("adjust_info_handle[0] malloc failed");
         goto ADJ_INFO0_MEM_ERROR;
     }
     vcare_memset(adjust_info_handle[0], 0, sizeof(vc30fx_adjust_info));
 
     adjust_info_handle[1] = vc30fx_malloc(sizeof(vc30fx_adjust_info));
     if (NULL == adjust_info_handle[0]) {
-        VCARE_DBG_ERR("adjust_info_handle[1] malloc failed");
+        log_error("adjust_info_handle[1] malloc failed");
         goto ADJ_INFO1_MEM_ERROR;
     }
     vcare_memset(adjust_info_handle[1], 0, sizeof(vc30fx_adjust_info));
 
     wear_info_handle = vc30fx_malloc(sizeof(vc30fx_wear_info));
     if (NULL == wear_info_handle) {
-        VCARE_DBG_ERR("wear_info_handle malloc failed");
+        log_error("wear_info_handle malloc failed");
         goto WEAR_INFO_MEM_ERROR;
     }
     vcare_memset(wear_info_handle, 0, sizeof(vc30fx_wear_info));
 
     clk_info_handle = vc30fx_malloc(sizeof(vc30fx_clk_info));
     if (NULL == clk_info_handle) {
-        VCARE_DBG_ERR("clk_info_handle malloc failed");
+        log_error("clk_info_handle malloc failed");
         goto CLK_INFO_MEM_ERROR;
     }
     vcare_memset(clk_info_handle, 0, sizeof(vc30fx_clk_info));
 
     drv_info_handle = vc30fx_malloc(sizeof(vc30fx_drv_info));
     if (NULL == drv_info_handle) {
-        VCARE_DBG_ERR("drv_info_handle malloc failed");
+        log_error("drv_info_handle malloc failed");
         goto DRV_INFO_MEM_ERROR;
     }
     vcare_memset(drv_info_handle, 0, sizeof(vc30fx_drv_info));
@@ -196,7 +216,7 @@ static int drv_infomation_param_save(void)
     save_buf[5] = (drv_info_handle->optimal_bio_gap >> 8) & 0xff;
     save_buf[6] = (drv_info_handle->optimal_bio_gap >> 0) & 0xff;
     ret = vc30fx_param_write_flash(save_buf, sizeof(save_buf));
-    VCARE_DBG_LOG("save bio param: %d,%d,%d", drv_info_handle->optimal_bio_valid, drv_info_handle->optimal_cap, drv_info_handle->optimal_bio_gap);
+    log_debug("save bio param: %d,%d,%d", drv_info_handle->optimal_bio_valid, drv_info_handle->optimal_cap, drv_info_handle->optimal_bio_gap);
     return ret; /* successed return 0 */
 }
 static int drv_infomation_param_load(void)
@@ -214,7 +234,7 @@ static int drv_infomation_param_load(void)
         drv_info_handle->optimal_bio_gap = 0;
         ret = 0;
     }
-    VCARE_DBG_LOG("load bio param: %d,%d,%d", drv_info_handle->optimal_bio_valid, drv_info_handle->optimal_cap, drv_info_handle->optimal_bio_gap);
+    log_debug("load bio param: %d,%d,%d", drv_info_handle->optimal_bio_valid, drv_info_handle->optimal_cap, drv_info_handle->optimal_bio_gap);
     return ret; /* successed return 0 */
 }
 static int drv_infomation_param_reset(void)
@@ -334,7 +354,7 @@ static void drv_infomation_param_init(vcare_ppg_device_t *pdev)
     if (wear_info_handle->bio_wear_result == VC30Fx_BIO_STA_NONE) {
 #if (VC30Fx_CFG_WEAR_BIOALGO_EN==VC30Fx_FUNC_ENABLE)
         f_BIOInit(VC30Fx_WEAR_PARAM_BIO_DELTA, VC30Fx_WEAR_PARAM_PS_DELTA);
-        /* VCARE_DBG_LOG("f_BIOedgeinit(%d, %d, %d)", VC30Fx_WEAR_PARAM_BIO_DELTA, VC30Fx_WEAR_PARAM_PS_DELTA ); */
+        /* log_debug("f_BIOedgeinit(%d, %d, %d)", VC30Fx_WEAR_PARAM_BIO_DELTA, VC30Fx_WEAR_PARAM_PS_DELTA ); */
 #endif
     }
 }
@@ -352,7 +372,7 @@ static int drv_calc_bioinn_auto_addcap(unsigned char status, vc30fx_sample_info_
         }
         /* 判断是否bioext发生变化，如果变化太大，那么直接校准失败 */
         if (last_ext_bio != 0 && VC_ABS(last_ext_bio, psample_info->extra_result.bioext_data) >= 20) {
-            VCARE_DBG_ERR("calc bioinn error, bioext running...");
+            log_error("calc bioinn error, bioext running...");
         }
         last_ext_bio = psample_info->extra_result.bioext_data;
         /* 二分法校准，循环赋值，设置参数与采样值呈负相关 */
@@ -369,8 +389,8 @@ static int drv_calc_bioinn_auto_addcap(unsigned char status, vc30fx_sample_info_
         if ((psample_info->extra_result.bioext_data - VC30Fx_CALC_BIOINN_OFFSET) <= last_inn_bio_mid && (psample_info->extra_result.bioext_data + VC30Fx_CALC_BIOINN_OFFSET) >= last_inn_bio_mid) {
             finished_set = set_cap_mid;
             finished_mark = 1;
-            VCARE_DBG_LOG("(+-100)now set cap[%d,%d,%d],now_bio_val[%d](%d) ->set[%d]", set_cap_min, set_cap_mid, set_cap_max,
-                          last_inn_bio_mid,  psample_info->extra_result.bioext_data, last_inn_bio_mid);
+            log_debug("(+-100)now set cap[%d,%d,%d],now_bio_val[%d](%d) ->set[%d]", set_cap_min, set_cap_mid, set_cap_max,
+                      last_inn_bio_mid,  psample_info->extra_result.bioext_data, last_inn_bio_mid);
         } else { /* 不在范围，范围比较大，继续二分 */
             /* 检索完成，需要再min和max中取一个值 */
             if ((set_cap_max - set_cap_min) <= 1) {
@@ -400,27 +420,27 @@ static int drv_calc_bioinn_auto_addcap(unsigned char status, vc30fx_sample_info_
                     last_inn_bio_mid = remember_biomax_value;
                 }
                 finished_mark = 1;
-                VCARE_DBG_LOG("mingap(%d)[%d],maxgap(%d)[%d]->(%d)", set_cap_min, VC_ABS(remember_biomin_value, psample_info->extra_result.bioext_data),
-                              set_cap_max, VC_ABS(remember_biomax_value, psample_info->extra_result.bioext_data), finished_set);
+                log_debug("mingap(%d)[%d],maxgap(%d)[%d]->(%d)", set_cap_min, VC_ABS(remember_biomin_value, psample_info->extra_result.bioext_data),
+                          set_cap_max, VC_ABS(remember_biomax_value, psample_info->extra_result.bioext_data), finished_set);
             }
             /* 继续执行二分逼近 */
             if (last_inn_bio_mid < psample_info->extra_result.bioext_data) {
-                VCARE_DBG_LOG("(mid<bioext)now set cap[%d,%d,%d],now_bio_val[%d](%d) ->set[%d]", set_cap_min, set_cap_mid, set_cap_max,
-                              last_inn_bio_mid, psample_info->extra_result.bioext_data, (set_cap_min + set_cap_mid) / 2);
+                log_debug("(mid<bioext)now set cap[%d,%d,%d],now_bio_val[%d](%d) ->set[%d]", set_cap_min, set_cap_mid, set_cap_max,
+                          last_inn_bio_mid, psample_info->extra_result.bioext_data, (set_cap_min + set_cap_mid) / 2);
                 set_cap_max = set_cap_mid;
                 set_cap_mid = (set_cap_min + set_cap_mid) / 2;
                 set_flg_mid = 1;
                 core30fx_set_bioinn_addcap(psample_info, set_cap_mid);
             } else if (last_inn_bio_mid > psample_info->extra_result.bioext_data) {
-                VCARE_DBG_LOG("(mid>bioext)now set cap[%d,%d,%d],now_bio_val[%d](%d) ->set[%d]", set_cap_min, set_cap_mid, set_cap_max,
-                              last_inn_bio_mid, psample_info->extra_result.bioext_data, (set_cap_max + set_cap_mid) / 2);
+                log_debug("(mid>bioext)now set cap[%d,%d,%d],now_bio_val[%d](%d) ->set[%d]", set_cap_min, set_cap_mid, set_cap_max,
+                          last_inn_bio_mid, psample_info->extra_result.bioext_data, (set_cap_max + set_cap_mid) / 2);
                 set_cap_min = set_cap_mid;
                 set_cap_mid = (set_cap_max + set_cap_mid) / 2;
                 set_flg_mid = 1;
                 core30fx_set_bioinn_addcap(psample_info, set_cap_mid);
             } else if (last_inn_bio_mid == psample_info->extra_result.bioext_data) { /* 完全相等，直接结束 */
-                VCARE_DBG_LOG("(mid=bioext)now set cap[%d,%d,%d],now_bio_val[%d](%d) ->set[%d]", set_cap_min, set_cap_mid, set_cap_max,
-                              last_inn_bio_mid, psample_info->extra_result.bioext_data, set_cap_mid);
+                log_debug("(mid=bioext)now set cap[%d,%d,%d],now_bio_val[%d](%d) ->set[%d]", set_cap_min, set_cap_mid, set_cap_max,
+                          last_inn_bio_mid, psample_info->extra_result.bioext_data, set_cap_mid);
                 finished_set = set_cap_mid;
                 finished_mark = 1;
             }
@@ -430,7 +450,7 @@ static int drv_calc_bioinn_auto_addcap(unsigned char status, vc30fx_sample_info_
             drv_info_handle->optimal_bio_gap = last_inn_bio_mid - psample_info->extra_result.bioext_data;
             /* set optimal_cap */
             core30fx_set_bioinn_addcap(psample_info, drv_info_handle->optimal_cap);
-            VCARE_DBG_LOG("optimal_cap=%d, optimal_bio_gap=%d", drv_info_handle->optimal_cap, drv_info_handle->optimal_bio_gap);
+            log_debug("optimal_cap=%d, optimal_bio_gap=%d", drv_info_handle->optimal_cap, drv_info_handle->optimal_bio_gap);
             /* save flash_ok */
             drv_infomation_param_save();
         }
@@ -677,13 +697,13 @@ static void drv_work_init(vcare_ppg_device_t *pdev, int mode, unsigned short int
     if (VC30FS_DEV_REV_ID == pdev->id1 && VC30FS_FDY_VER_CHECK(pdev->id2)) {
         sample_info_handle->ic_type = VC30Fx_IC_TYPE_VC30FS;
         sample_info_handle->ic_FICV = pdev->id2;
-        VCARE_DBG_LOG("VC30Fx_IC_TYPE_VC30FS");
+        log_debug("VC30Fx_IC_TYPE_VC30FS");
     } else if (VC30FC_DEV_REV_ID == pdev->id1 && VC30FC_FDY_VER_CHECK(pdev->id2)) {
         sample_info_handle->ic_type = VC30Fx_IC_TYPE_VC30FC;
         sample_info_handle->ic_FICV = pdev->id2;
-        VCARE_DBG_LOG("VC30Fx_IC_TYPE_VC30FC");
+        log_debug("VC30Fx_IC_TYPE_VC30FC");
     } else {
-        VCARE_DBG_ERR("vc30fx id error");
+        log_error("vc30fx id error");
         return ;
     }
     /* set & init param */
@@ -709,14 +729,14 @@ static void drv_work_init(vcare_ppg_device_t *pdev, int mode, unsigned short int
     unsigned char config_debug_reg[24] = {0};
     unsigned char debug_index = 0;
     vc30fx_read_register(0x40, config_debug_reg, 24);
-    VCARE_DBG_LOG("[0x40]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x40]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
     debug_index += 8;
-    VCARE_DBG_LOG("[0x48]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x48]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
     debug_index += 8;
-    VCARE_DBG_LOG("[0x50]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x50]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
     debug_index += 8;
 #endif
     core30fx_set_threshold_config(drv_info_handle->ppg_max_thval, drv_info_handle->ppg_min_thval);
@@ -741,7 +761,7 @@ static int drv_calc_biology_sense(vc30fx_wear_info *pwear_info, vc30fx_sample_in
         calc_ps = ps_data;
     }
     ret = f_BIOdetect(calc_bio_ext, calc_ps, VC30Fx_WEAR_PARAM_PSTH);
-    VCARE_DBG_LOG("__f_TPedge(%d,%d,%d)=%d =>[%d]", calc_bio_ext, calc_ps, VC30Fx_WEAR_PARAM_PSTH, ret, pwear_info->bio_wear_result);
+    log_debug("__f_TPedge(%d,%d,%d)=%d =>[%d]", calc_bio_ext, calc_ps, VC30Fx_WEAR_PARAM_PSTH, ret, pwear_info->bio_wear_result);
     if (VC30Fx_BIO_STA_HOLD == ret) {
         pwear_info->bio_wear_result = VC30Fx_BIO_STA_HOLD;
         pwear_info->algo_wear_status = WEAR_STA_HOLD; /* bio重新佩戴重置心率算法佩戴状态 */
@@ -775,9 +795,9 @@ static int drv_calc_biology_sense_absolute(vc30fx_wear_info *pwear_info, vc30fx_
     /* bio 有效判断 */
     if (bioinn_data && bioext_data) {
         bio_refence_base = bioinn_data - drv_info_handle->optimal_bio_gap;
-        VCARE_DBG_LOG("bio_gap=%d, bio_base=%d, bio_ext=%d, abs_gap(%d?[%d,%d])",
-                      drv_info_handle->optimal_bio_gap, bio_refence_base,
-                      bioext_data, VC_ABS(bioext_data, bio_refence_base), VC30Fx_WEAR_PARAM_BIO_ABS_DROP, VC30Fx_WEAR_PARAM_BIO_ABS_HOLD);
+        log_debug("bio_gap=%d, bio_base=%d, bio_ext=%d, abs_gap(%d?[%d,%d])",
+                  drv_info_handle->optimal_bio_gap, bio_refence_base,
+                  bioext_data, VC_ABS(bioext_data, bio_refence_base), VC30Fx_WEAR_PARAM_BIO_ABS_DROP, VC30Fx_WEAR_PARAM_BIO_ABS_HOLD);
         presult->extra_result.bioabs_calc = VC_ABS(bioext_data, bio_refence_base);
         if (VC_ABS(bioext_data, bio_refence_base) >= VC30Fx_WEAR_PARAM_BIO_ABS_HOLD) {
             pwear_info->bio_wear_result = VC30Fx_BIO_STA_HOLD;
@@ -807,7 +827,7 @@ static vc30fx_wear_change drv_wear_status_identify(vc30fx_wear_info *pwear_info,
     if (presult->slot_result[2].slot_storefifo == 1) {
         sample_num = presult->slot_result[2].ppg_num;
     }
-    VCARE_DBG_LOG("bio_n=%d, slot2ps_n=%d, sample_num=%d", presult->extra_result.bio_fifo_num, presult->slot_result[2].ppg_num, sample_num);
+    log_debug("bio_n=%d, slot2ps_n=%d, sample_num=%d", presult->extra_result.bio_fifo_num, presult->slot_result[2].ppg_num, sample_num);
     if (sample_num >= VC30Fx_PS2SLOT_BUFFER_NUM) {
         return ret_change;
     }
@@ -834,8 +854,8 @@ static vc30fx_wear_change drv_wear_status_identify(vc30fx_wear_info *pwear_info,
         ret_bio_algo = drv_calc_biology_sense_absolute(pwear_info, presult, bioinn, bioext, ps);
 #endif
 #endif
-        VCARE_DBG_LOG("status[%d] ps=%d,env=%d,bio_inn ext=(%d,%d)>bioret=%d", pwear_info->wear_status, ps, env, bioinn, bioext, ret_bio_algo);
-        VCARE_DBG_LOG("extern heart_algo_ret=%d,gsnesor_axis_ret=%d", pwear_info->algo_wear_status, pwear_info->acce_wear_status);
+        log_debug("status[%d] ps=%d,env=%d,bio_inn ext=(%d,%d)>bioret=%d", pwear_info->wear_status, ps, env, bioinn, bioext, ret_bio_algo);
+        log_debug("extern heart_algo_ret=%d,gsnesor_axis_ret=%d", pwear_info->algo_wear_status, pwear_info->acce_wear_status);
 #if (VC30Fx_FUNC_DISABLE == VC30Fx_CFG_WEAR_ALG_EN)
         pwear_info->algo_wear_status = WEAR_STA_HOLD;
 #endif
@@ -846,7 +866,7 @@ static vc30fx_wear_change drv_wear_status_identify(vc30fx_wear_info *pwear_info,
         case WEAR_STA_DROP:
             if ((ps >= VC30Fx_WEAR_PARAM_PSTH) && (env <= VC30Fx_WEAR_PARAM_ENVMIN) && (VC30Fx_BIO_STA_NONE == ret_bio_algo || VC30Fx_BIO_STA_HOLD == ret_bio_algo) &&
                 (WEAR_STA_HOLD == pwear_info->algo_wear_status) && (WEAR_STA_HOLD == pwear_info->acce_wear_status)) {
-                VCARE_DBG_LOG("drop->hold_cnt=%d", pwear_info->hold_cnt);
+                log_debug("drop->hold_cnt=%d", pwear_info->hold_cnt);
                 if (--pwear_info->hold_cnt <= 0) {
                     pwear_info->hold_cnt = VC30Fx_CFG_WEAR_HOLD_CNT;
                     pwear_info->drop_cnt = VC30Fx_CFG_WEAR_DROP_CNT;
@@ -863,7 +883,7 @@ static vc30fx_wear_change drv_wear_status_identify(vc30fx_wear_info *pwear_info,
                 if ((WEAR_STA_DROP == pwear_info->algo_wear_status) || (VC30Fx_BIO_STA_DROP == ret_bio_algo)) {
                     pwear_info->drop_cnt = 1;
                 }
-                VCARE_DBG_LOG("hold->drop_cnt=%d", pwear_info->drop_cnt);
+                log_debug("hold->drop_cnt=%d", pwear_info->drop_cnt);
                 if (--pwear_info->drop_cnt <= 0) {
                     pwear_info->hold_cnt = VC30Fx_CFG_WEAR_HOLD_CNT;
                     pwear_info->drop_cnt = VC30Fx_CFG_WEAR_DROP_CNT;
@@ -908,11 +928,11 @@ static wear_status drv_get_wear_status(vcare_ppg_device_t *pdev)
     }
     drv_read_event_status(drv_info_handle);
     if (drv_info_handle->int_event & (VC30Fx_EVENT_CONFLICT)) {
-        VCARE_DBG_ERR("wear_work_status=%x", drv_info_handle->int_event);
+        log_error("wear_work_status=%x", drv_info_handle->int_event);
         return calc_status;
     }
     drv_read_wear_sample_data(result_info_ptr);
-    VCARE_DBG_LOG("fifo_read_data_valid=%d", drv_info_handle->fifo_read_data_valid);
+    log_debug("fifo_read_data_valid=%d", drv_info_handle->fifo_read_data_valid);
 #if VC30Fx_VC30FC_PPGPS_FREQUENCY /* 同频情况下，当摘下时PS不存fifo时，无fifo数据，fifo_read_data_valid无法置1，需要根据中断原因来执行佩戴检测 */
     if (1 != result_info_ptr->ps_div && drv_info_handle->int_event & VC30Fx_EVENT_INTPS_RDY) {
         wear_event = 1;
@@ -954,7 +974,7 @@ static int drv_adjust_overload_max_current(vc30fx_sample_info_t *psample_result_
     for (slot_i = 0; slot_i < 2; slot_i++) {
         padjust_info = adjust_info_handle[slot_i];
         if (ovload_mark[slot_i]) {
-            VCARE_DBG_LOG("ovload_mark[%d] now_cur=%d", slot_i, padjust_info->current);
+            log_debug("ovload_mark[%d] now_cur=%d", slot_i, padjust_info->current);
             if (padjust_info->current != 0) {
                 padjust_info->current--;
                 padjust_info->max_current = padjust_info->current;
@@ -976,10 +996,10 @@ static int drv_adjust_slot_current_res(vc30fx_adjust_info *padjust_info, unsigne
     unsigned char old_res_level = padjust_info->res_level;
     unsigned char old_current = padjust_info->current;
     unsigned short int old_current_step = padjust_info->adj_param.current_step;
-    //VCARE_DBG_LOG("ADF_SLOT[%d]-dir(%d)-I_R thh[%d,%d] I_R now(%d,%d)", slot_index, padjust_info->adj_param.direction, thh_res_level, thh_current, old_res_level, old_current);
+    //log_debug("ADF_SLOT[%d]-dir(%d)-I_R thh[%d,%d] I_R now(%d,%d)", slot_index, padjust_info->adj_param.direction, thh_res_level, thh_current, old_res_level, old_current);
     if (padjust_info->current == thh_current) {
         if (padjust_info->res_level == thh_res_level) {
-            VCARE_DBG_ERR("RESLVL-OFFSET-LOW IS MAX/MIN--[%d]>=[%d]", old_res_level, thh_res_level);
+            log_error("RESLVL-OFFSET-LOW IS MAX/MIN--[%d]>=[%d]", old_res_level, thh_res_level);
             return -1;
         } else {
             if (padjust_info->adj_param.direction == VC30Fx_ADJUST_DIR_UP) {
@@ -1008,7 +1028,7 @@ static int drv_adjust_slot_current_res(vc30fx_adjust_info *padjust_info, unsigne
         }
         padjust_info->adj_param.direction_last = padjust_info->adj_param.direction;
     }
-    VCARE_DBG_LOG("index=%d,res_level=%d,current=%d,step=%d", slot_index, padjust_info->res_level, padjust_info->current, padjust_info->adj_param.current_step);
+    log_debug("index=%d,res_level=%d,current=%d,step=%d", slot_index, padjust_info->res_level, padjust_info->current, padjust_info->adj_param.current_step);
     if (WORK_MODE_HR == drv_info_handle->work_mode) { /* 暂定得是只有心率模式下支持修改过采配置 */
         allow_oversample = 1;
     }
@@ -1028,7 +1048,7 @@ static int drv_adjust_slot_ppg_overflow(vc30fx_sample_info_t *psample_result_inf
         pslot_ret = &psample_result_info->slot_result[slot_i];
         over_ppgdata = pslot_ret->u.pre_data;
         if (1 == pslot_ret->slot_enwork) {
-            VCARE_DBG_LOG("ppg_overflow(%d)=4bit[%d]", over_ppgdata, VC30Fx_PPG_CONV_BIT4(over_ppgdata));
+            log_debug("ppg_overflow(%d)=4bit[%d]", over_ppgdata, VC30Fx_PPG_CONV_BIT4(over_ppgdata));
             if (VC30Fx_PPG_CONV_BIT4(over_ppgdata) > drv_info_handle->ppg_max_thval) {
                 padjust_info->adj_param.direction = VC30Fx_ADJUST_DIR_DOWN;
                 drv_adjust_slot_current_res(padjust_info, slot_i, padjust_info->const_min_res_level, padjust_info->const_min_current);
@@ -1038,7 +1058,7 @@ static int drv_adjust_slot_ppg_overflow(vc30fx_sample_info_t *psample_result_inf
             } else {
                 padjust_info->adj_param.direction = VC30Fx_ADJUST_DIR_NONE;
                 padjust_info->adj_param.direction_last = VC30Fx_ADJUST_DIR_NONE;
-                VCARE_DBG_LOG("slot[%d] in the range,clear slot adjustment direction", slot_i);
+                log_debug("slot[%d] in the range,clear slot adjustment direction", slot_i);
             }
         }
     }
@@ -1080,19 +1100,19 @@ static int drv_calibration_oscclk_frequency(vc30fx_clk_info *pclk_info)
     core30fx_read_rcosc_tick(sample_info_handle, &osc_tick[0], &osc_tick[1]);
     clock_tick[1] = vc30fx_get_cputimer_tick();
     /*========~~~~~~~~~~~~~~~~~~~~~~AK-自定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    printf(" -0-[MY]--------------  [%s]:%d  --------------osc:%d %d  clock:%d %d\n", __func__, __LINE__, osc_tick[0], osc_tick[1], clock_tick[0], clock_tick[1]);
+    log_debug("osc:%d %d  clock:%d %d", osc_tick[0], osc_tick[1], clock_tick[0], clock_tick[1]);
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AK-自定义-结束~~~~~~~~~~~~~~~~~~========*/
     if ((osc_tick[0] > osc_tick[1]) || (clock_tick[0] > clock_tick[1])) {
         pclk_info->count_index = 0;
-        VCARE_DBG_ERR("osc/clk ticks is error\n");
+        log_error("osc/clk ticks is error");
         return 1;
     }
     pclk_info->osc_count[pclk_info->count_index * 2] = osc_tick[0];
     pclk_info->osc_count[pclk_info->count_index * 2 + 1] = osc_tick[1];
     pclk_info->clk_count[pclk_info->count_index * 2] = clock_tick[0];
     pclk_info->clk_count[pclk_info->count_index * 2 + 1] = clock_tick[1];
-    VCARE_DBG_LOG("[%d]osc_count=%d, %d, %d, %d, %d, %d\n", pclk_info->count_index, pclk_info->osc_count[0], pclk_info->osc_count[1], pclk_info->osc_count[2], pclk_info->osc_count[3], pclk_info->osc_count[4], pclk_info->osc_count[5]);
-    VCARE_DBG_LOG("[%d]clk_count=%d, %d, %d, %d, %d, %d\n", pclk_info->count_index, pclk_info->clk_count[0], pclk_info->clk_count[1], pclk_info->clk_count[2], pclk_info->clk_count[3], pclk_info->clk_count[4], pclk_info->clk_count[5]);
+    log_debug("[%d]osc_count=%d, %d, %d, %d, %d, %d", pclk_info->count_index, pclk_info->osc_count[0], pclk_info->osc_count[1], pclk_info->osc_count[2], pclk_info->osc_count[3], pclk_info->osc_count[4], pclk_info->osc_count[5]);
+    log_debug("[%d]clk_count=%d, %d, %d, %d, %d, %d", pclk_info->count_index, pclk_info->clk_count[0], pclk_info->clk_count[1], pclk_info->clk_count[2], pclk_info->clk_count[3], pclk_info->clk_count[4], pclk_info->clk_count[5]);
     pclk_info->count_index++;
     if (pclk_info->count_index >= 3) {
         pclk_info->count_index = 0;
@@ -1102,19 +1122,16 @@ static int drv_calibration_oscclk_frequency(vc30fx_clk_info *pclk_info)
             count_vaild = count_vaild && (!(pclk_info->clk_count[2 * i + 2] == pclk_info->clk_count[2 * i])); /* avoid divisor==0, diffCountIsOk set false */
             count_vaild = count_vaild && (!(pclk_info->osc_count[2 * i + 2] == pclk_info->osc_count[2 * i])); /* avoid divisor==0, diffCountIsOk set false */
         }
-        printf(" -0- count_vaild=%d\n", count_vaild);
+        log_debug("count_vaild=%d", count_vaild);
         if (count_vaild) {
 #if MY_VC30FX_MODIFY
             // null
 #else
-#if !PMC_DEVELOP_ENABLE
-            VC30Fx_CFG_MCU_TICK_FREQUENCY = __get_lrc_hz() / 4;
-#endif
 #endif
             for (i = 0; i < 2; i++) {
                 osc_frequency[i] = VC_ABS_MAX((unsigned int)pclk_info->osc_count[2 * i + 2], pclk_info->osc_count[2 * i], 0xffff) * VC30Fx_CFG_MCU_TICK_FREQUENCY / VC_ABS_MAX((unsigned int)pclk_info->clk_count[2 * i + 2], pclk_info->clk_count[2 * i], VC30Fx_CFG_MCU_TICK_MAX);
 
-                VCARE_DBG_LOG("f20kOsc[20K_%d]=(%d)", i, osc_frequency[i]);
+                log_debug("f20kOsc[20K_%d]=(%d)", i, osc_frequency[i]);
             }
             if (VC_ABS(osc_frequency[0], osc_frequency[1]) <= 20) {
                 pclk_info->rcosc_frequency = (osc_frequency[0] + osc_frequency[1]) / 2;
@@ -1140,20 +1157,20 @@ static int drv_auto_calibration_oscclk(vc30fx_clk_info *pclk_info)
             pclk_info->osc_gap_cnt = 0;
             rcosc_max = rcosc_mid + 2; /* 修正成功后，扩张一个调整点的范围，以便温漂时调整余量 */
             rcosc_min = rcosc_mid - 2;
-            VCARE_DBG_LOG("clk_calc_status=%d,osc_gap_cnt=%d", pclk_info->clk_calc_status, pclk_info->osc_gap_cnt);
+            log_debug("clk_calc_status=%d,osc_gap_cnt=%d", pclk_info->clk_calc_status, pclk_info->osc_gap_cnt);
         }
         rcosc_mid = (rcosc_max + rcosc_min) / 2;
-        VCARE_DBG_LOG("min,max[%d,%d]~min(%d)", rcosc_min, rcosc_max, rcosc_mid);
+        log_debug("min,max[%d,%d]~min(%d)", rcosc_min, rcosc_max, rcosc_mid);
         core30fx_set_rcosc_frequency(rcosc_mid, sample_info_handle->ic_type);
         pclk_info->rcosc_calibration = rcosc_mid;
         /* 如果发生温漂，修改收缩的上下限，进行缓慢修正时钟 */
         if ((pclk_info->rcosc_frequency <= VC30Fx_FREQUENCY_MIN) && VC_ABS(rcosc_max, rcosc_min) <= 2) {
             rcosc_min -= 2;
-            VCARE_DBG_LOG("!!!temp->min,max[%d,%d]~min(%d)", rcosc_min, rcosc_max, rcosc_mid);
+            log_debug("!!!temp->min,max[%d,%d]~min(%d)", rcosc_min, rcosc_max, rcosc_mid);
         }
         if ((pclk_info->rcosc_frequency >= VC30Fx_FREQUENCY_MAX) && VC_ABS(rcosc_max, rcosc_min) <= 2) {
             rcosc_max += 2;
-            VCARE_DBG_LOG("!!!temp->min,max[%d,%d]~min(%d)", rcosc_min, rcosc_max, rcosc_mid);
+            log_debug("!!!temp->min,max[%d,%d]~min(%d)", rcosc_min, rcosc_max, rcosc_mid);
         }
     }
     return 0;
@@ -1168,7 +1185,7 @@ static int drv_calibration_oscclk_config(vcare_ppg_device_t *pdev)
     if (pclk_info->clk_calc_status && pclk_info->osc_gap_cnt <= VC30Fx_CFG_CLK_CALC_GAPTIME)
 #endif
     {
-        VCARE_DBG_LOG("status[%d],osc_gap_cnt[%d]<=%d", pclk_info->clk_calc_status, pclk_info->osc_gap_cnt, VC30Fx_CFG_CLK_CALC_GAPTIME);
+        log_debug("status[%d],osc_gap_cnt[%d]<=%d", pclk_info->clk_calc_status, pclk_info->osc_gap_cnt, VC30Fx_CFG_CLK_CALC_GAPTIME);
         pclk_info->osc_gap_cnt++;
         return 0;
     }
@@ -1233,14 +1250,14 @@ static int drv_check_running_gaptime(void)
     } else {
         /* IC问题，可能出现其中一个tick低位出现异常，如果出现异常则取另外一共tick作为运算准 */
         curr_ticks = (ticks2 & 0xff) ? (ticks2) : (ticks1);
-        VCARE_DBG_ERR("read check tick failed(%d,%d)", ticks1, ticks2);
+        log_error("read check tick failed(%d,%d)", ticks1, ticks2);
     }
     // ticks_gap = 2000;
     if (0 != curr_ticks && 0 != clk_info_handle->last_check_ticks) {
         ticks_gap = (curr_ticks >= clk_info_handle->last_check_ticks) ? (curr_ticks - clk_info_handle->last_check_ticks) : (0xffff + curr_ticks - clk_info_handle->last_check_ticks);
     }
     if (ticks_gap <= 20 * times_gap) { /* 20k,1ms~20ticks */
-        VCARE_DBG_ERR("last(%d)now(%d)gap[%d<%d]", clk_info_handle->last_check_ticks, curr_ticks, ticks_gap, 20 * times_gap);
+        log_error("last(%d)now(%d)gap[%d<%d]", clk_info_handle->last_check_ticks, curr_ticks, ticks_gap, 20 * times_gap);
         ret = -1;
     }
     clk_info_handle->last_check_ticks = curr_ticks;
@@ -1273,14 +1290,14 @@ static void drv_fifo_error_softreset(void)
     unsigned char config_debug_reg[24] = {0};
     unsigned char debug_index = 0;
     vc30fx_read_register(0x40, config_debug_reg, 24);
-    VCARE_DBG_LOG("[0x40]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x40]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
     debug_index += 8;
-    VCARE_DBG_LOG("[0x48]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x48]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
     debug_index += 8;
-    VCARE_DBG_LOG("[0x50]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x50]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
     debug_index += 8;
 #endif
 }
@@ -1301,7 +1318,7 @@ static int drv_read_fifo_data(vc30fx_sample_info_t *psample_result)
     }
     drv_info_handle->fifo_read_finished_sync = 1;
     read_fifo_ret = core30fx_read_fifo_data(sample_result_ptr, &drv_info_handle->read_fifo_address, drv_info_handle->write_fifo_address_bak);
-    VCARE_DBG_LOG("read_fifo updata read address: %d , write_address_bak:%d, write_address_rel:%d ", drv_info_handle->read_fifo_address, drv_info_handle->write_fifo_address_bak, drv_info_handle->write_fifo_address_rel);
+    log_debug("read_fifo updata read address: %d , write_address_bak:%d, write_address_rel:%d ", drv_info_handle->read_fifo_address, drv_info_handle->write_fifo_address_bak, drv_info_handle->write_fifo_address_rel);
     if (read_fifo_ret >= 0) {
         drv_info_handle->fifo_read_data_valid = 1;
         if (VC30FS_FDY_VER_ID1 == sample_result_ptr->ic_FICV || VC30FC_FDY_VER_ID1 == sample_result_ptr->ic_FICV) {
@@ -1315,12 +1332,12 @@ static int drv_read_fifo_data(vc30fx_sample_info_t *psample_result)
                 drv_info_handle->read_fifo_address = drv_info_handle->write_fifo_address_bak;
                 drv_info_handle->fifo_read_data_valid = 2;
                 drv_sample_result_memroy_finished(sample_info_handle);
-                VCARE_DBG_LOG("delay response read_addr updata:%d=write_addr:%d", drv_info_handle->read_fifo_address, drv_info_handle->write_fifo_address_bak);
+                log_debug("delay response read_addr updata:%d=write_addr:%d", drv_info_handle->read_fifo_address, drv_info_handle->write_fifo_address_bak);
             }
             /* 20240119.校验RO_PS与fifo_PS是否异常（如果异常则可以判断为fifo异常错位：1.过度延后导致的fifo覆盖反转，2.ICfifo数据异常丢失） */
             if (sample_result_ptr->slot_result[2].slot_enwork && sample_result_ptr->slot_result[2].ppg_num != 0) {
                 if (sample_result_ptr->slot_result[2].ppg_buffer[sample_result_ptr->slot_result[2].ppg_num - 1] >> 8 != sample_result_ptr->slot_result[2].u.ps_data) {
-                    VCARE_DBG_LOG("===PS_FIFO_ERROR===") ;
+                    log_debug("===PS_FIFO_ERROR===") ;
                     drv_fifo_error_softreset();
                 }
             }
@@ -1329,15 +1346,21 @@ static int drv_read_fifo_data(vc30fx_sample_info_t *psample_result)
         if (drv_info_handle->int_event & VC30Fx_EVENT_INSAMPLE && 1 == sample_result_ptr->extra_result.biodata_storefifo) {
             if (sample_result_ptr->extra_result.bioext_data != sample_result_ptr->extra_result.bioext_buffer[sample_result_ptr->extra_result.bio_fifo_num - 1]) {
                 sample_result_ptr->extra_result.bioext_data = sample_result_ptr->extra_result.bioext_buffer[sample_result_ptr->extra_result.bio_fifo_num - 1];
-                VCARE_DBG_ERR("INSAMPLE_ERR_EXTBIO-modify=%d", sample_result_ptr->extra_result.bioext_data);
+                log_error("INSAMPLE_ERR_EXTBIO-modify=%d", sample_result_ptr->extra_result.bioext_data);
             }
             if (sample_result_ptr->extra_result.bioinn_data != sample_result_ptr->extra_result.bioinn_buffer[sample_result_ptr->extra_result.bio_fifo_num - 1]) {
                 sample_result_ptr->extra_result.bioinn_data = sample_result_ptr->extra_result.bioinn_buffer[sample_result_ptr->extra_result.bio_fifo_num - 1];
-                VCARE_DBG_ERR("INSAMPLE_ERR_INNBIO-modify=%d", sample_result_ptr->extra_result.bioinn_data);
+                log_error("INSAMPLE_ERR_INNBIO-modify=%d", sample_result_ptr->extra_result.bioinn_data);
             }
         }
     } else if (read_fifo_ret < 0) {
-        VCARE_DBG_ERR("read_fifo_ret error(%d)", read_fifo_ret);
+        if (-2 == read_fifo_ret) {
+            /* -2 为 core30fx_read_fifo_data 的「FIFO 无新数据」（读写指针相同），
+             * 轮询周期快于出数速率时的正常中间态，非故障；-1/-3 才按 error 上报 */
+            log_warn("read_fifo no data(%d)", read_fifo_ret);
+        } else {
+            log_error("read_fifo_ret error(%d)", read_fifo_ret);
+        }
         return read_fifo_ret;
     }
     return 0;
@@ -1349,10 +1372,10 @@ static int drv_read_sample_param(vc30fx_sample_info_t *psample_ret)
     unsigned char slot_current = 0, slot_res_lvl = 0;
     if (0 == drv_info_handle->param_read_finished_sync) {
         core30fx_read_output(psample_ret);
-        VCARE_DBG_LOG("env_hex=%x-%x-%x", psample_ret->slot_result[0].env_data, psample_ret->slot_result[1].env_data, psample_ret->slot_result[2].env_data);
-        VCARE_DBG_LOG("ppg/ps_data=%d-%d-%d", psample_ret->slot_result[0].u.ps_data, psample_ret->slot_result[1].u.ps_data, psample_ret->slot_result[2].u.ps_data);
-        VCARE_DBG_LOG("bio01_data=%d-%d", psample_ret->extra_result.bioinn_data, psample_ret->extra_result.bioext_data);
-        VCARE_DBG_LOG("temp01_data=%d-%d-ref(%d)", psample_ret->extra_result.tempinn_data, psample_ret->extra_result.tempext_data, psample_ret->extra_result.tempref_data);
+        log_debug("env_hex=%x-%x-%x", psample_ret->slot_result[0].env_data, psample_ret->slot_result[1].env_data, psample_ret->slot_result[2].env_data);
+        log_debug("ppg/ps_data=%d-%d-%d", psample_ret->slot_result[0].u.ps_data, psample_ret->slot_result[1].u.ps_data, psample_ret->slot_result[2].u.ps_data);
+        log_debug("bio01_data=%d-%d", psample_ret->extra_result.bioinn_data, psample_ret->extra_result.bioext_data);
+        log_debug("temp01_data=%d-%d-ref(%d)", psample_ret->extra_result.tempinn_data, psample_ret->extra_result.tempext_data, psample_ret->extra_result.tempref_data);
         if (psample_ret->ic_type == VC30Fx_IC_TYPE_VC30FS) {
             psample_ret->slot_result[0].env_data = VC30FS_ENV_CONVERT(psample_ret->slot_result[0].env_data);
             psample_ret->slot_result[1].env_data = VC30FS_ENV_CONVERT(psample_ret->slot_result[1].env_data);
@@ -1370,10 +1393,10 @@ static int drv_read_sample_param(vc30fx_sample_info_t *psample_ret)
             adjust_info_handle[slot_i]->res_level = slot_res_lvl;
         }
         drv_info_handle->param_read_finished_sync = 1;
-        VCARE_DBG_LOG("slot[0]cur%d,res%d ^ slot[1]cur%d,res%d ^ slot[2]cur%d,res%d",
-                      psample_ret->slot_result[0].slot_current, psample_ret->slot_result[0].slot_resistance,
-                      psample_ret->slot_result[1].slot_current, psample_ret->slot_result[1].slot_resistance,
-                      psample_ret->slot_result[2].slot_current, psample_ret->slot_result[2].slot_resistance);
+        log_debug("slot[0]cur%d,res%d ^ slot[1]cur%d,res%d ^ slot[2]cur%d,res%d",
+                  psample_ret->slot_result[0].slot_current, psample_ret->slot_result[0].slot_resistance,
+                  psample_ret->slot_result[1].slot_current, psample_ret->slot_result[1].slot_resistance,
+                  psample_ret->slot_result[2].slot_current, psample_ret->slot_result[2].slot_resistance);
     }
     return 0;
 }
@@ -1383,7 +1406,7 @@ static int drv_read_event_status(vc30fx_drv_info *pdrv_info)
     if (0 == pdrv_info->event_read_finished_sync) {
         core30fx_read_event_status(sample_info_handle, &pdrv_info->int_event, &pdrv_info->ov_status, &pdrv_info->write_fifo_address_bak, &pdrv_info->write_fifo_address_rel);
         pdrv_info->event_read_finished_sync = 1;
-        VCARE_DBG_LOG("read_event=[%x], read_status=[%x], read_Windex=bak[%x]~rel[%x]", pdrv_info->int_event, pdrv_info->ov_status, pdrv_info->write_fifo_address_bak, pdrv_info->write_fifo_address_rel);
+        log_debug("read_event=[%x], read_status=[%x], read_Windex=bak[%x]~rel[%x]", pdrv_info->int_event, pdrv_info->ov_status, pdrv_info->write_fifo_address_bak, pdrv_info->write_fifo_address_rel);
     }
     return 0;
 }
@@ -1403,7 +1426,7 @@ static int drv_ppg_mode_handler(const void *ops_self, vcare_ppg_device_t *pdev)
     if (ret >= 0 && 1 == clk_info_handle->clk_calc_status) {
         drv_read_fifo_data(sample_result_ptr);
     } else {
-        VCARE_DBG_ERR("WORK_MODE_[%d] clk_status[%d]", self_ptr->mode, clk_info_handle->clk_calc_status);
+        log_error("WORK_MODE_[%d] clk_status[%d]", self_ptr->mode, clk_info_handle->clk_calc_status);
     }
     return ret;
 }
@@ -1442,7 +1465,7 @@ int vc30fx_drv_init_start_work(void *pdevice, int workmode, unsigned short int p
     pdev->result = sample_info_handle; /* 采样指针传递 */
     core30fx_read_software_version(&drv_ver);
     core30fx_read_id(&pdev->id1, &pdev->id2);
-    VCARE_DBG_LOG("[%s]devID0-2=0x%02x 0x%02x", drv_ver, pdev->id1, pdev->id2);
+    log_debug("[%s]devID0-2=0x%02x 0x%02x", drv_ver, pdev->id1, pdev->id2);
     mode_count = sizeof(mode_ops) / sizeof(mode_ops[0]);
     sel_mode_ops = NULL;
     for (mode_index = 0; mode_index < mode_count; mode_index++) {
@@ -1452,7 +1475,7 @@ int vc30fx_drv_init_start_work(void *pdevice, int workmode, unsigned short int p
         }
     }
     if (!sel_mode_ops) {
-        VCARE_DBG_ERR("work_mode is error(NULL),please code mode");
+        log_error("work_mode is error(NULL),please code mode");
         return -1;
     }
     drv_work_init(pdev, workmode, ppgdiv, psdiv, fifodiv);
@@ -1532,12 +1555,12 @@ int vc30fx_drv_get_result_handler(void *pdevice)
     /* 读取基础采样数据 */
     drv_read_event_status(drv_info_handle);
     if (drv_info_handle->int_event & (VC30Fx_EVENT_CONFLICT)) {
-        VCARE_DBG_ERR("work_status=%x", drv_info_handle->int_event);
+        log_error("work_status=%x", drv_info_handle->int_event);
         return -1;
     }
     /* check gap time */
     if (0 != drv_check_running_gaptime()) {
-        VCARE_DBG_ERR("running gaptime");
+        log_error("running gaptime");
         return -1;
     }
     drv_read_sample_param(sample_result_ptr);
@@ -1593,8 +1616,8 @@ static unsigned char drv_calc_check_frequency_abnormal(unsigned short dev_tick1,
     check_dev_tick[1] = check_dev_tick[0];
     check_cpu_tick[0] = cpu_tick1;
     check_dev_tick[0] = dev_tick1;
-    VCARE_DBG_LOG("cpu_tick:%d,%d", check_cpu_tick[0], check_cpu_tick[1]);
-    VCARE_DBG_LOG("dev_tick:%d,%d", check_dev_tick[0], check_dev_tick[1]);
+    log_debug("cpu_tick:%d,%d", check_cpu_tick[0], check_cpu_tick[1]);
+    log_debug("dev_tick:%d,%d", check_dev_tick[0], check_dev_tick[1]);
     if (VC_ABS_MAX(dev_tick2, dev_tick1, 0xffff) >= 20 || VC_ABS_MAX(cpu_tick2, cpu_tick1, VC30Fx_CFG_MCU_TICK_MAX) >= 32) {
         check_cpu_tick[0] = 0, check_cpu_tick[1] = 0;
         check_dev_tick[0] = 0, check_dev_tick[1] = 0;
@@ -1612,7 +1635,7 @@ static unsigned char drv_calc_check_frequency_abnormal(unsigned short dev_tick1,
     calc_freq[1] = calc_freq[0];
     calc_freq[0] = (float)dev_tick_diff / gap_time_diff;
     if (calc_freq[0] && calc_freq[1] && VC_ABS(calc_freq[0], calc_freq[1]) <= 100) {
-        VCARE_DBG_LOG("check temp freq=[%d][%d](%d,%d)", calc_freq[0], calc_freq[1], cpu_tick_diff, dev_tick_diff);
+        log_debug("check temp freq=[%d][%d](%d,%d)", calc_freq[0], calc_freq[1], cpu_tick_diff, dev_tick_diff);
         if (20000 >= calc_freq[0] && (20000 - calc_freq[0]) / 40 >= 40) { /* 相较于上电时的频率温升40即返回出错 */
             check_cpu_tick[0] = 0, check_cpu_tick[1] = 0;
             check_dev_tick[0] = 0, check_dev_tick[1] = 0;
@@ -1657,7 +1680,7 @@ int vc30fx_drv_read_check_temperature_abnormal(void *pdevice, unsigned char *p_f
     *p_freq_ret = drv_calc_check_frequency_abnormal(*pdev_cnt1, *pdev_cnt2, check_clk_tick[0], check_clk_tick[1]);
     /* 检验内部温度是否正常 */
 #if 1 /* 使用上电时的内部温度和当前的相对温度进行比较 或者是 内部一致就使用绝对比较 */
-    VCARE_DBG_LOG("startup_inntemperature=%d", startup_inntemperature);
+    log_debug("startup_inntemperature=%d", startup_inntemperature);
     if (sample_info_handle->extra_result.tempinn_data > 0 && startup_inntemperature > sample_info_handle->extra_result.tempinn_data && (startup_inntemperature - sample_info_handle->extra_result.tempinn_data) >= 1000)
 #else
     if (sample_info_handle->extra_result.tempinn_data > 0 && sample_info_handle->extra_result.tempinn_data <= 18000) /* 如果客户那边内部得温度常温都在19000左右，就可以直接判断绝对值 */
@@ -1670,13 +1693,13 @@ int vc30fx_drv_read_check_temperature_abnormal(void *pdevice, unsigned char *p_f
         fill_index = 0;
         fiil_mark = 1;
     }
-//	VCARE_DBG_LOG("innbio:%d,%d,%d,%d,%d  %d,%d,%d,%d,%d",check_innbio_buff[0],check_innbio_buff[1],check_innbio_buff[2],check_innbio_buff[3],check_innbio_buff[4],
+//	log_debug("innbio:%d,%d,%d,%d,%d  %d,%d,%d,%d,%d",check_innbio_buff[0],check_innbio_buff[1],check_innbio_buff[2],check_innbio_buff[3],check_innbio_buff[4],
 //	check_innbio_buff[5],check_innbio_buff[6],check_innbio_buff[7],check_innbio_buff[8],check_innbio_buff[9] );
-//	VCARE_DBG_LOG("extbio:%d,%d,%d,%d,%d  %d,%d,%d,%d,%d",check_extbio_buff[0],check_extbio_buff[1],check_extbio_buff[2],check_extbio_buff[3],check_extbio_buff[4],
+//	log_debug("extbio:%d,%d,%d,%d,%d  %d,%d,%d,%d,%d",check_extbio_buff[0],check_extbio_buff[1],check_extbio_buff[2],check_extbio_buff[3],check_extbio_buff[4],
 //	check_extbio_buff[5],check_extbio_buff[6],check_extbio_buff[7],check_extbio_buff[8],check_extbio_buff[9] );
-//	VCARE_DBG_LOG("tick1:%d,%d,%d,%d,%d  %d,%d,%d,%d,%d",check_tick1_buff[0],check_tick1_buff[1],check_tick1_buff[2],check_tick1_buff[3],check_tick1_buff[4],
+//	log_debug("tick1:%d,%d,%d,%d,%d  %d,%d,%d,%d,%d",check_tick1_buff[0],check_tick1_buff[1],check_tick1_buff[2],check_tick1_buff[3],check_tick1_buff[4],
 //	check_tick1_buff[5],check_tick1_buff[6],check_tick1_buff[7],check_tick1_buff[8],check_tick1_buff[9] );
-//	VCARE_DBG_LOG("tick2:%d,%d,%d,%d,%d  %d,%d,%d,%d,%d",check_tick2_buff[0],check_tick2_buff[1],check_tick2_buff[2],check_tick2_buff[3],check_tick2_buff[4],
+//	log_debug("tick2:%d,%d,%d,%d,%d  %d,%d,%d,%d,%d",check_tick2_buff[0],check_tick2_buff[1],check_tick2_buff[2],check_tick2_buff[3],check_tick2_buff[4],
 //	check_tick2_buff[5],check_tick2_buff[6],check_tick2_buff[7],check_tick2_buff[8],check_tick2_buff[9] );
     if (fiil_mark) {
         for (i = 0; i < CHECK_BUFF_SIZE - 1; i++) {
@@ -1712,14 +1735,14 @@ int vc30fx_drv_finished_sync(void *pdevice)
     unsigned char config_debug_reg[24] = {0};
     unsigned char debug_index = 0;
     vc30fx_read_register(0x40, config_debug_reg, 24);
-    VCARE_DBG_LOG("[0x40]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x40]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
     debug_index += 8;
-    VCARE_DBG_LOG("[0x48]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x48]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
     debug_index += 8;
-    VCARE_DBG_LOG("[0x50]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
-                  config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
+    log_debug("[0x50]0x%02x,0x%02x,0x%02x,0x%02x 0x%02x,0x%02x,0x%02x,0x%02x", config_debug_reg[0 + debug_index], config_debug_reg[1 + debug_index], config_debug_reg[2 + debug_index], config_debug_reg[3 + debug_index],
+              config_debug_reg[4 + debug_index], config_debug_reg[5 + debug_index], config_debug_reg[6 + debug_index], config_debug_reg[7 + debug_index]);
 #endif
     return 0;
 }

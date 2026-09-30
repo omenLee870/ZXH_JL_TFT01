@@ -154,36 +154,5 @@ static inline float vcare_R_exponent_func(float base_r, unsigned char data_r)
 #endif
 
 /**-------------------- debug functions --------------------**/
-extern void log_direct(unsigned int info, const char *fmt, ...);
-#define VCARE_DBG_LEVEL 0//2
-
-#if (VCARE_DBG_LEVEL == 0)
-#define VCARE_DBG_LOG(fmt, ...)  printf(fmt, ##__VA_ARGS__)
-#define VCARE_DBG_ERR(fmt, ...)  printf(fmt, ##__VA_ARGS__)
-#elif (VCARE_DBG_LEVEL == 1)
-#define VCARE_DBG_LOG(fmt, ...)
-#define VCARE_DBG_ERR(fmt, ...)                                                             \
-	do                                                                                      \
-	{                                                                                       \
-		printf("[VCARE_ERR](%d)" fmt, __LINE__, ##__VA_ARGS__); \
-	} while (0)
-#elif (VCARE_DBG_LEVEL == 2)
-#define VCARE_DBG_LOG(fmt, ...)                                                             \
-	do                                                                                      \
-	{                                                                                       \
-		printf("[VCARE_LOG](%d)" fmt, __LINE__, ##__VA_ARGS__); \
-	} while (0)
-#define VCARE_DBG_ERR(fmt, ...)                                                             \
-	do                                                                                      \
-	{                                                                                       \
-		printf("[VCARE_ERR](%d)" fmt, __LINE__, ##__VA_ARGS__); \
-	} while (0)
-#endif
-
-/*
-extern int p_debuglog_user(const char *fmt, ...);
-#define VCARE_DBG_LOG(fmt, ...) do{ if(p_debuglog_user)p_debuglog_user("[VCARE_LOG]%s(%d)"fmt, __func__, __LINE__, ##__VA_ARGS__); }while(0)
-#define VCARE_DBG_ERR(fmt, ...) do{ if(p_debuglog_user)p_debuglog_user("[VCARE_ERR]%s(%d)"fmt, __func__, __LINE__, ##__VA_ARGS__); }while(0)
-*/
 
 #endif

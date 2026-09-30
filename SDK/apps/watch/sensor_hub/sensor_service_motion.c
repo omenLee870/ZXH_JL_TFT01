@@ -7,6 +7,8 @@
 #include "timestamp/timestamp.h"
 #include "sensor_hub.h"
 #include "health_manager.h"
+#include "sensor_service.h"
+#include "rtc/rtc_dev.h"
 
 #define LOG_TAG_CONST      	SENSOR_HUB
 #define LOG_TAG     		"[SENSOR_SRV_MOTION]"
@@ -24,7 +26,8 @@
 #endif
 
 
-#if TCFG_SPORT_HEALTH_ENABLE &&TCFG_SENSOR_HUB	&& (TCFG_ACCELER_MASTER_ENABLE || TCFG_ACCELER_P11_ENABLE)
+/* pmc_gsensor: P11 模式大核不跑算法，仅 master 直连时编译 */
+#if (TCFG_SPORT_HEALTH_ENABLE && TCFG_SENSOR_HUB && TCFG_ACCELER_MASTER_ENABLE)
 
 enum {
     G_SENSOR_DIR_TOP,
@@ -196,4 +199,58 @@ void sensor_service_motion_get(struct algo_value *buf)
     }
     memcpy(buf, &out.steps, sizeof(struct algo_value));
 }
+
+/* Adapter for .sensor_service segment: init flag -> legacy named init */
+static int motion_init(int enable)
+{
+    if (enable) {
+        sensor_service_motion_init();
+    }
+    return SHM_ERR_OK;
+}
+
+/* Adapter for .sensor_service segment: get_result -> legacy named get */
+static int motion_get_result(int type, void *p)
+{
+    int ret = SHM_ERR_OK;
+    switch (type) {
+    case SHM_GET_TYPE_REAL_VALUE:
+        if (p == NULL) {
+            ret = -SHM_ERR_MOD_INVALID_PARAM;
+            break;
+        }
+        sensor_service_motion_get((struct algo_value *)p);
+        break;
+    default:
+        ret = -SHM_ERR_MOD_NO_THIS_TYPE;
+        break;
+    }
+    return ret;
+}
+
+/* Adapter for .sensor_service segment: set_config -> legacy cfg update */
+static int motion_set_config(int type, void *p)
+{
+    int ret = SHM_ERR_OK;
+    switch (type) {
+    case SHM_CMD_INFO_SET:
+        sensor_service_motion_cfg_update();
+        break;
+    default:
+        ret = -SHM_ERR_MOD_NO_THIS_TYPE;
+        break;
+    }
+    return ret;
+}
+
+/* sensor_service registration (REQ-013): same impl exposed via function pointer table */
+REGISTER_SENSOR_SERVICE(motion_service)
+{
+    .mod        = SHM_MOD_GSENSOR_ALGO,
+    .init       = motion_init,
+    .enable     = NULL,
+    .get_result = motion_get_result,
+    .set_config = motion_set_config,
+};
+
 #endif //TCFG_SPORT_HEALTH_ENABLE & (TCFG_ACCELER_MASTER_ENABLE | TCFG_ACCELER_P11_ENABLE)

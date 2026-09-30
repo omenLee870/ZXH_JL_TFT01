@@ -16,6 +16,7 @@
 #define LOG_INFO_ENABLE
 #include "debug.h"
 
+static u8 key_init_cnt = 0;
 static volatile u8 g_is_key_active = 0;             //按键是否活跃标志，判断是否可进低功耗
 static volatile bool g_key_idle_query_en = false;   //是否需要判断g_is_key_active的使能标志
 
@@ -53,10 +54,11 @@ static void key_driver_scan(void *key_ops)
 
     if (cur_key_value != NO_KEY) {
         //35*10Ms
-        g_is_key_active = 35;
+        g_is_key_active = key_init_cnt * 35;
     } else if (g_is_key_active) {
         g_is_key_active --;
     }
+    /* printf("kds:%d",g_is_key_active); */
     //===== 按键消抖处理
     //当前按键值与上一次按键值如果不相等, 重新消抖处理, 注意filter_time != 0;
     if (cur_key_value != scan_para->filter_value && scan_para->filter_time) {
@@ -172,7 +174,7 @@ __scan_end:
 /* ----------------------------------------------------------------------------*/
 void key_active_set(u8 port)
 {
-    g_is_key_active = 35;      //35*10Ms
+    g_is_key_active = key_init_cnt * 35;    //35*10Ms
 }
 
 /* --------------------------------------------------------------------------*/
@@ -188,6 +190,7 @@ void key_driver_init(void)
             continue;
         }
         if ((!key->key_init()) && key->get_value) {
+            key_init_cnt++;
             sys_s_hi_timer_add((void *)key, key_driver_scan, key->param->scan_time); //注册按键扫描定时器
             if (key->idle_query_en) {
                 g_key_idle_query_en = true;

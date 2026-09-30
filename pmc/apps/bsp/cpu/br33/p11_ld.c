@@ -73,10 +73,20 @@ SECTIONS
 		*(.*.text)
 		*(.*.const)
 
+#if TCFG_EXCEPTION_CODE_AT_FLASH
+		*(.debug_code)
+		*(.debug_code_str)
+		*(.debug_const)
+#endif
+
 		*(.sensor_const)
 		*(.*.sensor_const)
 		*(.sensor_code.L2)
 		*(.*.sensor_code.L2)
+#if (TCFG_SENSOR_GSENSOR_LEVEL >= 1)
+		*(.jl_motion_code)
+		*(.jl_motion_const)
+#endif
 #endif
 		flash_code_end = .;
 		flash_free_start = .;
@@ -107,8 +117,10 @@ SECTIONS
 		*(.sensor_code.L1)
 		*(.*.sensor_code.L1)
         *(.iic.text.cache.L1)
+#if (TCFG_SENSOR_GSENSOR_LEVEL == 0) || defined(CONFIG_OTA_LOADER_ENABLE)
 		*(.jl_motion_code)
 		*(.jl_motion_const)
+#endif
 		. = ALIGN(4);
     } > p11_ram1
 

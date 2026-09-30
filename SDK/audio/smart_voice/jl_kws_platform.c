@@ -293,6 +293,12 @@ int audio_smart_voice_detect_create(u8 model, u8 mic, int buffer_size)
         goto __err;
     }
 
+#if SMART_VOICE_DEBUG_KWS_RESULT
+    if (!sv->dump_hdl) {
+        sv->dump_hdl = smart_voice_kws_dump_open(2000);
+    }
+#endif
+
     smart_voice_wakeup = 0;
     err = smart_voice_core_create(sv);
     if (err) {
@@ -301,16 +307,14 @@ int audio_smart_voice_detect_create(u8 model, u8 mic, int buffer_size)
 
     smart_voice_core_post_msg(5, SMART_VOICE_MSG_MIC_OPEN, mic, buffer_size, SMART_VOICE_SAMPLE_RATE, model);
 
-#if SMART_VOICE_DEBUG_KWS_RESULT
-    if (!sv->dump_hdl) {
-        sv->dump_hdl = smart_voice_kws_dump_open(2000);
-    }
-#endif
     clock_alloc("jl_kws", 16 * 1000000L);
     this_sv = sv;
     return 0;
 __err:
     if (sv) {
+#if SMART_VOICE_DEBUG_KWS_RESULT
+        smart_voice_kws_dump_close(sv->dump_hdl);
+#endif
         free(sv);
     }
     return err;

@@ -38,6 +38,7 @@ extern "C" {
 #define STREAM_MEDIA_OPCODE_CTRL        0x0002  // 流控制命令
 #define STREAM_MEDIA_OPCODE_NAV         0x0003  // 导航信息命令
 #define STREAM_MEDIA_OPCODE_OFFLINE_NAV 0x0004  // 离线导航命令
+#define STREAM_MEDIA_OPCODE_HEARTBEAT   0x0005  // 心跳命令
 
 // 流控制子命令
 #define STREAM_MEDIA_SUB_QUERY_PARAM    0x01    // 查询设备支持的参数
@@ -89,6 +90,7 @@ enum {
     LTV_TYPE_DEVICE_TYPE    = 0x02, // 设备类型
     LTV_TYPE_PROTO_VER      = 0x03, // 协议版本号（2 Bytes）
     LTV_TYPE_FW_VER         = 0x04, // 固件版本号（4 Bytes）
+    LTV_TYPE_HEARTBEAT_INTERVAL = 0x05, // 心跳间隔（2 Bytes, ms）
 };
 
 // 查询参数回复 LTV Type
@@ -232,7 +234,7 @@ u16 stream_media_crc16(const u8 *data, int len, u16 last_crc);
 // payload 由调用方提供，返回总长度
 int  stream_media_build_enter_cmd(u8 *buf, u16 buf_size, u8 sn, u8 phone_type);
 int  stream_media_build_enter_resp(u8 *buf, u16 buf_size, u8 sn, u8 status,
-                                   u8 chip_type, u8 dev_type, u16 proto_ver, u32 fw_ver);
+                                   u8 chip_type, u8 dev_type, u16 proto_ver, u32 fw_ver, u16 heartbeat_interval_ms);
 int  stream_media_build_ctrl_query(u8 *buf, u16 buf_size, u8 sn);
 int  stream_media_build_ctrl_query_resp(u8 *buf, u16 buf_size, u8 sn, u8 status,
                                         const stream_media_capability_t *cap);
@@ -242,6 +244,7 @@ int  stream_media_build_ctrl_start_resp(u8 *buf, u16 buf_size, u8 sn, u8 status)
 int  stream_media_build_ctrl_stop(u8 *buf, u16 buf_size, u8 sn, u8 is_resp, u8 status);
 int  stream_media_build_ctrl_abnormal(u8 *buf, u16 buf_size, u8 sn, u16 seq, u8 reason);
 int  stream_media_build_nav_cmd(u8 *buf, u16 buf_size, u8 sn, const char *json_str, u16 json_len);
+int  stream_media_build_heartbeat_resp(u8 *buf, u16 buf_size, u8 sn, u8 status);
 
 // --- 流数据包构建（独立数据通道） ---
 int  stream_media_build_data_pkt(u8 *buf, u16 buf_size, u8 data_type,

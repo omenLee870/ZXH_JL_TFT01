@@ -86,6 +86,12 @@ int sport_info_sedentary_switch_get(void);        // 久坐提醒开关 0/1
 int sport_info_sedentary_switch_set(u8 on);
 int sport_info_raise_wrist_switch_get(void);      // 抬腕亮屏开关 0/1
 int sport_info_raise_wrist_switch_set(u8 on);
+/* 检测链路是否应使能：比 switch_get 多算「定时时段开启」位；VM 无记录时按默认值处理 */
+int sport_info_raise_wrist_enabled(void);
+/* 开关变更后把状态下发到检测链路（跨核 enable/disable），异步、不阻塞调用方 */
+int sport_info_raise_wrist_switch_apply(void);
+/* 老机器升级迁移：仅当无抬腕记录时用 legacy 值（原 UI 开关）初始化；返回 1 = 已迁移 */
+int sport_info_raise_wrist_switch_migrate(u8 legacy_on);
 
 #endif
 

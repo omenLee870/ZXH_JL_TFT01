@@ -224,6 +224,8 @@ void cfg_file_parse(u8 idx)
 
     s16 default_volume;
     s16 music_volume = -1;
+    s16 tone_volume = -1;
+    s16 call_volume = -1;
     struct volume_cfg music_vol_cfg;
     struct volume_cfg call_vol_cfg;
     struct volume_cfg tone_vol_cfg;
@@ -241,11 +243,23 @@ void cfg_file_parse(u8 idx)
         printf("CFG_MUSIC_VOL VM null value\n");
         music_volume = -1;
     }
+    /* tone/call 同样要掉电记忆: 读不到 VM 才回退到配置默认值。
+     * 否则开机后这两个通道恒为默认值, 用户上次调的音量就丢了 */
+    ret = syscfg_read(CFG_TONE_VOL, &tone_volume, 2);
+    if (ret < 0) {
+        printf("CFG_TONE_VOL VM null value\n");
+        tone_volume = -1;
+    }
+    ret = syscfg_read(CFG_CALL_VOL, &call_volume, 2);
+    if (ret < 0) {
+        printf("CFG_CALL_VOL VM null value\n");
+        call_volume = -1;
+    }
     //读不到VM，则表示当前音量使用默认状态
     app_var.volume_def_state = music_volume == -1 ? 1 : 0;
     app_var.music_volume = music_volume == -1 ? default_volume : music_volume;
-    app_var.wtone_volume = tone_vol_cfg.cur_vol;
-    app_var.call_volume = call_vol_cfg.cur_vol;
+    app_var.wtone_volume = tone_volume == -1 ? tone_vol_cfg.cur_vol : tone_volume;
+    app_var.call_volume = call_volume == -1 ? call_vol_cfg.cur_vol : call_volume;
     app_var.aec_dac_gain = call_vol_cfg.cfg_level_max;
     //主要用于BT音量同步
     app_var.opid_play_vol_sync = default_volume * 127 / music_vol_cfg.cfg_level_max;

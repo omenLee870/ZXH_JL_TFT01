@@ -27,7 +27,6 @@
 #if LV_USE_DRAW_JLGPU
 #include "lv_draw_jlgpu.h"
 #include "lv_port_disp.h"
-static int first_sync = 1;
 #endif
 /*********************
  *      DEFINES
@@ -46,6 +45,9 @@ static int first_sync = 1;
 static void lv_refr_join_area(void);
 static void refr_invalid_areas(void);
 static void refr_sync_areas(void);
+#if LV_USE_DRAW_JLGPU
+static void refr_join_area_to_bbox(lv_display_t *disp);
+#endif
 static void refr_area(const lv_area_t *area_p, int32_t y_offset);
 static void refr_configured_layer(lv_layer_t *layer);
 static void refr_obj_and_children(lv_layer_t *layer, lv_obj_t *top_obj);
@@ -452,6 +454,9 @@ void lv_display_refr_timer(lv_timer_t *tmr)
     }
 
     lv_refr_join_area();
+#if LV_USE_DRAW_JLGPU
+    refr_join_area_to_bbox(disp_refr);
+#endif
     refr_sync_areas();
     refr_invalid_areas();
 
@@ -718,6 +723,50 @@ static void lv_refr_join_area(void)
     LV_PROFILER_REFR_END;
 }
 
+#if LV_USE_DRAW_JLGPU
+/* 收窄窗口的场合(见 lv_jl_lcd_get_partial_render): GPU 输出窗口(TOP/GXDMA)只能是一个矩形,
+ * 所以把本帧脏区并成一个 bbox, 让 LVGL 整块渲染 —— bbox 内没渲染到的地方在 TOP 流里
+ * 没有定义, 会把物理缓存写坏。对齐规则由驱动给(每种旋转模式不同, 见
+ * lv_jl_lcd_align_render_area; 无旋转时是行格式, 不需要对齐), 这样驱动用的窗口和
+ * 这里渲染的区域完全一致。
+ * JSTC/全屏模式本来就只有整屏一个脏区, 这里等价于不变。 */
+static void refr_join_area_to_bbox(lv_display_t *disp)
+{
+    lv_area_t bbox;
+    uint32_t i;
+    bool has_area = false;
+
+    if (!lv_jl_lcd_get_partial_render() || disp->inv_p == 0) {
+        return;
+    }
+
+    for (i = 0; i < disp->inv_p; i++) {
+        if (disp->inv_area_joined[i]) {
+            continue;
+        }
+        if (!has_area) {
+            bbox = disp->inv_areas[i];
+            has_area = true;
+        } else {
+            lv_area_join(&bbox, &bbox, &disp->inv_areas[i]);
+        }
+    }
+    if (!has_area) {
+        return;
+    }
+
+    /* 把上一帧的真实脏区并进来: 双 buffer 交替, 本帧写的那块上次写是两帧前,
+     * 缺的正是"上帧脏区 ∪ 本帧脏区", 窗口覆盖这个并集写一次就够(见 lv_port_disp.c)。 */
+    lv_jl_lcd_join_prev_dirty(&bbox);
+    lv_jl_lcd_align_render_area(&bbox);
+
+    disp->inv_areas[0] = bbox;
+    disp->inv_p = 1;
+    /* 并成一个之后原来那些"已合并"标记必须清掉, 否则 inv_areas[0] 会被当成已合并跳过 */
+    lv_memzero(disp->inv_area_joined, sizeof(disp->inv_area_joined));
+}
+#endif
+
 /**
  * Refresh the sync areas
  */
@@ -732,6 +781,17 @@ static void refr_sync_areas(void)
     if (!lv_display_is_double_buffered(disp_refr)) {
         return;
     }
+
+#if LV_USE_DRAW_JLGPU
+    /* 收窄窗口的场合(见 lv_jl_lcd_get_partial_render): 脏区同步由驱动自己做
+     * (窗口取"上帧脏区 ∪ 本帧脏区", 见 lv_port_disp.c), 这里既不能按逻辑坐标做
+     * line 格式拷贝(px_map 可能是 tile 缓存), 也没必要再等推屏。
+     * 列表要清掉, 否则每帧累积(上面那段保存是 LVGL 原有的, 照旧会往里塞)。 */
+    if (lv_jl_lcd_get_partial_render()) {
+        lv_ll_clear(&disp_refr->sync_areas);
+        return;
+    }
+#endif
 
     /*Do not sync if no sync areas*/
     if (lv_ll_is_empty(&disp_refr->sync_areas)) {
@@ -864,10 +924,6 @@ static void refr_invalid_areas(void)
     disp_refr->last_part = 0;
     disp_refr->rendering_in_progress = true;
 
-#if LV_USE_DRAW_JLGPU
-    u8 is_first_inv_areas = 1;
-#endif
-
     for (i = 0; i < (int32_t)disp_refr->inv_p; i++) {
         /*Refresh the unjoined areas*/
         if (disp_refr->inv_area_joined[i]) {
@@ -922,24 +978,6 @@ static void refr_invalid_areas(void)
         } else if (disp_refr->render_mode == LV_DISPLAY_RENDER_MODE_FULL ||
                    disp_refr->render_mode == LV_DISPLAY_RENDER_MODE_DIRECT) {
             disp_refr->last_part = 1;
-
-#if LV_USE_DRAW_JLGPU
-            if (is_first_inv_areas && !first_sync && lv_jl_lcd_get_need_gxdma()) { //第一个脏矩形
-                //脏矩形区域是全屏则不需要同步
-                lv_area_t full_screen_area;
-                full_screen_area.x1 = 0;
-                full_screen_area.y1 = 0;
-                full_screen_area.x2 = disp_refr->hor_res - 1;
-                full_screen_area.y2 = disp_refr->ver_res - 1;
-                if (!lv_area_is_equal(&full_screen_area, &disp_refr->inv_areas[i])) {
-                    lv_jlgpu_sync_full_area(disp_refr);
-                }
-                is_first_inv_areas = 0;
-            }
-            if (first_sync) {
-                first_sync = 0;
-            }
-#endif
 
             refr_area(&disp_refr->inv_areas[i], 0);
             draw_buf_flush(disp_refr);

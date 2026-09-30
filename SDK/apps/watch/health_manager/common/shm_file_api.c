@@ -114,7 +114,11 @@ static int __sport_health_file_get_id(void *hd, u8 index)
 static void *__sport_health_file_open_by_time(u8 type, u16 year, u8 month, u8 day)
 {
     log_debug("[open]type:%d [%d-%d-%d]", type, year, month, day);
-    if ((type == F_TYPE_SLEEP) || (type == F_TYPE_HEART) || (type == F_TYPE_BLOOD_OXYGEN)) {
+    /* F_TYPE_STEP 与 SLEEP/HEART/BLOOD_OXYGEN 同构（总头均为 struct health_file_total_head，
+     * 本函数只按 year/month/day 比对总头）。漏加会使步数文件按日续写失效
+     * （每次走新建分支，被 max_item=1 淘汰）。 */
+    if ((type == F_TYPE_SLEEP) || (type == F_TYPE_HEART) || (type == F_TYPE_BLOOD_OXYGEN)
+        || (type == F_TYPE_STEP)) {
         struct shm_file_hd *fp = (struct shm_file_hd *)__sport_health_file_open(type, 0);
         if (!fp) {
             return NULL;

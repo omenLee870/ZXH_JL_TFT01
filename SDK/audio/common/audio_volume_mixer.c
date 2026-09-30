@@ -199,6 +199,19 @@ void audio_fade_in_fade_out(u8 left_vol, u8 right_vol)
  *************************************************************
  */
 
+/*把三通道音量写入 VM*/
+static void app_audio_volume_write_vm(void)
+{
+    log_info("VOL_SAVE music %d, tone %d, call %d\n",
+             app_var.music_volume, app_var.wtone_volume, app_var.call_volume);
+    if (app_in_mode(APP_MODE_PC) == 0) {                      //pc模式写vm导致丢中断,暂时PC模式不设置音量等到退出pc模式才记录
+        syscfg_write(CFG_MUSIC_VOL, &app_var.music_volume, 2);//中断里不能操作vm 关中断不能操作vm
+        /* tone/call 也必须落盘, 否则关机再开机被 Vol_SysTone/Vol_BtcCall 的配置默认值覆盖 */
+        syscfg_write(CFG_TONE_VOL, &app_var.wtone_volume, 2);
+        syscfg_write(CFG_CALL_VOL, &app_var.call_volume, 2);
+    }
+}
+
 static void app_audio_volume_save_do(void *priv)
 {
     /* log_info("app_audio_volume_save_do %d\n", __this->save_vol_cnt); */
@@ -208,13 +221,27 @@ static void app_audio_volume_save_do(void *priv)
         __this->save_vol_timer = 0;
         __this->save_vol_cnt = 0;
         local_irq_enable();
-        log_info("VOL_SAVE %d\n", app_var.music_volume);
-        if (app_in_mode(APP_MODE_PC) == 0) {                      //pc模式写vm导致丢中断,暂时PC模式不设置音量等到退出pc模式才记录
-            syscfg_write(CFG_MUSIC_VOL, &app_var.music_volume, 2);//中断里不能操作vm 关中断不能操作vm
-        }
+        app_audio_volume_write_vm();
         return;
     }
     local_irq_enable();
+}
+
+/*立即把音量落盘, 不等 5s 延时保存。关机前调用: 正常保存是"最后一次改音量后 5s",
+ * 用户改完音量 5s 内关机的话这次改动就丢了*/
+void app_audio_volume_save_now(void)
+{
+#ifndef AUDIO_VOLUME_SAVE_DISABLE
+    local_irq_disable();
+    if (__this->save_vol_timer) {
+        sys_timer_del(__this->save_vol_timer);
+        __this->save_vol_timer = 0;
+    }
+    __this->save_vol_cnt = 0;
+    local_irq_enable();
+
+    app_audio_volume_write_vm();
+#endif
 }
 
 static void app_audio_volume_change(void)

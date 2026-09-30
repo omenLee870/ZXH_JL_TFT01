@@ -10,6 +10,9 @@
 #include "rcsp_manage.h"
 #include "sport_info_raise_wrist.h"
 #include "health_manager/shm_info_storage.h"
+#if CONFIG_APP_UI_ENABLE && CONFIG_WATCH_CASE_ENABLE
+#include "ui/ui_api.h"
+#endif
 
 #define LOG_TAG_CONST       RCSP_ADAPTOR
 #define LOG_TAG     		"[RCSP-SPORT-DATA]"
@@ -57,6 +60,16 @@ void sport_info_raise_wrist_attr_set(void *priv, u8 attr, u8 *data, u16 len, u16
 
     sport_info_mode_record_update(SPORT_INFO_MODE_TYPE_RAISE_WRIST, raise_wrist_mode);
     sport_info_write_vm(VM_SPORT_INFO_RAISE_WRIST, (u8 *)&raise_wrist, sizeof(raise_wrist_t));
+
+    /* 改开关后把新状态下发到检测链路（APP 侧三态，定时时段同样视为开启；
+     * 时间窗过滤尚未实现，见 shm_info_storage.c） */
+    sport_info_raise_wrist_switch_apply();
+
+#if CONFIG_APP_UI_ENABLE && CONFIG_WATCH_CASE_ENABLE
+    /* 通知 UI 刷新。UI_MSG_POST 只投给当前显示窗口，页面未打开时收不到，
+     * 那种情况由下次 ON_CHANGE_INIT 重读权威源兜底。 */
+    UI_MSG_POST("raise_hand:on=%4", sport_info_raise_wrist_enabled());
+#endif
 }
 
 u32 sport_info_raise_wrist_attr_get(void *priv, u8 attr, u8 *buf, u16 buf_size, u32 offset)

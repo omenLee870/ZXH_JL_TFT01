@@ -761,12 +761,37 @@ c_SRC_FILES += 	apps/watch/net/net_event.c
 
 #if EXPORT_KID_CAMERA_LVGL_APP_CODE_ENABLE
 
+#if !TCFG_KID_CAMERA_UI_INTERCOM
+
+#if CONFIG_LVGL_UI_ENABLE
+
+c_SRC_FILES +=     $(patsubst %.c, %.o, $(shell find  apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_320x240_v1/custom -name '*.c' -print))     $(patsubst %.c, %.c, $(shell find  apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_320x240_v1/generated -name '*.c' -print))     $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_320x240_v1/ui_action.c 
+
+#endif
+
+#endif
+
+#endif
+
+#endif
+
+
+
+// *INDENT-OFF*
+
+#if CONFIG_LV9_ENABLE
+
+#if EXPORT_KID_CAMERA_LVGL_APP_CODE_ENABLE
+
+#if TCFG_KID_CAMERA_UI_INTERCOM
+
 #if CONFIG_LVGL_UI_ENABLE
 
 c_SRC_FILES +=     $(patsubst %.c, %.o, $(shell find  apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/custom -name '*.c' -print))     $(patsubst %.c, %.c, $(shell find  apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/generated -name '*.c' -print))     $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/ui_action.c 
 
 #endif
 
+#endif
 
 #endif
 
@@ -799,7 +824,7 @@ c_SRC_FILES +=     $(patsubst %.c, %.o, $(shell find  apps/$(APP_CASE)/ui/lvgl_u
 
 #if CONFIG_LVGL_UI_ENABLE
 
-c_SRC_FILES += apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/camera_display_ui.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/custom.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/hardware_test.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_action_music_bg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_action_page_map.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_music_page_music.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_music_page_video.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_update_page.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events/callback_handler.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events/events_init.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events/i18n_handler.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events/screen_handler.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_fonts/gui_fonts.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_fonts/lv_font_simsun_32.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_group/gui_group.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_guider.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg/gui_model_msg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg/gui_msg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg/gui_music_msg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg/gui_sys_model_msg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_res/res_common.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_hardware_test.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_app_select.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_map.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_meter.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_music.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_video.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_upgrade_page.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/ui_scr_manager.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/ui_style.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_timelines/gui_timelines.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/i18n/lv_i18n.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/ui_action.c
+c_SRC_FILES += apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/camera_display_ui.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/custom.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/hardware_test.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/app_map.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/gfx_fill.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/gfx_port.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/map_gui_fonts.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/map_lib_gap_shim.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/map_port.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/map_task.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/map_v8_compat.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/trk_api.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/ui_action_home.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/map/yzl_file.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_action_music_bg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_action_page_map.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_action_page_map_navi.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_music_page_music.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_music_page_video.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_update_page.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events/callback_handler.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events/events_init.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events/i18n_handler.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events/screen_handler.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_fonts/gui_fonts.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_fonts/lv_font_simsun_32.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_group/gui_group.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_guider.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg/gui_model_msg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg/gui_msg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg/gui_music_msg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg/gui_sys_model_msg.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_res/res_common.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_hardware_test.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_app_select.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_map.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_map_navi.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_meter.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_music.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_page_video.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_upgrade_page.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/ui_scr_manager.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/ui_style.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_timelines/gui_timelines.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/i18n/lv_i18n.c apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/ui_action.c
 
 #endif
 

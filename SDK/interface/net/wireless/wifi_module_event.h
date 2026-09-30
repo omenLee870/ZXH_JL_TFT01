@@ -44,6 +44,9 @@ enum WIFI_MODULE_EVENT {
     P2P_GO_STA_CONNECTED = 0x8,
     P2P_GO_STA_DISCONNECTED = 0x9,
     P2P_WSC_OPERATION = 0xA,
+    STA_CONNECTED = 0xB,
+    STA_DISCONNECTED = 0xC,
+    STA_IP_GOT = 0xD,
 };
 
 struct netdev_ssid_info {
@@ -57,23 +60,6 @@ struct netdev_ssid_info {
     unsigned char   SupportedRates[16];
     unsigned char   security;   //加密方式, 取值见 AIC_WIFI_SECURITY_TYPE(KEY_NONE/WEP/WPA/WPA2/WPA3...)
 };
-
-
-/*爱科微扫描结果ssid结构体*/
-#define MAX_AP_COUNT 32
-typedef struct wifi_ap_info {
-    unsigned char   ssid[32];
-    unsigned int    ssid_len;
-    unsigned char   bssid[6];
-    unsigned int    channel;
-    unsigned int    rssi;
-    unsigned char   security;   //加密方式, 取值见 AIC_WIFI_SECURITY_TYPE(KEY_NONE/WEP/WPA/WPA2/WPA3...)
-} wifi_ap_info_t;
-
-typedef struct _wifi_ap_list {
-    unsigned short  ap_count;
-    wifi_ap_info_t ap_info[MAX_AP_COUNT];
-} wifi_ap_list_t;
 
 //struct smp_cfg_result {
 //    enum SMP_CFG_TYPE type;

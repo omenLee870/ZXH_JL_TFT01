@@ -39,8 +39,8 @@ const bool pdebug_pdown_info = 0;
 
 //使能串口调试低功耗，在pdown、soff模式保持串口, pdebug_pubyte_pdown\pdebug_lp_dump_ram\pdebug_putbyte_soff\log_debug
 const u32 pdebug_uart_lowpower = 0;
-#ifdef CONFIG_UART_DEBUG_PORT
-const u32 pdebug_uart_port = CONFIG_UART_DEBUG_PORT;
+#ifdef TCFG_DEBUG_UART_TX_PIN
+const u32 pdebug_uart_port = TCFG_DEBUG_UART_TX_PIN;
 #else
 const u32 pdebug_uart_port = -1;
 #endif
@@ -61,6 +61,30 @@ const bool pdebug_uart_flowing = 0;
 // 1:打印程序执行时间 2:程序执行时间有问题报错
 const bool pdebug_reserve_time = 0;
 
+#ifdef CONFIG_POWER_P33_REG_CHECK
+const u32 control_power_p33_reg_check = 1;
+#else
+const u32 control_power_p33_reg_check = 0;
+#endif
+
+//-------------------------------------------------------------------
+/* pmu相关模块开关 */
+//使能pdown模块
+#if (TCFG_LOWPOWER_LOWPOWER_SEL)
+const bool control_pdown = 1;
+#else
+const bool control_pdown = 0;
+#endif
+
+//使能soff模块
+const bool control_soff = 1;
+
+//使能poff模块
+#if (TCFG_LOWPOWER_LOWPOWER_SEL==DEEP_SLEEP_EN)
+const bool control_poff = 1;
+#else
+const bool control_poff = 0;
+#endif
 //使能xosc自动功耗控制
 const u32 lib_xosc_auto_ctrl_enable = 1;
 

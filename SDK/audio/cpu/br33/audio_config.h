@@ -99,6 +99,18 @@ void app_audio_set_volume(u8 state, s16 volume, u8 fade);
 
 /*
 *********************************************************************
+*          			Audio Volume Save Now
+* Description: 立即把 music/tone/call 三通道音量写入 VM, 不等延时保存
+* Arguments  : None.
+* Return	 : None.
+* Note(s)    : 正常保存是"最后一次改音量后 5s", 关机前调用本函数可避免
+*			   用户改完音量马上关机导致的音量丢失。
+*********************************************************************
+*/
+void app_audio_volume_save_now(void);
+
+/*
+*********************************************************************
 *          			Audio Volume Set
 * Description: 改变音量状态保存值
 * Arguments  : state	目标声音通道

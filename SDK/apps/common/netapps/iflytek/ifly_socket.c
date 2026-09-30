@@ -215,7 +215,15 @@ exit_ws:
         websockets_info->recv_kill_flag = 1;
     }
 
+    //收发线程退出后由 task_kill_callback 清 thread_id。这里以 thread_id 为准同步
+    //清理 kill 标志，避免回调清标志与这里置标志的竞态导致死等(recv_buf 无法释放)
     while (websockets_info->recv_kill_flag || websockets_info->ping_kill_flag) {
+        if (!websockets_info->recv_thread_id) {
+            websockets_info->recv_kill_flag = 0;
+        }
+        if (!websockets_info->ping_thread_id) {
+            websockets_info->ping_kill_flag = 0;
+        }
         os_time_dly(1);
     }
     websockets_client_exit(websockets_info);
@@ -241,12 +249,19 @@ bool ifly_websocket_client_create(ifly_socket_param *ifly_socket)
         return false;
     }
 
-    os_task_create(ifly_socket_task_main,
-                   ifly_socket,
-                   3,
-                   2048,
-                   32,
-                   ifly_socket->task_name);
+    int err = os_task_create(ifly_socket_task_main,
+                             ifly_socket,
+                             3,
+                             2048,
+                             32,
+                             ifly_socket->task_name);
+    if (err != 0) {
+        // 任务没起来就不会有人释放 socket_hdl，这里直接回收，避免句柄泄漏
+        log_error("  . ! create task %s err : %d !!!\r\n", ifly_socket->task_name, err);
+        free(ifly_socket->socket_hdl);
+        ifly_socket->socket_hdl = NULL;
+        return false;
+    }
 
     return true;
 }

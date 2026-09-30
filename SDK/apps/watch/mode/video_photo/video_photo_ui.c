@@ -57,9 +57,11 @@ static lv_video_disp_handle_t *photo_ui_get_fb5(void)
 #endif
 }
 
-/* 竖屏面板(240x320)上把 320x240 本地预览旋转 90° 铺满全屏。
- * 仅当"控件尺寸 == 显示尺寸对调"(320x240 <-> 240x320)时生效, 其它产品/布局
- * 不触发; 旋转在显示层由 JLGPU 完成, fb5 出帧/编码尺寸不变。需在 LVGL 线程调用。 */
+/* 预览旋转铺满: 控件尺寸恒等于预览源帧尺寸(lv_port_video_disp_set_src 每帧按帧尺寸
+ * 重设 img 尺寸, 无法用 lv_obj_set_size 覆盖), 故这里读到的 w/hh 就是源的真实尺寸。
+ * 仅当"控件尺寸 == 屏尺寸对调"(320x240 <-> 240x320)时旋转 90° 铺满;
+ * 源与屏同尺寸同方向时不动(旋转反而会把 320x240 变成 240x320 而铺不满)。
+ * 旋转在显示层由 JLGPU 完成, fb5 出帧/编码尺寸不变。需 LVGL 线程调用。 */
 #if CONFIG_LVGL_UI_ENABLE
 static void photo_ui_preview_rotate(lv_video_disp_handle_t *h)
 {
@@ -79,7 +81,6 @@ static void photo_ui_preview_rotate(lv_video_disp_handle_t *h)
     hh = lv_obj_get_height(img);
     dw = lv_display_get_horizontal_resolution(disp);
     dh = lv_display_get_vertical_resolution(disp);
-    /* 仅当旋转后恰好铺满(宽高对调)才转, 避免影响无需旋转的产品 */
     if (w == dh && hh == dw) {
         lv_port_video_disp_set_rotation(h, 900);
         lv_port_video_disp_set_pivot(h, w / 2, hh / 2);

@@ -108,21 +108,28 @@ const char log_tag_const_c_BATTERY_PMC AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(0)
 
 const char log_tag_const_i_SENSOR_DRIVER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_d_SENSOR_DRIVER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(0);
+/* warn 默认关闭：本 tag 下仅 vc30fx FIFO 空读等轮询中间态，无需默认输出。
+ * 注意 0 & libs_debug 恒为 0，改回 CONFIG_DEBUG_LIBS(1) 需重新编译才生效。 */
+const char log_tag_const_w_SENSOR_DRIVER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(0);
 const char log_tag_const_e_SENSOR_DRIVER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 
 const char log_tag_const_i_SENSOR_HAL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_d_SENSOR_HAL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(0);
+const char log_tag_const_w_SENSOR_HAL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_e_SENSOR_HAL AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 
 const char log_tag_const_i_SENSOR_SERVICE AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_d_SENSOR_SERVICE AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(0);
+const char log_tag_const_w_SENSOR_SERVICE AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_e_SENSOR_SERVICE AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 
 const char log_tag_const_i_SENSOR_MODULE AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_d_SENSOR_MODULE AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(0);
+const char log_tag_const_w_SENSOR_MODULE AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_e_SENSOR_MODULE AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 
 const char log_tag_const_i_SENSOR_MANAGER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_d_SENSOR_MANAGER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(0);
+const char log_tag_const_w_SENSOR_MANAGER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 const char log_tag_const_e_SENSOR_MANAGER AT(.LOG_TAG_CONST) = CONFIG_DEBUG_LIBS(1);
 

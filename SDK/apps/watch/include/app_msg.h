@@ -297,6 +297,7 @@ enum {
     APP_MSG_VIDEO_PHOTO_BACK,        // 返回键: 先停定时/连拍再回主页
     APP_MSG_VIDEO_PHOTO_ZOOM_STOP,   // 变焦键松手: 停止长按连续变焦
     APP_MSG_VIDEO_DEC_PLAY,
+    APP_MSG_VIDEO_DEC_PLAY_INDEX,    // 播放指定文件索引(相册列表 OK 键), 参数=文件索引
     APP_MSG_VIDEO_DEC_NEXT,
     APP_MSG_VIDEO_DEC_PREV,
     APP_MSG_VIDEO_DEC_BACK,

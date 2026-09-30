@@ -34,6 +34,7 @@
                 "${workspaceFolder}/include/system/cpu/br33",
                 "${workspaceFolder}/include/utils",
                 "${workspaceFolder}/include/utils/generic",
+                "${workspaceFolder}/include/system/generic",
                 "${workspaceFolder}/apps/sensor",
                 "${workspaceFolder}/apps/sensor/driver_vc_hr_11",
                 "${workspaceFolder}/apps/btctrler/soft_baseband",

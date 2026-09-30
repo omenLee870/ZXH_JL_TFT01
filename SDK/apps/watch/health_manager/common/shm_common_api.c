@@ -130,9 +130,16 @@ int sport_health_ctrl_sport_start_with_type(int type)
 {
     //设置运动类型
     int ret = sport_health_manager_msg_post(SHM_MOD_SPORT, SHM_CMD_INFO_SET, (void *)type, 1);
-    ASSERT(!ret, "ret:%d", ret);
+    /* 原为 ASSERT(!ret)：TCFG_SPORT_HEALTH_ENABLE=DISABLE 时 SPORT_HEALTH_MANAGER_TASK
+     * 未创建、msg_post 必失败，ASSERT 会关中断死循环卡死整机。改为错误日志 + 安全返回。 */
+    if (ret) {
+        log_error("ctrl_sport_start_with_type FAILED: ret=%d type=%d sport_health_en=%d",
+                  ret, type, TCFG_SPORT_HEALTH_ENABLE);
+        return ret;
+    }
     //开始运动
-    return sport_health_manager_msg_post(SHM_MOD_SPORT, SHM_CMD_START, NULL, 1);
+    ret = sport_health_manager_msg_post(SHM_MOD_SPORT, SHM_CMD_START, NULL, 1);
+    return ret;
 }
 int sport_health_ctrl_sport_start()
 {
@@ -311,6 +318,28 @@ int sport_health_get_sport_file_size()
 int sport_health_gsensor_algo_cfg_update()
 {
     return sport_health_manager_msg_post(SHM_MOD_GSENSOR_ALGO, SHM_CMD_INFO_SET, NULL, 1);
+}
+/* gsensor 算法开关（镜像 heart_rate 模板，msg_post GSENSOR_ALGO ENABLE/DISABLE） */
+int sport_health_gsensor_algo_enable()
+{
+    log_info("%s", __func__);
+    return sport_health_manager_msg_post(SHM_MOD_GSENSOR_ALGO, SHM_CMD_ENABLE, NULL, 1);
+}
+int sport_health_gsensor_algo_disable()
+{
+    log_info("%s", __func__);
+    return sport_health_manager_msg_post(SHM_MOD_GSENSOR_ALGO, SHM_CMD_DISABLE, NULL, 1);
+}
+/* 床头钟 dir 算法独立开关：只控方向计算，不碰计步算法总闸（SHM_CMD_ENABLE/DISABLE） */
+int sport_health_gsensor_dir_enable()
+{
+    log_info("%s", __func__);
+    return sport_health_manager_msg_post(SHM_MOD_GSENSOR_ALGO, SHM_CMD_DIR_ENABLE, NULL, 1);
+}
+int sport_health_gsensor_dir_disable()
+{
+    log_info("%s", __func__);
+    return sport_health_manager_msg_post(SHM_MOD_GSENSOR_ALGO, SHM_CMD_DIR_DISABLE, NULL, 1);
 }
 
 int sport_health_heart_rate_module_enable()

@@ -1,6 +1,8 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+/* M2P/P2M message IDs. This enum must stay value-identical to the big core copy in
+ * btsdk/cpu/br33/power/p11_app_msg.h, so add new entries in the same order on both sides. */
 enum {
     MSG_APP_CALLBACK         =    1,
     MSG_P11_SYS_RAM_INIT     =    2,

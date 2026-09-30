@@ -24,7 +24,7 @@ cp ../../isd_config.ini .
 cp ../../p11_code.bin .
 cp ../../flash_params_v2.bin .
 cp ../../flash_params_v3.bin .
-cp ../../json.txt .
+cp ../../json_watch_jlui.txt json.txt
 
 cp ../../ui_resource/*.*   .
 cp ../../ui_upgrade/*.*   ./ui_upgrade/

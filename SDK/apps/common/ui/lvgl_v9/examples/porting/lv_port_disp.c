@@ -93,6 +93,15 @@ typedef struct _lv_disp_lcd_t {
     uint8_t jstc_en;
     uint8_t need_gxdma;
     uint8_t gpu_link_dbi;
+    /* 走 TOP->GXDMA 且没有 JSTC/GPU-DBI 联动: 可以按脏区收窄 GPU 输出窗口, 只重画/只搬脏区。
+     * 非 PSRAM 工程 need_gxdma 为 0(GPU 直写 SRAM 更快), 这里也是 0, 走普通 DIRECT 直写。 */
+    uint8_t partial_render;
+    /* 上一帧的真实脏区(已对齐)。双 buffer 交替, 本帧写的那块上次写是两帧前, 缺的是
+     * "上帧脏区 ∪ 本帧脏区", 所以窗口取这个并集, 写一次就够, 不用再往另一块写一遍
+     * (那要多跑一次完整 GPU run)。记的必须是"真实脏区"而不是"窗口": 窗口本身已经含
+     * 上帧脏区了, 记窗口会让并集一路滚大。 */
+    lv_area_t prev_dirty;
+    uint8_t prev_dirty_valid;
     uint16_t jstc_pingping_buf_w;
     uint16_t jstc_pingping_buf_h;
     uint16_t buf_stride;
@@ -101,6 +110,11 @@ typedef struct _lv_disp_lcd_t {
     uint8_t *jstc_pingping_buf1;
 
     lv_area_t win_area;
+    /* 本帧 GPU 输出窗口(已 8 对齐)与它在物理 tile 缓存里的字节偏移。
+     * 推屏在消费线程里做, 那里拿不到 LVGL 传下来的脏区, 所以这里存一份;
+     * 一帧只允许在飞一个, 由 jlgpu_run_disp_sem 保证不会被覆盖。 */
+    lv_area_t render_area;
+    uint32_t render_ofs;
     uint8_t *lcd_buf0;
     uint8_t *lcd_buf1;
     uint16_t lcd_width; //lcd 原始宽
@@ -117,6 +131,7 @@ static void disp_init(void);
 
 static void disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map);
 
+static int __lv_gpulist_flush_framerate_calc_ex(u32 gpu_us, u32 push_us, bool is_effect);
 static int __lv_gpulist_flush_framerate_calc(u32 gpu_us, u32 push_us);
 
 #if LV_USE_DRAW_JLGPU_LIST
@@ -205,36 +220,25 @@ u8 lv_jl_lcd_get_need_gpu_link_dbi(void)
     return lv_jl_lcd.gpu_link_dbi;
 }
 
-void lv_jlgpu_sync_full_area(lv_display_t *disp_refr)
+u8 lv_jl_lcd_get_partial_render(void)
 {
-    /*The buffers are already swapped.
-     *So the active buffer is the off screen buffer where LVGL will render*/
-    lv_draw_buf_t *off_screen = disp_refr->buf_act;
-    /*Triple buffer sync buffer for off-screen2 updates.*/
-    lv_draw_buf_t *off_screen2;
-    lv_draw_buf_t *on_screen;
+    return lv_jl_lcd.partial_render;
+}
 
-    if (disp_refr->buf_act == disp_refr->buf_1) {
-        off_screen2 = disp_refr->buf_2;
-        on_screen = disp_refr->buf_3 ? disp_refr->buf_3 : disp_refr->buf_2;
-    } else if (disp_refr->buf_act == disp_refr->buf_2) {
-        off_screen2 = disp_refr->buf_3 ? disp_refr->buf_3 : disp_refr->buf_1;
-        on_screen = disp_refr->buf_1;
-    } else {
-        off_screen2 = disp_refr->buf_1;
-        on_screen = disp_refr->buf_2;
+/* 把上一帧的真实脏区并进本帧的 bbox(理由见 lv_disp_lcd.prev_dirty 的说明),
+ * 同时记下本帧的真实脏区供下一帧用。lv_refr.c 合并完本帧脏区后调它, 再把结果对齐。
+ * 两边(这里记的、和 lv_refr.c 交给 LVGL 渲染的)必须是同一个矩形, 否则 TOP 窗口里
+ * 会出现没渲染到的区域。 */
+void lv_jl_lcd_join_prev_dirty(lv_area_t *dirty)
+{
+    lv_area_t cur = *dirty;
+
+    lv_jl_lcd_align_render_area(&cur);
+    if (lv_jl_lcd.prev_dirty_valid) {
+        lv_area_join(dirty, dirty, &lv_jl_lcd.prev_dirty);
     }
-
-    lv_area_t screen_area;
-    screen_area.x1 = 0;
-    screen_area.y1 = 0;
-    screen_area.x2 = disp_refr->hor_res - 1;
-    screen_area.y2 = disp_refr->ver_res - 1;
-
-    lv_jlgpu_draw_buf_copy(off_screen, &screen_area, on_screen, &screen_area, 1);
-    if (off_screen2 != on_screen) {//3buf情况
-        lv_jlgpu_draw_buf_copy(off_screen2, &screen_area, on_screen, &screen_area, 0);
-    }
+    lv_jl_lcd.prev_dirty = cur;
+    lv_jl_lcd.prev_dirty_valid = 1;
 }
 #endif
 
@@ -326,6 +330,10 @@ void lv_port_disp_init(void)
     }
 #endif
 
+    /* PSRAM 工程一律走 GXDMA: GPU 直写 PSRAM 只能走非缓存别名, 带宽明显低于
+     * "GPU 输出经 TOP ping-pong 缓冲、由 GXDMA 突发写回"这条通路, 整帧差一倍以上。
+     * 帧缓存在内部 SRAM 时两者没有这个差距, 直写还少一次搬运, 所以只在需要时开。
+     * 需要的情形: 旋转/镜像(GXDMA 输出必须是 tile)或 JSTC 压缩。 */
 #if defined TCFG_PSRAM_DEV_ENABLE && TCFG_PSRAM_DEV_ENABLE
     lv_jl_lcd.need_gxdma = 1;
 #else
@@ -344,7 +352,21 @@ void lv_port_disp_init(void)
         }
     }
 
-    printf("lv_jl_lcd.need_gxdma=%d gpu_link_dbi=%d\n", lv_jl_lcd.need_gxdma, lv_jl_lcd.gpu_link_dbi);
+    /* 走 TOP->GXDMA 且没有 JSTC / GPU-DBI 联动: 可以按脏区收窄 GPU 输出窗口, 只重画/只搬脏区。
+     * 90_MIRROR / 90_FLIP 的合成顺序没有明确定义, 这两个模式退回全屏渲染, 免得落点算错。
+     *
+     * 想整体退回全屏渲染(FULL)时, 把下面这行直接改成:
+     *     lv_jl_lcd.partial_render = 0;
+     * 置 0 之后渲染模式会自动回到 FULL(见下面 force_full 的判据), 同时脏区 bbox 合并、
+     * 跳过 LVGL 自带脏区同步、窗口收窄与 tile 落点偏移全部失效, 即完全回到收窄窗口之前
+     * 那条通路, 没有任何多余开销。
+     * 注意不要只改下面 lv_display_set_buffers() 传的 mode: 它内部就是调
+     * lv_display_set_render_mode(), 随后会被 force_full 那段覆盖掉, 改了不生效。 */
+    lv_jl_lcd.partial_render = (lv_jl_lcd.need_gxdma && !lv_jl_lcd.jstc_en && !lv_jl_lcd.gpu_link_dbi &&
+                                lv_jl_lcd.rotate <= LCD_ROTATE_270) ? 1 : 0;
+
+    printf("lv_jl_lcd.need_gxdma=%d gpu_link_dbi=%d partial_render=%d\n",
+           lv_jl_lcd.need_gxdma, lv_jl_lcd.gpu_link_dbi, lv_jl_lcd.partial_render);
     if (rotation) {
         lcd_w = lcdinfo.height;
         lcd_h = lcdinfo.width;
@@ -520,18 +542,22 @@ void lv_port_disp_init(void)
     /* static uint8_t buf_3_2[MY_DISP_HOR_RES * MY_DISP_VER_RES * BYTE_PER_PIXEL]; */
     //lv_display_set_buffers(disp, buf_3_1, /* buf_3_2 */NULL, sizeof(buf_3_1), LV_DISPLAY_RENDER_MODE_DIRECT);
     //lv_display_set_buffers(disp, buf_3_1, /* buf_3_2 */NULL, sizeof(buf_3_1), LV_DISPLAY_RENDER_MODE_FULL);
-#if defined TCFG_PSRAM_DEV_ENABLE && TCFG_PSRAM_DEV_ENABLE
-    lv_display_set_buffers(disp, buf_3_1, buf_3_2, (lcd_w * lcd_h * BYTE_PER_PIXEL), LV_DISPLAY_RENDER_MODE_FULL);
-#else
+    /* 两个分支都传 DIRECT: lv_display_set_buffers() 内部就是调 lv_display_set_render_mode(),
+     * 最终模式由下面的判定决定, 这里传的 mode 会被后面那次覆盖。 */
     lv_display_set_buffers(disp, buf_3_1, buf_3_2, (lcd_w * lcd_h * BYTE_PER_PIXEL), LV_DISPLAY_RENDER_MODE_DIRECT);
-#endif
 
-    if (lv_jl_lcd.gpu_link_dbi || lv_jl_lcd.jstc_en || rotation) {
-        //1. gpu dbi联动时，只需2buffer联动buffer，无法作脏区同步，因此只能全屏渲染
-        //2. jstc_en 时，脏区同步导致显存画质多次压缩损失，因此只能全屏渲染
-        //3. 旋转时 GXDMA 需要全屏源数据做旋转，脏区渲染会导致非脏区数据丢失，因此只能全屏渲染
+    /* 只有 GPU-DBI 联动、JSTC、以及收窄不了窗口的 GXDMA 联动(90_MIRROR/90_FLIP)才走全屏;
+     * 其余(GPU 直写、能收窄窗口的 TOP->GXDMA)走 DIRECT 脏区渲染。 */
+    bool force_full = (lv_jl_lcd.gpu_link_dbi || lv_jl_lcd.jstc_en ||
+                       (lv_jl_lcd.need_gxdma && !lv_jl_lcd.partial_render)) ? true : false;
+    if (force_full) {
+        /* 1. gpu dbi 联动时, 只有 2 块联动 buffer, 无法作脏区同步, 只能全屏渲染
+         * 2. jstc_en 时, 脏区同步会导致显存画质多次压缩损失, 只能全屏渲染 */
         lv_display_set_render_mode(disp, LV_DISPLAY_RENDER_MODE_FULL);
     }
+    printf("lvgl render_mode=%s (need_gxdma=%d gpu_link_dbi=%d rotate=%d jstc=%d)\n",
+           (disp->render_mode == LV_DISPLAY_RENDER_MODE_FULL) ? "FULL" : "DIRECT",
+           lv_jl_lcd.need_gxdma, lv_jl_lcd.gpu_link_dbi, lv_jl_lcd.rotate, lv_jl_lcd.jstc_en);
 
     dmm_callback_t dmm_cb = {
         .frame_end_cb = lcd_frame_end_callback,
@@ -581,8 +607,14 @@ extern int64_t get_system_us(void);
 /* 帧率统计: 每秒打印一次 fps。
  * LV_JLGPU_DISP_PROFILE 打开时, 同时统计 gpu_run(GPU 渲染合成) 与 push(推屏/LCD 传输)
  * 耗时并每秒追加打印平均/最大耗时。gpu_us = jlgpu_task_list_disp_run + task_list_free;
- * push_us = 推屏链路(set_draw_area + draw)及其前准备(wait_or_recover 等)的耗时。 */
-static int __lv_gpulist_flush_framerate_calc(u32 gpu_us, u32 push_us)
+ * push_us = 推屏链路(set_draw_area + draw)及其前准备(wait_or_recover 等)的耗时。
+ *
+ * 页面特效期间走的是 disp_flush 里另一条分支(lv_page_effect_manager 接管整帧, 那边
+ * 自己合成自己推屏后直接 return), 不经过下面 t0/t1 这条路, 所以那条分支会把它的
+ * gpu/push 也调到这里来, 并把 is_effect 置 true 单独累计一行(effect: ...):
+ * 左右滑那套特效是全屏 3D 合成 + 多面体贴图, 是本功能最重的路径, 混在总量里看不清。
+ * 注意: 特效帧现在也算进总数了(以前完全不计), 所以 effect 行与总行的差值就是特效自己的代价。 */
+static int __lv_gpulist_flush_framerate_calc_ex(u32 gpu_us, u32 push_us, bool is_effect)
 {
     static u32 time = 0;
     static u16 frames = 0;
@@ -591,6 +623,7 @@ static int __lv_gpulist_flush_framerate_calc(u32 gpu_us, u32 push_us)
 #if LV_JLGPU_DISP_PROFILE
     static u32 gpu_sum = 0, gpu_max = 0;
     static u32 push_sum = 0, push_max = 0;
+    static u32 fx_frames = 0, fx_gpu_sum = 0, fx_gpu_max = 0, fx_push_sum = 0, fx_push_max = 0;
 
     gpu_sum += gpu_us;
     push_sum += push_us;
@@ -600,6 +633,20 @@ static int __lv_gpulist_flush_framerate_calc(u32 gpu_us, u32 push_us)
     if (push_us > push_max) {
         push_max = push_us;
     }
+
+    if (is_effect) {
+        fx_frames++;
+        fx_gpu_sum += gpu_us;
+        fx_push_sum += push_us;
+        if (gpu_us > fx_gpu_max) {
+            fx_gpu_max = gpu_us;
+        }
+        if (push_us > fx_push_max) {
+            fx_push_max = push_us;
+        }
+    }
+#else
+    (void)is_effect;
 #endif
 
     frames++;
@@ -612,13 +659,31 @@ static int __lv_gpulist_flush_framerate_calc(u32 gpu_us, u32 push_us)
                gpu_max / 1000, gpu_max % 1000 / 100,
                push_sum / frames / 1000, push_sum / frames % 1000 / 100,
                push_max / 1000, push_max % 1000 / 100);
+        /* 只有这一秒里跑过特效才打, 所以平时不会有这行噪音。
+         * "N/M frames" = 这一秒里特效帧数 / 总帧数。 */
+        if (fx_frames) {
+            printf("[jlgpu profile] effect: %u/%u frames  gpu_avg=%u.%u ms  gpu_max=%u.%u ms  "
+                   "push_avg=%u.%u ms  push_max=%u.%u ms\n",
+                   fx_frames, frames,
+                   fx_gpu_sum / fx_frames / 1000, fx_gpu_sum / fx_frames % 1000 / 100,
+                   fx_gpu_max / 1000, fx_gpu_max % 1000 / 100,
+                   fx_push_sum / fx_frames / 1000, fx_push_sum / fx_frames % 1000 / 100,
+                   fx_push_max / 1000, fx_push_max % 1000 / 100);
+        }
         gpu_sum = gpu_max = 0;
         push_sum = push_max = 0;
+        fx_frames = fx_gpu_sum = fx_gpu_max = fx_push_sum = fx_push_max = 0;
 #endif
         time = get_system_ms() + 1000;
         frames = 0;
     }
     return 0;
+}
+
+/* 普通帧(非特效)的入口。特效帧见 __lv_gpulist_flush_framerate_calc_ex()。 */
+static int __lv_gpulist_flush_framerate_calc(u32 gpu_us, u32 push_us)
+{
+    return __lv_gpulist_flush_framerate_calc_ex(gpu_us, push_us, false);
 }
 
 
@@ -629,7 +694,6 @@ static void lv_lcd_limit_align(lv_area_t *area, lv_coord_t hor_res, lv_coord_t v
     area->y1 = (area->y1 >= ver_res) ? (ver_res - 1) : area->y1;
     area->y2 = (area->y2 >= ver_res) ? (ver_res - 1) : area->y2;
 }
-
 
 static int lcd_flush_finish_callback(void *priv)
 {
@@ -715,6 +779,13 @@ static int jlgpu_task_list_disp_run(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t
     lv_area_t _area = {0};
     uint32_t area_width = lv_area_get_width(area);
 
+    /* 逻辑整帧范围: 输出步长按它算而不是按 area(可能只是整帧里的一块)算 */
+    lv_area_t frame_area = {0};
+    frame_area.x1 = 0;
+    frame_area.y1 = 0;
+    frame_area.x2 = lv_jl_lcd.lcd_align_width - 1;
+    frame_area.y2 = lv_jl_lcd.lcd_align_height - 1;
+
     lv_jlgpu_mutex_pend();
 
     if (disp_drv->render_mode == LV_DISPLAY_RENDER_MODE_FULL) {
@@ -724,14 +795,17 @@ static int jlgpu_task_list_disp_run(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t
             lv_jlgpu_sfr_top_set(unit, (lv_area_t *)area, lv_jl_lcd.jstc_pingping_buf_w, lv_jl_lcd.jstc_pingping_buf_h, lv_jl_lcd.jstc_pingping_buf0, lv_jl_lcd.jstc_pingping_buf1);
             _area.x1 = 0;
             _area.y1 = 0;
-            _area.x2 = lv_jl_lcd.jstc_pingping_buf_w - 1;
+            /* 这个窗口只是 GPU 直写那一行(真正输出走 TOP->GXDMA), 宽度收窄到旋转输出区的宽度
+             * (= 源矩形的高度), 否则窗口收窄后这行会写到输出区外面、把别的 tile 写坏。
+             * 收窄后它正好落在输出区第一个 tile 行内, 会被 GXDMA 覆盖掉。 */
+            _area.x2 = (is_gxdma_rotate(lv_jl_lcd.rotate) ? lv_area_get_height(area) : lv_area_get_width(area)) - 1;
             _area.y2 = 0;
 
-            uint32_t _area_width = lv_area_get_width(&_area);
-            lv_jlgpu_sfr_set(unit, (lv_area_t *)&_area, _area_width, px_map, LV_JLGPU_OUT_FORMAT);
+            /* 第三个参数是行步长, 必须是 ping-pong 缓存的宽度, 不能跟着窗口一起收窄 */
+            lv_jlgpu_sfr_set(unit, (lv_area_t *)&_area, lv_jl_lcd.jstc_pingping_buf_w, px_map, LV_JLGPU_OUT_FORMAT);
 
             if (lv_jl_lcd.need_gxdma) {
-                lv_jlgpu_gxdma_sfr_set(unit, (lv_area_t *)area, lv_jl_lcd.buf_stride, px_map, LV_JLGPU_OUT_FORMAT, LV_JLGPU_GXDMA_OUT_FORMAT, lv_jl_lcd.jstc_en, lv_jl_lcd.rotate);
+                lv_jlgpu_gxdma_sfr_set(unit, (lv_area_t *)area, lv_jl_lcd.buf_stride, px_map, LV_JLGPU_OUT_FORMAT, LV_JLGPU_GXDMA_OUT_FORMAT, lv_jl_lcd.jstc_en, lv_jl_lcd.rotate, &frame_area);
             }
 
         } else {
@@ -745,13 +819,16 @@ static int jlgpu_task_list_disp_run(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t
             lv_jlgpu_sfr_top_set(unit, (lv_area_t *)area, lv_jl_lcd.jstc_pingping_buf_w, lv_jl_lcd.jstc_pingping_buf_h, lv_jl_lcd.jstc_pingping_buf0, lv_jl_lcd.jstc_pingping_buf1);
             _area.x1 = 0;
             _area.y1 = 0;
-            _area.x2 = lv_jl_lcd.jstc_pingping_buf_w - 1;
+            /* 这个窗口只是 GPU 直写那一行(真正输出走 TOP->GXDMA), 宽度收窄到旋转输出区的宽度
+             * (= 源矩形的高度), 否则窗口收窄后这行会写到输出区外面、把别的 tile 写坏。
+             * 收窄后它正好落在输出区第一个 tile 行内, 会被 GXDMA 覆盖掉。 */
+            _area.x2 = (is_gxdma_rotate(lv_jl_lcd.rotate) ? lv_area_get_height(area) : lv_area_get_width(area)) - 1;
             _area.y2 = 0;
-            uint32_t _area_width = lv_area_get_width(&_area);
-            lv_jlgpu_sfr_set(unit, (lv_area_t *)&_area, _area_width, px_map, LV_JLGPU_OUT_FORMAT);
+            /* 第三个参数是行步长, 必须是 ping-pong 缓存的宽度, 不能跟着窗口一起收窄 */
+            lv_jlgpu_sfr_set(unit, (lv_area_t *)&_area, lv_jl_lcd.jstc_pingping_buf_w, px_map, LV_JLGPU_OUT_FORMAT);
 
             if (lv_jl_lcd.need_gxdma) {
-                lv_jlgpu_gxdma_sfr_set(unit, (lv_area_t *)area, lv_jl_lcd.buf_stride, px_map, LV_JLGPU_OUT_FORMAT, LV_JLGPU_GXDMA_OUT_FORMAT, lv_jl_lcd.jstc_en, lv_jl_lcd.rotate);
+                lv_jlgpu_gxdma_sfr_set(unit, (lv_area_t *)area, lv_jl_lcd.buf_stride, px_map, LV_JLGPU_OUT_FORMAT, LV_JLGPU_GXDMA_OUT_FORMAT, lv_jl_lcd.jstc_en, lv_jl_lcd.rotate, &frame_area);
             }
         } else {
             lv_jlgpu_sfr_set(unit, (lv_area_t *)area, area_width, px_map, LV_JLGPU_OUT_FORMAT);
@@ -780,6 +857,156 @@ static int jlgpu_task_list_disp_run(lv_display_t *disp_drv, lv_draw_jlgpu_unit_t
 
     return 0;
 
+}
+
+/* 逻辑坐标 -> 物理坐标。模式编号见 dbi.h 的 LCD_ROTATE_* 与 gxdma_driver.h 的
+ * GXDMA_OUT_*(两边编号一致, 所以 lv_jl_lcd.rotate 可以直接当 rot_mode 用)。
+ * w/h 是"源"那一侧的尺寸: 正向传逻辑帧, 反向传物理帧(90/270 两者互换)。
+ * 只处理 0/镜像/翻转/90/180/270; 90_MIRROR / 90_FLIP 的合成顺序没有明确定义,
+ * 那两个模式 partial_render 置 0, 退回全屏渲染。 */
+static void lv_jlgpu_map_xy(u8 rot, lv_coord_t w, lv_coord_t h, lv_coord_t x, lv_coord_t y, lv_coord_t *px, lv_coord_t *py)
+{
+    switch (rot) {
+    case LCD_ROTATE_90:
+        *px = h - 1 - y;
+        *py = x;
+        break;
+    case LCD_ROTATE_180:
+        *px = w - 1 - x;
+        *py = h - 1 - y;
+        break;
+    case LCD_ROTATE_270:
+        *px = y;
+        *py = w - 1 - x;
+        break;
+    case LCD_MIRROR:
+        *px = w - 1 - x;
+        *py = y;
+        break;
+    case LCD_FLIP:
+        *px = x;
+        *py = h - 1 - y;
+        break;
+    default:                    /* LCD_ROTATE_0 */
+        *px = x;
+        *py = y;
+        break;
+    }
+}
+
+/* 逻辑帧与物理帧的尺寸(都用对齐后的值), 90/270 交换宽高。
+ * 必须用对齐后的尺寸: 映射里带着 (dim-1-x) 这种偏移, 取对齐前还是对齐后的值,
+ * 同一个物理落点会差出对齐量。 */
+static void lv_jlgpu_frame_size(lv_coord_t *lw, lv_coord_t *lh, lv_coord_t *pw, lv_coord_t *ph)
+{
+    *lw = lv_jl_lcd.lcd_align_width;
+    *lh = lv_jl_lcd.lcd_align_height;
+    if (is_gxdma_rotate(lv_jl_lcd.rotate)) {
+        *pw = *lh;
+        *ph = *lw;
+    } else {
+        *pw = *lw;
+        *ph = *lh;
+    }
+}
+
+/* 逆映射: 90 与 270 互换, 其余(0/镜像/翻转/180)的逆就是它自己 */
+static u8 lv_jlgpu_inv_rotate(u8 rot)
+{
+    if (rot == LCD_ROTATE_90) {
+        return LCD_ROTATE_270;
+    }
+    if (rot == LCD_ROTATE_270) {
+        return LCD_ROTATE_90;
+    }
+    return rot;
+}
+
+/* 矩形按给定映射过去并归一化(两个对角映过去取 min/max) */
+static void lv_jlgpu_area_map(u8 rot, lv_coord_t w, lv_coord_t h, const lv_area_t *src, lv_area_t *dst)
+{
+    lv_coord_t x1, y1, x2, y2;
+
+    lv_jlgpu_map_xy(rot, w, h, src->x1, src->y1, &x1, &y1);
+    lv_jlgpu_map_xy(rot, w, h, src->x2, src->y2, &x2, &y2);
+    dst->x1 = LV_MIN(x1, x2);
+    dst->y1 = LV_MIN(y1, y2);
+    dst->x2 = LV_MAX(x1, x2);
+    dst->y2 = LV_MAX(y1, y2);
+}
+
+/* 把脏区扩成"映射到物理后落点正好 tile 对齐"的逻辑矩形。
+ * 旋转下 GXDMA 的 tile 输出要求落点和尺寸都是 8 的倍数, 而映射里带着 (dim-1-x)
+ * 这种偏移, 直接在逻辑坐标上按 8 对齐并不等价 —— 90° 下要 y2+1 落在 8 的倍数上,
+ * 180° 下却要 y2 自己落在 8 的倍数上。所以先映到物理空间对齐, 再映回来。
+ * lv_refr.c 用它把脏区并成的 bbox 对齐后再交给 LVGL 渲染, 这样驱动用的窗口和
+ * LVGL 实际渲染的区域完全一致, 不会留下没渲染到的边。
+ * 注意夹紧用的是"对齐后的物理帧"而不是可见区: 落在可见区外的部分是缓存里的补齐行,
+ * 不会显示; 若夹到可见区, 边界上的矩形尺寸就不是 8 的倍数了, 硬件按整 tile 写会出条纹。 */
+void lv_jl_lcd_align_render_area(lv_area_t *area)
+{
+    lv_area_t phy;
+    lv_area_t aligned;
+    lv_coord_t lw, lh, pw, ph;
+
+    if (!lv_jl_lcd.partial_render || lv_jl_lcd.rotate == 0) {
+        /* 不收窄窗口, 或者目标就是逻辑帧本身(rotate=0 是行格式、字节粒度)时不用对齐 */
+        return;
+    }
+
+    lv_jlgpu_frame_size(&lw, &lh, &pw, &ph);
+    lv_jlgpu_area_map(lv_jl_lcd.rotate, lw, lh, area, &phy);
+
+    aligned.x1 = phy.x1 & ~(lv_coord_t)0x7;
+    aligned.y1 = phy.y1 & ~(lv_coord_t)0x7;
+    aligned.x2 = ((phy.x2 + 8) & ~(lv_coord_t)0x7) - 1;
+    aligned.y2 = ((phy.y2 + 8) & ~(lv_coord_t)0x7) - 1;
+    if (aligned.x2 > pw - 1) {
+        aligned.x2 = pw - 1;
+    }
+    if (aligned.y2 > ph - 1) {
+        aligned.y2 = ph - 1;
+    }
+
+    lv_jlgpu_area_map(lv_jlgpu_inv_rotate(lv_jl_lcd.rotate), pw, ph, &aligned, area);
+}
+
+/* 脏区(已对齐)在物理缓存里的字节偏移。
+ * 硬件是从 dst 基址开始写的, 不会自己按旋转后的坐标定位, 所以要自己算;
+ * 整帧时结果恒为 0。
+ * 旋转/镜像/翻转时目标是 tile 格式, 按 tile 行步长算; 无旋转时目标就是逻辑帧本身,
+ * 是行格式, 按行步长算(行格式字节粒度, 不需要 8 对齐)。 */
+static uint32_t lv_jlgpu_dirty_ofs(const lv_area_t *area)
+{
+    lv_area_t phy;
+    lv_coord_t lw, lh, pw, ph;
+    uint32_t tile_bytes;
+    uint32_t tile_row_bytes;
+
+    lv_jlgpu_frame_size(&lw, &lh, &pw, &ph);
+    lv_jlgpu_area_map(lv_jl_lcd.rotate, lw, lh, area, &phy);
+
+    if (lv_jl_lcd.rotate == 0) {
+        return (uint32_t)phy.y1 * (uint32_t)lw * BYTE_PER_PIXEL + (uint32_t)phy.x1 * BYTE_PER_PIXEL;
+    }
+
+    tile_bytes = BYTE_PER_PIXEL * 64;                       /* 8x8 tile */
+    tile_row_bytes = (uint32_t)(pw / 8) * tile_bytes;
+
+    return (uint32_t)(phy.y1 / 8) * tile_row_bytes + (uint32_t)(phy.x1 / 8) * tile_bytes;
+}
+
+/* 定下本帧的 GPU 输出窗口与落点: 能收窄的场合收窄到脏区, 其余情况就是整帧(偏移恒为 0)。
+ * 推屏在消费线程里做, 那边拿不到 LVGL 传下来的脏区, 所以结果存进 lv_jl_lcd;
+ * 一帧只允许在飞一个, 由 jlgpu_run_disp_sem 保证不会被下一帧覆盖。 */
+static void lv_jlgpu_prepare_render_area(const lv_area_t *full_area, const lv_area_t *dirty_area)
+{
+    lv_jl_lcd.render_area = *full_area;
+    if (lv_jl_lcd.partial_render) {
+        lv_jl_lcd.render_area = *dirty_area;
+        lv_jl_lcd_align_render_area(&lv_jl_lcd.render_area);
+    }
+    lv_jl_lcd.render_ofs = lv_jlgpu_dirty_ofs(&lv_jl_lcd.render_area);
 }
 #endif
 
@@ -820,6 +1047,12 @@ void disp_flush_post_msg(void)
     disp_drv = lv_display_get_default();
     lv_draw_jlgpu_unit_t *unit = lv_get_draw_jlgpu_unit();
     uint8_t *px_map = disp_drv->buf_act->data;
+
+    /* 这条路径没有脏区概念, 按整帧走(旋转屏就是整帧旋转), 免得消费线程用到上一帧残留的窗口 */
+    lv_area_t full_area = {0};
+    full_area.x2 = lv_jl_lcd.lcd_align_width - 1;
+    full_area.y2 = lv_jl_lcd.lcd_align_height - 1;
+    lv_jlgpu_prepare_render_area(&full_area, &full_area);
 
     int err = os_taskq_post(JLGPU_RUN_DISP_CB_NAME, 3, disp_drv, unit, px_map);
     if (err) {
@@ -914,7 +1147,16 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
         }
     }
 
-    if (!lv_page_effect_manager(disp_drv, unit, &screen_area, page_effect_buf ? page_effect_buf : px_map) || lv_football_menu_flush(unit, page_effect_buf ? page_effect_buf : px_map, &screen_area)) {
+    /* 特效/足球特效这一帧的耗时也纳入统计(它们不走下面 t0/t1 那条路, 直接 return 了)。
+     * 拆分点: t0→t1 是 lv_page_effect_manager 里的全屏 3D 合成, t1→收尾是推屏链路。 */
+#if LV_JLGPU_DISP_PROFILE
+    int64_t fx_t0 = get_system_us();
+#endif
+    bool fx_handled = lv_page_effect_manager(disp_drv, unit, &screen_area, page_effect_buf ? page_effect_buf : px_map);
+#if LV_JLGPU_DISP_PROFILE
+    int64_t fx_t1 = get_system_us();
+#endif
+    if (!fx_handled || lv_football_menu_flush(unit, page_effect_buf ? page_effect_buf : px_map, &screen_area)) {
 
         // GPU/DMA写入psram后，需要无效化dcache，确保CPU读取到最新数据
         if (page_effect_buf) {
@@ -979,6 +1221,19 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
             lv_jl_lcd.lcd->draw((uint8_t *)px_map, screen_area.x1, screen_area.x2, screen_area.y1, screen_area.y2);
         }
 
+        /* 这一帧的合成/推屏耗时入账。页面特效与足球特效都走这条路, 只有页面特效
+         * 才算进 effect 行 —— 判据用 manager 的三个状态位(与 indev_pointer.c 的
+         * ip_effect_idle() 同源), 任一为真即"页面特效在途"。 */
+#if LV_JLGPU_DISP_PROFILE
+        __lv_gpulist_flush_framerate_calc_ex((u32)(fx_t1 - fx_t0),
+                                             (u32)(get_system_us() - fx_t1),
+                                             (g_page_effect_state.effect_enter ||
+                                              g_page_effect_state.effect_busy ||
+                                              g_page_effect_state.effect_exit));
+#else
+        __lv_gpulist_flush_framerate_calc_ex(0, 0, false);
+#endif
+
         lvgl_try_open_backlight_after_first_frame(disp_drv->flushing_last);
         lv_display_flush_ready(disp_drv);
         return;
@@ -1034,6 +1289,9 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
             os_sem_set(&jlgpu_push_done_sem, 0);
 #endif
 
+            /* 定下本帧的 GPU 输出窗口(旋转屏收窄到脏区)与 tile 落点, 消费线程要用 */
+            lv_jlgpu_prepare_render_area(&full_area, area);
+
             int err = os_taskq_post(JLGPU_RUN_DISP_CB_NAME, 3, disp_drv, unit, px_map);
             if (err) {
                 os_sem_post(&jlgpu_run_disp_sem);
@@ -1078,10 +1336,12 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
              */
             lv_ball_effect_build_tasks(unit);
 
+            /* 旋转屏把 GPU 输出窗口收窄到脏区, 落点按 tile 布局自己算 */
+            lv_jlgpu_prepare_render_area(&full_area, area);
 #if LV_JLGPU_DISP_PROFILE
             int64_t t0 = get_system_us();
 #endif
-            jlgpu_task_list_disp_run(disp_drv, unit, &full_area, px_map);
+            jlgpu_task_list_disp_run(disp_drv, unit, &lv_jl_lcd.render_area, px_map + lv_jl_lcd.render_ofs);
 #if LV_JLGPU_DISP_PROFILE
             int64_t t1 = get_system_us();
 #endif
@@ -1360,7 +1620,8 @@ static void _jlgpu_run_disp_cb(void *ptr)
          * 联动会被打断,GPU top 不再产出,DMM 读不到数据 → lcd->draw 永久等待 → 整机冻死。 */
         jlgpu_push_gate_enter();
 
-        jlgpu_task_list_disp_run(disp_drv, unit, &full_area, px_map);
+        /* 窗口与落点由生产者按脏区定好(见 lv_jlgpu_prepare_render_area), 这里直接用 */
+        jlgpu_task_list_disp_run(disp_drv, unit, &lv_jl_lcd.render_area, px_map + lv_jl_lcd.render_ofs);
 
         //处理完成后立刻释放当前unit链表内存
 #if JLGPU_PUSH_SYNC_WITH_LVGL
@@ -1413,6 +1674,7 @@ static void _jlgpu_run_disp_cb(void *ptr)
 
         lv_jl_lcd.lcd->set_draw_area(full_area.x1, full_area.x2, full_area.y1, full_area.y2);
         lv_jl_lcd.lcd->draw((uint8_t *)px_map, full_area.x1, full_area.x2, full_area.y1, full_area.y2);
+
         /* 推屏结束,放开独占门(见上面的 jlgpu_push_gate_enter) */
         jlgpu_push_gate_leave();
 

@@ -15,49 +15,14 @@
 #include "vc30fx_sample_result.h"
 #include "vc30fx_driver_config.h"
 
-/* 如果需要指定变量到对应的字段在次定义，且重新编译 */
-#define CORE30Fx_DATA_RAM_SECTION //__attribute__((section(".core30fxdata")))
-#define CORE30Fx_FUNC_RAM_SECTION //__attribute__((section(".core30fxfunc")))
+/* 段放置由 sdk_config.h 的 TCFG_SENSOR_HR_CODE_IN_RAM + 各 .c 顶部 pragma code_seg 控制 */
+#define CORE30Fx_DATA_RAM_SECTION
+#define CORE30Fx_FUNC_RAM_SECTION
 /*============================================================================
  * CORE30Fx_DEBUG ：debug interface
  ===========================================================================*/
-//#define CORE30Fx_DEBUG_VERSION
-/* 在编译库的时候，-D CORE30Fx_DEBUG_VERSION 对代码进行分版本生成库(debug/release) */
-#ifdef CORE30Fx_DEBUG_VERSION
-extern void log_direct(unsigned int info, const char *fmt, ...);
-#define CORE30Fx_DEBUG_LOG(fmt, ...)                                                   \
-    do                                                                                 \
-    {                                                                                  \
-        printf("[CORE30Fx_LOG]line(%d)" fmt, __LINE__, ##__VA_ARGS__); \
-    } while (0)
-#define CORE30Fx_DEBUG_ERR(fmt, ...)                                                   \
-    do                                                                                 \
-    {                                                                                  \
-        printf("[CORE30Fx_ERR]line(%d)" fmt, __LINE__, ##__VA_ARGS__); \
-    } while (0)
-#else
 #define CORE30Fx_DEBUG_LOG(fmt, ...)
 #define CORE30Fx_DEBUG_ERR(fmt, ...)
-#endif
-
-#if 0 // CORE30Fx_DEBUG_LOG example
-extern int (*vc30fx_dbglog_user)(const char *, ...);
-#define CORE30Fx_DEBUG_LOG(fmt, ...)                                                           \
-    do                                                                                         \
-    {                                                                                          \
-        if (vc30fx_dbglog_user)                                                                \
-            vc30fx_dbglog_user("[CORE30Fx_LOG]%s(%d)" fmt, __func__, __LINE__, ##__VA_ARGS__); \
-    } while (0)
-#define CORE30Fx_DEBUG_ERR(fmt, ...)                                                           \
-    do                                                                                         \
-    {                                                                                          \
-        if (vc30fx_dbglog_user)                                                                \
-            vc30fx_dbglog_user("[CORE30Fx_ERR]%s(%d)" fmt, __func__, __LINE__, ##__VA_ARGS__); \
-    } while (0)
-//#else
-#define CORE30Fx_DEBUG_LOG(fmt, ...)
-#define CORE30Fx_DEBUG_ERR(fmt, ...)
-#endif
 
 /*============================================================================
  * IC resources marco

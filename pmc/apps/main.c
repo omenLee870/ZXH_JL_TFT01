@@ -8,6 +8,7 @@
 #include "main.h"
 #include "bsp.h"
 #include "sensor/driver/sensor_driver.h"
+#include "sensor/health_manager.h"
 #include "vad_hw.h"
 #if CONFIG_AEC_UART_EXPORT_ENABLE
 #include "aec_uart_debug.h"
@@ -193,7 +194,7 @@ int task_post_msg(char *name, int argc, ...)
 static void app_msg_handler(void *priv, u8 *msg, u32 len)
 {
 
-    log_info(" app_msg_handler = %d\n", msg[0]);
+    log_debug(" app_msg_handler = %d\n", msg[0]);
     if (msg[0] == MSG_APP_CALLBACK) {
         u32 *msg_priv;
         void (*msg_cb)(u32 * priv);
@@ -206,7 +207,7 @@ static void app_msg_handler(void *priv, u8 *msg, u32 len)
     switch (msg[0]) {
 #if CONFIG_SENSOR_DRIVER_ENABLE
     case MSG_P11_SYS_KICK:
-        log_info("MSG_P11_SYS_KICK\n");
+        log_debug("MSG_P11_SYS_KICK\n");
         sensor_driver_run();
         break;
     case MSG_P11_SENSOR_SLEEP:
@@ -219,28 +220,36 @@ static void app_msg_handler(void *priv, u8 *msg, u32 len)
         sensor_driver_irq_handle();
         break;
     case MSG_P11_HEALTH_MANAGER_LOOP:
-        printf("MSG_P11_HEALTH_MANAGER_LOOP\n");
+        log_debug("MSG_P11_HEALTH_MANAGER_LOOP\n");
         void sport_health_manager_task();
         sport_health_manager_task();
         break;
     case MSG_P11_HEALTH_MANAGER_DATA_P2P:
-        printf(" MSG_P11_HEALTH_MANAGER_DATA_P2P\n");
+        log_debug("MSG_P11_HEALTH_MANAGER_DATA_P2P\n");
         int sport_health_manager_msg_post_self(int module, int cmd, void *priv);
         int msg_priv;
         memcpy((u8 *)&msg_priv, &msg[3], 4);
         sport_health_manager_msg_post_self(msg[1], msg[2], (void *)&msg_priv);
         break;
-    case MSG_P11_HEALTH_MANAGER_DATA_M2P:
-        printf(" MSG_P11_HEALTH_MANAGER_DATA_M2P\n");
-        {
-            int module = msg[1];
-            int type = msg[2];
+    case MSG_P11_HEALTH_MANAGER_DATA_M2P: {
+        int module = msg[1];
+        int type = msg[2];
+        log_debug("MSG_P11_HEALTH_MANAGER_DATA_M2P module=%d type=%d", module, type);
+        /* 白名单：这些值语义是「控制命令」而非「取值类型」，必须走 msg_post_self 下发到模块的
+         * io_ctrl；其余值按取值类型走 get_value_m2p。
+         * SHM_CMD_DIR_ENABLE/DISABLE 是床头钟方向算法开关，若漏在这里会被当成取值类型，
+         * 落到 sport_health_manager_get_value_m2p() 后被 SHM_GET_TYPE_MAX 判定拦掉、静默丢弃。 */
+        if (type == SHM_CMD_ENABLE || type == SHM_CMD_DISABLE
+            || type == SHM_CMD_DIR_ENABLE || type == SHM_CMD_DIR_DISABLE) {
+            int sport_health_manager_msg_post_self(int module, int cmd, void *priv);
+            sport_health_manager_msg_post_self(module, type, NULL);
+        } else {
             int sport_health_manager_get_value_m2p(int module, int type);
             sport_health_manager_get_value_m2p(module, type);
         }
+    }
 #endif
-        //test
-        break;
+    break;
     case MSG_P11_SENSOR_INIT: {
         log_info("m2p_post_msg  len=%d\n", len);
 #if CONFIG_SENSOR_DRIVER_ENABLE

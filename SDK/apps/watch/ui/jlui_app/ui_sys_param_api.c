@@ -4,6 +4,7 @@
 #include "jlui_app/watch_syscfg_manage.h"
 #include "periph/pwm_interface.h"
 #include "audio_config.h"
+#include "automute.h"
 #include "jlui_app/ui_style.h"
 #include "ui_api.h"
 #include "cat1/cat1_common.h"
@@ -65,7 +66,7 @@ struct sys_param sys_defalut_param[SYS_PARAM_NUM] = {
     {UndisturbEtimeM,     0},
     {TrainAutoEn,         0},
     {ConnNewPhone,        0},
-    {Language,            0},
+    {Language,            Chinese_Simplified},   //修复: 原为 0，而语言ID从 1 起算；0 会让 ui_language_set() 算 BIT(-1) 未定义行为
     {MenuStyle,           0},
     {MotoMode,           80},
     {twenty_four_time,    1},
@@ -80,6 +81,7 @@ struct sys_param sys_defalut_param[SYS_PARAM_NUM] = {
     {smartwin_en,		  0},
     {LastDarkTime,		  0},
     {LastLightLevel,	  5},
+    {VoiceMute,           0},
 };
 
 // 应用列表类型
@@ -124,6 +126,8 @@ extern void sys_enter_soft_poweroff(void *priv);
 extern u8 get_ui_page_list_total_num();
 static u8 ui_style_vm_init(void);
 static u8 ui_card_anim_vm_init(void);
+/* 静音开关的出厂复位，定义见本文件 voice_mute 段 */
+void ui_voice_mute_reset(void);
 
 extern const int JLUI_MULTI_PAGE_OVERLAY_SUPPORT;
 
@@ -226,6 +230,32 @@ void erase_UIInfo_in_vm()
     }
 }
 
+/* 恢复出厂设置：复位"用户私密状态"。
+ * 密码与密码开关存在独立 VM id 上，erase_UIInfo_in_vm() 只擦 VM_UI_SYS_INFO(22)，
+ * 覆盖不到它们，必须显式复位：
+ *   - USER_PASSWORD(163)    开机密码
+ *   - USER_PASSWORD_ON(164) 开机密码开关
+ * 静音已纳入 sys_param 参数表，由 erase_UIInfo_in_vm() 置 valid=0 一并覆盖；
+ * 这里仍调 ui_voice_mute_reset() 让运行时参数表与 VM 立即一致。
+ * UI 路径（restore_sys_settings）与蓝牙路径（common_api_restore_sys_settings）
+ * 共用本函数，避免两条路径复位内容不一致。
+ * 返回 0 表示全部写入成功，非 0 表示有失败。 */
+int factory_reset_user_secrets(void)
+{
+    u8 pwd_buf[POWERON_PASSWORD_LEN] = {0};
+    u8 pwd_off = 0;
+    int ret_pwd = 0;
+    int ret_on = 0;
+
+    ret_pwd = syscfg_write(USER_PASSWORD, pwd_buf, sizeof(pwd_buf));
+    ret_on  = syscfg_write(USER_PASSWORD_ON, &pwd_off, sizeof(pwd_off));
+    /* 注意：syscfg_write 的返回值即写入字节数，不等于 sizeof 即为失败。
+     * 失败时 VM 中旧密码会残留，恢复出厂后开机仍会要求输入密码。 */
+    ui_voice_mute_reset();
+
+    return ((ret_pwd == (int)sizeof(pwd_buf)) && (ret_on == (int)sizeof(pwd_off))) ? 0 : -1;
+}
+
 void restore_sys_settings()
 {
 #if TCFG_PAY_ALIOS_ENABLE
@@ -251,6 +281,19 @@ void restore_sys_settings()
     bt_cmd_prepare(USER_CTRL_DEL_ALL_REMOTE_INFO, 0, NULL);
 #endif
     small_file_del_all();//清外挂flash 存储
+    /* 修复恢复出厂后语言未复位：原先只清 VM，重启后语言依赖默认表内容，
+     * 而默认表里 Language 曾是 0（非法ID）。这里显式写回默认语言，
+     * 与 sys_defalut_param[Language] 保持一致。 */
+    set_ui_sys_param(Language, Chinese_Simplified);
+    /* 修复恢复出厂后仍要求输入开机密码：密码与密码开关存放在独立 VM id
+     * （USER_PASSWORD=163 / USER_PASSWORD_ON=164），erase_UIInfo_in_vm() 只擦
+     * VM_UI_SYS_INFO(22)，覆盖不到这两个 id，必须显式复位。
+     * 必须排在 erase_UIInfo_in_vm() 之前：本函数内部经 ui_voice_mute_reset()
+     * 调 write_UIInfo_to_vm(NULL)，而 write_UIInfo_to_vm() 会无条件把
+     * ui_sys_param.valid 置 1 写回 VM；若放在擦除之后，valid 会被重新置 1，
+     * 重启后 read_UIInfo_from_vm() 走正常读取路径、不加载 sys_defalut_param，
+     * 亮度/音量/表盘/语言/免打扰全部不会回退默认值，恢复出厂失效。 */
+    (void)factory_reset_user_secrets();
     erase_UIInfo_in_vm();
     watch_reboot_or_shutdown(1, 1);
 }
@@ -264,7 +307,7 @@ void ui_set_dark_time(u8 sel)
     const u16 dark_time[5] = {10, 15, 20, 30, 60};
 #endif
     if (get_ui_sys_param(LightAlwayEn) == 0) {
-        if (sel >= sizeof(dark_time)) {
+        if (sel >= ARRAY_SIZE(dark_time)) {   //修复: 原为 sizeof(dark_time)(=10)，与数组元素个数(=5)不符，越界读
             return;
         }
         ui_set_shut_down_time(dark_time[sel]);
@@ -285,7 +328,7 @@ static u32 ui_get_dark_time(void)
     u8 sel = get_ui_sys_param(DarkTime);
 
     if (get_ui_sys_param(LightAlwayEn) == 0) {
-        if (sel >= sizeof(dark_time)) {
+        if (sel >= ARRAY_SIZE(dark_time)) {   //修复: 原为 sizeof(dark_time)(=10)，与数组元素个数(=5)不符，越界读
             return 0;
         }
         return dark_time[sel];
@@ -318,7 +361,7 @@ void screen_light_alway_switch(u8 on)
         alway_light_reset_to_id = 0;
     }
     if (on) {
-        if (light_time_sel >= sizeof(light_time)) {
+        if (light_time_sel >= ARRAY_SIZE(light_time)) {   //修复: 原为 sizeof(light_time)，同型越界读缺陷
             g_printf("light_time_sel >= sizeof(light_time)");
             return;
         }
@@ -352,6 +395,34 @@ void ui_ajust_light(u8 level)
     if (lcd_backlight_status()) { //开机没有亮背光之前不能亮
         lcd_drv_backlight_ctrl(level * 10);
     }
+}
+
+/* 把 ui_ajust_light 语义的 level 钳位到 [UI_LIGHT_LEVEL_MIN, UI_LIGHT_LEVEL_MAX]。
+ * 与 ui_ajust_light() 内联的钳位逻辑一致，供下面两条恢复路径复用。 */
+static u8 ui_light_level_clamp(u8 level)
+{
+    if (level > UI_LIGHT_LEVEL_MAX) {
+        level = UI_LIGHT_LEVEL_MAX;
+    }
+    if (level <= UI_LIGHT_LEVEL_MIN) {
+        level = UI_LIGHT_LEVEL_MIN;
+    }
+    return level;
+}
+
+/* 开机按 VM 档位恢复亮度，不走 ui_ajust_light() 的 lcd_backlight_status() 守卫，避免依赖其 100% 设置的副作用 */
+void ui_backlight_restore(void)
+{
+    extern int lcd_drv_backlight_ctrl(u8 percent);
+    u8 level = ui_light_level_clamp(get_ui_sys_param(LightLevel) * 2);
+
+    lcd_drv_backlight_ctrl(level * 10);
+}
+
+/* 覆盖 lcd_drive.c 的 weak 定义：返回用户设定亮度百分比(0~100)，供 lcd_sleep_ctrl() 唤醒与 lcd_bl_open() 取用 */
+u8 lcd_user_brightness_percent(void)
+{
+    return ui_light_level_clamp(get_ui_sys_param(LightLevel) * 2) * 10;
 }
 
 void ui_set_voice(int percent)
@@ -653,18 +724,44 @@ void ui_music_volume_down(void)
     syscfg_write(CFG_MUSIC_VOL, &volume, 2);
 }
 
+/* 静音开关。原实现用 app_audio_set_mute_state(APP_AUDIO_STATE_WTONE, ...)，但本板
+ * WARNING_TONE_VOL_FIXED=1（audio/common/audio_volume_mixer.c，TCFG_SUB_CASE_TYPE=WATCH
+ * 走 else 分支），该接口在写状态前直接 return；而 app_audio_get_mute_state() 没有同样的
+ * #if 保护 → 读回恒 0，导致开关既无效也无法关闭。
+ * 改用 DAC 全局数字静音 app_audio_mute()（内部走 audio_dac_digital_mute，不受
+ * WARNING_TONE_VOL_FIXED 影响），状态存入 sys_param 参数表的 VoiceMute 项随整表持久化。 */
+static void voice_mute_apply(u8 en)
+{
+    app_audio_mute(en ? AUDIO_MUTE_DEFAULT : AUDIO_UNMUTE_DEFAULT);
+}
+
 void ui_set_voice_mute(u8 en)
 {
-    if (en) {
-        app_audio_set_mute_state(APP_AUDIO_STATE_WTONE, 1);
-    } else {
-        app_audio_set_mute_state(APP_AUDIO_STATE_WTONE, 0);
+    en = !!en;
+    if (get_ui_sys_param(VoiceMute) == en) {
+        /* 状态未变也保证 DAC 一致（例如开机恢复后首次被调用） */
+        voice_mute_apply(en);
+        return;
     }
+    set_ui_sys_param(VoiceMute, en);
+    voice_mute_apply(en);
+    /* 静音切换是低频事件，直接落 VM，避免关机前状态丢失 */
+    write_UIInfo_to_vm(NULL);
 }
 
 u8 ui_get_voice_mute()
 {
-    return app_audio_get_mute_state(APP_AUDIO_STATE_WTONE);
+    return (get_ui_sys_param(VoiceMute) > 0) ? 1 : 0;
+}
+
+/* 恢复出厂用：把静音状态清回「不静音」并落 VM。
+ * 不走 ui_set_voice_mute(0)：它带「状态未变就 return」的短路，当前恰好已是不静音时
+ * 不会覆写 VM。这里无条件写入，保证复位后 VM 中该项必为 0。 */
+void ui_voice_mute_reset(void)
+{
+    set_ui_sys_param(VoiceMute, 0);
+    voice_mute_apply(0);
+    write_UIInfo_to_vm(NULL);
 }
 
 u8 ui_show_shortcut_key()

@@ -122,19 +122,7 @@ app_camera_ret_t app_camera_vpss_vo_bind_close(app_camera_handle_t ctx)
         return APP_CAMERA_ERR_IO;
     }
 
-    /* close vo chn */
-    ret = mpi_vo_stop_chn(ctx->vo_chn);
-    if (ret != MPI_SUCCESS) {
-        printf("failed to stop VO channel\n");
-        return APP_CAMERA_ERR_IO;
-    }
-    ret = mpi_vo_destroy_chn(ctx->vo_chn);
-    if (ret != MPI_SUCCESS) {
-        printf("failed to destroy VO channel\n");
-        return APP_CAMERA_ERR_IO;
-    }
-
-    /* close vpss chn */
+    /* 先停 vpss: 上游还在往 fb 里写, 停了才能释放缓冲 */
     ret = mpi_vpss_disable_chn(ctx->vpss_grp, ctx->vpss_chn_display);
     if (ret != MPI_SUCCESS) {
         printf("failed to disable VPSS channel\n");
@@ -143,6 +131,18 @@ app_camera_ret_t app_camera_vpss_vo_bind_close(app_camera_handle_t ctx)
     ret = mpi_vpss_destroy_chn(ctx->vpss_grp, ctx->vpss_chn_display);
     if (ret != MPI_SUCCESS) {
         printf("failed to destroy VPSS channel\n");
+        return APP_CAMERA_ERR_IO;
+    }
+
+    /* 再关 vo chn, 释放 fb 缓冲 */
+    ret = mpi_vo_stop_chn(ctx->vo_chn);
+    if (ret != MPI_SUCCESS) {
+        printf("failed to stop VO channel\n");
+        return APP_CAMERA_ERR_IO;
+    }
+    ret = mpi_vo_destroy_chn(ctx->vo_chn);
+    if (ret != MPI_SUCCESS) {
+        printf("failed to destroy VO channel\n");
         return APP_CAMERA_ERR_IO;
     }
 

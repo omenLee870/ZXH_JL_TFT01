@@ -63,13 +63,19 @@ static struct ifly_websocket_struct sparkdesk_socket;
 //json解析函数_ai
 static void ifly_sparkdesk_recv_cb(u8 *j_str, u32 len, u8 type)
 {
+    ifly_ai_param *param = sparkdesk_info.param;
+
     if (sparkdesk_info.force_stop) {
         return;
     }
     if (sparkdesk_info.status >= IFLY_AI_STATUS_RECV_END) {
         return;
     }
-    cJSON *cjson_root = cJSON_Parse((char *)j_str);
+    if ((param == NULL) || (param->ai_res == NULL) || (param->ai_res_len == 0)) {
+        return;
+    }
+    // websocket 层在 recv_len == buf_len 时不会补 '\0'，必须按长度解析，否则 strlen 会越界读
+    cJSON *cjson_root = cJSON_ParseWithLength((char *)j_str, len);
     if (cjson_root == NULL) {
         log_error("cjson error...\r\n");
         if (sparkdesk_info.status <= IFLY_AI_STATUS_RECV_END) {
@@ -85,36 +91,45 @@ static void ifly_sparkdesk_recv_cb(u8 *j_str, u32 len, u8 type)
     cJSON *cjson_choices = cJSON_GetObjectItem(cjson_payload, "choices");
     cJSON *cjson_text = cJSON_GetObjectItem(cjson_choices, "text");
 
-    int arr_size = cJSON_GetArraySize(cjson_text);
-    cJSON *arr_item = cjson_text->child;
-    if (!sparkdesk_info.param->ai_res) {
+    // 心跳/结束帧可能没有 text 节点，解引用前必须判空，否则读地址 0 触发 read hmem exception
+    if (cjson_text == NULL) {
+        log_error("no text node\n");
+        cJSON_Delete(cjson_root);
         return;
     }
-    u32 ai_res_len = strlen(sparkdesk_info.param->ai_res);
-    for (int i = 0; i < arr_size; i++) {
+
+    u32 ai_res_len = strlen(param->ai_res);
+    // 直接遍历链表，不依赖 arr_size，避免长度与实际节点数不一致时解引用到非法节点
+    for (cJSON *arr_item = cjson_text->child; arr_item != NULL; arr_item = arr_item->next) {
         cJSON *cjson_content = cJSON_GetObjectItem(arr_item, "content");
+        if (cjson_content == NULL) {
+            continue;
+        }
         char *cjson_str = cJSON_Print(cjson_content);
+        // 打印失败会返回 NULL，strlen(NULL) 会读地址 0
+        if (cjson_str == NULL) {
+            log_error("cjson print error\n");
+            continue;
+        }
         u32 json_len = strlen(cjson_str);
-        if ((ai_res_len + json_len + 1) > sparkdesk_info.param->ai_res_len) {
+        if ((ai_res_len + json_len + 1) > param->ai_res_len) {
             log_error("len error\n");
         } else {
-            strcpy(&sparkdesk_info.param->ai_res[ai_res_len], cjson_str);
+            memcpy(&param->ai_res[ai_res_len], cjson_str, json_len + 1);
             ai_res_len += json_len;
         }
-        arr_item = arr_item->next;
         cJSON_free(cjson_str);
     }
 
-    int res_len = strlen(sparkdesk_info.param->ai_res);
+    int res_len = strlen(param->ai_res);
+    str_remove_quote(param->ai_res, res_len);
+    log_info("final res:%s\n", param->ai_res);
 
-    str_remove_quote(sparkdesk_info.param->ai_res, res_len);
-
-    log_info("final res:%s\n", sparkdesk_info.param->ai_res);
-
-    if (cjson_status->valueint == RECV_LAST_FRAME) {
+    // status 节点缺失时不能解引用
+    if ((cjson_status != NULL) && (cjson_status->valueint == RECV_LAST_FRAME)) {
         sparkdesk_info.status = IFLY_AI_STATUS_RECV_END;
         sparkdesk_info.recv_finish = 1;
-        sparkdesk_info.param->event_cb(IFLY_AI_EVT_RECV_OK, sparkdesk_info.param);
+        param->event_cb(IFLY_AI_EVT_RECV_OK, param);
     }
 
     cJSON_Delete(cjson_root);

@@ -32,6 +32,30 @@
   */
 void get_device_descriptor(u8 *ptr);
 
+/**@brief 获取设备描述符使用的 VID
+  * @return     VID（编译期由 TCFG_USB_VID 决定，未配置时取默认值）
+  */
+u16 usb_get_vid(void);
+
+/**@brief 获取从机模式编译期使能的 class 位图
+  * @return     class 位图，与 usb_start() 下发给 usb_device_mode() 的一致
+  * @par    示例：
+  * @code
+  * u16 class = usb_slave_class_config();
+  * @endcode
+  */
+u16 usb_slave_class_config(void);
+
+/**@brief 按 class 位图推算 PID
+  * @param[in]  class_config  class 位图，低 8 位有效
+  * @return     PID，未置起任何 class 位时为基准 PID
+  * @par    示例：
+  * @code
+  * u16 pid = usb_pid_from_class(usb_slave_class_config());
+  * @endcode
+  */
+u16 usb_pid_from_class(u16 class_config);
+
 
 /**@brief USB获取***字符串描述符
   * @param[in]  *ptr  存放***字符串描述符的地址

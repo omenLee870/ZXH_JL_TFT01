@@ -108,6 +108,13 @@ extern int watch_get_uuid(char *watch_item, char *version);
 extern int watch_set_background(char *bg_pic);
 extern char *watch_get_background();
 extern char *watch_get_item(int style);
+/* packres 归档布局兼容：归档形态 …/C/watch1/watch1.dyn，扁平形态 …/C/watch1.dyn。
+ * 这两个接口只在 LVGL 侧实现（lvgl_dial_manage.c），JLUI 构建下不参与链接，
+ * 调用点必须同样用 CONFIG_LVGL_UI_ENABLE 包住。 */
+#if CONFIG_LVGL_UI_ENABLE
+extern int watch_resolve_dyn_path(const char *app_name, char *out_path, u32 out_size);
+extern FILE *watch_dial_fopen(const char *app_name, u32 *out_base, u32 *out_len);
+#endif
 
 extern int watch_bgp_set_related(char *bgp, u8 cur_watch, u8 del);
 extern int watch_get_style();
@@ -848,17 +855,19 @@ static int rcsp_extra_flash_opt_dial_version_get(u8 **resp_buf, u8 *file_path, u
     int ret = 0;
     rcsp_printf("rcsp_extra_flash_opt_dial_version_get, %s\n", file_path);
 
-    char *root_path = watch_get_root_path();
-    char watch[64] = {0};
-    ASSERT(((strlen((const char *)root_path) + strlen((const char *)file_path) + 2) < sizeof(watch)), "err name2, (strlen(root_path) + strlen(file_path) + 2) : %d, sizeof(watch) : %d\n\n", (int)(strlen((const char *)root_path) + strlen((const char *)file_path) + 2), (int)sizeof(watch));
+    char watch[160] = {0};
     ASCII_ToLower(file_path, strlen((const char *)file_path));
 #if CONFIG_LVGL_UI_ENABLE
-    /* LVGL：表盘 .dyn 位于 RES_PATH 根目录，同名 .json（version_id/prj_uuid）与其同级。
+    /* LVGL：表盘 .dyn 可能是 packres 归档布局（…/C/watch1/watch1.dyn）或扁平
+     * 布局（…/C/watch1.dyn），由 watch_resolve_dyn_path 按实际存在的形态解析。
      * watch_get_version/watch_get_uuid 内部会把 .dyn 转 .json 读取元数据。 */
-    strcpy(watch, root_path);
-    strcpy(&watch[strlen(root_path)], (const char *)&file_path[1]);
-    strcat(watch, ".dyn");
+    if (watch_resolve_dyn_path((const char *)file_path, watch, sizeof(watch)) != 0) {
+        rcsp_printf("dial_version_get: resolve fail, %s\n", file_path);
+    }
 #else
+    char *root_path = watch_get_root_path();
+
+    ASSERT(((strlen((const char *)root_path) + strlen((const char *)file_path) + 2) < sizeof(watch)), "err name2, (strlen(root_path) + strlen(file_path) + 2) : %d, sizeof(watch) : %d\n\n", (int)(strlen((const char *)root_path) + strlen((const char *)file_path) + 2), (int)sizeof(watch));
     /* JLUI：表盘 .sty 位于 RES_PATH/表盘名/ 子目录 */
     strcpy(watch, root_path);
     /* strcpy(watch + strlen(watch), "watch"); */
@@ -1678,33 +1687,74 @@ static int rcsp_extra_flash_file_info_get(u8 *data, u16 *data_len, u8 offset, u8
     log_info_hexdump(data + offset, *data_len - offset);
     int result = 0;
     FILE *file = NULL;
+    u32 file_base = 0;      /* 归档布局下数据在归档文件内的起始偏移 */
+    u32 file_len = 0;       /* 表盘数据长度（归档布局下不能用 flen） */
 
-    char *root_path = watch_get_root_path();
-    char watch[64] = {0};
+    /* data + offset 是报文里的【定长字段】，后面没有 NUL 结尾 —— 直接当 C 字符串
+     * 交给路径解析，strlen() 会一路读进报文之外的垃圾，拼出
+     *   "…/C/bgp_w001<垃圾>/bgp_w001<垃圾>.dyn"
+     * 这种路径，最后在 fopen 的失败清理里把栈上的垃圾当指针 free()，
+     * 实测刷 "axi read reserved memory" 死机（APP 查背景文件 /BGP_W001 的文件
+     * 信息时必现）。先复制到有界缓冲并补 NUL，再往下用。 */
+    char name[64];
+    u16 name_len = (*data_len > offset) ? (u16)(*data_len - offset) : 0;
 
-    ASCII_ToUpper(data + offset, *data_len - offset);
-    strcpy(watch, root_path);
-    strncpy(&watch[strlen((const char *)root_path)], (const char *)data + offset + 1, *data_len - offset - 1);
+    if (name_len >= sizeof(name)) {
+        name_len = sizeof(name) - 1;
+    }
+    if (name_len) {
+        memcpy(name, data + offset, name_len);
+    }
+    name[name_len] = '\0';
+
+    ASCII_ToUpper((u8 *)name, name_len);
 
     u8 *tmp_buf = zalloc(256);
     if (tmp_buf == NULL) {
         result = -1;
         goto __rcsp_extra_flash_file_info_get_err;
     }
-    file = fopen(watch, "r");
+#if CONFIG_LVGL_UI_ENABLE
+    /* 兼容 packres 归档布局：由 watch_dial_fopen 解析实际路径并给出数据偏移/长度 */
+    file = watch_dial_fopen(name, &file_base, &file_len);
+#else
+    /* JLUI：表盘 .sty 位于 RES_PATH/表盘名/ 子目录，直接拼路径 fopen。
+     * watch_dial_fopen 是 LVGL 侧（lvgl_dial_manage.c）的实现，该文件只在
+     * CONFIG_LVGL_UI_ENABLE=1 时参与构建，JLUI 构建下链接不到，不能调用。
+     * file_base 保持 0，下面的 fseek 退化成与改造前完全一致的行为。 */
+    {
+        char *root_path = watch_get_root_path();
+        char watch[64] = {0};
+
+        strcpy(watch, root_path);
+        /* 用已经补过 NUL 的 name（见函数开头），不要再从 data 里按长度拷贝 ——
+         * 那份数据没有结尾符，拷进 watch 后仍是没结尾的串 */
+        if (name[0] == '/') {
+            strncpy(&watch[strlen((const char *)root_path)], name + 1,
+                    sizeof(watch) - strlen((const char *)root_path) - 1);
+        } else {
+            strncpy(&watch[strlen((const char *)root_path)], name,
+                    sizeof(watch) - strlen((const char *)root_path) - 1);
+        }
+        file = fopen(watch, "r");
+        if (file) {
+            file_len = flen(file);
+        }
+    }
+#endif
     if (NULL == file) {
+        log_error("err : open dial fail, %s\n", name);
         result = -1;
         goto __rcsp_extra_flash_file_info_get_err;
     }
 
-    u32 file_len = flen(file);
     u16 file_crc = 0;
     for (u32 crc_offset = 0; crc_offset < file_len;) {
         wdt_clear();
         u32 crc_len = (file_len - crc_offset) > 256 ? 256 : (file_len - crc_offset);
-        fseek(file, crc_offset, SEEK_SET);
+        fseek(file, file_base + crc_offset, SEEK_SET);
         if (crc_len != fread(tmp_buf, crc_len, 1, file)) {
-            log_error("err : read fail, %s, %d\n", watch, crc_offset);
+            log_error("err : read fail, %s, %d\n", name, crc_offset);
             result = -1;
             goto __rcsp_extra_flash_file_info_get_err;
         }
@@ -1715,6 +1765,8 @@ static int rcsp_extra_flash_file_info_get(u8 *data, u16 *data_len, u8 offset, u8
     *data_len = 0;
 
     *resp_buf = zalloc(sizeof(file_len) + sizeof(file_crc));
+    u8 *resp_resp_buf = *resp_buf;
+    /* printf("%s resp_buf%x", __func__, (u32)*resp_buf); */
     if (*resp_buf == NULL) {
         result = -1;
         goto __rcsp_extra_flash_file_info_get_err;
@@ -1728,6 +1780,7 @@ static int rcsp_extra_flash_file_info_get(u8 *data, u16 *data_len, u8 offset, u8
     for (u8 i = 0; i < sizeof(file_crc); i++, (*resp_buf)++, (*data_len)++) {
         *(*resp_buf)  = ((u8 *)&file_crc)[sizeof(file_crc) - i - 1];
     }
+    *resp_buf = resp_resp_buf;
 
 __rcsp_extra_flash_file_info_get_err:
     if (tmp_buf) {
@@ -1767,6 +1820,11 @@ static int rcsp_extra_flash_remain_space(u8 *data, u16 *data_len, u8 offset, u8 
         printf("err : get flash space fail\n");
         result = -1;
     } else {
+        /* fget_free_space 返回的单位是 KB（见 interface/utils/fs/fs.h 的说明：
+         * "space 剩余空间 K 为单位"），而 APP 按字节解析 —— 本文件另一处用它时
+         * 也是先 space *= 1024 再和文件大小比较。这里必须换算，
+         * 否则上报给 APP 的剩余容量会小 1024 倍。 */
+        space *= 1024;
         for (u8 i = 0; i < sizeof(space); i++, (*resp_buf)++, (*data_len)++) {
             *(*resp_buf) = ((u8 *)&space)[sizeof(space) - i - 1];
         }
@@ -1819,7 +1877,6 @@ int rcsp_extra_flash_opt(u8 *param, u16 len, u8 OpCode, u8 OpCode_SN)
     u8 state = param[offset++];
     u8 *resp_buf = NULL;
     u8 *resp_data = NULL;
-
     switch (opt_flag) {
     case CURR_SYSTEM_OPT_READ:
         result = rcsp_extra_flash_read_opt(param, &len, offset, state, &resp_buf);
@@ -1880,6 +1937,7 @@ int rcsp_extra_flash_opt(u8 *param, u16 len, u8 OpCode, u8 OpCode_SN)
         memcpy(&resp_data[1], resp_buf, len);
     }
 
+    /* printf("%s opt:%d resp_len:%d resp_data:0x%x len:%d,buf:%x result:%d\n", __func__, opt_flag, resp_len, (u32)resp_data, len, (u32)resp_buf, result); */
     rcsp_extra_flash_opt_resp(0, OpCode, OpCode_SN, resp_data, resp_len);
 
 __end:
@@ -1909,10 +1967,11 @@ void rcsp_extra_flash_opt_dial_nodify(void)
     if (!get_rcsp_connect_status()) {
         return;
     }
-    char *data = watch_get_root_path();
-    char *file_path = watch_get_item(watch_get_style()) + strlen(data) - 1;
-    data = rindex((const char *)file_path, '/');
-    u8 file_path_size = (int)(data - file_path);
+    /* 取当前表盘路径（归档布局下是 "/WATCH1"，与 APP 列表里的文件名一致）。
+     * 原先用 watch_get_item() 拼 root 再 rindex('/')，rindex 返回的就是开头
+     * 那个 '/'，算出的 file_path_size 恒为 0，通知里表盘路径一直是空的。 */
+    char *file_path = watch_get_cur_path();
+    u8 file_path_size = strlen(file_path);
 
     u8 OpCode = 0x1A;
 
@@ -1920,7 +1979,10 @@ void rcsp_extra_flash_opt_dial_nodify(void)
     u8 state = 2;
     u8 len = file_path_size + sizeof(opt_flag) + sizeof(state) + 1;
 
-    data = (char *) zalloc(len);
+    char *data = (char *) zalloc(len);
+    if (data == NULL) {
+        return;
+    }
     len = 0;
     data[len++] = opt_flag;
     data[len++] = state;
@@ -1929,9 +1991,7 @@ void rcsp_extra_flash_opt_dial_nodify(void)
     len += file_path_size;
     data[len++] = 0;
     rcsp_extra_flash_opt_resp(1, OpCode, 0, (u8 *)data, len);
-    if (data) {
-        free(data);
-    }
+    free(data);
 }
 
 //*----------------------------------------------------------------------------*/

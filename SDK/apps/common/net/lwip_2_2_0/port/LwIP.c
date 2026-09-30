@@ -380,6 +380,16 @@ struct lan_setting *net_get_lan_info(u8_t lwip_netif)
     return NULL;
 }
 
+#ifdef HAVE_EXT_WIRELESS_NETIF
+static struct netif *lwip_get_ext_wifi_netif(void)
+{
+    if (is_aic_driver && ext_netif) {
+        return ext_netif;
+    }
+    return &ext_wireless_netif;
+}
+#endif
+
 struct netif *net_get_netif_handle(u8_t lwip_netif)
 {
     if (lwip_netif == WIFI_NETIF) {
@@ -387,7 +397,7 @@ struct netif *net_get_netif_handle(u8_t lwip_netif)
     }
 #ifdef HAVE_EXT_WIRELESS_NETIF
     else if (lwip_netif == EXT_WIFI_NETIF) {
-        return &ext_wireless_netif;
+        return lwip_get_ext_wifi_netif();
     }
 #endif
 #ifdef HAVE_LTE_NETIF
@@ -551,7 +561,7 @@ static void network_is_dhcp_bound(struct netif *netif)
         p_to = &wireless_dhcp_timeout_cnt;
     }
 #ifdef HAVE_EXT_WIRELESS_NETIF
-    if (netif == &ext_wireless_netif || is_aic_driver) {
+    if (netif == lwip_get_ext_wifi_netif()) {
         p_to = &ext_wireless_dhcp_timeout_cnt;
     }
 #endif
@@ -586,7 +596,7 @@ static void network_is_dhcp_bound(struct netif *netif)
             parm = WIFI_NETIF;
         }
 #ifdef HAVE_EXT_WIRELESS_NETIF
-        else if (netif == &ext_wireless_netif || is_aic_driver) {
+        else if (netif == lwip_get_ext_wifi_netif()) {
             ext_lwip_event_cb(NULL, LWIP_EXT_WIRELESS_DHCP_BOUND_TIMEOUT);
             parm = EXT_WIFI_NETIF;
         }
@@ -644,7 +654,7 @@ static void network_is_dhcp_bound(struct netif *netif)
                 }
             }
 #ifdef HAVE_EXT_WIRELESS_NETIF
-            else if (netif == &ext_wireless_netif || is_aic_driver) {
+            else if (netif == lwip_get_ext_wifi_netif()) {
                 //dns_local_removehost(LOCAL_EXT_WIRELESS_HOST_NAME, &ext_wireless_netif.ip_addr);
                 dns_local_removehost(LOCAL_EXT_WIRELESS_HOST_NAME, &netif->ip_addr);
 
@@ -702,7 +712,7 @@ static void network_is_dhcp_bound(struct netif *netif)
             }
 
 #ifdef HAVE_EXT_WIRELESS_NETIF
-            else if (netif == &ext_wireless_netif || is_aic_driver) {
+            else if (netif == lwip_get_ext_wifi_netif()) {
                 ext_lwip_event_cb(NULL, LWIP_EXT_WIRELESS_DHCP_BOUND_SUCC);
             }
 #endif
@@ -1393,6 +1403,9 @@ void Unint_LwIP(u8_t id)
         break;
 #ifdef HAVE_EXT_WIRELESS_NETIF
     case EXT_WIFI_NETIF:
+        if (is_aic_driver) {
+            return;
+        }
         netif = &ext_wireless_netif;
         break;
 #endif
@@ -1432,7 +1445,7 @@ u8_t lwip_get_default_netif(void)
         return WIFI_NETIF;
     }
 #ifdef HAVE_EXT_WIRELESS_NETIF
-    else if (netif == &ext_wireless_netif) {
+    else if (netif == lwip_get_ext_wifi_netif()) {
         return EXT_WIFI_NETIF;
     }
 #endif
@@ -1467,7 +1480,7 @@ int gethostname(char *name, int namelen)
         strncpy(name, LOCAL_WIRELESS_HOST_NAME, namelen);
     }
 #ifdef HAVE_EXT_WIRELESS_NETIF
-    else if (ext_wireless_netif.flags) {
+    else if (lwip_get_ext_wifi_netif()->flags) {
         strncpy(name, LOCAL_EXT_WIRELESS_HOST_NAME, namelen);
     }
 #endif
@@ -1507,7 +1520,7 @@ int getdomainname(char *name, int namelen)
         strncpy(name, "www."LOCAL_WIRELESS_HOST_NAME".com", namelen);
     }
 #ifdef HAVE_EXT_WIRELESS_NETIF
-    else if (ext_wireless_netif.flags) {
+    else if (lwip_get_ext_wifi_netif()->flags) {
         strncpy(name, "www."LOCAL_EXT_WIRELESS_HOST_NAME".com", namelen);
     }
 #endif

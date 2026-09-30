@@ -49,6 +49,7 @@
 <Add directory="include/system/cpu/br33" />
 <Add directory="include/utils" />
 <Add directory="include/utils/generic" />
+<Add directory="include/system/generic" />
 <Add directory="apps/sensor" />
 <Add directory="apps/sensor/driver_vc_hr_11" />
 <Add directory="apps/btctrler/soft_baseband" />
@@ -83,6 +84,13 @@
 <Add option="apps/bsp/cpu/br33/liba/cpu.a" />
 <Add option="apps/bsp/cpu/br33/liba/utils.a" />
 <Add option="apps/bsp/cpu/br33/liba/jl_motion_v0.a" />
+<Add option="apps/bsp/cpu/br33/liba/vc_lib_hr_v637_jieli_NA_01.a" />
+<Add option="apps/bsp/cpu/br33/liba/vc_lib_spo2_lc11s_int_JieLi_NA_01.a" />
+<Add option="apps/bsp/cpu/br33/liba/vc_lib_sportMotion_std_int_jieli_NA_01.a" />
+<Add option="apps/bsp/cpu/br33/liba/lib_hr_vH102_jieli_NA_01.a" />
+<Add option="apps/bsp/cpu/br33/liba/lib_Spo2_VC30FS_int_JieLi_NA_01.a" />
+<Add option="apps/bsp/cpu/br33/liba/lib_BIO_v141_int_jieli_NA_01.a" />
+<Add option="apps/bsp/cpu/br33/liba/lib_sportMotion_std_int_jieli_NA_01.a" />
 <Add option="--end-group" />
 <Add option="-Tapps/bsp/cpu/br33/p11.ld" />
 <Add option="-M=apps/bsp/cpu/br33/post_build/p11.map" />
@@ -168,7 +176,9 @@
 <Unit filename="apps/sensor/module/shm_algo_gsensor.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/sensor/module/shm_algo_heart_rate.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/sensor/module/shm_algo_spo2.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/sensor/module/shm_det_wear.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/sensor/module/shm_det_wrist.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/sensor/sensor_seg.h" />
 <Unit filename="apps/sensor/service/sensor_algorithm_jl_motion.h" />
 <Unit filename="apps/sensor/service/sensor_service.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/sensor/service/sensor_service.h" />
@@ -280,6 +290,7 @@
 <Unit filename="include/driver/cpu/br33/lpctmu.h" />
 <Unit filename="include/driver/cpu/br33/msys/msys_hal.h" />
 <Unit filename="include/driver/cpu/br33/msys/msys_sfr.h" />
+<Unit filename="include/driver/cpu/br33/p11_gptimer.h" />
 <Unit filename="include/driver/cpu/br33/power/p33/p33_access.h" />
 <Unit filename="include/driver/cpu/br33/power/p33/p33_api.h" />
 <Unit filename="include/driver/cpu/br33/power/p33/p33_sfr.h" />
@@ -299,6 +310,7 @@
 <Unit filename="include/driver/cpu/br33/power/power_port.h" />
 <Unit filename="include/driver/cpu/br33/power/power_wakeup.h" />
 <Unit filename="include/driver/cpu/br33/power_interface.h" />
+<Unit filename="include/driver/cpu/br33/timer.h" />
 <Unit filename="include/driver/cpu/br33/uart.h" />
 <Unit filename="include/driver/cpu/br33/vad_algo.h" />
 <Unit filename="include/driver/cpu/br33/vad_hw.h" />

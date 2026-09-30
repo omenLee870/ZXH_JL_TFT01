@@ -125,6 +125,87 @@ void get_device_descriptor(u8 *ptr)
     memcpy(ptr, sDeviceDescriptor, USB_DT_DEVICE_SIZE);
 }
 
+/* PID 的 class 偏移只覆盖 class 位图的低 8 位，每置起一个 bit，idProduct 加
+ * (bit + 1) * USB_PID_CLASS_STEP，即累加到 idProduct 的高字节上。 */
+#define USB_PID_CLASS_BIT_NUM   8
+#define USB_PID_CLASS_STEP      0x100
+
+u16 usb_get_vid(void)
+{
+    return USB_VID;
+}
+
+/* 从机模式编译期使能的 class 位图，内容与 usb_start() 下发给 usb_device_mode()
+ * 的 class 一致。用编译期配置而不是运行时 wDeviceClass，是为了让拔线后
+ * （usb_pause() 会清零 wDeviceClass）上报的 PID 不随插拔状态变化。 */
+u16 usb_slave_class_config(void)
+{
+    u16 class = 0;
+
+#if TCFG_USB_SLAVE_MSD_ENABLE
+    class |= MASSSTORAGE_CLASS;
+#endif
+#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
+    class |= SPEAKER_CLASS;
+#endif
+#if TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
+    class |= MIC_CLASS;
+#endif
+#if TCFG_USB_SLAVE_HID_ENABLE
+    class |= HID_CLASS;
+#endif
+#if TCFG_USB_SLAVE_CDC_ENABLE
+    class |= CDC_CLASS;
+#endif
+#if TCFG_USB_CUSTOM_HID_ENABLE
+    class |= CUSTOM_HID_CLASS;
+#endif
+#if TCFG_USB_SLAVE_MTP_ENABLE
+    class |= MTP_CLASS;
+#endif
+#if TCFG_USB_SLAVE_MIDI_ENABLE
+    class |= MIDI_CLASS;
+#endif
+#if TCFG_USB_SLAVE_PRINTER_ENABLE
+    class |= PRINTER_CLASS;
+#endif
+#if TCFG_USB_APPLE_DOCK_EN
+    class |= IAP_CLASS;
+#endif
+#if TCFG_USB_WEBUSB_ENABLE
+    class |= WEBUSB_CLASS;
+#endif
+#if TCFG_USB_SLAVE_HCI_ENABLE
+    class |= HCI_CLASS;
+#endif
+    /* Xbox360 手柄（XInput）与其配套的标准键鼠 HID。
+     * 注意：xbox360 独占 EP1~EP4、hid_kbmouse 占 EP3，与 MSD(EP1)/HID(EP2)/UAC(EP3)
+     * 的端点硬冲突，必须互斥使能；同时开启会导致端点被覆盖、描述符与端点不符。 */
+#if TCFG_USB_SLAVE_XBOX360_ENABLE
+    class |= XBOX360_CLASS;
+#endif
+#if TCFG_USB_SLAVE_HID_KBMOUSE_ENABLE
+    class |= HID_KBMOUSE_CLASS;
+#endif
+
+    return class;
+}
+
+/* 按 class 组合推出 PID，算法与 user_setup.c 在 GET_DESCRIPTOR 时对
+ * idProduct 高字节的运行时累加完全相同，保证主机枚举到的 PID 与上报值一致。 */
+u16 usb_pid_from_class(u16 class_config)
+{
+    u16 pid = USB_PID;
+
+    for (u8 i = 0; i < USB_PID_CLASS_BIT_NUM; i++) {
+        if (class_config & BIT(i)) {
+            pid += (u16)((i + 1) * USB_PID_CLASS_STEP);
+        }
+    }
+
+    return pid;
+}
+
 static const char hex_table[] = "0123456789ABCDEF";
 
 void get_chip_uuid_string(char *uuid_hex)

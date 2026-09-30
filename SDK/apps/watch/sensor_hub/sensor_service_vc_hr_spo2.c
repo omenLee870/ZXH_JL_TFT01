@@ -1,6 +1,7 @@
 #include "asm/cpu.h"
 #include "sensor_hub.h"
 #include "health_manager.h"
+#include "sensor_service.h"
 #include "vcHr11Hci.h"
 #include "algo.h"
 #include "spo2Algo.h"
@@ -183,11 +184,33 @@ static int vc_hr_get(int type, void *priv)
 }
 
 
+/* Adapter for .sensor_service segment: init flag -> legacy one-shot init */
+static int vchr11_init(int enable)
+{
+    return enable ? vcHr11_init() : SHM_ERR_OK;
+}
+
+/* Adapter for .sensor_service segment: enable flag -> legacy io_ctrl cmd */
+static int vchr11_enable(int enable)
+{
+    return vc_hr_crtl(enable ? SHM_CMD_ENABLE : SHM_CMD_DISBALE, NULL);
+}
+
 REGISTER_SPORT_HEALTH_MODULE(hrm)
 {
     .module    = SHM_MOD_HEART_RATE_ALGO,
-     .io_ctrl   = vc_hr_crtl,
-      .get_value = vc_hr_get,
+    .io_ctrl   = vc_hr_crtl,
+    .get_value = vc_hr_get,
+};
+
+/* sensor_service registration (REQ-013): same impl exposed via function pointer table */
+REGISTER_SENSOR_SERVICE(vchr11_hr_service)
+{
+    .mod        = SHM_MOD_HEART_RATE_ALGO,
+    .init       = vchr11_init,
+    .enable     = vchr11_enable,
+    .get_result = vc_hr_get,
+    .set_config = NULL,
 };
 
 
@@ -227,11 +250,27 @@ static int vc_spo2_get(int type, void *priv)
     return ret;
 }
 
+/* Adapter for .sensor_service segment: enable flag -> legacy io_ctrl cmd */
+static int vchr11_spo2_enable(int enable)
+{
+    return vc_spo2_crtl(enable ? SHM_CMD_ENABLE : SHM_CMD_DISBALE, NULL);
+}
+
 REGISTER_SPORT_HEALTH_MODULE(spo2)
 {
     .module    = SHM_MOD_SPO2_ALGO,
-     .io_ctrl   = vc_spo2_crtl,
-      .get_value = vc_spo2_get,
+    .io_ctrl   = vc_spo2_crtl,
+    .get_value = vc_spo2_get,
+};
+
+/* sensor_service registration (REQ-013): same impl exposed via function pointer table */
+REGISTER_SENSOR_SERVICE(vchr11_spo2_service)
+{
+    .mod        = SHM_MOD_SPO2_ALGO,
+    .init       = NULL,
+    .enable     = vchr11_spo2_enable,
+    .get_result = vc_spo2_get,
+    .set_config = NULL,
 };
 
 
@@ -266,11 +305,27 @@ static int vc_wear_get(int type, void *priv)
     return ret;
 }
 
+/* Adapter for .sensor_service segment: enable flag -> legacy io_ctrl cmd */
+static int vchr11_wear_enable(int enable)
+{
+    return vc_wear_crtl(enable ? SHM_CMD_ENABLE : SHM_CMD_DISBALE, NULL);
+}
+
 REGISTER_SPORT_HEALTH_MODULE(wear)
 {
     .module    = SHM_MOD_WEAR_DETECTION,
-     .io_ctrl   = vc_wear_crtl,
-      .get_value = vc_wear_get,
+    .io_ctrl   = vc_wear_crtl,
+    .get_value = vc_wear_get,
+};
+
+/* sensor_service registration (REQ-013): same impl exposed via function pointer table */
+REGISTER_SENSOR_SERVICE(vchr11_wear_service)
+{
+    .mod        = SHM_MOD_WEAR_DETECTION,
+    .init       = NULL,
+    .enable     = vchr11_wear_enable,
+    .get_result = vc_wear_get,
+    .set_config = NULL,
 };
 
 #endif

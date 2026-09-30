@@ -389,8 +389,8 @@ _finish_:
     if (g_http_ota_cancel || !hdl->db_update_init || hdl->download_len != hdl->file_size) {
         goto _out_;
     }
-    printf("download success.\n");
-    cmd_put_ota_download_progress(hdl->download_len, hdl->file_size, 1);
+    printf("[OTA] download compelete, verifying... \n");
+
 
     /* 校验 */
     ret = dual_bank_update_verify_v2(NULL);  //保留完整返回码，避免旧接口u8截断
@@ -410,6 +410,10 @@ _finish_:
         hdl->err_code = http_ota_error_code(ret, OTA_E_INTERNAL);
         goto _out_;
     }
+
+    printf("[OTA] verify success \n");
+    /* 通知手机app升级成功 */
+    cmd_put_ota_download_progress(hdl->download_len, hdl->file_size, 1);
 
     dual_bank_passive_update_exit(NULL);
     http_ota_restore_resource_timeout();
@@ -540,7 +544,7 @@ int http_create_passive_update_task(const char *url)
     hdl->ctx.connection = "close";
     hdl->ctx.timeout_millsec = 3000;
 
-    ret = thread_fork("download_task", 20,  2 * 1024, 0, NULL, download_task, hdl);
+    ret = thread_fork("download_task", 20,  2 * 1024, 256, NULL, download_task, hdl);
     if (ret) {
         free(hdl->request_url);
         free(hdl->url);

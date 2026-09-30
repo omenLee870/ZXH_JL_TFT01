@@ -21,8 +21,30 @@
 #include "vcSportMotionIntAlgo.h"
 
 #include "health_manager.h"
+#include "timer.h"       /* timer_get_sys_tick_time_us() */
+#include "usr_timer.h"   /* usr_timer_add / usr_timer_del */
 #if TCFG_VC30fx_ENABLE
-#define  LOG(fmt,...)            printf("[vc30fx] " fmt "\n",##__VA_ARGS__)
+
+#if TCFG_SENSOR_HR_CODE_IN_RAM
+#pragma bss_seg(".sensor_bss.L1")
+#pragma data_seg(".sensor_data.L1")
+#pragma code_seg(".sensor_code.L1")
+#pragma const_seg(".sensor_const")
+#else
+#pragma bss_seg(".sensor_bss.L2")
+#pragma data_seg(".sensor_data.L2")
+#pragma code_seg(".sensor_code.L2")
+#pragma const_seg(".sensor_const")
+#endif
+
+#define LOG_TAG_CONST       SENSOR_DRIVER
+#define LOG_TAG     		"[vc30fx]"
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define __DEBUG
+#include "log.h"
+
 #define IIC_DEV_ADDR			0x33
 #define IIC_DEV_ADDR_R			(IIC_DEV_ADDR<<1|1)
 #define IIC_DEV_ADDR_W			(IIC_DEV_ADDR<<1|0)
@@ -50,7 +72,46 @@ static int vc30fx_spo2_calculate(vcare_ppg_device_t *dev);
 #if 1 //MY_VC30FX_MODIFY
 #define VC30FX_SCAN_PERIOD     1000//1000//400   /* ms */
 void vc30fx_io_interrupt_handler();
-#if !PMC_DEVELOP_ENABLE
+
+#if (TCFG_HR_SENSOR_SAMPLE_BY_IO_INT == 0)
+/* 小核 usr_timer 按 FIFO 输出周期取数（替代 IO wakeup 中断）。
+ * 回调运行在 GPTIMER0 ISR 上下文：只投递本地 P2P 消息，不做 I2C。 */
+static u16 vc30fx_sample_timer_id = 0;
+static u16 vc30fx_sample_timer_ms = 0;
+
+static void vc30fx_sample_timer_handle(void *priv)
+{
+    vc30fx_io_interrupt_handler();
+}
+
+static void vc30fx_sample_timer_start(void)
+{
+    if (vc30fx_sample_timer_id) {
+        usr_timer_del(vc30fx_sample_timer_id);
+        vc30fx_sample_timer_id = 0;
+    }
+    if (vc30fx_sample_timer_ms == 0) {
+        return;
+    }
+    vc30fx_sample_timer_id = usr_timer_add(NULL, vc30fx_sample_timer_handle,
+                                           vc30fx_sample_timer_ms, 0);
+    if (vc30fx_sample_timer_id == 0) {
+        log_error("sample timer add failed: pool full (ms=%d)", vc30fx_sample_timer_ms);
+        return;
+    }
+    log_info("sample timer start: %d ms id=%d", vc30fx_sample_timer_ms, vc30fx_sample_timer_id);
+}
+
+static void vc30fx_sample_timer_stop(void)
+{
+    if (vc30fx_sample_timer_id) {
+        usr_timer_del(vc30fx_sample_timer_id);
+        vc30fx_sample_timer_id = 0;
+    }
+}
+#endif
+
+#if TCFG_HR_SENSOR_SAMPLE_BY_IO_INT
 //只读配置，用户后续新增io唤醒、ad唤醒注意使用const修饰，节约静态ram
 static const struct _p33_io_wakeup_config hr_sensor_irq = {
     .pullup_down_mode  = PORT_INPUT_PULLUP_10K,
@@ -111,17 +172,13 @@ u8 get_hrs_dev_wear_valus(void)
 int vc30fx_param_write_flash(unsigned char *pdata, unsigned int size)
 {
     int ret = 0;
-#if (!PMC_DEVELOP_ENABLE)
-    syscfg_write(VM_SENSOR_PPG_DATA, pdata, size);
-#endif
+    log_warn("%s NOT_IMPL: size=%d ret=%d", __func__, size, ret);
     return ret == size ? 0 : -1;
 }
 int vc30fx_param_read_flash(unsigned char *pdata, unsigned int size)
 {
-    int ret = 0;//
-#if (!PMC_DEVELOP_ENABLE)
-    syscfg_read(VM_SENSOR_PPG_DATA, pdata, size);
-#endif
+    int ret = 0;
+    log_warn("%s NOT_IMPL: size=%d ret=%d", __func__, size, ret);
     return ret == size ? 0 : -1;
 }
 
@@ -132,11 +189,7 @@ int vc30fx_param_read_flash(unsigned char *pdata, unsigned int size)
  ****************************************************************************/
 void *vc30fx_malloc(unsigned int size)
 {
-#if (!PMC_DEVELOP_ENABLE)
-    return malloc(size);
-#else
     return NULL;
-#endif
 }
 /****************************************************************************
  * @description: 内存释放
@@ -145,11 +198,7 @@ void *vc30fx_malloc(unsigned int size)
  ****************************************************************************/
 void vc30fx_free(void *ptr)
 {
-    if (ptr) {
-#if (!PMC_DEVELOP_ENABLE)
-        free(ptr);
-#endif
-    }
+    (void)ptr;
 }
 /****************************************************************************
  * @description:
@@ -188,15 +237,15 @@ unsigned int vc30fx_get_cputimer_tick(void)
 {
     /*========~~~~~~~~~~~~~~~~~~~~~~AK-自定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-#if!PMC_DEVELOP_ENABLE
-    int cnt = lptmr1_get_pass_us();
-#else
-    int cnt  = 0;
-#endif
-    int pass_32bitcnt = cnt / (1000000 / VC30Fx_CFG_MCU_TICK_FREQUENCY);
-    //pass_32bitcnt = pass_32bitcnt & (0xffffffff);
+    /* VC30Fx_CFG_MCU_TICK_FREQUENCY = 50*1000 → 20 us/tick */
+    u32 pass_32bitcnt = (u32)(timer_get_sys_tick_time_us() / 20);
     pass_32bitcnt = pass_32bitcnt & (VC30Fx_CFG_MCU_TICK_MAX);
-    printf("pass_32bitcnt:%d\n",  pass_32bitcnt);
+    {
+        static unsigned int tick_print_cnt = 0;
+        if ((tick_print_cnt++ % 200) == 0) {
+            log_debug("pass_32bitcnt:%d", pass_32bitcnt);
+        }
+    }
     return pass_32bitcnt;
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AK-自定义-结束~~~~~~~~~~~~~~~~~~========*/
 }
@@ -224,7 +273,10 @@ static void vc30fx_get_board_gsensor_data(unsigned short int *pgsensor_len, unsi
     /* Gsensor精度要求 ReadGsensorFIFO(+-4G11bit or +-8G12bit 256/g) 一个fifo周期为1sec,10组ppg数据，需要获取1sec内10组gsensor数据(100ms*10)，用于匹配10组ppg信号*/
     // gsensor_len = gsensor_data_get(gsensor_buff, sizeof(gsensor_buff));
     /* gsensor_len = gsensor_cbuf_read(ppg_count, (short *)gsensor_buff); */
-    u16 point = sensor_hub_get_data(SENSOR_DRV_ACCELER, 0, gsensor_buff,  sizeof(gsensor_buff));
+    gsensor_len = (unsigned char)sensor_hub_get_data(SENSOR_DRV_ACCELER, 0, gsensor_buff, sizeof(gsensor_buff));
+    if (gsensor_len > (sizeof(gsensor_buff) / sizeof(gsensor_buff[0]))) {
+        gsensor_len = (unsigned char)(sizeof(gsensor_buff) / sizeof(gsensor_buff[0]));
+    }
     for (u8 i = 0; i < gsensor_len; i++) {
 #if 1  // 将数据移位和调整相应的 XYZ顺序
         gsensor_buff[i].AXIS_X = gsensor_buff[i].AXIS_X / 4;
@@ -238,13 +290,13 @@ static void vc30fx_get_board_gsensor_data(unsigned short int *pgsensor_len, unsi
 #endif
         /*========~~~~~~~~~~~~~~~~~~~~~~AK-自定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 #if MY_SENSOR_DEBUG
-        // printf("-0- gsensor_len:%d-> x:%d,y:%d,z:%d\n",gsensor_len,gsensor_buff[i].AXIS_X,gsensor_buff[i].AXIS_Y,gsensor_buff[i].AXIS_Z);
+        // log_debug("-0- gsensor_len:%d-> x:%d,y:%d,z:%d",gsensor_len,gsensor_buff[i].AXIS_X,gsensor_buff[i].AXIS_Y,gsensor_buff[i].AXIS_Z);
 #endif
         /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AK-自定义-结束~~~~~~~~~~~~~~~~~~========*/
     }
 
 
-    VCARE_DBG_LOG("gsensor_len[%d]-ppgsize[%d]", gsensor_len, ppg_count);
+    log_debug("gsensor_len[%d]-ppgsize[%d]", gsensor_len, ppg_count);
     if (0 == ppg_count) {
         /* 不抽样 */
         *pgsensor_len = gsensor_len;
@@ -260,7 +312,7 @@ static void vc30fx_get_board_gsensor_data(unsigned short int *pgsensor_len, unsi
 #endif
             /*========~~~~~~~~~~~~~~~~~~~~~~AK-自定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 #if MY_SENSOR_DEBUG
-            printf("-0- pgsensor_len:%d-> x:%d,y:%d,z:%d\n", *pgsensor_len, vc30fx_gsensor_data.xData[i], vc30fx_gsensor_data.yData[i], vc30fx_gsensor_data.zData[i]);
+            log_debug("-0- pgsensor_len:%d-> x:%d,y:%d,z:%d", *pgsensor_len, vc30fx_gsensor_data.xData[i], vc30fx_gsensor_data.yData[i], vc30fx_gsensor_data.zData[i]);
 #endif
             /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AK-自定义-结束~~~~~~~~~~~~~~~~~~========*/
         }
@@ -293,7 +345,7 @@ static void vc30fx_get_board_gsensor_data(unsigned short int *pgsensor_len, unsi
 #endif
                 /*========~~~~~~~~~~~~~~~~~~~~~~AK-自定义~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 #if MY_SENSOR_DEBUG
-                printf("-0- ppg_count:%d-> x:%d,y:%d,z:%d\n", ppg_count, vc30fx_gsensor_data.xData[i], vc30fx_gsensor_data.yData[i], vc30fx_gsensor_data.zData[i]);
+                log_debug("-0- ppg_count:%d-> x:%d,y:%d,z:%d", ppg_count, vc30fx_gsensor_data.xData[i], vc30fx_gsensor_data.yData[i], vc30fx_gsensor_data.zData[i]);
 #endif
                 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~AK-自定义-结束~~~~~~~~~~~~~~~~~~========*/
             }
@@ -364,7 +416,7 @@ static unsigned int vc30fx_gsensor_actuating_quantity(int x_axis, int y_axis, in
     abs_sum_current = x_axis + y_axis + z_axis;
     if (abs_sum_last && abs_sum_current) {
         if (((abs_sum_last > abs_sum_current) ? (abs_sum_last - abs_sum_current) : (abs_sum_current - abs_sum_last)) >= 40) {
-            VCARE_DBG_LOG("ACTIVE...");
+            log_debug("ACTIVE...");
             ret_atc = 1;
         }
     }
@@ -400,8 +452,8 @@ static int vc30fx_heart_rate_calculate(vcare_ppg_device_t *pdev)
         algoInputData_t.envSample = result->env_data;
         algoInputData_t.ppgSample = result->ppg_buffer[i];
         Algo_Input(&algoInputData_t, 1000 / 25, (AlgoSportMode)pdev->heart_algo_mode, 1, 1);
-        VCARE_DBG_LOG("[%d] ppg=%d, x=%d, y=%d, z=%d", i, algoInputData_t.ppgSample,
-                      algoInputData_t.axes.x, algoInputData_t.axes.y, algoInputData_t.axes.z);
+        log_debug("[%d] ppg=%d, x=%d, y=%d, z=%d", i, algoInputData_t.ppgSample,
+                  algoInputData_t.axes.x, algoInputData_t.axes.y, algoInputData_t.axes.z);
     }
     Algo_Output(&algoOutputData);
     heartRate = algoOutputData.hrData;
@@ -410,9 +462,9 @@ static int vc30fx_heart_rate_calculate(vcare_ppg_device_t *pdev)
         Algo_Init();
         /* call heart algo wear status check,[-1] */
         vc30fx_drv_set_algo_wear_status(pdev, heartRate);
-        VCARE_DBG_LOG("ALGO_STA=-1");
+        log_debug("ALGO_STA=-1");
     }
-    VCARE_DBG_LOG("ALGO-HR[%d][%d]", heartRate, reliability);
+    log_debug("ALGO-HR[%d][%d]", heartRate, reliability);
     return heartRate;
 }
 
@@ -441,10 +493,10 @@ static int vc30fx_spo2_calculate(vcare_ppg_device_t *pdev)
         if (-1 != (int)spo2CalValue && spo2CalValue <= 100 && 0 == sportFlag) {
             spo2Value = (int)spo2CalValue;
         }
-        VCARE_DBG_LOG("[%d] ppg_ir=%d, ppg_red=%d, x=%d, y=%d, z=%d", i, result_ir->ppg_buffer[i], result_red->ppg_buffer[i],
-                      vc30fx_gsensor_data.xData[i], vc30fx_gsensor_data.yData[i], vc30fx_gsensor_data.zData[i]);
+        log_debug("[%d] ppg_ir=%d, ppg_red=%d, x=%d, y=%d, z=%d", i, result_ir->ppg_buffer[i], result_red->ppg_buffer[i],
+                  vc30fx_gsensor_data.xData[i], vc30fx_gsensor_data.yData[i], vc30fx_gsensor_data.zData[i]);
     }
-    VCARE_DBG_LOG("ALGO-SPO2[%d][%d]", (unsigned short int)spo2Value, spo2CalValue);
+    log_debug("ALGO-SPO2[%d][%d]", (unsigned short int)spo2Value, spo2CalValue);
     return spo2Value;
 }
 
@@ -466,7 +518,7 @@ static signed short int get_ntc_temperature(float ntc_value)
     float tmp = 0.0f;
     tmp = 1 / (1 / NTC_T + (log(ntc_value / NTC_R) / NTC_B)) - 273.15f;
     temperature = (signed short int)(tmp * 10);
-    VCARE_DBG_LOG("[CALC_TMP]=%d(%4.2f)", temperature, tmp);
+    log_debug("[CALC_TMP]=%d(%4.2f)", temperature, tmp);
     return temperature;
 }
 static void vc30fx_temperature_ntc_calculate(vcare_ppg_device_t *pdev)
@@ -476,11 +528,11 @@ static void vc30fx_temperature_ntc_calculate(vcare_ppg_device_t *pdev)
     vc30fx_sample_info_t *presult_t = (vc30fx_sample_info_t *)pdev->result;
     if (presult_t->extra_result.tempext_enwork) {
         /* 采样值转换为电阻值 */
-        VCARE_DBG_LOG("reg_tempinn=%d, reg_tempext=%d, reg_tempref=%d", presult_t->extra_result.tempinn_data, presult_t->extra_result.tempext_data, presult_t->extra_result.tempref_data);
+        log_debug("reg_tempinn=%d, reg_tempext=%d, reg_tempref=%d", presult_t->extra_result.tempinn_data, presult_t->extra_result.tempext_data, presult_t->extra_result.tempref_data);
         ext_I = vc30fx_temperature_current[presult_t->extra_result.tempext_setcur];
         if (0 != ext_I) {
             ext_R = (float)(20 * REF_R * presult_t->extra_result.tempext_data) / (float)(presult_t->extra_result.tempref_data * ext_I);
-            VCARE_DBG_LOG("ext_R=%f", ext_R);
+            log_debug("ext_R=%f", ext_R);
             pdev->temperature1 = get_ntc_temperature(ext_R);
         }
     }
@@ -509,9 +561,6 @@ void vc30fx_usr_device_init(InitParamTypeDef *pinitconfig)
 #if MY_VC30FX_MODIFY
     //NULL
 #else
-#if !PMC_DEVELOP_ENABLE
-    VC30Fx_CFG_MCU_TICK_FREQUENCY = __get_lrc_hz() / 4;
-#endif
 #endif
     VC30Fx_WEAR_PARAM_BIO_ABS_HOLD = 200; /* save_diff*8/10 */
     VC30Fx_WEAR_PARAM_BIO_ABS_DROP = 160; /* save_diff*5/10 */
@@ -584,9 +633,15 @@ void vc30fx_usr_device_init(InitParamTypeDef *pinitconfig)
     Algo_Init();
     spo2AlgoInit_16bit();
     vcSportMotionAlgoInit();
-    VCARE_DBG_LOG("work_mode=%d", pinitconfig->work_mode);
-    /* 如果使用定时器，必须适配模式的定时器执行时间，否则无法正确解析数据 */
-    //unsigned short int timer_set_ms=(1000/frequency)*psdiv*fifodiv;
+    log_debug("work_mode=%d", pinitconfig->work_mode);
+    /* 定时器周期必须匹配本模式的 FIFO 输出周期，否则无法正确解析数据
+     * fifo_period = (1000/frequency) * psdiv * fifodiv
+     *   HR 1000 ms / SPO2 400 ms / WEAR 2000 ms
+     */
+#if (TCFG_HR_SENSOR_SAMPLE_BY_IO_INT == 0)
+    vc30fx_sample_timer_ms = (u16)((1000 / frequency) * psdiv * fifodiv);
+    vc30fx_sample_timer_start();
+#endif
 }
 
 /****************************************************************************
@@ -604,15 +659,16 @@ u8 vc30fx_online(void)
     unsigned char online;
     char *drv_name;
 
+    log_info("online enter");
     vc30fx_drv_get_hwsw_infomation(&drv_name, &chip_id, &vers_id);
     /*
     VC30FS:chip_id=0x25, vers_id=0x10
     VC12S :chip_id=0x27, vers_id=0x10, 0x30
     */
-    VCARE_DBG_LOG(" -0- VC30Fx_drv_ver:%s", drv_name);
+    log_info("online: drv_ver=%s", drv_name);
     //online = (chip_id==0x25 && vers_id==0x10) || (chip_id==0x27 && (vers_id==0x10 || vers_id==0x30));
     online = (chip_id == 0x25 && vers_id == 0x30) || (chip_id == 0x25 && vers_id == 0x10) || (chip_id == 0x27 && (vers_id == 0x10 || vers_id == 0x30)); // --AK
-    VCARE_DBG_LOG("VC30Fx_online:chip_id=0x%02x, vers_id=0x%02x online=%d", chip_id, vers_id, online);
+    log_info("online: chip_id=0x%02x vers_id=0x%02x online=%d", chip_id, vers_id, online);
     return online;
 }
 /****************************************************************************
@@ -630,6 +686,9 @@ void vc30fx_usr_start_work(void)
  ****************************************************************************/
 void vc30fx_usr_stop_work(void)
 {
+#if (TCFG_HR_SENSOR_SAMPLE_BY_IO_INT == 0)
+    vc30fx_sample_timer_stop();
+#endif
     vc30fx_drv_sleep_work(&vc30fx_dev);
     vc30fx_dev.dev_work_status = 0;
 }
@@ -673,9 +732,9 @@ void vc30fx_usr_check_temperature_abnormal(void)
     check_same_ret = vc30fx_drv_read_check_temperature_abnormal(&vc30fx_dev, &check_freq_ret, &check_temp_ret, &check_cnt1, &check_cnt2);
     vc30fx_temperature_ntc_calculate(&vc30fx_dev);
     vc30fx_sample_info_t *result_info = (vc30fx_sample_info_t *)vc30fx_dev.result;
-    VCARE_DBG_LOG("status(%d),psbio_0(%d,%d),cnt=%d,%d,same_ret=%d,freq_ret=%d,temp_ret=%d, temp_ext=%d", vc30fx_dev.dev_work_status,
-                  result_info->slot_result[2].u.ps_data, result_info->extra_result.bioext_data, check_cnt1, check_cnt2,
-                  check_same_ret, check_freq_ret, check_temp_ret, vc30fx_dev.temperature1);
+    log_debug("status(%d),psbio_0(%d,%d),cnt=%d,%d,same_ret=%d,freq_ret=%d,temp_ret=%d, temp_ext=%d", vc30fx_dev.dev_work_status,
+              result_info->slot_result[2].u.ps_data, result_info->extra_result.bioext_data, check_cnt1, check_cnt2,
+              check_same_ret, check_freq_ret, check_temp_ret, vc30fx_dev.temperature1);
 
     if (1 == vc30fx_dev.dev_work_status &&															/* IC处于工作状态 */
         ((result_info->slot_result[2].u.ps_data == 0 && (result_info->extra_result.bioext_data == 0 && result_info->extra_result.bioext_enwork)) /* ps和bio同时异常，或者RCOSC异常 */
@@ -708,7 +767,7 @@ void vc30fx_usr_device_handler(unsigned char heart_algo_mode, unsigned char spo2
     if (!vc30fx_dev.dev_work_status) {
         return;
     }
-    VCARE_DBG_LOG("------------------");
+    log_debug("------------------");
     vc30fx_dev.heart_algo_mode = heart_algo_mode;
     vc30fx_dev.spo2_algo_mode = spo2_algo_mode;
     vc30fx_drv_get_result_handler(&vc30fx_dev);
@@ -717,7 +776,7 @@ void vc30fx_usr_device_handler(unsigned char heart_algo_mode, unsigned char spo2
         //disp_data.wear_sta = vc30fx_dev.wear;
         //disp_data.disp_bio_val = sample_result_info_ptr->extra_result.bioext_data;
         //disp_data.disp_bio_abs = sample_result_info_ptr->extra_result.bioabs_calc;
-        //VCARE_DBG_LOG("bio_absgap=%d, bioext=%d", disp_data.disp_bio_abs, disp_data.disp_bio_val );
+        //log_debug("bio_absgap=%d, bioext=%d", disp_data.disp_bio_abs, disp_data.disp_bio_val );
     }
     switch (vc30fx_dev.workmode) {
     case WORK_MODE_HR:
@@ -837,11 +896,11 @@ void vc30fx_usr_device_handler(unsigned char heart_algo_mode, unsigned char spo2
         //ps放蓝色玻璃片上要求大于210
         //pre 放黑色硅胶快上要求小于48
         //cur 要求大于100
-        printf("bio:%d, ps:%d, gPre=%d, gImx=%d", \
-               sample_result_info_ptr->extra_result.bioext_buffer[0], \
-               sample_result_info_ptr->slot_result[2].u.ps_data, \
-               sample_result_info_ptr->slot_result[0].u.pre_data, \
-               sample_result_info_ptr->slot_result[0].slot_current);
+        log_debug("bio:%d, ps:%d, gPre=%d, gImx=%d", \
+                  sample_result_info_ptr->extra_result.bioext_buffer[0], \
+                  sample_result_info_ptr->slot_result[2].u.ps_data, \
+                  sample_result_info_ptr->slot_result[0].u.pre_data, \
+                  sample_result_info_ptr->slot_result[0].slot_current);
 
         break;
     case WORK_MODE_FACTORY1:
@@ -873,8 +932,13 @@ u8 vc30fx_process()
         algo_info.hr_value   = vc30fx_dev.heart_rate;
         algo_info.spo2_value = vc30fx_dev.spo2;
         algo_info.wear       = vc30fx_dev.wear;
-        //VCARE_DBG_LOG("hr=%d, spo2=%d, wear=%d", algo_info.hr_value, algo_info.spo2_value, algo_info.wear);
-        printf("hr=%d, spo2=%d, wear=%d", algo_info.hr_value, algo_info.spo2_value, algo_info.wear);
+        {
+            static unsigned int proc_print_cnt = 0;
+            if ((proc_print_cnt++ % 100) == 0) {
+                log_debug("process cnt=%d hr=%d spo2=%d wear=%d", proc_print_cnt,
+                          algo_info.hr_value, algo_info.spo2_value, algo_info.wear);
+            }
+        }
     }
     return 0;
 }
@@ -884,13 +948,13 @@ u8 vc30fx_irq_handler()
     extern void local_irq_disable();
     extern void local_irq_enable();
     //local_irq_disable();
-    VCARE_DBG_LOG("vc30fx_irq_handler");
+    log_debug("vc30fx_irq_handler");
     extern int refresh_watch_data_check_cb(int *parm);
     extern unsigned char vc30fx_drv_clk_calc_status(void);
 
     vc30fx_irq_flg = 1;
     if (vc30fx_drv_clk_calc_status()) {
-        VCARE_DBG_LOG("-1-");
+        log_debug("-1-");
         vc30fx_process();
     } else {
         vc30fx_process();
@@ -901,13 +965,20 @@ u8 vc30fx_irq_handler()
 #else
 u8 vc30fx_irq_handler()
 {
-    /* VCARE_DBG_LOG("vc30fx_irq_handler"); */
+    /* log_debug("vc30fx_irq_handler"); */
     extern int refresh_watch_data_check_cb(int *parm);
     extern unsigned char vc30fx_drv_clk_calc_status(void);
 
     vc30fx_irq_flg = 1;
+    {
+        static unsigned int irq_print_cnt = 0;
+        if ((irq_print_cnt++ % 100) == 0) {
+            log_debug("irq_handler cnt=%d clk_status=%d", irq_print_cnt, vc30fx_drv_clk_calc_status());
+        }
+    }
     if (vc30fx_drv_clk_calc_status()) {
-        /* refresh_watch_data_check_cb(NULL); */
+        /* 不可恢复 refresh_watch_data_check_cb(NULL)：该函数在本树无定义 */
+        vc30fx_process();
     } else {
         vc30fx_process();
     }
@@ -919,16 +990,16 @@ u8 vc30fx_irq_handler()
 static int work_module = 0;
 void vc30fx_io_interrupt_handler()
 {
+    log_debug("io_interrupt_handler work_module=%d", work_module);
     sport_health_manager_msg_post(work_module, SHM_CMD_UPDATE, 0, 0);
 }
 
 
 void vc30fxStart(u8 work_mode)
 {
-    VCARE_DBG_LOG(" work_mode = %d", work_mode);
+    log_info("vc30fxStart enter work_mode=%d", work_mode);
     InitParamTypeDef initconfig = {VC30FX_SCAN_PERIOD/* 400 */, work_mode};
-    vc30fx_usr_device_init(&initconfig);
-    work_module = work_mode;
+    /* work_module 必须先于 vc30fx_usr_device_init() 赋值，否则首拍 post 出无效 module */
     switch (work_mode) {
     case WORK_MODE_HR:
         heart_algo_mode = work_mode;
@@ -942,9 +1013,12 @@ void vc30fxStart(u8 work_mode)
         work_module = SHM_MOD_WEAR_DETECTION;
         break;
     default:
+        work_module = work_mode;
         break;
     }
-#if !PMC_DEVELOP_ENABLE
+    vc30fx_usr_device_init(&initconfig);
+    log_info("vc30fxStart work_mode=%d work_module=%d", work_mode, work_module);
+#if TCFG_HR_SENSOR_SAMPLE_BY_IO_INT
     hr_sensor_irq_init();    //配置中断唤醒
 #endif
 }
@@ -1002,8 +1076,8 @@ static int heart_rate_get(int cmd, void *priv)
 REGISTER_SPORT_HEALTH_MODULE(vc30fx_hr)
 {
     .module = SHM_MOD_HEART_RATE_ALGO,
-     .io_ctrl = heart_rate_crtl,
-      .get_value = heart_rate_get,
+    .io_ctrl = heart_rate_crtl,
+    .get_value = heart_rate_get,
 };
 
 
@@ -1046,8 +1120,8 @@ static int spo2_get(int cmd, void *priv)
 REGISTER_SPORT_HEALTH_MODULE(vc30fx_spo2)
 {
     .module = SHM_MOD_SPO2_ALGO,
-     .io_ctrl = spo2_crtl,
-      .get_value = spo2_get,
+    .io_ctrl = spo2_crtl,
+    .get_value = spo2_get,
 };
 
 static int wear_crtl(int cmd, void *priv)
@@ -1087,8 +1161,8 @@ static int wear_get(int cmd, void *priv)
 REGISTER_SPORT_HEALTH_MODULE(vc30fx_wear)
 {
     .module = SHM_MOD_WEAR_DETECTION,
-     .io_ctrl = wear_crtl,
-      .get_value = wear_get,
+    .io_ctrl = wear_crtl,
+    .get_value = wear_get,
 };
 
 
@@ -1100,7 +1174,7 @@ static cbuffer_t *gsensor_cbuf = NULL;
 static short     *gsensor_buff = NULL;
 void gsensor_cbuf_write(short frame, short *buf)
 {
-    printf("gsensor_cbuf_write %d frame\n", frame);
+    log_debug("gsensor_cbuf_write %d frame", frame);
     u32 w_size = 2 * 3 * frame;
 
     if (gsensor_cbuf == NULL) {
@@ -1129,7 +1203,7 @@ void gsensor_cbuf_write(short frame, short *buf)
 
     w_size = cbuf_write(gsensor_cbuf, buf, w_size);
     if (w_size == 0) {
-        printf("data_w_cbuf_full");
+        log_error("data_w_cbuf_full");
     }
 }
 

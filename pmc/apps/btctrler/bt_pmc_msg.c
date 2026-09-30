@@ -117,6 +117,7 @@ static void bt_main_msg_handler(void *priv, u8 *msg, u32 len)
 REGISTER_M2P_MSG_HANDLER(0, MSG_BT_MAIN, bt_main_msg_handler);
 
 #ifdef BREDR_PMC_CODE
+#ifndef CONFIG_OTA_LOADER_ENABLE
 void bredr_link_set(void *priv, u8 *msg, u32 len);
 static void bt_link_msg_handler(void *priv, u8 *msg, u32 len)
 {
@@ -124,4 +125,5 @@ static void bt_link_msg_handler(void *priv, u8 *msg, u32 len)
 }
 
 REGISTER_M2P_MSG_HANDLER(0, MSG_BT_LINK, bt_link_msg_handler);
+#endif
 #endif

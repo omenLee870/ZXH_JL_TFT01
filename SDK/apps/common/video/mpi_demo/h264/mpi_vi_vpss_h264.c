@@ -5,20 +5,21 @@
 #include "mpi_venc.h"
 #include "mpi_vi.h"
 #include "mpi_vpss.h"
+#include "task.h"
 
 #define MPI_H264_DEMO_CAMERA_ID             0
 #define MPI_H264_DEMO_SENSOR_NAME           "GC0308"
-#define MPI_H264_DEMO_OUT_PATH              "storage/sd0/C/out.264"
-#define MPI_H264_DEMO_OUT_WIDTH             320
-#define MPI_H264_DEMO_OUT_HEIGHT            240
-#define MPI_H264_DEMO_FRAME_COUNT           200
+#define MPI_H264_DEMO_OUT_PATH              "storage/sd1/C/out.264"
+#define MPI_H264_DEMO_OUT_WIDTH             640
+#define MPI_H264_DEMO_OUT_HEIGHT            480
+#define MPI_H264_DEMO_FRAME_COUNT           1000
 #define MPI_H264_DEMO_FPS                   20
 #define MPI_H264_DEMO_GOP                   40
 #define MPI_H264_DEMO_QP_MIN                10
 #define MPI_H264_DEMO_QP_MAX                42
-#define MPI_H264_DEMO_THREAD_NUM             2
+#define MPI_H264_DEMO_THREAD_NUM             1
 #define MPI_H264_DEMO_THREAD_PRIO            25
-#define MPI_H264_DEMO_BITRATE_KBPS          300
+#define MPI_H264_DEMO_BITRATE_KBPS          1000
 #define MPI_H264_DEMO_TIMEOUT_MS            5000
 #define MPI_H264_DEMO_VENC_STREAM_BUF_SIZE  (100 * 1024)
 
@@ -87,6 +88,9 @@ void mpi_vi_vpss_h264_test(void)
     mpi_chn_t venc_chn_dst = {0};
     void *fp = NULL;
     uint32_t i;
+    uint32_t last_task_info_ms = 0;
+
+    extern uint32_t timer_get_ms(void);
 
     ret = mpi_vi_find_free_dev(&vi_dev);
     if (ret != MPI_SUCCESS) {
@@ -221,6 +225,13 @@ void mpi_vi_vpss_h264_test(void)
         goto err_stop_venc_chn;
     }
 
+    printf("[MPI_H264_DEMO] GOP=%u memory: vpss=%uKB + stream=%uKB (total=%uKB), gop effect: none\n",
+           venc_attr.gop,
+           mpi_h264_demo_vpss_buf_size(vpss_chn_attr.width, vpss_chn_attr.height) / 1024u,
+           MPI_H264_DEMO_VENC_STREAM_BUF_SIZE / 1024u,
+           (mpi_h264_demo_vpss_buf_size(vpss_chn_attr.width, vpss_chn_attr.height) +
+            MPI_H264_DEMO_VENC_STREAM_BUF_SIZE) / 1024u);
+
     fp = fopen(MPI_H264_DEMO_OUT_PATH, "w+");
     if (fp == NULL) {
         printf("[MPI_H264_DEMO] open output file failed: %s\n", MPI_H264_DEMO_OUT_PATH);
@@ -228,6 +239,13 @@ void mpi_vi_vpss_h264_test(void)
     }
 
     for (i = 0; i < MPI_H264_DEMO_FRAME_COUNT; i++) {
+        uint32_t now = timer_get_ms();
+
+        if (now - last_task_info_ms >= 10000) {
+            last_task_info_ms = now;
+            task_info_output(0);
+        }
+
         ret = mpi_h264_demo_write_stream(fp, venc_chn, i);
         if (ret != MPI_SUCCESS) {
             break;

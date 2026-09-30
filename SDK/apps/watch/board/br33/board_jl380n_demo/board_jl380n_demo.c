@@ -106,13 +106,16 @@ WIFI_PLATFORM_DATA_BEGIN(wifi_data)
 
 WIFI_PLATFORM_DATA_END()
 
-const struct wifi_platform_data * get_wifi_platform_data(void)
-{
-    return &wifi_data;
-}
-
 #endif //TCFG_EXT_WIFI_ENABLE
 
+const struct wifi_platform_data * get_wifi_platform_data(void)
+{
+#if TCFG_EXT_WIFI_ENABLE
+    return &wifi_data;
+#else
+    return NULL;
+#endif
+}
 
 
 #if defined(TCFG_MULTI_CHIP_CONN_ENABLE) && TCFG_MULTI_CHIP_CONN_ENABLE

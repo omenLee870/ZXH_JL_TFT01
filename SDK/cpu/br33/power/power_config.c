@@ -54,7 +54,6 @@ void board_power_init()
     power_set_mode(TCFG_LOWPOWER_POWER_SEL);
 #endif
 
-    /* #if !defined(BR33_FPGA_CODE_VERIFY) */
     key_wakeup_init();
-    /* #endif */
+
 }

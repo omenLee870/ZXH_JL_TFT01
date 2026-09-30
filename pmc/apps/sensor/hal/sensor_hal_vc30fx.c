@@ -3,6 +3,26 @@
 #include "sensor_driver.h"
 #include "sensor_hub.h"
 
+#define LOG_TAG_CONST       SENSOR_HAL
+#define LOG_TAG     		"[vc30fx_hal]"
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define __DEBUG
+#include "log.h"
+
+#if TCFG_SENSOR_HR_CODE_IN_RAM
+#pragma bss_seg(".sensor_bss.L1")
+#pragma data_seg(".sensor_data.L1")
+#pragma code_seg(".sensor_code.L1")
+#pragma const_seg(".sensor_const")
+#else
+#pragma bss_seg(".sensor_bss.L2")
+#pragma data_seg(".sensor_data.L2")
+#pragma code_seg(".sensor_code.L2")
+#pragma const_seg(".sensor_const")
+#endif
+
 #if TCFG_VC30fx_ENABLE
 // HAL层状态
 static u8 vc30fx_hal_inited = 0;
@@ -61,10 +81,6 @@ void vc30fx_hal_run(void)
     if (!vc30fx_hal_enabled) {
         return;
     }
-#if !PMC_DEVELOP_ENABLE
-    // 调用Driver层中断处理
-    vc30fx_driver_irq_handler();
-#endif
 }
 
 // 获取设备状态

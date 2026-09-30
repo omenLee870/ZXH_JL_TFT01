@@ -37,7 +37,7 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
-#define TTS_AUDIO_SAVE_TEST     1
+#define TTS_AUDIO_SAVE_TEST     0
 #if TTS_AUDIO_SAVE_TEST
 static FILE *save_file = NULL;
 #endif
@@ -186,6 +186,10 @@ char *ifly_tts_format_text_data(void)
     cJSON *cjson_data = NULL;
 
     char *buf = net_iflytek_malloc(MAX_SPARKDESK_LEN * 4);   // 因base64编码比字符串要大，根据需要加大buf
+    if (buf == NULL) {
+        log_error("malloc fail!!\n");
+        return NULL;
+    }
     mbedtls_base64_encode((unsigned char *)buf, MAX_SPARKDESK_LEN * 4, (size_t *)&out_len, (unsigned char *)tts_info.param->text_res, strlen(tts_info.param->text_res) + 1);
 //定义最长回答
 
@@ -243,7 +247,8 @@ static void ifly_tts_recv_cb(u8 *j_str, u32 len, u8 type)
         return;
     }
 
-    cJSON *cjson_root = cJSON_Parse((char *)j_str);
+    // websocket 层在 recv_len == buf_len 时不补 '\0'，必须按长度解析，否则 strlen 会越界读
+    cJSON *cjson_root = cJSON_ParseWithLength((char *)j_str, len);
     char *audio = NULL;
     char *res_tts = NULL;
     if (cjson_root == NULL) {
@@ -258,11 +263,19 @@ static void ifly_tts_recv_cb(u8 *j_str, u32 len, u8 type)
     cJSON *cjson_status = cJSON_GetObjectItem(cjson_data, "status");
     cJSON *cjson_audio = cJSON_GetObjectItem(cjson_data, "audio");
 
+    // status 节点缺失时既不能解引用，也无法判断是否为最后一帧。
+    // 若放任继续，TTS 永远等不到 RECV_END，按错误处理
+    if (cjson_status == NULL) {
+        log_error("no status node\n");
+        tts_info.status = IFLY_TTS_STATUS_RECV_ERROR;
+        goto cleanup;
+    }
+
     audio = cJSON_Print(cjson_audio);
     if (!audio) {
         log_error("audio is null!!\n");
         tts_info.status = IFLY_TTS_STATUS_RECV_ERROR;
-        return;
+        goto cleanup;
     }
 
     str_remove_quote(audio, strlen(audio));
@@ -271,14 +284,14 @@ static void ifly_tts_recv_cb(u8 *j_str, u32 len, u8 type)
     if (!res_tts) {
         log_error("malloc fail!!\n");
         tts_info.status = IFLY_TTS_STATUS_RECV_ERROR;
-        return;
+        goto cleanup;
     }
     int olen = 0;
     int ret = mbedtls_base64_decode((unsigned char *)res_tts, IFLY_TTS_PKG_MAX, (size_t *)&olen, (unsigned char *)audio, strlen(audio));
     if (ret || (olen > IFLY_TTS_PKG_MAX)) {
         log_error("mbedtls_base64_decode fail!!\n");
         tts_info.status = IFLY_TTS_STATUS_RECV_ERROR;
-        return;
+        goto cleanup;
     }
 
 
@@ -306,6 +319,8 @@ static void ifly_tts_recv_cb(u8 *j_str, u32 len, u8 type)
         to -= 10;
     }
 
+    bool is_last_frame = (cjson_status->valueint == RECV_LAST_FRAME);
+
     if (tts_info.status == IFLY_TTS_STATUS_RECV) {
         tts_info.status = IFLY_TTS_STATUS_RECV_SEC;    // 如果有多帧语音数据，第二帧才开始播放，避免mp3_dec获取不到数据提前结束解码
         log_info("tts start play!\n");
@@ -314,13 +329,13 @@ static void ifly_tts_recv_cb(u8 *j_str, u32 len, u8 type)
     }
     if (tts_info.status < IFLY_TTS_STATUS_RECV) {
         tts_info.status = IFLY_TTS_STATUS_RECV;
-        if (cjson_status->valueint == RECV_LAST_FRAME) {   // 如果只有一帧语音数据，直接播放
+        if (is_last_frame) {   // 如果只有一帧语音数据，直接播放
             log_info("tts start play!\n");
             ifly_tts_dec_func(ifly_net_tts_start, 0);
             tts_info.param->event_cb(IFLY_TTS_EVT_PLAY_START, tts_info.param);
         }
     }
-    if (cjson_status->valueint == RECV_LAST_FRAME) {
+    if (is_last_frame) {
         log_info("tts last frame!\n");
         tts_info.status = IFLY_TTS_STATUS_RECV_END;
         tts_info.recv_finish = 1;
@@ -329,9 +344,14 @@ static void ifly_tts_recv_cb(u8 *j_str, u32 len, u8 type)
         tts_info.param->event_cb(IFLY_TTS_EVT_PLAY_STOP, tts_info.param);
     }
 
-    cJSON_free(audio);
+cleanup:
+    if (audio != NULL) {
+        cJSON_free(audio);
+    }
     cJSON_Delete(cjson_root);
-    net_iflytek_free(res_tts);
+    if (res_tts != NULL) {
+        net_iflytek_free(res_tts);
+    }
 
     /* ifly_net_tts_dec_resume(NULL); */
 

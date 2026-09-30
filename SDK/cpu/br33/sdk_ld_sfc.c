@@ -616,6 +616,13 @@ SECTIONS
 		KEEP(*(.wireless_trans))
 		wireless_trans_ops_end = .;
 
+#if TCFG_EXT_WIFI_ENABLE
+        /* AIC8800 -ffunction-sections: pull all .text.* orphans into .text
+         * so text.bin/objcopy and pc_limit cover the full driver. */
+        *(.text.*)
+        . = ALIGN(4);
+#endif
+
         . = ALIGN(32);
 	  } > code0
 #if defined CONFIG_CXX_SUPPORT

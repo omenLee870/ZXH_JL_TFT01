@@ -19,7 +19,7 @@
             "name": "ver_info",
 			"说明": "版本信息:VID(2byte),PID(2byte),VER(2byte)",
             "type":   "ARRAY",
-            "data":   "0x00, 0x02, 0x00, 0x8D, 0x00, 0x01"
+            "data":   "0x00, 0x02, 0x00, 0x91, 0x00, 0x01"
         },
 		{
 			"name": "ver_info_ext",

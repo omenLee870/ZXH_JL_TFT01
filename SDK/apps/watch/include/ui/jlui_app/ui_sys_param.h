@@ -12,7 +12,7 @@
 #define LANGUAGE_NUM					(4)
 #endif
 
-#define SYS_PARAM_NUM                   (30)
+#define SYS_PARAM_NUM                   (31)
 
 #define	TCFG_MOTO_PWM_H					(80)
 #define	TCFG_MOTO_PWM_L					(30)
@@ -63,6 +63,7 @@ enum {
     smartwin_en,				//灵动岛使能
     LastDarkTime,            // 恢复上次熄屏时长
     LastLightLevel,          // 恢复上次亮度
+    VoiceMute,               // 静音开关
 };
 
 struct sys_param {
@@ -121,6 +122,10 @@ void ui_volume_down(u8 step);
 void ui_voice_mute(u8 en);
 u8 ui_get_voice_mute(void);
 void ui_set_voice_mute(u8 en);
+/* 恢复出厂时把静音复位为「不静音」并同步参数表与 VM */
+void ui_voice_mute_reset(void);
+/* 恢复出厂时复位密码/密码开关/静音（UI 路径与蓝牙路径共用） */
+int factory_reset_user_secrets(void);
 void ui_page_list_update(u32 *id_list, u8 num);
 void ui_moto_init(int gpio);
 void ui_moto_set_H_L(u8 mode);
@@ -142,6 +147,8 @@ bool ui_card_anim_next();
 u8 ui_key_shutdown_or_reboot(u8 flag);
 int sys_check_time_is_undisturb(void);
 int ui_show_menu_total_num(void);
+void ui_backlight_restore(void);
+u8 lcd_user_brightness_percent(void);
 
 #if (defined(CONFIG_UI_STYLE_JL_CSC_PUBLIC_MODLS_ENABLE))
 void csc_set_ui_language_type(u8 index);

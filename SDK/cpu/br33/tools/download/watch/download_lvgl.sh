@@ -6,9 +6,6 @@ echo ${PWD}
 cd ./download/watch/
 echo ${PWD}
 
-rm -r ui_lvgl_res
-
-mkdir ui_lvgl_res
 
 rm cfg_tool.bin
 rm stream.bin
@@ -24,14 +21,30 @@ cp ../../isd_config.ini .
 cp ../../p11_code.bin .
 cp ../../flash_params_v2.bin .
 cp ../../flash_params_v3.bin .
-cp ../../json.txt .
+cp ../../json_watch_lvgl.txt json.txt
 cp ../../cfg_tool.bin watch.bin
 
 
+../../json_to_res json.txt
+
+# remove and recreate ui_lvgl_res / ui_dial_res (if they exist)
+rm -rf ui_lvgl_res
+rm -rf ui_dial_res
+mkdir ui_lvgl_res
 cp ../../ui_lvgl_res/*.*   ./ui_lvgl_res/
 
+# ============================================================
+# Split dial resources (.dyn / .json) out of ui_lvgl_res and
+# move them into ui_dial_res, so they go into watch.bin
+# instead of the lvgl pack.
+# ============================================================
+HAS_DIAL_RES=$(find ui_lvgl_res -maxdepth 1 \( -name "*.dyn" -o -name "*.json" \) 2>/dev/null | head -n 1)
 
-../../json_to_res json.txt
+if [ -n "${HAS_DIAL_RES}" ]; then
+    mkdir ui_dial_res
+    find ui_lvgl_res -maxdepth 1 -name "*.dyn"  -exec mv -f {} ui_dial_res/ \;
+    find ui_lvgl_res -maxdepth 1 -name "*.json" -exec mv -f {} ui_dial_res/ \;
+fi
 
 if [[ -n "$KEY_FILE_PATH" ]]; then
 	echo find KEY_FILE_PATH
@@ -81,9 +94,26 @@ fi
 
 ../../packres -keep-suffix-case ui_lvgl_res -n lvgl -o lvgl
 
+# ============================================================
+# Pack watch1 / watch2 into watch.bin
+# sources are in ui_dial_res/
+# ============================================================
+if [ -n "${HAS_DIAL_RES}" ]; then
+    ../../packres -keep-suffix-case ui_dial_res/watch1.dyn ui_dial_res/watch1.json -n res -o watch1
+    ../../packres -keep-suffix-case ui_dial_res/watch2.dyn ui_dial_res/watch2.json -n res -o watch2
+    #../../packres -keep-suffix-case ui_dial_res/watch3.dyn ui_dial_res/watch3.json -n res -o watch3
+    ../../fat_comm -pad-backup2 -force-align-fat -out watch.bin -image-size 8 -filelist watch1 watch2 -remove-empty -remove-bpb -mark-bad-after 0x528000  -address 0
+fi
+
 cp lvgl mode.bin
 
 ../../packres -n resfs -o resfs.bin -keep-suffix-case watch -aligned 4096 -normal
+
+if [[ ${EXT_FLASH_ENABLE} -eq 1 ]]; then
+    ../../fat_comm -pad-backup2 -force-align-fat -out ex_res.bin -image-size 16 -filelist dyn1 -remove-empty -remove-bpb -mark-bad-after 0x400000 -address 0
+	../../packres -n res -o res.bin ex_res.bin 0 mode.bin 0x400000 -normal
+    EX_FLASH_CMD="-ex_flash res.bin"
+fi
 
 CHIP_CMD="-tonorflash -dev br33 -div8 -wait 300 -uboot uboot.boot -app app.bin"
 RES_FILE_CMD="-res cfg_tool.bin p11_code.bin stream.bin config.dat"
@@ -98,7 +128,7 @@ echo ${FLASH_CMD}
 echo ${OUTPUT_CMD}
 echo ${FORMAT}
 
-../../isd_download ${CHIP_CMD} -tone ${TONE_FILES} ${RES_FILE_CMD} ${KEY_FILE} ${FLASH_CMD} ${OUTPUT_CMD} ${FORMAT}
+../../isd_download ${CHIP_CMD} -tone ${TONE_FILES} ${RES_FILE_CMD} ${KEY_FILE} ${EX_FLASH_CMD} ${FLASH_CMD} ${OUTPUT_CMD} ${FORMAT}
 
 
 

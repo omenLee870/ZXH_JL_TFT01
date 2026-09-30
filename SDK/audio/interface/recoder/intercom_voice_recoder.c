@@ -72,7 +72,7 @@ int intercom_voice_recoder_open(u32 code_type, u8 ai_type)
         goto __exit0;
     }
     jlstream_ioctl(recoder->stream, NODE_IOC_GET_ENC_FMT, (int)&set_fmt);
-        /* encoder_fmt 的 priv 通道是输入参数，节点会按它做深拷贝，必须先清零，
+    /* encoder_fmt 的 priv 通道是输入参数，节点会按它做深拷贝，必须先清零，
      * 否则 ctx 残留值会被当成指针和长度传给编码器节点 */
     memset(&enc_fmt, 0, sizeof(enc_fmt));
     switch (code_type) {
@@ -119,7 +119,6 @@ int intercom_voice_recoder_open(u32 code_type, u8 ai_type)
         fmt.coding_type = AUDIO_CODING_SPEEX;
         break;
     case AUDIO_CODING_PCM:
-        memset(&enc_fmt, 0, sizeof(enc_fmt));
         set_fmt.sample_rate = 16000;
         set_fmt.coding_type = AUDIO_CODING_PCM;
         fmt.coding_type = AUDIO_CODING_PCM;

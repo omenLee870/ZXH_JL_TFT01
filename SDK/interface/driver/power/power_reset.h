@@ -16,6 +16,7 @@ enum RST_REASON {
     MSYS_P2M_RST,						//低功耗唤醒复位(p11数字复位msys，soff/poff)
     MSYS_LPMR_RST,						//低功耗唤醒复位(p33数字复位msys, soff)
     MSYS_POWER_RETURN,					//主系统未被复位
+    MSYS_WWDTR_RST,					    //窗口看门狗复位
 
     /*P11*/
     P11_PVDD_POR_RST,					//pvdd上电
@@ -32,16 +33,18 @@ enum RST_REASON {
     P33_VDDIO_POR_RST,					//vddio上电复位(电池/vpwr供电)
     P33_VDDIO_LVD_RST,					//vddio低压复位、上电复位(电池/vpwr供电)
     P33_WDT_RST,						//看门狗复位
-    P33_VCM_RST,						//vcm高电平短接复位
-    P33_MCLR_RST,						//mclr低电平短接复位
+    P33_VCM_RST,						//vcm_io高电平短接复位，可查询io_mapping确认
+    P33_MCLR_RST,						//mclr_io低电平短接复位，可查询io_mapping确认
     P33_PPINR_RST,						//数字io输入长按复位
     P33_P11_RST,						//p11系统复位p33，rset_mask=0
     P33_MSYS_RST,						//msys系统复位p33，rset_mask=0
-    P33_SOFT_RST,						//p33软件复位，一般软件复位指此系统复位源，所有系统会直接复位。
+    P33_SOFT_RST,						//p33软件复位，一般软件复位指此系统复位源，所有系统会直接复位，部分p33复位相关寄存器不复位。
     P33_PPINR1_RST,						//模拟io输入长按复位，包括charge_full、vatch、ldoint、vabt_det
     P33_PPINR1_SOFT_RST,				//PINR1保护机制使能时，当软件清PINR PND1的操作发生在窗口外时产生的复位
-    P33_POWER_RETURN,					//p33系统未被复位。
-    P33_LV0_RST,
+    P33_POWER_RETURN,					//p33系统未被复位，软关机唤醒、latch_reset等。
+    P33_LEVEL0_RST,						//p33 level0软件复位，等效于重新上电，所有p33寄存器会被复位。
+    P33_DCV_OVP_RST,					//dcvdd ovp复位，该复位会触发重新上电流程，dcvdd过压导致。
+    P33_VIO28_SCP_FLT_RST,              //VIO28_SCP低压复位
 
     /*RTC*/
     R3_VDDIO_RST,						//rtc vddio
@@ -58,6 +61,9 @@ enum RESET_FLAG {
     UPDATE_FLAG,
     BT_FLAG,
     LP_OSC_UP_TO,
+    CHARGE_FLAG,
+    LP_BRANCH_PREDICTION_ERR,
+    LP_P33_SFR_MISMATCH,
     SPI0_WAIT_PND_ERR,
     SOFF_ENTER_TO,
 };
@@ -93,6 +99,13 @@ void system_reset(enum RESET_FLAG flag);
 */
 void latch_reset();
 
+/**
+* @brief  复位的时候锁存模拟模块状态，并指定软标志配置
+* @param  app_soft_flag: 软标志配置，用于指定复位后需要保持的模块状态
+*/
+void latch_reset_with_flag(struct app_soft_flag_t app_soft_flag);
+
+void reset_source_dump();
 
 u32 is_except_reset();
 

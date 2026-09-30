@@ -1070,6 +1070,31 @@ objs += \
 
 #if EXPORT_KID_CAMERA_LVGL_APP_CODE_ENABLE
 
+#if !TCFG_KID_CAMERA_UI_INTERCOM
+
+
+objs += \
+    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_320x240_v1/custom -name '*.c' -print)) \
+    $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_320x240_v1/generated -name '*.c' -print)) \
+    $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_320x240_v1/ui_action.o \
+
+
+
+#endif
+
+#endif
+
+#endif
+
+
+
+
+#if CONFIG_LV9_ENABLE
+
+#if EXPORT_KID_CAMERA_LVGL_APP_CODE_ENABLE
+
+#if TCFG_KID_CAMERA_UI_INTERCOM
+
 
 objs += \
     $(patsubst %.c, %.o, $(shell find  $(ROOT)/apps/$(APP_CASE)/ui/lvgl_ui_app/lvgl_v9/kid_camera_240x320_v1/custom -name '*.c' -print)) \
@@ -1078,6 +1103,7 @@ objs += \
 
 
 
+#endif
 
 #endif
 

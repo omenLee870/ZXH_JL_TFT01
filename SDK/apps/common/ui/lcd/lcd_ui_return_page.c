@@ -318,6 +318,10 @@ int ui_window_event_deal(void *ctr, struct element_touch_event *e)
         UI_RET_PAGE_LOCK();
         int preempt_page = page_preemption[0].page;
         UI_RET_PAGE_UNLOCK();
+        /* 灵动岛等叠加窗口排在当前页之后, 倒序遍历时先收到事件, 会把右滑返回吃掉 */
+        if (window->elm.id != ui_get_current_window_id() && window->elm.id != preempt_page) {
+            return false;
+        }
         if (preempt_page == window->elm.id) { // 打断返回
             ui_preemption_page_pop(window->elm.id);
         } else {

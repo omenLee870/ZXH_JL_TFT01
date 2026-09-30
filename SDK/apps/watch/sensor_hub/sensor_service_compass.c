@@ -1,5 +1,6 @@
 #include "sensor_hub.h"
 #include "health_manager.h"
+#include "sensor_service.h"
 
 #define LOG_TAG_CONST      	SENSOR_HUB
 #define LOG_TAG     		"[SENSOR_SRV_COMPASS]"
@@ -79,11 +80,27 @@ static int shm_service_compass_get_value(int type, void *priv)
 }
 
 
+/* Adapter for .sensor_service segment: enable flag -> legacy io_ctrl cmd */
+static int compass_enable(int enable)
+{
+    return shm_service_compass_io_crtl(enable ? SHM_CMD_ENABLE : SHM_CMD_DISBALE, NULL);
+}
+
 REGISTER_SPORT_HEALTH_MODULE(compass)
 {
     .module = SHM_MOD_COMPASS,
-     .io_ctrl = shm_service_compass_io_crtl,
-      .get_value = shm_service_compass_get_value,
+    .io_ctrl = shm_service_compass_io_crtl,
+    .get_value = shm_service_compass_get_value,
+};
+
+/* sensor_service registration (REQ-013): same impl exposed via function pointer table */
+REGISTER_SENSOR_SERVICE(compass_service)
+{
+    .mod        = SHM_MOD_COMPASS,
+    .init       = NULL,
+    .enable     = compass_enable,
+    .get_result = shm_service_compass_get_value,
+    .set_config = NULL,
 };
 
 #endif //TCFG_SPORT_HEALTH_ENABLE & (TCFG_MAGNETIC_MASTER_ENABLE | TCFG_MAGNETIC_P11_ENABLE)

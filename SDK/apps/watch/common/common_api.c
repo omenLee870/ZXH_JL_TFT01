@@ -31,6 +31,12 @@
 #include "rcsp_mix_record.h"
 #include "record.h"
 
+#if (TCFG_UI_ENABLE && CONFIG_JL_UI_ENABLE)
+/* erase_UIInfo_in_vm() 已由 common_api.h 声明；factory_reset_user_secrets() 由
+ * ui_sys_param_api.c 提供，与 UI 路径共用。 */
+extern int factory_reset_user_secrets(void);
+#endif
+
 void common_api_reboot_or_shutdown(u8 flag, u8 erase)
 {
 #if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
@@ -134,6 +140,12 @@ static void common_api_restore_sys_settings()
     small_file_del_all();//清外挂flash 存储
 
 #if (TCFG_UI_ENABLE && CONFIG_JL_UI_ENABLE)
+    /* 修复: 蓝牙路径恢复出厂原先只擦 VM_UI_SYS_INFO(22)，导致密码(163/164)、
+     * 密码开关、静音(222) 全部残留。与 UI 路径 restore_sys_settings() 共用
+     * factory_reset_user_secrets()，保证两条路径复位内容一致。
+     * 语言项由 erase_UIInfo_in_vm() 置 valid=0 覆盖：重启后 read_UIInfo_from_vm()
+     * 会整表回退 sys_defalut_param，其中 Language = Chinese_Simplified。 */
+    (void)factory_reset_user_secrets();
     erase_UIInfo_in_vm();
 #endif
     common_api_reboot_or_shutdown(1, 1);
@@ -227,5 +239,9 @@ void common_api_call_income_hangup()
     } else if (bt_get_connect_status() == BT_STATUS_PLAYING_MUSIC) {
         return;
     }
+
+#if TCFG_VIDEO0_ENABLE && (TCFG_CAMERA_SPI_ENABLE || TCFG_CAMERA_DVP_ENABLE)
+    camera_api_stop_rec_photo();
+#endif
     app_send_message(APP_MSG_REC_PP, 0);
 }

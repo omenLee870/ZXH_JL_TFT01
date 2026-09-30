@@ -2,6 +2,12 @@
 #include "timer.h"
 #include "jlui_app/ui_style.h"
 
+#define LOG_ERROR_ENABLE
+#define LOG_DEBUG_ENABLE
+#define LOG_INFO_ENABLE
+#define LOG_CLI_ENABLE
+#include "debug.h"
+
 #if (defined(CONFIG_UI_STYLE_JL_PUBLIC_MODLS_ENABLE)) ||(defined(CONFIG_UI_STYLE_JL_CSC_PUBLIC_MODLS_ENABLE))
 
 #if (TCFG_UI_ENABLE &&TCFG_SPI_LCD_ENABLE && (!TCFG_SIMPLE_LCD_ENABLE))

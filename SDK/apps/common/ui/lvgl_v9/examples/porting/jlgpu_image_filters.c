@@ -231,7 +231,7 @@ static void sess_setup_output(jlgpu_filter_session_t *sess,
         surf->data   = dst;
         surf->format = cf;
         surf->width  = bw;
-        lv_jlgpu_gxdma_sfr_set(NULL, &a, bw * 2, dst, cf, sess->dst_format, 0, 0);
+        lv_jlgpu_gxdma_sfr_set(NULL, &a, bw * 2, dst, cf, sess->dst_format, 0, 0, NULL);
     } else {
         jlgpu_area_t win = area;
         surf->data   = dst;

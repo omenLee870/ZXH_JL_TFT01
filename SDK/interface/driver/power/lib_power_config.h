@@ -38,4 +38,22 @@ extern const bool pdebug_uart_flowing;
 //使能低功耗耗时检查
 extern const bool pdebug_reserve_time;
 
+extern const u32 control_power_p33_reg_check;
+
+//-------------------------------------------------------------------
+/* pmu相关模块开关 */
+//使能soff模块
+extern const bool control_soff;
+
+//使能pdown模块
+extern const bool control_pdown;
+
+//使能poff模块
+extern const bool control_poff;
+
+extern const bool lib_pmu_config_pdown;
+
+extern const bool lib_pmu_config_soff;
+
+extern const bool lib_pmu_config_poff;
 #endif

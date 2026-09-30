@@ -52,7 +52,12 @@ static const int key_ad_num0_event_table[JLUI_KEY_EVENT_MAX] = {
 };
 
 static const int key_ad_num1_event_table[JLUI_KEY_EVENT_MAX] = {
-    KEY_UI_SHORTCUT,
+    /* 修复: 原只填 [0]，[1][2] 隐式补 0(=KEY_UI_HOME)，长按/双击会误触发 HOME。
+     * 显式补满，未定义的动作一律给 KEY_WATCH_NO_KEY。 */
+    KEY_UI_SHORTCUT,  KEY_WATCH_NO_KEY,      KEY_WATCH_NO_KEY,
+#if (JLUI_KEY_EVENT_MAX > 3)
+    KEY_WATCH_NO_KEY,
+#endif
 };
 
 const struct ui_jlui_key_remap_table jlui_key_watch_event_table[JLUI_KEY_EVENT_TABLE_MAX ] = {
@@ -63,10 +68,14 @@ const struct ui_jlui_key_remap_table jlui_key_watch_event_table[JLUI_KEY_EVENT_T
 };
 
 
+/* 安全取映射表项：索引超出本板表长或该项未定义时，统一返回 KEY_WATCH_NO_KEY */
+#define KEY_REMAP_GET(tbl, idx)  (((idx) < JLUI_KEY_EVENT_MAX) ? (tbl)[(idx)] : (int)KEY_WATCH_NO_KEY)
+
 /*将key_event进行映射成具体的按键事件*/
 u16 jlui_key_event_remap(struct key_event *key, const struct ui_jlui_key_remap_table *table)
 {
-    u16 key_event = -1;
+    /* 修复: 原为 -1(0xffff)，未匹配时会经 key_event_sent_to_ui_map 投递非法事件到 UI */
+    u16 key_event = KEY_WATCH_NO_KEY;
     int key_value;
 
     if (key->event == KEY_ACTION_RDEC_ROTATE) {    // 旋转编码器
@@ -80,17 +89,31 @@ u16 jlui_key_event_remap(struct key_event *key, const struct ui_jlui_key_remap_t
     }
 
     for (int i = 0; table[i].key_value != 0xff; i++) {
-        if (jlui_key_watch_event_table[i].key_value == key->value) {
+        /* 修复: 原为 jlui_key_watch_event_table[i]，硬编码表名导致入参 table 不生效 */
+        if (table[i].key_value == key->value) {
             if (table[i].remap_table) {
+                const int *remap = table[i].remap_table;
                 if (key->event == KEY_ACTION_CLICK) {
-                    key_event = table[i].remap_table[0];
-                } else if (key->event == KEY_ACTION_HOLD) {
-                    key_event = table[i].remap_table[1];
-                } else if (key->event == KEY_ACTION_DOUBLE_CLICK) {
-                    key_event = table[i].remap_table[2];
-                } else if (key->event == KEY_ACTION_TRIPLE_CLICK) {
-                    key_event = table[i].remap_table[3];
+                    key_event = KEY_REMAP_GET(remap, 0);
+                } else if (key->event == KEY_ACTION_LONG ||
+                           key->event == KEY_ACTION_HOLD ||
+                           key->event == KEY_ACTION_SINGLE_LONG) {
+                    /* 修复: 长按类事件原先全落 else 被吞成 KEY_WATCH_NO_KEY，
+                     * 导致长按 iokey 从 750ms 到抬手 UI 全程无响应 */
+                    key_event = KEY_REMAP_GET(remap, 1);
+                } else if (key->event == KEY_ACTION_DOUBLE_CLICK ||
+                           key->event == KEY_ACTION_DOUBLE_LONG) {
+                    key_event = KEY_REMAP_GET(remap, 2);
+                } else if (key->event == KEY_ACTION_TRIPLE_CLICK ||
+                           key->event == KEY_ACTION_TRIPLE_LONG ||
+                           key->event == KEY_ACTION_TRIPLE_LONG_3SEC ||
+                           key->event == KEY_ACTION_TRIPLE_LONG_8SEC) {
+                    /* 修复: 原为 remap_table[3] 无边界保护，本板 JLUI_KEY_EVENT_MAX=3 时越界读 */
+                    key_event = KEY_REMAP_GET(remap, 3);
                 } else {
+                    /* HOLD_2SEC/3SEC/5SEC/8SEC/16SEC、UP、NO_KEY 等：
+                     * 更长的长按已由 LONG(750ms) 触发过一次，此处拦截避免重复投递；
+                     * UP 若投递会导致抬手再触发一次。 */
                     key_event = KEY_WATCH_NO_KEY;
                 }
             }
