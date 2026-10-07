@@ -1,0 +1,804 @@
+{
+ "fields": [
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "蓝牙共享网络",
+    "enableUuid": "TCFG_BT_NET_ENABLE",
+    "showComponentName": true,
+    "dataType": [
+     "8",
+     "1"
+    ],
+    "template": "",
+    "span": 24,
+    "formId": 334,
+    "renderKey": "3341780559526609",
+    "children": [],
+    "eventField": [],
+    "disable": false
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "70px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1780559526609_0"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "外挂WIFI",
+    "enableUuid": "TCFG_EXT_WIFI_ENABLE",
+    "showComponentName": true,
+    "dataType": [
+     "8",
+     "1"
+    ],
+    "template": "",
+    "span": 24,
+    "formId": 338,
+    "renderKey": "3381780559651120",
+    "children": [
+     {
+      "__config__": {
+       "label": "AIC8800D40",
+       "tag": "el-switch",
+       "tagIcon": "switch",
+       "defaultValue": 1,
+       "span": 12,
+       "showLabel": true,
+       "labelWidth": 130,
+       "layout": "colFormItem",
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "status": 0,
+       "dataType": [
+        "8",
+        "-1"
+       ],
+       "formId": 342,
+       "renderKey": "3421780559695974",
+       "eventField": [],
+       "originValue": 1,
+       "saveWay": "macro",
+       "uuid": "TCFG_AIC8800D40_ENABLE",
+       "tip": "SD WiFi"
+      },
+      "style": {
+       "width": ""
+      },
+      "disabled": false,
+      "active-text": "",
+      "inactive-text": "",
+      "active-color": null,
+      "inactive-color": null,
+      "active-value": 1,
+      "inactive-value": 0,
+      "id": "id_1780559695974_8",
+      "__vModel__": "field342"
+     },
+     {
+      "__config__": {
+       "label": "SDC通道",
+       "showLabel": true,
+       "labelWidth": 130,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 12,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "formId": 379,
+       "renderKey": "3791781248820425",
+       "saveWay": "macro",
+       "defaultValue": 0,
+       "originValue": 0,
+       "uuid": "TCFG_AIC8800D40_SDC_CH",
+       "formItemWidth": "",
+       "eventField": []
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "SD0",
+         "value": 0
+        },
+        {
+         "label": "SD1",
+         "value": 1
+        }
+       ]
+      },
+      "placeholder": "请选择SDC通道",
+      "style": {
+       "width": "80%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1781248820425_0",
+      "__vModel__": "field379"
+     },
+     {
+      "__config__": {
+       "label": "MODE（bit0-AP; bit1-STA; bit2-P2P）",
+       "tag": "el-checkbox-group",
+       "tagIcon": "checkbox",
+       "defaultValue": [
+        4
+       ],
+       "span": 24,
+       "showLabel": true,
+       "labelWidth": 300,
+       "layout": "colFormItem",
+       "optionType": "default",
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "border": false,
+       "status": 0,
+       "dataType": [
+        "32",
+        "1",
+        "o16"
+       ],
+       "formId": 383,
+       "renderKey": "3831783478571197",
+       "saveWay": "macro",
+       "originValue": [
+        4
+       ],
+       "uuid": "TCFG_EXT_WIFI_MODE",
+       "eventField": [],
+       "tip": "当前暂不支持共存，勿多选",
+       "tipAlways": true
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "AP",
+         "value": 1,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "STA",
+         "value": 2,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "P2P",
+         "value": 4,
+         "hide": false,
+         "disabled": false
+        }
+       ]
+      },
+      "style": {
+       "width": "100%"
+      },
+      "size": "medium",
+      "disabled": false,
+      "id": "id_1783478571197_0",
+      "__vModel__": "field383"
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_384",
+       "enableUuid": "",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 384,
+       "renderKey": "3841783479948778",
+       "children": [
+        {
+         "__config__": {
+          "label": "AP SSID",
+          "labelWidth": null,
+          "showLabel": true,
+          "changeTag": true,
+          "tag": "el-input",
+          "tagIcon": "input",
+          "defaultValue": "JL380N-AP",
+          "required": false,
+          "layout": "colFormItem",
+          "span": 12,
+          "regList": [],
+          "status": 0,
+          "dataType": [
+           "string"
+          ],
+          "formId": 386,
+          "renderKey": "3861783479967665",
+          "eventField": [],
+          "saveWay": "macro",
+          "uuid": "TCFG_EXT_WIFI_AP_SSID",
+          "originValue": "JL380N-AP"
+         },
+         "__slot__": {
+          "prepend": "",
+          "append": ""
+         },
+         "placeholder": "请输入AP SSID",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "prefix-icon": "",
+         "suffix-icon": "",
+         "maxlength": null,
+         "show-word-limit": false,
+         "readonly": false,
+         "disabled": false,
+         "id": "id_1783479967665_2",
+         "__vModel__": "field386"
+        },
+        {
+         "__config__": {
+          "label": "AP PWD",
+          "labelWidth": null,
+          "showLabel": true,
+          "changeTag": true,
+          "tag": "el-input",
+          "tagIcon": "input",
+          "defaultValue": "12345678",
+          "required": false,
+          "layout": "colFormItem",
+          "span": 12,
+          "regList": [],
+          "status": 0,
+          "dataType": [
+           "string"
+          ],
+          "formId": 387,
+          "renderKey": "3871783480313909",
+          "eventField": [],
+          "saveWay": "macro",
+          "uuid": "TCFG_EXT_WIFI_AP_PWD",
+          "originValue": "12345678"
+         },
+         "__slot__": {
+          "prepend": "",
+          "append": ""
+         },
+         "placeholder": "请输入AP PWD",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "prefix-icon": "",
+         "suffix-icon": "",
+         "maxlength": null,
+         "show-word-limit": false,
+         "readonly": false,
+         "disabled": false,
+         "id": "id_1783480313908_3",
+         "__vModel__": "field387"
+        },
+        {
+         "__config__": {
+          "label": "STA SSID",
+          "labelWidth": null,
+          "showLabel": true,
+          "changeTag": true,
+          "tag": "el-input",
+          "tagIcon": "input",
+          "defaultValue": "JL380N-STA",
+          "required": false,
+          "layout": "colFormItem",
+          "span": 12,
+          "regList": [],
+          "status": 0,
+          "dataType": [
+           "string"
+          ],
+          "formId": 388,
+          "renderKey": "3881783480350500",
+          "eventField": [],
+          "saveWay": "macro",
+          "uuid": "TCFG_EXT_WIFI_STA_SSID",
+          "originValue": "JL380N-STA"
+         },
+         "__slot__": {
+          "prepend": "",
+          "append": ""
+         },
+         "placeholder": "请输入STA SSID",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "prefix-icon": "",
+         "suffix-icon": "",
+         "maxlength": null,
+         "show-word-limit": false,
+         "readonly": false,
+         "disabled": false,
+         "id": "id_1783480350500_4",
+         "__vModel__": "field388"
+        },
+        {
+         "__config__": {
+          "label": "STA PWD",
+          "labelWidth": null,
+          "showLabel": true,
+          "changeTag": true,
+          "tag": "el-input",
+          "tagIcon": "input",
+          "defaultValue": "12345678",
+          "required": false,
+          "layout": "colFormItem",
+          "span": 12,
+          "regList": [],
+          "status": 0,
+          "dataType": [
+           "string"
+          ],
+          "formId": 389,
+          "renderKey": "3891783480353220",
+          "eventField": [],
+          "saveWay": "macro",
+          "uuid": "TCFG_EXT_WIFI_STA_PWD",
+          "originValue": "12345678"
+         },
+         "__slot__": {
+          "prepend": "",
+          "append": ""
+         },
+         "placeholder": "请输入STA PWD",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "prefix-icon": "",
+         "suffix-icon": "",
+         "maxlength": null,
+         "show-word-limit": false,
+         "readonly": false,
+         "disabled": false,
+         "id": "id_1783480353220_5",
+         "__vModel__": "field389"
+        },
+        {
+         "__config__": {
+          "label": "P2P SSID",
+          "labelWidth": null,
+          "showLabel": true,
+          "changeTag": true,
+          "tag": "el-input",
+          "tagIcon": "input",
+          "defaultValue": "JL380N-P2P",
+          "required": false,
+          "layout": "colFormItem",
+          "span": 12,
+          "regList": [],
+          "status": 0,
+          "dataType": [
+           "string"
+          ],
+          "formId": 390,
+          "renderKey": "3901783480355340",
+          "eventField": [],
+          "saveWay": "macro",
+          "uuid": "TCFG_EXT_WIFI_P2P_SSID",
+          "originValue": "JL380N-P2P"
+         },
+         "__slot__": {
+          "prepend": "",
+          "append": ""
+         },
+         "placeholder": "请输入P2P SSID",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "prefix-icon": "",
+         "suffix-icon": "",
+         "maxlength": null,
+         "show-word-limit": false,
+         "readonly": false,
+         "disabled": false,
+         "id": "id_1783480355340_6",
+         "__vModel__": "field390"
+        },
+        {
+         "__config__": {
+          "label": "RST PIN",
+          "showLabel": true,
+          "labelWidth": "",
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 8,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 697,
+          "renderKey": "6971789607746556",
+          "saveWay": "macro",
+          "uuid": "TCFG_EXT_WIFI_RST_PIN",
+          "eventField": [
+           "device",
+           "gpio"
+          ],
+          "emptyValue": "NO_CONFIG_PORT",
+          "defaultValue": "NO_CONFIG_PORT",
+          "originValue": "NO_CONFIG_PORT"
+         },
+         "__slot__": {
+          "options": []
+         },
+         "placeholder": "请选择RST PIN",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "id": "id_1789607746556_0",
+         "__vModel__": "field697",
+         "searchSource": true
+        }
+       ],
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1783479948778_0"
+     }
+    ],
+    "eventField": [],
+    "disable": false
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "70px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1780559651120_4"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "UART网卡",
+    "enableUuid": "TCFG_UART_NET_ENABLE",
+    "showComponentName": true,
+    "dataType": [
+     "8",
+     "1"
+    ],
+    "template": "",
+    "span": 24,
+    "formId": 399,
+    "renderKey": "3991785749713148",
+    "children": [
+     {
+      "__config__": {
+       "label": "TX",
+       "showLabel": true,
+       "labelWidth": 130,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 8,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "macro"
+       ],
+       "formId": 399,
+       "renderKey": "3991785749801381",
+       "saveWay": "macro",
+       "uuid": "TCFG_UART_NETIF_TX_PIN",
+       "eventField": [
+        "device",
+        "gpio"
+       ],
+       "emptyValue": "NO_CONFIG_PORT",
+       "defaultValue": "NO_CONFIG_PORT",
+       "originValue": "IO_PORTA_11"
+      },
+      "__slot__": {
+       "options": []
+      },
+      "placeholder": "请选择TX",
+      "style": {
+       "width": "80%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1785749801381_0",
+      "__vModel__": "field399",
+      "searchSource": true
+     },
+     {
+      "__config__": {
+       "label": "RX",
+       "showLabel": true,
+       "labelWidth": 130,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 8,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "macro"
+       ],
+       "formId": 400,
+       "renderKey": "4001785749852035",
+       "saveWay": "macro",
+       "uuid": "TCFG_UART_NETIF_RX_PIN",
+       "eventField": [
+        "device",
+        "gpio"
+       ],
+       "emptyValue": "NO_CONFIG_PORT",
+       "defaultValue": "NO_CONFIG_PORT",
+       "originValue": "IO_PORTA_12"
+      },
+      "__slot__": {
+       "options": []
+      },
+      "placeholder": "请选择RX",
+      "style": {
+       "width": "80%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1785749852035_1",
+      "__vModel__": "field400",
+      "searchSource": true
+     },
+     {
+      "__config__": {
+       "label": "波特率",
+       "labelWidth": 130,
+       "showLabel": true,
+       "changeTag": true,
+       "tag": "el-input-number",
+       "tagIcon": "number",
+       "defaultValue": 4000000,
+       "required": false,
+       "layout": "colFormItem",
+       "span": 8,
+       "regList": [
+        {
+         "pattern": "",
+         "message": "请输入10进制数字，如：12000000"
+        }
+       ],
+       "dataType": [
+        "float"
+       ],
+       "formId": 401,
+       "renderKey": "4011785749929382",
+       "eventField": [],
+       "uuid": "TCFG_UART_NETIF_BAUD",
+       "saveWay": "macro",
+       "emptyValue": "4000000",
+       "originValue": 4000000,
+       "formItemWidth": ""
+      },
+      "placeholder": "请输入波特率",
+      "step": 1,
+      "step-strictly": false,
+      "controls-position": "right",
+      "disabled": false,
+      "id": "id_1785749929382_0",
+      "__vModel__": "field401",
+      "min": 1
+     }
+    ],
+    "eventField": [],
+    "disable": true
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "70px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1785749713148_0"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "4G网卡",
+    "enableUuid": "TCFG_LTE_PHY_ENABLE",
+    "showComponentName": true,
+    "dataType": [
+     "8",
+     "1"
+    ],
+    "template": "",
+    "span": 24,
+    "formId": 343,
+    "renderKey": "3431780559809800",
+    "children": [
+     {
+      "__config__": {
+       "label": "USB网卡",
+       "tag": "el-switch",
+       "tagIcon": "switch",
+       "defaultValue": 1,
+       "span": 12,
+       "showLabel": true,
+       "labelWidth": 130,
+       "layout": "colFormItem",
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "status": 0,
+       "dataType": [
+        "8",
+        "-1"
+       ],
+       "formId": 344,
+       "renderKey": "3441780559809800",
+       "eventField": [],
+       "originValue": 1,
+       "saveWay": "macro",
+       "uuid": "TCFG_HOST_WIRELESS_ENABLE",
+       "tip": ""
+      },
+      "style": {
+       "width": ""
+      },
+      "disabled": false,
+      "active-text": "",
+      "inactive-text": "",
+      "active-color": null,
+      "inactive-color": null,
+      "active-value": 1,
+      "inactive-value": 0,
+      "id": "id_1780559809800_10",
+      "__vModel__": "field344"
+     }
+    ],
+    "eventField": [],
+    "disable": false
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "70px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1780559809800_9"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "SPI网卡",
+    "enableUuid": "TCFG_SPI_NET_ENABLE",
+    "showComponentName": true,
+    "dataType": [
+     "8",
+     "1"
+    ],
+    "template": "",
+    "span": 24,
+    "formId": 402,
+    "renderKey": "4021787038257148",
+    "children": [
+     {
+      "__config__": {
+       "label": "SPI网卡说明：",
+       "labelWidth": 140,
+       "showLabel": true,
+       "tag": "el-input",
+       "tagIcon": "input",
+       "defaultValue": "SPI的GPIO配置在 板级配置->多芯片连接",
+       "required": false,
+       "layout": "colFormItem",
+       "span": 24,
+       "regList": [],
+       "changeTag": true,
+       "dataType": [
+        "8",
+        "string"
+       ],
+       "file": "",
+       "filetype": 1,
+       "formId": 406,
+       "renderKey": "4061788405481443",
+       "eventField": [],
+       "saveWay": "macro",
+       "uuid": "",
+       "originValue": "SPI的GPIO配置在 板级配置->多芯片连接"
+      },
+      "type": "textarea",
+      "placeholder": "请输入SPI网卡说明：",
+      "autosize": {
+       "minRows": 1,
+       "maxRows": 1
+      },
+      "style": {
+       "width": "100%"
+      },
+      "maxlength": null,
+      "show-word-limit": false,
+      "readonly": true,
+      "disabled": false,
+      "id": "id_1788405481443_0",
+      "__vModel__": "field406"
+     }
+    ],
+    "eventField": [],
+    "disable": true
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "70px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1787038257148_0"
+  }
+ ],
+ "size": "small",
+ "labelPosition": "right",
+ "labelWidth": 100,
+ "gutter": 15,
+ "disabled": false,
+ "span": 12,
+ "maxFormId": 473,
+ "version": {
+  "code": 1,
+  "tool": "4.4.0"
+ }
+}

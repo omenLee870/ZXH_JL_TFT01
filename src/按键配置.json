@@ -1,0 +1,2139 @@
+{
+ "fields": [
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "非按键长按复位配置",
+    "enableUuid": "TCFG_LONG_PRESS_RESET_ENABLE",
+    "showComponentName": true,
+    "dataType": [
+     "8",
+     "1"
+    ],
+    "status": 0,
+    "template": "",
+    "hideAddTemplate": false,
+    "span": 24,
+    "formId": 301,
+    "renderKey": "3011689758137637",
+    "children": [
+     {
+      "__config__": {
+       "label": "复位IO",
+       "showLabel": true,
+       "labelWidth": 60,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 6,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "macro"
+       ],
+       "formId": 302,
+       "renderKey": "3021689758272608",
+       "eventField": [
+        "device",
+        "gpio"
+       ],
+       "saveWay": "macro",
+       "defaultValue": "IO_PORTB_01",
+       "originValue": "id_1647485267192_75",
+       "paddingLeft": "40px",
+       "uuid": "TCFG_LONG_PRESS_RESET_PORT"
+      },
+      "__slot__": {
+       "options": []
+      },
+      "placeholder": "请选择复位IO",
+      "style": {
+       "width": "100%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "__vModel__": "",
+      "searchSource": true,
+      "id": "id_1689758272608_1"
+     },
+     {
+      "__config__": {
+       "label": "复位时间",
+       "showLabel": true,
+       "labelWidth": null,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 5,
+       "required": false,
+       "defaultValue": 8,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "status": 0,
+       "dataType": [
+        "32",
+        "1"
+       ],
+       "formId": 303,
+       "renderKey": "3031689758350840",
+       "originValue": 8,
+       "uuid": "TCFG_LONG_PRESS_RESET_TIME",
+       "saveWay": "macro",
+       "paddingLeft": "40px"
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "16s",
+         "value": 16,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "8s",
+         "value": 8,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "4s",
+         "value": 4,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "2s",
+         "value": 2,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "1s",
+         "value": 1,
+         "hide": false,
+         "disabled": false
+        }
+       ]
+      },
+      "placeholder": "请选择复位时间",
+      "style": {
+       "width": "100%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1689758350840_2",
+      "__vModel__": "field303"
+     },
+     {
+      "__config__": {
+       "label": "复位电平",
+       "showLabel": true,
+       "labelWidth": null,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 6,
+       "required": false,
+       "defaultValue": 1,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "status": 0,
+       "dataType": [
+        "32",
+        "1"
+       ],
+       "formId": 304,
+       "renderKey": "3041689758423375",
+       "paddingLeft": "40px",
+       "originValue": 1,
+       "uuid": "TCFG_LONG_PRESS_RESET_LEVEL",
+       "saveWay": "macro"
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "高电平",
+         "value": 1,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "低电平",
+         "value": 0,
+         "hide": false,
+         "disabled": false
+        }
+       ]
+      },
+      "placeholder": "请选择复位电平",
+      "style": {
+       "width": "100%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1689758423375_3",
+      "__vModel__": "field304"
+     },
+     {
+      "__config__": {
+       "label": "使用IO内置上下拉",
+       "tag": "el-switch",
+       "tagIcon": "switch",
+       "defaultValue": 0,
+       "span": 6,
+       "showLabel": true,
+       "labelWidth": 125,
+       "layout": "colFormItem",
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "status": 0,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "formId": 305,
+       "renderKey": "3051689758463481",
+       "paddingLeft": "40px",
+       "saveWay": "macro",
+       "uuid": "TCFG_LONG_PRESS_RESET_INSIDE_PULL_UP_DOWN"
+      },
+      "style": {},
+      "disabled": false,
+      "active-text": "",
+      "inactive-text": "",
+      "active-color": null,
+      "inactive-color": null,
+      "active-value": 1,
+      "inactive-value": 0,
+      "id": "id_1689758463480_4",
+      "__vModel__": "field305"
+     }
+    ],
+    "eventField": [],
+    "saveWay": "macro",
+    "disable": true,
+    "tip": "",
+    "tipAlways": true
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "50px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1689758137637_0"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "IO按键配置",
+    "showComponentName": true,
+    "dataType": [],
+    "template": "{\"__config__\":{\"layout\":\"rowFormItem\",\"tag\":\"group\",\"tagIcon\":\"row\",\"componentName\":\"row_461\",\"showComponentName\":false,\"dataType\":[],\"template\":\"\",\"span\":24,\"formId\":461,\"renderKey\":\"4611665472900390\",\"children\":[{\"__config__\":{\"label\":\"按键\",\"showLabel\":true,\"labelWidth\":40,\"tag\":\"el-select\",\"tagIcon\":\"select\",\"layout\":\"colFormItem\",\"span\":5,\"required\":false,\"regList\":[],\"changeTag\":true,\"searchSource\":false,\"dataType\":[\"16\",\"string\"],\"formId\":462,\"renderKey\":\"4621665472900390\",\"eventField\":[\"device\",\"iokey\"],\"saveWay\":\"bin\",\"defaultValue\":\"id_1675425366400_2\",\"originValue\":\"\"},\"__slot__\":{\"options\":[{\"label\":\"KEY_IO_NUM0\",\"value\":\"id_1675425366400_2\"},{\"label\":\"KEY_IO_NUM1\",\"value\":\"id_1675476692370_1\"},{\"label\":\"KEY_IO_NUM2\",\"value\":\"id_1675476765644_4\"},{\"label\":\"KEY_IO_NUM3\",\"value\":\"id_1675476771479_6\"},{\"label\":\"KEY_IO_NUM4\",\"value\":\"id_1675476772250_8\"},{\"label\":\"KEY_IO_NUM5\",\"value\":\"id_1675476773079_10\"},{\"label\":\"KEY_IO_NUM6\",\"value\":\"id_1675476773798_12\"},{\"label\":\"KEY_IO_NUM7\",\"value\":\"id_1675476774526_14\"},{\"label\":\"KEY_IO_NUM8\",\"value\":\"id_1675476775294_16\"},{\"label\":\"KEY_IO_NUM9\",\"value\":\"id_1675476776063_18\"},{\"label\":\"KEY_IO_NUM10\",\"value\":\"id_1675506993814_20\"},{\"label\":\"KEY_IO_NUM11\",\"value\":\"id_1675507046489_22\"},{\"label\":\"KEY_IO_NUM12\",\"value\":\"id_1675507049574_24\"},{\"label\":\"KEY_IO_NUM13\",\"value\":\"id_1675507050286_26\"},{\"label\":\"KEY_IO_NUM14\",\"value\":\"id_1675507050830_28\"}]},\"placeholder\":\"请选择按键按键\",\"style\":{\"width\":\"100%\"},\"clearable\":true,\"disabled\":false,\"filterable\":false,\"multiple\":false,\"__vModel__\":\"field462\",\"searchSource\":true,\"id\":\"id_1665472900390_157\"},{\"__config__\":{\"label\":\"IO\",\"showLabel\":true,\"labelWidth\":30,\"tag\":\"el-select\",\"tagIcon\":\"select\",\"layout\":\"colFormItem\",\"span\":5,\"required\":false,\"regList\":[],\"changeTag\":true,\"searchSource\":false,\"dataType\":[\"16\",\"string\"],\"formId\":463,\"renderKey\":\"4631665472900390\",\"eventField\":[\"device\",\"gpio\"],\"saveWay\":\"bin\",\"defaultValue\":\"IO_PORTE_03\",\"originValue\":\"IO_PORTE_04\",\"paddingLeft\":\"\"},\"__slot__\":{\"options\":[]},\"placeholder\":\"请选择IO\",\"style\":{\"width\":\"100%\"},\"clearable\":true,\"disabled\":false,\"filterable\":false,\"multiple\":false,\"__vModel__\":\"field463\",\"searchSource\":true,\"id\":\"id_1665472900390_158\"},{\"__config__\":{\"label\":\"检测\",\"showLabel\":true,\"labelWidth\":40,\"tag\":\"el-select\",\"tagIcon\":\"select\",\"layout\":\"colFormItem\",\"span\":5,\"required\":false,\"regList\":[],\"changeTag\":true,\"searchSource\":false,\"dataType\":[\"8\"],\"formId\":464,\"renderKey\":\"4641665472900390\",\"defaultValue\":1,\"saveWay\":\"bin\",\"eventField\":[]},\"__slot__\":{\"options\":[{\"label\":\"低电平按下\",\"value\":1},{\"label\":\"高电平按下\",\"value\":2}]},\"placeholder\":\"请选择检测\",\"style\":{\"width\":\"100%\"},\"clearable\":true,\"disabled\":false,\"filterable\":false,\"multiple\":false,\"__vModel__\":\"field464\",\"id\":\"id_1665472900390_159\"},{\"__config__\":{\"label\":\"长按复位\",\"tag\":\"el-switch\",\"tagIcon\":\"switch\",\"defaultValue\":0,\"span\":3,\"showLabel\":true,\"labelWidth\":70,\"layout\":\"colFormItem\",\"required\":false,\"regList\":[],\"changeTag\":true,\"status\":0,\"dataType\":[\"8\",\"1\"],\"formId\":228,\"renderKey\":\"2281689056297395\",\"saveWay\":\"bin\",\"originValue\":0,\"eventField\":[]},\"style\":{},\"disabled\":false,\"active-text\":\"\",\"inactive-text\":\"\",\"active-color\":null,\"inactive-color\":null,\"active-value\":1,\"inactive-value\":0,\"id\":\"id_1689056297395_0\",\"__vModel__\":\"field228\"},{\"__config__\":{\"label\":\"长按时间\",\"showLabel\":true,\"labelWidth\":70,\"tag\":\"el-select\",\"tagIcon\":\"select\",\"layout\":\"colFormItem\",\"span\":4,\"required\":false,\"defaultValue\":16,\"regList\":[],\"changeTag\":true,\"searchSource\":false,\"status\":0,\"dataType\":[\"1\",\"8\"],\"formId\":229,\"renderKey\":\"2291689056349457\",\"saveWay\":\"bin\",\"originValue\":16},\"__slot__\":{\"options\":[{\"label\":\"16s\",\"value\":16,\"hide\":false,\"disabled\":false},{\"label\":\"8s\",\"value\":8,\"hide\":false,\"disabled\":false},{\"label\":\"4s\",\"value\":4,\"hide\":false,\"disabled\":false},{\"label\":\"2s\",\"value\":2,\"hide\":false,\"disabled\":false},{\"label\":\"1s\",\"value\":1,\"hide\":false,\"disabled\":false}]},\"placeholder\":\"请选择长按时间\",\"style\":{\"width\":\"100%\"},\"clearable\":true,\"disabled\":false,\"filterable\":false,\"multiple\":false,\"id\":\"id_1689056349457_1\",\"__vModel__\":\"field229\"},{\"__config__\":{\"label\":\"开机唤醒\",\"tag\":\"el-switch\",\"tagIcon\":\"switch\",\"defaultValue\":0,\"span\":3,\"showLabel\":true,\"labelWidth\":70,\"layout\":\"colFormItem\",\"required\":false,\"regList\":[],\"changeTag\":true,\"status\":0,\"dataType\":[\"8\",\"1\"],\"formId\":132,\"renderKey\":\"1321786587635717\",\"saveWay\":\"bin\",\"originValue\":0,\"eventField\":[]},\"style\":{},\"disabled\":false,\"active-text\":\"\",\"inactive-text\":\"\",\"active-color\":null,\"inactive-color\":null,\"active-value\":1,\"inactive-value\":0,\"id\":\"id_1786587635717_0\",\"__vModel__\":\"field132\"}],\"saveWay\":\"bin\",\"uuid\":\"100\",\"paddingLeft\":\"40px\",\"eventField\":[]},\"type\":\"default\",\"justify\":\"start\",\"align\":\"top\",\"style\":{\"height\":\"60px\",\"paddingLeft\":\"0px\"},\"id\":\"id_1665472900390_156\",\"fromTemplate\":true}",
+    "span": 24,
+    "formId": 101,
+    "renderKey": "1011646031014974",
+    "children": [
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_461",
+       "showComponentName": false,
+       "dataType": [],
+       "template": "",
+       "span": 24,
+       "formId": 461,
+       "renderKey": "4611665472900390",
+       "children": [
+        {
+         "__config__": {
+          "label": "按键",
+          "showLabel": true,
+          "labelWidth": 40,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 462,
+          "renderKey": "4621665472900390",
+          "eventField": [
+           "device",
+           "iokey"
+          ],
+          "saveWay": "bin",
+          "defaultValue": "id_1675425366400_2",
+          "originValue": ""
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "KEY_IO_NUM0",
+            "value": "id_1675425366400_2"
+           },
+           {
+            "label": "KEY_IO_NUM1",
+            "value": "id_1675476692370_1"
+           },
+           {
+            "label": "KEY_IO_NUM2",
+            "value": "id_1675476765644_4"
+           },
+           {
+            "label": "KEY_IO_NUM3",
+            "value": "id_1675476771479_6"
+           },
+           {
+            "label": "KEY_IO_NUM4",
+            "value": "id_1675476772250_8"
+           },
+           {
+            "label": "KEY_IO_NUM5",
+            "value": "id_1675476773079_10"
+           },
+           {
+            "label": "KEY_IO_NUM6",
+            "value": "id_1675476773798_12"
+           },
+           {
+            "label": "KEY_IO_NUM7",
+            "value": "id_1675476774526_14"
+           },
+           {
+            "label": "KEY_IO_NUM8",
+            "value": "id_1675476775294_16"
+           },
+           {
+            "label": "KEY_IO_NUM9",
+            "value": "id_1675476776063_18"
+           },
+           {
+            "label": "KEY_IO_NUM10",
+            "value": "id_1675506993814_20"
+           },
+           {
+            "label": "KEY_IO_NUM11",
+            "value": "id_1675507046489_22"
+           },
+           {
+            "label": "KEY_IO_NUM12",
+            "value": "id_1675507049574_24"
+           },
+           {
+            "label": "KEY_IO_NUM13",
+            "value": "id_1675507050286_26"
+           },
+           {
+            "label": "KEY_IO_NUM14",
+            "value": "id_1675507050830_28"
+           }
+          ]
+         },
+         "placeholder": "请选择按键按键",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field462",
+         "searchSource": true,
+         "id": "id_1665472900390_157"
+        },
+        {
+         "__config__": {
+          "label": "IO",
+          "showLabel": true,
+          "labelWidth": 30,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 463,
+          "renderKey": "4631665472900390",
+          "eventField": [
+           "device",
+           "gpio"
+          ],
+          "saveWay": "bin",
+          "defaultValue": "IO_PORTE_03",
+          "originValue": "IO_PORTE_04",
+          "paddingLeft": ""
+         },
+         "__slot__": {
+          "options": []
+         },
+         "placeholder": "请选择IO",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field463",
+         "searchSource": true,
+         "id": "id_1665472900390_158"
+        },
+        {
+         "__config__": {
+          "label": "检测",
+          "showLabel": true,
+          "labelWidth": 40,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "8"
+          ],
+          "formId": 464,
+          "renderKey": "4641665472900390",
+          "defaultValue": 1,
+          "saveWay": "bin",
+          "eventField": []
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "低电平按下",
+            "value": 1
+           },
+           {
+            "label": "高电平按下",
+            "value": 2
+           }
+          ]
+         },
+         "placeholder": "请选择检测",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field464",
+         "id": "id_1665472900390_159"
+        },
+        {
+         "__config__": {
+          "label": "长按复位",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 0,
+          "span": 3,
+          "showLabel": true,
+          "labelWidth": 70,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "status": 0,
+          "dataType": [
+           "8",
+           "1"
+          ],
+          "formId": 228,
+          "renderKey": "2281689056297395",
+          "saveWay": "bin",
+          "originValue": 0,
+          "eventField": []
+         },
+         "style": {},
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1689056297395_0",
+         "__vModel__": "field228"
+        },
+        {
+         "__config__": {
+          "label": "长按时间",
+          "showLabel": true,
+          "labelWidth": 70,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 4,
+          "required": false,
+          "defaultValue": 16,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "status": 0,
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 229,
+          "renderKey": "2291689056349457",
+          "saveWay": "bin",
+          "originValue": 16
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "16s",
+            "value": 16,
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "8s",
+            "value": 8,
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "4s",
+            "value": 4,
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "2s",
+            "value": 2,
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "1s",
+            "value": 1,
+            "hide": false,
+            "disabled": false
+           }
+          ]
+         },
+         "placeholder": "请选择长按时间",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "id": "id_1689056349457_1",
+         "__vModel__": "field229"
+        },
+        {
+         "__config__": {
+          "label": "开机唤醒",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 1,
+          "span": 3,
+          "showLabel": true,
+          "labelWidth": 70,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "status": 0,
+          "dataType": [
+           "8",
+           "1"
+          ],
+          "formId": 132,
+          "renderKey": "1321786587635717",
+          "saveWay": "bin",
+          "originValue": 1,
+          "eventField": []
+         },
+         "style": {},
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1786587635717_0",
+         "__vModel__": "field132"
+        }
+       ],
+       "saveWay": "bin",
+       "uuid": "100",
+       "paddingLeft": "40px",
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1665472900390_156",
+      "fromTemplate": true
+     }
+    ],
+    "saveWay": "bin",
+    "uuid": "522",
+    "eventField": [],
+    "enableUuid": "TCFG_IOKEY_ENABLE",
+    "disable": true
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "60px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1647488854147_20"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "AD按键配置",
+    "enableUuid": "TCFG_ADKEY_ENABLE",
+    "showComponentName": true,
+    "dataType": [],
+    "template": "{\"__config__\":{\"layout\":\"rowFormItem\",\"tag\":\"group\",\"tagIcon\":\"row\",\"layoutTree\":true,\"componentName\":\"row_234\",\"enableUuid\":\"\",\"showComponentName\":false,\"dataType\":[\"8\",\"1\"],\"template\":\"\",\"span\":24,\"formId\":234,\"renderKey\":\"2341675685996264\",\"children\":[{\"__config__\":{\"label\":\"按键\",\"showLabel\":true,\"labelWidth\":null,\"tag\":\"el-select\",\"tagIcon\":\"select\",\"layout\":\"colFormItem\",\"span\":12,\"required\":false,\"regList\":[],\"changeTag\":true,\"searchSource\":false,\"dataType\":[\"16\",\"string\"],\"formId\":235,\"renderKey\":\"2351675686021826\",\"paddingLeft\":\"40px\",\"saveWay\":\"bin\",\"eventField\":[\"device\",\"adkey\"],\"defaultValue\":\"id_1675507051390_30\",\"originValue\":\"\"},\"__slot__\":{\"options\":[{\"label\":\"KEY_AD_NUM0\",\"value\":\"id_1675507051390_30\"},{\"label\":\"KEY_AD_NUM1\",\"value\":\"id_1675507051910_32\"},{\"label\":\"KEY_AD_NUM2\",\"value\":\"id_1675507052463_34\"},{\"label\":\"KEY_AD_NUM3\",\"value\":\"id_1675507052991_36\"},{\"label\":\"KEY_AD_NUM4\",\"value\":\"id_1675507053703_38\"},{\"label\":\"KEY_AD_NUM5\",\"value\":\"id_1675858366684_1\"},{\"label\":\"KEY_AD_NUM6\",\"value\":\"id_1675858369587_3\"},{\"label\":\"KEY_AD_NUM7\",\"value\":\"id_1675858370563_5\"},{\"label\":\"KEY_AD_NUM8\",\"value\":\"id_1675858371315_7\"},{\"label\":\"KEY_AD_NUM9\",\"value\":\"id_1675858371979_9\"},{\"label\":\"KEY_AD_NUM10\",\"value\":\"id_1675858372582_11\"},{\"label\":\"KEY_AD_NUM11\",\"value\":\"id_1675858373116_13\"},{\"label\":\"KEY_AD_NUM12\",\"value\":\"id_1675858373643_15\"},{\"label\":\"KEY_AD_NUM13\",\"value\":\"id_1675858374443_17\"},{\"label\":\"KEY_AD_NUM14\",\"value\":\"id_1675858375627_19\"},{\"label\":\"KEY_AD_NUM15\",\"value\":\"id_1675858376955_21\"},{\"label\":\"KEY_AD_NUM16\",\"value\":\"id_1675858377659_23\"},{\"label\":\"KEY_AD_NUM17\",\"value\":\"id_1675858378339_25\"},{\"label\":\"KEY_AD_NUM18\",\"value\":\"id_1675858379010_27\"},{\"label\":\"KEY_AD_NUM19\",\"value\":\"id_1675858379667_29\"}]},\"placeholder\":\"请选择按键\",\"style\":{\"width\":\"100%\"},\"clearable\":true,\"disabled\":false,\"filterable\":false,\"multiple\":false,\"id\":\"id_1675686021826_8\",\"__vModel__\":\"field235\",\"searchSource\":true},{\"__config__\":{\"label\":\"电阻值\",\"showLabel\":true,\"changeTag\":true,\"labelWidth\":null,\"tag\":\"el-input-number\",\"tagIcon\":\"number\",\"span\":12,\"layout\":\"colFormItem\",\"required\":false,\"regList\":[],\"dataType\":[\"16\",\"1\"],\"formId\":236,\"renderKey\":\"2361675686043031\",\"saveWay\":\"bin\",\"defaultValue\":0,\"tip\":\"例：6.8k电阻请填写68，22k请填写220\",\"originValue\":0},\"placeholder\":\"电阻值\",\"step\":1,\"step-strictly\":false,\"controls-position\":\"\",\"disabled\":false,\"id\":\"id_1675686043031_9\",\"__vModel__\":\"field236\",\"min\":0}],\"eventField\":[],\"saveWay\":\"bin\"},\"type\":\"default\",\"justify\":\"start\",\"align\":\"top\",\"style\":{\"height\":\"60px\",\"paddingLeft\":\"0px\"},\"id\":\"id_1675685996264_7\"}",
+    "span": 24,
+    "formId": 227,
+    "renderKey": "2271675685028769",
+    "children": [
+     {
+      "__config__": {
+       "label": "AD按键IO",
+       "showLabel": true,
+       "labelWidth": 100,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 12,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "16",
+        "string"
+       ],
+       "formId": 228,
+       "renderKey": "2281675685073822",
+       "saveWay": "bin",
+       "eventField": [
+        "device",
+        "adio"
+       ],
+       "paddingLeft": "40px",
+       "defaultValue": "IO_PORTE_03",
+       "originValue": "IO_PORTE_03"
+      },
+      "__slot__": {
+       "options": []
+      },
+      "placeholder": "请选择AD按键IO",
+      "style": {
+       "width": "100%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1675685073822_1",
+      "__vModel__": "field228",
+      "searchSource": true
+     },
+     {
+      "__config__": {
+       "label": "上拉电阻类型",
+       "labelWidth": 100,
+       "showLabel": true,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "changeTag": true,
+       "layout": "colFormItem",
+       "span": 12,
+       "optionType": "default",
+       "regList": [],
+       "required": false,
+       "border": false,
+       "dataType": [
+        "16",
+        "1"
+       ],
+       "formId": 231,
+       "renderKey": "2311675685561880",
+       "saveWay": "bin",
+       "defaultValue": 1
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "内部上拉",
+         "value": 0
+        },
+        {
+         "label": "外部上拉",
+         "value": 1
+        }
+       ]
+      },
+      "placeholder": "请选择下拉选择",
+      "style": {
+       "width": "100%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1675685561880_4",
+      "__vModel__": "field231"
+     },
+     {
+      "__config__": {
+       "label": "上拉电阻值",
+       "showLabel": true,
+       "changeTag": true,
+       "labelWidth": 100,
+       "tag": "el-input-number",
+       "tagIcon": "number",
+       "span": 7,
+       "layout": "colFormItem",
+       "required": false,
+       "regList": [],
+       "dataType": [
+        "16",
+        "1"
+       ],
+       "formId": 232,
+       "renderKey": "2321675685773531",
+       "saveWay": "bin",
+       "formItemWidth": "",
+       "paddingLeft": "40px",
+       "defaultValue": 220,
+       "tip": "例：6.8k电阻请填写68，22k请填写220",
+       "eventField": []
+      },
+      "placeholder": "上拉电阻值",
+      "step": 1,
+      "step-strictly": false,
+      "controls-position": "",
+      "disabled": false,
+      "id": "id_1675685773531_5",
+      "__vModel__": "field232",
+      "min": 0
+     },
+     {
+      "__config__": {
+       "label": "最大AD值",
+       "showLabel": true,
+       "changeTag": true,
+       "labelWidth": null,
+       "tag": "el-input-number",
+       "tagIcon": "number",
+       "span": 6,
+       "layout": "colFormItem",
+       "required": false,
+       "regList": [],
+       "dataType": [
+        "16",
+        "1"
+       ],
+       "formId": 233,
+       "renderKey": "2331675685911795",
+       "saveWay": "bin",
+       "eventField": [],
+       "defaultValue": 4096,
+       "tip": "1023(0x3ff)表示vddio为上拉电压时的最大ad值，其他电压上拉请以实际值为准"
+      },
+      "placeholder": "最大AD值",
+      "step": 1,
+      "step-strictly": false,
+      "controls-position": "",
+      "disabled": false,
+      "id": "id_1675685911795_6",
+      "__vModel__": "field233",
+      "min": 0
+     },
+     {
+      "__config__": {
+       "label": "长按复位",
+       "tag": "el-switch",
+       "tagIcon": "switch",
+       "defaultValue": 0,
+       "span": 5,
+       "showLabel": true,
+       "labelWidth": null,
+       "layout": "colFormItem",
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "status": 0,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "formId": 248,
+       "renderKey": "2481689056504043",
+       "paddingLeft": "40px",
+       "saveWay": "bin",
+       "originValue": 0
+      },
+      "style": {},
+      "disabled": false,
+      "active-text": "",
+      "inactive-text": "",
+      "active-color": null,
+      "inactive-color": null,
+      "active-value": 1,
+      "inactive-value": 0,
+      "id": "id_1689056504043_20",
+      "__vModel__": "field248"
+     },
+     {
+      "__config__": {
+       "label": "长按时间",
+       "showLabel": true,
+       "labelWidth": null,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 5,
+       "required": false,
+       "defaultValue": 16,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "status": 0,
+       "dataType": [
+        "1",
+        "8"
+       ],
+       "formId": 249,
+       "renderKey": "2491689056541710",
+       "originValue": 16,
+       "saveWay": "bin"
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "16s",
+         "value": 16,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "8s",
+         "value": 8,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "4s",
+         "value": 4,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "2s",
+         "value": 2,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "1s",
+         "value": 1,
+         "hide": false,
+         "disabled": false
+        }
+       ]
+      },
+      "placeholder": "请选择长按时间",
+      "style": {
+       "width": "100%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1689056541710_21",
+      "__vModel__": "field249"
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_254",
+       "enableUuid": "",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 254,
+       "renderKey": "2541779972085302",
+       "children": [
+        {
+         "__config__": {
+          "label": "按键",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 12,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 255,
+          "renderKey": "2551779972085302",
+          "paddingLeft": "40px",
+          "saveWay": "bin",
+          "eventField": [
+           "device",
+           "adkey"
+          ],
+          "defaultValue": "id_1675507051390_30",
+          "originValue": ""
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "KEY_AD_NUM0",
+            "value": "id_1675507051390_30"
+           },
+           {
+            "label": "KEY_AD_NUM1",
+            "value": "id_1675507051910_32"
+           },
+           {
+            "label": "KEY_AD_NUM2",
+            "value": "id_1675507052463_34"
+           },
+           {
+            "label": "KEY_AD_NUM3",
+            "value": "id_1675507052991_36"
+           },
+           {
+            "label": "KEY_AD_NUM4",
+            "value": "id_1675507053703_38"
+           },
+           {
+            "label": "KEY_AD_NUM5",
+            "value": "id_1675858366684_1"
+           },
+           {
+            "label": "KEY_AD_NUM6",
+            "value": "id_1675858369587_3"
+           },
+           {
+            "label": "KEY_AD_NUM7",
+            "value": "id_1675858370563_5"
+           },
+           {
+            "label": "KEY_AD_NUM8",
+            "value": "id_1675858371315_7"
+           },
+           {
+            "label": "KEY_AD_NUM9",
+            "value": "id_1675858371979_9"
+           },
+           {
+            "label": "KEY_AD_NUM10",
+            "value": "id_1675858372582_11"
+           },
+           {
+            "label": "KEY_AD_NUM11",
+            "value": "id_1675858373116_13"
+           },
+           {
+            "label": "KEY_AD_NUM12",
+            "value": "id_1675858373643_15"
+           },
+           {
+            "label": "KEY_AD_NUM13",
+            "value": "id_1675858374443_17"
+           },
+           {
+            "label": "KEY_AD_NUM14",
+            "value": "id_1675858375627_19"
+           },
+           {
+            "label": "KEY_AD_NUM15",
+            "value": "id_1675858376955_21"
+           },
+           {
+            "label": "KEY_AD_NUM16",
+            "value": "id_1675858377659_23"
+           },
+           {
+            "label": "KEY_AD_NUM17",
+            "value": "id_1675858378339_25"
+           },
+           {
+            "label": "KEY_AD_NUM18",
+            "value": "id_1675858379010_27"
+           },
+           {
+            "label": "KEY_AD_NUM19",
+            "value": "id_1675858379667_29"
+           }
+          ]
+         },
+         "placeholder": "请选择按键",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "id": "id_1779972085302_15",
+         "__vModel__": "field255",
+         "searchSource": true
+        },
+        {
+         "__config__": {
+          "label": "电阻值",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": null,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 12,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "16",
+           "1"
+          ],
+          "formId": 256,
+          "renderKey": "2561779972085302",
+          "saveWay": "bin",
+          "defaultValue": 0,
+          "tip": "例：6.8k电阻请填写68，22k请填写220",
+          "originValue": 0,
+          "eventField": []
+         },
+         "placeholder": "电阻值",
+         "step": 1,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1779972085302_16",
+         "__vModel__": "field256",
+         "min": 0
+        }
+       ],
+       "eventField": [],
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1779972085302_14"
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_234",
+       "enableUuid": "",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 234,
+       "renderKey": "2341675685996264",
+       "children": [
+        {
+         "__config__": {
+          "label": "按键",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 12,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 235,
+          "renderKey": "2351675686021826",
+          "paddingLeft": "40px",
+          "saveWay": "bin",
+          "eventField": [
+           "device",
+           "adkey"
+          ],
+          "defaultValue": "id_1675507051910_32",
+          "originValue": "id_1675507051910_32"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "KEY_AD_NUM0",
+            "value": "id_1675507051390_30"
+           },
+           {
+            "label": "KEY_AD_NUM1",
+            "value": "id_1675507051910_32"
+           },
+           {
+            "label": "KEY_AD_NUM2",
+            "value": "id_1675507052463_34"
+           },
+           {
+            "label": "KEY_AD_NUM3",
+            "value": "id_1675507052991_36"
+           },
+           {
+            "label": "KEY_AD_NUM4",
+            "value": "id_1675507053703_38"
+           },
+           {
+            "label": "KEY_AD_NUM5",
+            "value": "id_1675858366684_1"
+           },
+           {
+            "label": "KEY_AD_NUM6",
+            "value": "id_1675858369587_3"
+           },
+           {
+            "label": "KEY_AD_NUM7",
+            "value": "id_1675858370563_5"
+           },
+           {
+            "label": "KEY_AD_NUM8",
+            "value": "id_1675858371315_7"
+           },
+           {
+            "label": "KEY_AD_NUM9",
+            "value": "id_1675858371979_9"
+           },
+           {
+            "label": "KEY_AD_NUM10",
+            "value": "id_1675858372582_11"
+           },
+           {
+            "label": "KEY_AD_NUM11",
+            "value": "id_1675858373116_13"
+           },
+           {
+            "label": "KEY_AD_NUM12",
+            "value": "id_1675858373643_15"
+           },
+           {
+            "label": "KEY_AD_NUM13",
+            "value": "id_1675858374443_17"
+           },
+           {
+            "label": "KEY_AD_NUM14",
+            "value": "id_1675858375627_19"
+           },
+           {
+            "label": "KEY_AD_NUM15",
+            "value": "id_1675858376955_21"
+           },
+           {
+            "label": "KEY_AD_NUM16",
+            "value": "id_1675858377659_23"
+           },
+           {
+            "label": "KEY_AD_NUM17",
+            "value": "id_1675858378339_25"
+           },
+           {
+            "label": "KEY_AD_NUM18",
+            "value": "id_1675858379010_27"
+           },
+           {
+            "label": "KEY_AD_NUM19",
+            "value": "id_1675858379667_29"
+           }
+          ]
+         },
+         "placeholder": "请选择按键",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "id": "id_1675686021826_8",
+         "__vModel__": "field235",
+         "searchSource": true
+        },
+        {
+         "__config__": {
+          "label": "电阻值",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": null,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 12,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "16",
+           "1"
+          ],
+          "formId": 236,
+          "renderKey": "2361675686043031",
+          "saveWay": "bin",
+          "defaultValue": 51,
+          "tip": "例：6.8k电阻请填写68，22k请填写220",
+          "originValue": 0
+         },
+         "placeholder": "电阻值",
+         "step": 1,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1675686043031_9",
+         "__vModel__": "field236",
+         "min": 0
+        }
+       ],
+       "eventField": [],
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1675685996264_7"
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_723",
+       "enableUuid": "",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 723,
+       "renderKey": "7231676011813575",
+       "children": [
+        {
+         "__config__": {
+          "label": "按键",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 12,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 724,
+          "renderKey": "7241676011813575",
+          "paddingLeft": "40px",
+          "saveWay": "bin",
+          "eventField": [
+           "device",
+           "adkey"
+          ],
+          "defaultValue": "id_1675507052463_34",
+          "originValue": "id_1675507052463_34"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "KEY_AD_NUM0",
+            "value": "id_1675507051390_30"
+           },
+           {
+            "label": "KEY_AD_NUM1",
+            "value": "id_1675507051910_32"
+           },
+           {
+            "label": "KEY_AD_NUM2",
+            "value": "id_1675507052463_34"
+           },
+           {
+            "label": "KEY_AD_NUM3",
+            "value": "id_1675507052991_36"
+           },
+           {
+            "label": "KEY_AD_NUM4",
+            "value": "id_1675507053703_38"
+           },
+           {
+            "label": "KEY_AD_NUM5",
+            "value": "id_1675858366684_1"
+           },
+           {
+            "label": "KEY_AD_NUM6",
+            "value": "id_1675858369587_3"
+           },
+           {
+            "label": "KEY_AD_NUM7",
+            "value": "id_1675858370563_5"
+           },
+           {
+            "label": "KEY_AD_NUM8",
+            "value": "id_1675858371315_7"
+           },
+           {
+            "label": "KEY_AD_NUM9",
+            "value": "id_1675858371979_9"
+           },
+           {
+            "label": "KEY_AD_NUM10",
+            "value": "id_1675858372582_11"
+           },
+           {
+            "label": "KEY_AD_NUM11",
+            "value": "id_1675858373116_13"
+           },
+           {
+            "label": "KEY_AD_NUM12",
+            "value": "id_1675858373643_15"
+           },
+           {
+            "label": "KEY_AD_NUM13",
+            "value": "id_1675858374443_17"
+           },
+           {
+            "label": "KEY_AD_NUM14",
+            "value": "id_1675858375627_19"
+           },
+           {
+            "label": "KEY_AD_NUM15",
+            "value": "id_1675858376955_21"
+           },
+           {
+            "label": "KEY_AD_NUM16",
+            "value": "id_1675858377659_23"
+           },
+           {
+            "label": "KEY_AD_NUM17",
+            "value": "id_1675858378339_25"
+           },
+           {
+            "label": "KEY_AD_NUM18",
+            "value": "id_1675858379010_27"
+           },
+           {
+            "label": "KEY_AD_NUM19",
+            "value": "id_1675858379667_29"
+           }
+          ]
+         },
+         "placeholder": "请选择按键",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "id": "id_1676011813575_9",
+         "__vModel__": "field724",
+         "searchSource": true
+        },
+        {
+         "__config__": {
+          "label": "电阻值",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": null,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 12,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "16",
+           "1"
+          ],
+          "formId": 725,
+          "renderKey": "7251676011813575",
+          "saveWay": "bin",
+          "defaultValue": 100,
+          "tip": "例：6.8k电阻请填写68，22k请填写220",
+          "originValue": 0
+         },
+         "placeholder": "电阻值",
+         "step": 1,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1676011813575_10",
+         "__vModel__": "field725",
+         "min": 0
+        }
+       ],
+       "eventField": [],
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1676011813575_8",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_818",
+       "enableUuid": "",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 818,
+       "renderKey": "8181783300602764",
+       "children": [
+        {
+         "__config__": {
+          "label": "按键",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 12,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 819,
+          "renderKey": "8191783300602764",
+          "paddingLeft": "40px",
+          "saveWay": "bin",
+          "eventField": [
+           "device",
+           "adkey"
+          ],
+          "defaultValue": "id_1675507052991_36",
+          "originValue": ""
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "KEY_AD_NUM0",
+            "value": "id_1675507051390_30"
+           },
+           {
+            "label": "KEY_AD_NUM1",
+            "value": "id_1675507051910_32"
+           },
+           {
+            "label": "KEY_AD_NUM2",
+            "value": "id_1675507052463_34"
+           },
+           {
+            "label": "KEY_AD_NUM3",
+            "value": "id_1675507052991_36"
+           },
+           {
+            "label": "KEY_AD_NUM4",
+            "value": "id_1675507053703_38"
+           },
+           {
+            "label": "KEY_AD_NUM5",
+            "value": "id_1675858366684_1"
+           },
+           {
+            "label": "KEY_AD_NUM6",
+            "value": "id_1675858369587_3"
+           },
+           {
+            "label": "KEY_AD_NUM7",
+            "value": "id_1675858370563_5"
+           },
+           {
+            "label": "KEY_AD_NUM8",
+            "value": "id_1675858371315_7"
+           },
+           {
+            "label": "KEY_AD_NUM9",
+            "value": "id_1675858371979_9"
+           },
+           {
+            "label": "KEY_AD_NUM10",
+            "value": "id_1675858372582_11"
+           },
+           {
+            "label": "KEY_AD_NUM11",
+            "value": "id_1675858373116_13"
+           },
+           {
+            "label": "KEY_AD_NUM12",
+            "value": "id_1675858373643_15"
+           },
+           {
+            "label": "KEY_AD_NUM13",
+            "value": "id_1675858374443_17"
+           },
+           {
+            "label": "KEY_AD_NUM14",
+            "value": "id_1675858375627_19"
+           },
+           {
+            "label": "KEY_AD_NUM15",
+            "value": "id_1675858376955_21"
+           },
+           {
+            "label": "KEY_AD_NUM16",
+            "value": "id_1675858377659_23"
+           },
+           {
+            "label": "KEY_AD_NUM17",
+            "value": "id_1675858378339_25"
+           },
+           {
+            "label": "KEY_AD_NUM18",
+            "value": "id_1675858379010_27"
+           },
+           {
+            "label": "KEY_AD_NUM19",
+            "value": "id_1675858379667_29"
+           }
+          ]
+         },
+         "placeholder": "请选择按键",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "id": "id_1783300602764_1",
+         "__vModel__": "field819",
+         "searchSource": true
+        },
+        {
+         "__config__": {
+          "label": "电阻值",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": null,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 12,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "16",
+           "1"
+          ],
+          "formId": 820,
+          "renderKey": "8201783300602764",
+          "saveWay": "bin",
+          "defaultValue": 200,
+          "tip": "例：6.8k电阻请填写68，22k请填写220",
+          "originValue": 0
+         },
+         "placeholder": "电阻值",
+         "step": 1,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1783300602764_2",
+         "__vModel__": "field820",
+         "min": 0
+        }
+       ],
+       "eventField": [],
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1783300602764_0",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_821",
+       "enableUuid": "",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 821,
+       "renderKey": "8211783300607386",
+       "children": [
+        {
+         "__config__": {
+          "label": "按键",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 12,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 822,
+          "renderKey": "8221783300607386",
+          "paddingLeft": "40px",
+          "saveWay": "bin",
+          "eventField": [
+           "device",
+           "adkey"
+          ],
+          "defaultValue": "id_1675507053703_38",
+          "originValue": ""
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "KEY_AD_NUM0",
+            "value": "id_1675507051390_30"
+           },
+           {
+            "label": "KEY_AD_NUM1",
+            "value": "id_1675507051910_32"
+           },
+           {
+            "label": "KEY_AD_NUM2",
+            "value": "id_1675507052463_34"
+           },
+           {
+            "label": "KEY_AD_NUM3",
+            "value": "id_1675507052991_36"
+           },
+           {
+            "label": "KEY_AD_NUM4",
+            "value": "id_1675507053703_38"
+           },
+           {
+            "label": "KEY_AD_NUM5",
+            "value": "id_1675858366684_1"
+           },
+           {
+            "label": "KEY_AD_NUM6",
+            "value": "id_1675858369587_3"
+           },
+           {
+            "label": "KEY_AD_NUM7",
+            "value": "id_1675858370563_5"
+           },
+           {
+            "label": "KEY_AD_NUM8",
+            "value": "id_1675858371315_7"
+           },
+           {
+            "label": "KEY_AD_NUM9",
+            "value": "id_1675858371979_9"
+           },
+           {
+            "label": "KEY_AD_NUM10",
+            "value": "id_1675858372582_11"
+           },
+           {
+            "label": "KEY_AD_NUM11",
+            "value": "id_1675858373116_13"
+           },
+           {
+            "label": "KEY_AD_NUM12",
+            "value": "id_1675858373643_15"
+           },
+           {
+            "label": "KEY_AD_NUM13",
+            "value": "id_1675858374443_17"
+           },
+           {
+            "label": "KEY_AD_NUM14",
+            "value": "id_1675858375627_19"
+           },
+           {
+            "label": "KEY_AD_NUM15",
+            "value": "id_1675858376955_21"
+           },
+           {
+            "label": "KEY_AD_NUM16",
+            "value": "id_1675858377659_23"
+           },
+           {
+            "label": "KEY_AD_NUM17",
+            "value": "id_1675858378339_25"
+           },
+           {
+            "label": "KEY_AD_NUM18",
+            "value": "id_1675858379010_27"
+           },
+           {
+            "label": "KEY_AD_NUM19",
+            "value": "id_1675858379667_29"
+           }
+          ]
+         },
+         "placeholder": "请选择按键",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "id": "id_1783300607386_4",
+         "__vModel__": "field822",
+         "searchSource": true
+        },
+        {
+         "__config__": {
+          "label": "电阻值",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": null,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 12,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "16",
+           "1"
+          ],
+          "formId": 823,
+          "renderKey": "8231783300607386",
+          "saveWay": "bin",
+          "defaultValue": 330,
+          "tip": "例：6.8k电阻请填写68，22k请填写220",
+          "originValue": 0
+         },
+         "placeholder": "电阻值",
+         "step": 1,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1783300607386_5",
+         "__vModel__": "field823",
+         "min": 0
+        }
+       ],
+       "eventField": [],
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1783300607386_3",
+      "fromTemplate": true
+     }
+    ],
+    "eventField": [],
+    "saveWay": "bin",
+    "uuid": "523",
+    "disable": false
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "400px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1675685028769_0"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "旋转编码器配置",
+    "showComponentName": true,
+    "dataType": [],
+    "template": "{\"__config__\":{\"layout\":\"rowFormItem\",\"tag\":\"group\",\"tagIcon\":\"row\",\"componentName\":\"row_248\",\"showComponentName\":false,\"dataType\":[],\"template\":\"\",\"span\":24,\"formId\":248,\"renderKey\":\"2481779972041318\",\"children\":[{\"__config__\":{\"label\":\"QDEC\",\"showLabel\":true,\"labelWidth\":50,\"tag\":\"el-select\",\"tagIcon\":\"select\",\"layout\":\"colFormItem\",\"span\":5,\"required\":false,\"regList\":[],\"changeTag\":true,\"searchSource\":false,\"dataType\":[\"16\",\"string\"],\"formId\":249,\"renderKey\":\"2491779972041318\",\"eventField\":[\"device\",\"qdec\"],\"saveWay\":\"bin\",\"defaultValue\":\"id_1779972705038_19\",\"originValue\":\"id_1779972705038_19\"},\"__slot__\":{\"options\":[{\"label\":\"KEY_QDEC_NUM0\",\"value\":\"id_1779972705038_19\"},{\"label\":\"KEY_QDEC_NUM1\",\"value\":\"id_1779972739573_21\"},{\"label\":\"KEY_QDEC_NUM2\",\"value\":\"id_1779972740631_23\"}]},\"placeholder\":\"请选择QDEC\",\"style\":{\"width\":\"100%\"},\"clearable\":true,\"disabled\":false,\"filterable\":false,\"multiple\":false,\"__vModel__\":\"field249\",\"searchSource\":true,\"id\":\"id_1779972041318_9\"},{\"__config__\":{\"label\":\"IO_A\",\"showLabel\":true,\"labelWidth\":40,\"tag\":\"el-select\",\"tagIcon\":\"select\",\"layout\":\"colFormItem\",\"span\":5,\"required\":false,\"regList\":[],\"changeTag\":true,\"searchSource\":false,\"dataType\":[\"16\",\"string\"],\"formId\":250,\"renderKey\":\"2501779972041318\",\"eventField\":[\"device\",\"gpio\"],\"saveWay\":\"bin\",\"defaultValue\":\"IO_PORTE_01\",\"originValue\":\"IO_PORTE_01\",\"paddingLeft\":\"\"},\"__slot__\":{\"options\":[]},\"placeholder\":\"请选择IO_A\",\"style\":{\"width\":\"100%\"},\"clearable\":true,\"disabled\":false,\"filterable\":false,\"multiple\":false,\"__vModel__\":\"field250\",\"searchSource\":true,\"id\":\"id_1779972041318_10\"},{\"__config__\":{\"label\":\"IO_B\",\"showLabel\":true,\"labelWidth\":40,\"tag\":\"el-select\",\"tagIcon\":\"select\",\"layout\":\"colFormItem\",\"span\":5,\"required\":false,\"regList\":[],\"changeTag\":true,\"searchSource\":false,\"dataType\":[\"16\",\"string\"],\"formId\":257,\"renderKey\":\"2571779972348711\",\"eventField\":[\"device\",\"gpio\"],\"saveWay\":\"bin\",\"defaultValue\":\"IO_PORTE_02\",\"originValue\":\"IO_PORTE_02\",\"paddingLeft\":\"\"},\"__slot__\":{\"options\":[]},\"placeholder\":\"请选择IO_B\",\"style\":{\"width\":\"100%\"},\"clearable\":true,\"disabled\":false,\"filterable\":false,\"multiple\":false,\"__vModel__\":\"field257\",\"searchSource\":true,\"id\":\"id_1779972348711_17\"}],\"saveWay\":\"bin\",\"uuid\":\"100\",\"paddingLeft\":\"40px\",\"eventField\":[]},\"type\":\"default\",\"justify\":\"start\",\"align\":\"top\",\"style\":{\"height\":\"60px\",\"paddingLeft\":\"0px\"},\"id\":\"id_1779972041318_8\",\"fromTemplate\":true}",
+    "span": 24,
+    "formId": 247,
+    "renderKey": "2471779972041318",
+    "children": [
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_248",
+       "showComponentName": false,
+       "dataType": [],
+       "template": "",
+       "span": 24,
+       "formId": 248,
+       "renderKey": "2481779972041318",
+       "children": [
+        {
+         "__config__": {
+          "label": "QDEC",
+          "showLabel": true,
+          "labelWidth": 50,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 249,
+          "renderKey": "2491779972041318",
+          "eventField": [
+           "device",
+           "qdec"
+          ],
+          "saveWay": "bin",
+          "defaultValue": "id_1779972705038_19",
+          "originValue": "id_1779972705038_19"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "KEY_QDEC_NUM0",
+            "value": "id_1779972705038_19"
+           },
+           {
+            "label": "KEY_QDEC_NUM1",
+            "value": "id_1779972739573_21"
+           },
+           {
+            "label": "KEY_QDEC_NUM2",
+            "value": "id_1779972740631_23"
+           },
+           {
+            "label": "KEY_QDEC_NUM3",
+            "value": "id_1779972743974_25"
+           },
+           {
+            "label": "KEY_QDEC_NUM4",
+            "value": "id_1779972744549_27"
+           }
+          ]
+         },
+         "placeholder": "请选择QDEC",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field249",
+         "searchSource": true,
+         "id": "id_1779972041318_9"
+        },
+        {
+         "__config__": {
+          "label": "IO_A",
+          "showLabel": true,
+          "labelWidth": 40,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 250,
+          "renderKey": "2501779972041318",
+          "eventField": [
+           "device",
+           "gpio"
+          ],
+          "saveWay": "bin",
+          "defaultValue": "IO_PORTE_01",
+          "originValue": "IO_PORTE_01",
+          "paddingLeft": ""
+         },
+         "__slot__": {
+          "options": []
+         },
+         "placeholder": "请选择IO_A",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field250",
+         "searchSource": true,
+         "id": "id_1779972041318_10"
+        },
+        {
+         "__config__": {
+          "label": "IO_B",
+          "showLabel": true,
+          "labelWidth": 40,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "16",
+           "string"
+          ],
+          "formId": 257,
+          "renderKey": "2571779972348711",
+          "eventField": [
+           "device",
+           "gpio"
+          ],
+          "saveWay": "bin",
+          "defaultValue": "IO_PORTE_02",
+          "originValue": "IO_PORTE_02",
+          "paddingLeft": ""
+         },
+         "__slot__": {
+          "options": []
+         },
+         "placeholder": "请选择IO_B",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field257",
+         "searchSource": true,
+         "id": "id_1779972348711_17"
+        }
+       ],
+       "saveWay": "bin",
+       "uuid": "100",
+       "paddingLeft": "40px",
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1779972041318_8",
+      "fromTemplate": true
+     }
+    ],
+    "saveWay": "bin",
+    "uuid": "533",
+    "eventField": [],
+    "enableUuid": "TCFG_QDEC_ENABLE",
+    "disable": true
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "60px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1779972041318_7"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "触摸按键配置",
+    "showComponentName": true,
+    "dataType": [],
+    "template": "",
+    "span": 24,
+    "formId": 106,
+    "renderKey": "1061785485346117",
+    "children": [
+     {
+      "__config__": {
+       "label": "触摸按键说明：",
+       "labelWidth": 120,
+       "showLabel": true,
+       "changeTag": true,
+       "tag": "el-input",
+       "tagIcon": "input",
+       "defaultValue": "具体IO在PMC工程中配置",
+       "required": false,
+       "layout": "colFormItem",
+       "span": 13,
+       "regList": [],
+       "status": 0,
+       "dataType": [
+        "string"
+       ],
+       "formId": 408,
+       "renderKey": "4081788406389269",
+       "eventField": [],
+       "formItemWidth": "",
+       "originValue": "具体IO在PMC工程中配置"
+      },
+      "__slot__": {
+       "prepend": "",
+       "append": ""
+      },
+      "placeholder": "请输入触摸按键说明：",
+      "style": {
+       "width": "90%"
+      },
+      "clearable": true,
+      "prefix-icon": "",
+      "suffix-icon": "",
+      "maxlength": null,
+      "show-word-limit": false,
+      "readonly": false,
+      "disabled": false,
+      "id": "id_1788406389269_0",
+      "__vModel__": "field408"
+     }
+    ],
+    "saveWay": "macro",
+    "uuid": "533",
+    "eventField": [],
+    "enableUuid": "TCFG_LPTOUCH_ENABLE",
+    "disable": true
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "60px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1785485346117_5"
+  }
+ ],
+ "size": "small",
+ "labelPosition": "right",
+ "labelWidth": 100,
+ "gutter": 15,
+ "disabled": false,
+ "span": 6,
+ "maxFormId": 862,
+ "version": {
+  "code": 1,
+  "tool": "4.4.0"
+ }
+}

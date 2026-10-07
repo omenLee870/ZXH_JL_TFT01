@@ -1,0 +1,465 @@
+{
+ "uuid": "1",
+ "enable": true,
+ "current": "tone_zh",
+ "group": [
+  {
+   "title": "tone_en",
+   "configName": "TCFG_TONE_EN_ENABLE",
+   "files": [
+    {
+     "name": "数字0",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\0.mp3",
+     "default": true,
+     "enable": true,
+     "outputName": "0",
+     "format": {
+      "value": "wtg"
+     },
+     "size": 910
+    },
+    {
+     "name": "数字1",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\1.mp3",
+     "default": true,
+     "enable": true,
+     "outputName": "1",
+     "format": {
+      "value": "wtg"
+     },
+     "size": 760
+    },
+    {
+     "name": "数字2",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\2.mp3",
+     "outputName": "2",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 720
+    },
+    {
+     "name": "数字3",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\3.mp3",
+     "outputName": "3",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 740
+    },
+    {
+     "name": "数字4",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\4.mp3",
+     "outputName": "4",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 840
+    },
+    {
+     "name": "数字5",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\5.mp3",
+     "outputName": "5",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 620
+    },
+    {
+     "name": "数字6",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\6.mp3",
+     "outputName": "6",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1000
+    },
+    {
+     "name": "数字7",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\7.mp3",
+     "outputName": "7",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 960
+    },
+    {
+     "name": "数字8",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\8.mp3",
+     "outputName": "8",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 670
+    },
+    {
+     "name": "数字9",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\9.mp3",
+     "outputName": "9",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 760
+    },
+    {
+     "name": "开机",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\power_on.mp3",
+     "outputName": "power_on",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 980
+    },
+    {
+     "name": "关机",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\power_off.mp3",
+     "outputName": "power_off",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1150
+    },
+    {
+     "name": "低电",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\low_power.mp3",
+     "outputName": "low_power",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1120
+    },
+    {
+     "name": "最大音量",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\vol_max.mp3",
+     "outputName": "vol_max",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1600
+    },
+    {
+     "name": "连接成功",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\connect.mp3",
+     "outputName": "bt_conn",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 980
+    },
+    {
+     "name": "连接断开",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\disconnect.mp3",
+     "outputName": "bt_dconn",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1220
+    },
+    {
+     "name": "响铃",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\ring.mp3",
+     "outputName": "ring",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 2970
+    },
+    {
+     "name": "默认",
+     "path": "%TOOL_PATH%\\resource\\提示音\\normal.sin",
+     "outputName": "normal",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "sin"
+     },
+     "size": 20
+    },
+    {
+     "name": "bt模式",
+     "path": "%TOOL_PATH%\\resource\\提示音\\英文\\bt.mp3",
+     "outputName": "bt",
+     "format": {
+      "value": "wtg"
+     },
+     "enable": true,
+     "size": 1360
+    },
+    {
+     "name": "按键音",
+     "path": "%TOOL_PATH%\\resource\\提示音\\key_tone.sin",
+     "outputName": "key_tone",
+     "format": {
+      "value": "sin"
+     },
+     "size": 20
+    }
+   ],
+   "enableOutput": 1,
+   "size": 19400,
+   "isOpen": true
+  },
+  {
+   "title": "tone_zh",
+   "configName": "TCFG_TONE_ZH_ENABLE",
+   "files": [
+    {
+     "name": "数字0",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\0.mp3",
+     "default": true,
+     "enable": true,
+     "outputName": "0",
+     "format": {
+      "value": "wtg"
+     },
+     "size": 970
+    },
+    {
+     "name": "数字1",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\1.mp3",
+     "default": true,
+     "enable": true,
+     "outputName": "1",
+     "format": {
+      "value": "wtg"
+     },
+     "size": 860
+    },
+    {
+     "name": "数字2",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\2.mp3",
+     "outputName": "2",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1000
+    },
+    {
+     "name": "数字3",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\3.mp3",
+     "outputName": "3",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 860
+    },
+    {
+     "name": "数字4",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\4.mp3",
+     "outputName": "4",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 900
+    },
+    {
+     "name": "数字5",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\5.mp3",
+     "outputName": "5",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1000
+    },
+    {
+     "name": "数字6",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\6.mp3",
+     "outputName": "6",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 930
+    },
+    {
+     "name": "数字7",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\7.mp3",
+     "outputName": "7",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 970
+    },
+    {
+     "name": "数字8",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\8.mp3",
+     "outputName": "8",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 860
+    },
+    {
+     "name": "数字9",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\9.mp3",
+     "outputName": "9",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 860
+    },
+    {
+     "name": "开机",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\power_on.mp3",
+     "outputName": "power_on",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 790
+    },
+    {
+     "name": "关机",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\power_off.mp3",
+     "outputName": "power_off",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 750
+    },
+    {
+     "name": "低电",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\low_power.mp3",
+     "outputName": "low_power",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 970
+    },
+    {
+     "name": "最大音量",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\vol_max.mp3",
+     "outputName": "vol_max",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1440
+    },
+    {
+     "name": "连接成功",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\bt_conn.mp3",
+     "outputName": "bt_conn",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1800
+    },
+    {
+     "name": "连接断开",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\bt_dconn.mp3",
+     "outputName": "bt_dconn",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "wtg"
+     },
+     "size": 1870
+    },
+    {
+     "name": "响铃",
+     "path": "%TOOL_PATH%\\resource\\提示音\\ring.sin",
+     "outputName": "ring",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "sin"
+     },
+     "size": 36
+    },
+    {
+     "name": "默认",
+     "path": "%TOOL_PATH%\\resource\\提示音\\normal.sin",
+     "outputName": "normal",
+     "default": true,
+     "enable": true,
+     "format": {
+      "value": "sin"
+     },
+     "size": 20
+    },
+    {
+     "name": "按键音",
+     "path": "%TOOL_PATH%\\resource\\提示音\\key_tone.sin",
+     "outputName": "key_tone",
+     "default": true,
+     "enable": false,
+     "format": {
+      "value": "sin"
+     },
+     "size": 20
+    },
+    {
+     "name": "bt模式",
+     "path": "%TOOL_PATH%\\resource\\提示音\\soundbox\\bt.mp3",
+     "outputName": "bt",
+     "format": {
+      "value": "wtg"
+     },
+     "enable": true,
+     "size": 1360
+    }
+   ],
+   "enableOutput": 1,
+   "size": 18266,
+   "isOpen": true
+  }
+ ],
+ "version": {
+  "code": 1,
+  "tool": "4.4.0"
+ }
+}

@@ -1,0 +1,142 @@
+{
+ "name": "tft",
+ "type": "视频",
+ "sdk": "dashboard",
+ "singleSeries": false,
+ "chip": "JL380N",
+ "version": "1.0.0",
+ "ingoreConfig": false,
+ "pack": "JL380N-DASHBOARD",
+ "patch": {
+  "title": "1.0.0-beta.4",
+  "sn": 0.0404,
+  "relateVersion": ""
+ },
+ "specialPatchKey": "",
+ "projectType": "NormalProject",
+ "tabform": [
+  {
+   "type": 1,
+   "fileName": "src\\板级配置.json",
+   "binName": "boardcfg.bin",
+   "showName": "板级配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\功能配置.json",
+   "binName": "modecfg.bin",
+   "showName": "功能配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\按键配置.json",
+   "binName": "keycfg.bin",
+   "showName": "按键配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\电源配置.json",
+   "binName": "powercfg.bin",
+   "showName": "电源配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\GUI配置.json",
+   "binName": "uicfg.bin",
+   "showName": "GUI配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\SENSOR配置.json",
+   "binName": "sensorcfg.bin",
+   "showName": "SENSOR配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\蓝牙配置.json",
+   "binName": "btcfg.bin",
+   "showName": "蓝牙配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\网络配置.json",
+   "binName": "netcfg.bin",
+   "showName": "网络配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\升级配置.json",
+   "binName": "updatecfg.bin",
+   "showName": "升级配置"
+  },
+  {
+   "type": 1,
+   "fileName": "src\\音频配置.json",
+   "binName": "audiocfg.bin",
+   "showName": "音频配置"
+  },
+  {
+   "type": 3,
+   "fileName": "src\\提示音.tone",
+   "binName": "",
+   "showName": "提示音"
+  },
+  {
+   "type": 4,
+   "fileName": "src\\音频流程",
+   "binName": "stream.bin",
+   "showName": "音频流程",
+   "folder": true,
+   "files": [
+    {
+     "type": 4,
+     "fileName": "src\\音频流程\\系统模式.x6flow",
+     "binName": "stream.bin",
+     "showName": "系统模式"
+    },
+    {
+     "type": 4,
+     "fileName": "src\\音频流程\\媒体.x6flow",
+     "binName": "stream.bin",
+     "showName": "媒体"
+    },
+    {
+     "type": 4,
+     "fileName": "src\\音频流程\\蓝牙通话.x6flow",
+     "binName": "stream.bin",
+     "showName": "蓝牙通话"
+    },
+    {
+     "type": 4,
+     "fileName": "src\\音频流程\\录音.x6flow",
+     "binName": "stream.bin",
+     "showName": "录音"
+    },
+    {
+     "type": 4,
+     "fileName": "src\\音频流程\\视频.x6flow",
+     "binName": "stream.bin",
+     "showName": "视频"
+    },
+    {
+     "type": 4,
+     "fileName": "src\\音频流程\\智能语音.x6flow",
+     "binName": "stream.bin",
+     "showName": "智能语音"
+    }
+   ]
+  }
+ ],
+ "create_time": "2026-10-07T03:10:40.048Z",
+ "update_time": "2026-10-07T03:11:02.812Z",
+ "lastOpenToolVersion": "4.11.5",
+ "lastStencilFlowTime": "20260930153417",
+ "createFromBranch": "",
+ "proxyRepoid": "",
+ "versionName": "1.0.0",
+ "provider": "杰理",
+ "checkPatchTime": 0,
+ "relateVersion": "",
+ "variant": [],
+ "defaultVariant": {}
+}
