@@ -1,0 +1,16 @@
+{
+  "name": "Empty(V9)",
+  "version": "1.0.0",
+  "description": "",
+  "creator": {
+    "name": "JieLiGuiBuilder",
+    "version": "0.1.6"
+  },
+  "dependencies": {
+    "core": {
+      "title": "full(with tools)",
+      "version": "0.0.1"
+    },
+    "board": "0.0.0"
+  }
+}

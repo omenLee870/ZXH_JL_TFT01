@@ -1,0 +1,27 @@
+{
+  "id": "1pDE9r0A2yb38Xth",
+  "name": "model",
+  "model_id": "0x0001",
+  "type": "custom",
+  "desc": "",
+  "attr": [],
+  "enable": true,
+  "properties": [
+    {
+      "id": "9ENYufPtNUHczZPw",
+      "name": "prop",
+      "model_id": "0x0002",
+      "desc": "",
+      "type": "int32_t",
+      "attr": [
+        "readable",
+        "writable"
+      ],
+      "timer_enable": false,
+      "interval": 1000,
+      "default": 1,
+      "use_system": false
+    }
+  ],
+  "methods": []
+}

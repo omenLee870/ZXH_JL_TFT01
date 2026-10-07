@@ -1,0 +1,186 @@
+{
+  "id": "BsX7R8yEotpyLety",
+  "name": "br33_UI_DASHBOARD_1024x600",
+  "preview": "page_app_select",
+  "author": {
+    "company": "",
+    "username": "",
+    "email": "",
+    "url": ""
+  },
+  "size": {
+    "width": 1024,
+    "height": 600
+  },
+  "entry": "page_app_select",
+  "config": {},
+  "createTime": 1783579888227,
+  "updateTime": 1789635421645,
+  "version": "1.0.0",
+  "description": "",
+  "core": {
+    "id": "2066807775470612482",
+    "title": "LVGL_v9_CORE",
+    "version": "0.0.1",
+    "content": "<p>上传LVGL 内核</p>",
+    "projid": "2066772847936729089",
+    "origin_projid": "2066772847936729089",
+    "versionType": "Release",
+    "createTime": "2026-06-16 16:59:07",
+    "updateTime": "2026-06-16 16:59:07"
+  },
+  "template": {
+    "id": "1972179979188957186",
+    "title": "Empty(V9)",
+    "version": "0.0.1",
+    "content": "<p>LVGL9 测试模板</p>",
+    "createTime": "2025-09-28 14:02:03",
+    "updateTime": "2025-09-28 14:02:03"
+  },
+  "lvConf": {
+    "LV_HOR_RES_MAX": 0,
+    "LV_VER_RES_MAX": 0,
+    "LV_USE_MEM_MONITOR": false,
+    "LV_COLOR_DEPTH": 16,
+    "LV_COLOR_16_SWAP": false,
+    "LV_MEM_CUSTOM": false,
+    "LV_MEM_SIZE": "4096",
+    "LV_MEM_ADR": false,
+    "LV_MEM_AUTO_DEFRAG": true,
+    "LV_MEM_CUSTOM_INCLUDE": "<stdlib.h>",
+    "LV_MEM_CUSTOM_ALLOC": "malloc",
+    "LV_MEM_CUSTOM_FREE": "free",
+    "LV_USE_GPU": true,
+    "LV_USE_GPU_NXP_PXP": "~~",
+    "LV_USE_GPU_NXP_PXP_AUTO_INIT": "~~",
+    "LV_USE_GPU_NXP_VG_LITE": "~~",
+    "LV_ATTRIBUTE_MEM_ALIGN_SIZE": "~~",
+    "LV_ATTRIBUTE_MEM_ALIGN": "~~",
+    "LV_DISP_DEF_REFR_PERIOD": "60",
+    "LV_USE_PERF_MONITOR": false,
+    "LV_USE_MODEL_DEBUG": false,
+    "LV_USE_HARDWARE_SIMULATOR": false,
+    "LV_BORDER_TYPE": "rounded",
+    "LV_BORDER_RADIUS": 0,
+    "LV_BORDER_COLOR": "#eeeeee",
+    "LV_BORDER_SIMULATOR": false,
+    "LV_FS_SD_PATH": "storage/sd0/C/",
+    "LV_FS_FLASH_PATH": "storage/res_nor_mode/C/lvgl/",
+    "LV_FS_PARTITIONS": [
+      {
+        "id": "flash",
+        "name": "Flash",
+        "path": "storage/res_nor_mode/C/lvgl/"
+      },
+      {
+        "id": "sd",
+        "name": "SD",
+        "path": "storage/sd0/C/"
+      }
+    ],
+    "LV_COMMON_CODE": "",
+    "LV_SIMULATOR_CODE": "",
+    "LV_BOARD_CODE": "",
+    "LV_FONT_SOURCE": "flash",
+    "LV_IMAGE_SOURCE": "flash",
+    "LV_GIF_SOURCE": "flash",
+    "LV_LOTTIE_SOURCE": "flash",
+    "LV_VIDEO_SOURCE": "flash",
+    "LV_FONT_FORMAT": "bin",
+    "LV_IMAGE_FORMAT": "best_space_size",
+    "LV_GIF_FORMAT": "file",
+    "LV_VIDEO_FORMAT": "file",
+    "LV_LOTTIE_FORMAT": "file",
+    "LV_IMAGE_RLE_BLOCK": 0,
+    "LV_IMAGE_RLE_CLUT": 0,
+    "LV_IMAGE_RLE_YUV": 0,
+    "LV_IMAGE_COLOR_FORMAT": 3,
+    "LV_IMAGE_COLOR_SWAP": false,
+    "LV_IMAGE_STORAGE_MEDIUM": "none",
+    "LV_IMAGE_QUALITY": 80,
+    "LV_IMAGE_ALPHA_QUALITY": 90,
+    "LV_IMAGE_TABLE": true,
+    "LV_FONT_BPP": 4,
+    "LV_FONT_BIN_COMPRESSE_TYPE": "rle",
+    "LV_FONT_CARRAY_COMPRESSE_TYPE": "",
+    "LV_FONT_CUT": false,
+    "LV_FONT_USE_CUT": false,
+    "LV_FONT_SCALE_BASE": false,
+    "LV_FONT_SCALE_BASE_FONT_FAMILY": "",
+    "LV_FONT_SCALE_BASE_FONT_SIZE": 12,
+    "LV_FONT_CHAR_ROW_ALIGN": false,
+    "LV_FONT_INCLUDE_ASCII_RANGE": true,
+    "LV_FONT_INCLUDE_SYMBOL_RANGE": true
+  },
+  "projectSettings": {
+    "color_depth": 16,
+    "Optimizations": "Standard",
+    "theme": "Default",
+    "defaultFont": "MiSans_Medium",
+    "use_i18n": false,
+    "defaultLang": "zh_CN",
+    "res_mode": "normal"
+  },
+  "board": {
+    "id": "#lC6GXpoLiUG9feon",
+    "name": "br33_dashboard_1024x600",
+    "sdk": "br33",
+    "version": "1.0.0",
+    "sdk_root": "..\\sdk",
+    "res_path": "..\\sdk\\ui_res",
+    "lvgl_ui_path": "..\\..\\..\\SDK\\apps\\watch\\ui\\lvgl_ui_app\\lvgl_v9\\dashboard_1024x600_v1",
+    "dynamic_res_path": "..\\sdk\\dyn",
+    "build_script": "..\\sdk\\move_ui_res.bat",
+    "download_script": "..\\..\\..\\SDK\\apps\\watch\\board\\br33\\ui_build.bat",
+    "clear_script": "..\\..\\..\\SDK\\apps\\watch\\board\\br33\\ui_clean.bat",
+    "chip_type": "BR33",
+    "content": ""
+  },
+  "sdk": {
+    "id": "1972178903031214081",
+    "name": "Empty SDK(V9)",
+    "sdk": "Simulator",
+    "version": "0.0.1",
+    "patch": {
+      "id": "1972178903031214081",
+      "name": "原始版本",
+      "version": "0.0.0",
+      "updateTime": "2025-12-10 13:48:08"
+    },
+    "updateTime": "2025-10-10 16:56:32"
+  },
+  "screenList": [
+    {
+      "name": "page_map",
+      "type": "Standard"
+    },
+    {
+      "name": "page_music",
+      "type": "Standard"
+    },
+    {
+      "name": "page_app_select",
+      "type": "Standard"
+    },
+    {
+      "name": "page_meter",
+      "type": "Standard"
+    },
+    {
+      "name": "page_video",
+      "type": "Standard"
+    },
+    {
+      "name": "upgrade_page",
+      "type": "Standard"
+    },
+    {
+      "name": "hardware_test",
+      "type": "Standard"
+    }
+  ],
+  "lvglVersion": "9.5.0",
+  "screenAllList": [],
+  "screenGroupList": [],
+  "lvConfMd5": "d4afe4231a464e44ba6f0649795fb0ff"
+}

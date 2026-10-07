@@ -511,8 +511,8 @@
 #define TCFG_UPDATE_RESOURCE_EN                   1                // 升级资源（除代码以外的其他部分）
 #define TCFG_TEST_BOX_WIRELESS_EN                 0                // 测试盒无线升级
 #define TCFG_APP_UPDATE_EN                        0                // APP升级
-#define TCFG_CHARGESTORE_PORT                     IO_PORTA_01      // 串口通信IO
 #define TCFG_HTTP_UPDATE_ENABLE                   1                // HTTP升级
+#define TCFG_CHARGESTORE_PORT                     IO_PORTA_01      // 串口通信IO
 #endif // TCFG_UPDATE_ENABLE
 // ------------升级配置.json------------
 

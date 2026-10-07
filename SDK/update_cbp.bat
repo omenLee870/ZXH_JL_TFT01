@@ -1,0 +1,1 @@
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File update_cbp.ps1

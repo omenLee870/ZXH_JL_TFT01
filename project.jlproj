@@ -128,7 +128,8 @@
   }
  ],
  "create_time": "2026-10-07T03:10:40.048Z",
- "update_time": "2026-10-07T03:11:02.812Z",
+ "update_time": "2026-10-07T03:11:14.929Z",
+ "standardPatch": "1.0.0-beta.4",
  "lastOpenToolVersion": "4.11.5",
  "lastStencilFlowTime": "20260930153417",
  "createFromBranch": "",

@@ -10,8 +10,8 @@
 #define JLSTREAM_NODE_CFG_H
 
 // ------------提示音宏定义------------
-#define TCFG_TONE_EN_ENABLE                       1
-#define TCFG_TONE_ZH_ENABLE                       1
+#define TCFG_TONE_EN_ENABLE                       1               
+#define TCFG_TONE_ZH_ENABLE                       1               
 #define TCFG_TONE_AAC_ENABLE                      0                // AAC
 #define TCFG_TONE_F2A_ENABLE                      0                // F2A
 #define TCFG_TONE_MP3_ENABLE                      0                // MP3
@@ -170,7 +170,7 @@
 #define TCFG_FADE_IN_SILENCE_CHECK_ENABLE         1                // Fade-Silence Check
 #define TCFG_ENCODER_CHANNEL_NUM                  3                // JLDTP_TX-声道
 #define TCFG_LLNS_DNS_MODE                        0                // LLNS_DNS-Mode
-#define TCFG_REVERB_TYPE_SEL                      0                // Reverb Echo [C]-Reverb Type
+#define TCFG_REVERB_TYPE_SEL                      0                // Reverb Echo [C]-Reverb Type 
 #define TCFG_SPLIT_GAIN_FADE_ENABLE               0                // Split Gain-Fade Time
 #define TCFG_VOCAL_REMOVER_LOW_PASS_ENABLE        1                // Vocal Remover-Low Pass
 #define TCFG_VOCAL_REMOVER_HIGH_PASS_ENABLE       1                // Vocal Remover-High Pass

@@ -1,0 +1,18 @@
+{
+  "name": "",
+  "label": "",
+  "astyle": {
+    "name": "astyle",
+    "label": "astyle",
+    "options": [
+      {
+        "name": "lvgl",
+        "label": "lvgl",
+        "option": "--style=kr\n--indent=spaces=4\n--indent-classes\n--indent-switches\n--indent-cases\n--indent-preproc-block\n--indent-preproc-define\n--indent-col1-comments\n--pad-oper\n--unpad-paren\n--align-pointer=middle\n--align-reference=middle\n--convert-tabs\n--max-code-length=120\n--break-after-logical\n--break-closing-braces\n--attach-closing-while\n--min-conditional-indent=0\n--max-continuation-indent=120\n--mode=c\n--lineend=linux\n--suffix=none\n--preserve-date\n--formatted\n--ignore-exclude-errors\n--ignore-exclude-errors-x"
+      }
+    ],
+    "option": "lvgl"
+  },
+  "format": "astyle",
+  "auto_format": false
+}

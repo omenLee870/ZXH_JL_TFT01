@@ -8,16 +8,16 @@
 
 
 // ------------蓝牙配置.json------------
-const int CONFIG_A2DP_DELAY_TIME_SBC = 300; // A2DP延时SBC(msec)
-const int CONFIG_A2DP_DELAY_TIME_SBC_LO = 100; // A2DP低延时SBC(msec)
-const int CONFIG_A2DP_DELAY_TIME_AAC = 300; // A2DP延时AAC(msec)
-const int CONFIG_A2DP_DELAY_TIME_AAC_LO = 100; // A2DP低延时AAC(msec)
-const int CONFIG_A2DP_ADAPTIVE_MAX_LATENCY = 550; // A2DP自适应最大延时(msec)
-const int CONFIG_EDR_INIT_TIMEOUT = 60000; // 超时时间
+const int CONFIG_A2DP_DELAY_TIME_SBC  = 300;  //A2DP延时SBC(msec)
+const int CONFIG_A2DP_DELAY_TIME_SBC_LO  = 100;  //A2DP低延时SBC(msec)
+const int CONFIG_A2DP_DELAY_TIME_AAC  = 300;  //A2DP延时AAC(msec)
+const int CONFIG_A2DP_DELAY_TIME_AAC_LO  = 100;  //A2DP低延时AAC(msec)
+const int CONFIG_A2DP_ADAPTIVE_MAX_LATENCY  = 550;  //A2DP自适应最大延时(msec)
+const int CONFIG_EDR_INIT_TIMEOUT  = 60000;  //超时时间
 // ------------蓝牙配置.json------------
 
 // ------------升级配置.json------------
-const int CONFIG_UPDATE_STORAGE_DEV_EN = 1; // 设备升级
-const int CONFIG_UPDATE_BLE_TEST_EN = 0; // ble蓝牙升级
-const int CONFIG_UPDATE_BT_LMP_EN = 1; // edr蓝牙升级
+const int CONFIG_UPDATE_STORAGE_DEV_EN  = 1;  //设备升级
+const int CONFIG_UPDATE_BLE_TEST_EN  = 0;  //ble蓝牙升级
+const int CONFIG_UPDATE_BT_LMP_EN  = 1;  //edr蓝牙升级
 // ------------升级配置.json------------

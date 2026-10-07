@@ -1,0 +1,55 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(lvgl)
+set(CMAKE_C_STANDARD 11)#C11
+set(CMAKE_CXX_STANDARD 17)#C17
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_CXX_COMPILER_FORCED, ON)
+set(CMAKE_C_COMPILER_FORCED, ON)
+set(CMAKE_BUILD_TYPE, "Release")
+set(CMAKE_MAKE_PROGRAM, "mingw32-make.exe")
+set(CMAKE_C_COMPILER, "gcc.exe")
+set(CMAKE_CXX_COMPILER, "g++.exe")
+
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/FreeType)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/rlottie)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ffmpeg)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/../lvgl)
+# 添加libpng和libjpeg-turbo头文件路径
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/libpng)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/libjpeg-turbo)
+
+
+# 收集所有头文件
+file(GLOB_RECURSE LVGL_INC "../lvgl/src/*.h") 
+
+# 添加编译选项
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    add_compile_options(
+        -Wno-write-strings  # 禁用字符串常量转char*的警告
+        -Wno-shift-overflow # 禁用位移溢出警告
+    )
+endif()
+
+# 分别收集.c和.cpp源文件
+file(GLOB_RECURSE LVGL_C_SRC "../lvgl/src/*.c")
+file(GLOB_RECURSE LVGL_CPP_SRC "../lvgl/src/*.cpp")
+
+# 将C和C++源文件合并到一个列表
+set(LVGL_ALL_SRC ${LVGL_C_SRC} ${LVGL_CPP_SRC})
+
+# 创建库,包含所有源文件
+add_library(lvgl ${LVGL_ALL_SRC} ${LVGL_INC})
+
+# 启用C++编译
+set_target_properties(lvgl PROPERTIES
+    LINKER_LANGUAGE CXX
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
+# 链接外部库
+# target_link_libraries(lvgl ${PROJECT_SOURCE_DIR}/bin/libpng16.dll ${PROJECT_SOURCE_DIR}/bin/libjpeg-62.dll)
+target_link_libraries(lvgl libpng16.dll libjpeg-62.dll)

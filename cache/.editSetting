@@ -1,0 +1,24 @@
+{
+ "lastCheckPatchTime": 1791342675216,
+ "uiProjectDownloadChecked": true,
+ "watchUiTags": {
+  "仪表DEMO-LVGL": "1.0.3"
+ },
+ "watchUiUpdateCache": {
+  "updateMap": {
+   "仪表DEMO-LVGL": {
+    "currentTag": "1.0.3",
+    "latestTag": "1.0.3",
+    "hasUpdate": false
+   }
+  },
+  "tagOptions": {
+   "仪表DEMO-LVGL": [
+    "1.0.3",
+    "1.0.2",
+    "1.0.1",
+    "1.0.0"
+   ]
+  }
+ }
+}

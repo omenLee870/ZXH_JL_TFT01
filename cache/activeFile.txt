@@ -4,5 +4,8 @@
   "fileName": "src\\板级配置.json",
   "binName": "boardcfg.bin",
   "showName": "板级配置"
+ },
+ "currentVariant": {
+  "name": ""
  }
 }

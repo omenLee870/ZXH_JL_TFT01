@@ -1,0 +1,121 @@
+[
+  {
+    "id": "#17228506044617051",
+    "macro": "F1",
+    "value": 1,
+    "event": "key",
+    "input_type": "button",
+    "code": "\n// 实现一个定时传感器\n// let i = 0\n// const timer =setInterval(()=>{\n//   if(i>5) clearInterval(timer)\n//   i++\n//   JLHardware.send(i,'发送次数','number')\n// }, 1000)\n\n// 按键点击\nlet j = 0\nfunction click(){\n  j++\n  JLHardware.send(j,'发送次数','number')\n\n  // 点击五次取消点击发送\n  // if(j >= 5) JLHardware.off('click', click)\n}\nJLHardware.on('click', click)\n\n// 其他事件\nJLHardware.on('change', (e)=>{\n    JLHardware.send(e,'change','object')\n})\n",
+    "desc": "",
+    "options": {
+      "icon": "ChatRound"
+    },
+    "style": {
+      "type": "",
+      "size": 1,
+      "round": "circle"
+    }
+  },
+  {
+    "id": "#17406325729274635",
+    "macro": "up",
+    "value": 200,
+    "event": "key",
+    "input_type": "button",
+    "code": "\n// 实现一个定时传感器\n// let i = 0\n// const timer =setInterval(()=>{\n//   if(i>5) clearInterval(timer)\n//   i++\n//   JLHardware.send(i,'发送次数','number')\n// }, 1000)\n\n// 按键点击\nlet j = 0\nfunction click(){\n  j++\n  JLHardware.send(j,'发送次数','number')\n\n  // 点击五次取消点击发送\n  // if(j >= 5) JLHardware.off('click', click)\n}\nJLHardware.on('click', click)\n\n// 其他事件\nJLHardware.on('change', (e)=>{\n    JLHardware.send(e,'change','object')\n})\n",
+    "desc": "",
+    "options": {
+      "icon": "ArrowUpBold"
+    },
+    "style": {
+      "type": "",
+      "size": 1,
+      "round": "circle"
+    }
+  },
+  {
+    "id": "#17406327280039167",
+    "macro": "left",
+    "value": 201,
+    "event": "key",
+    "input_type": "button",
+    "code": "\n// 实现一个定时传感器\n// let i = 0\n// const timer =setInterval(()=>{\n//   if(i>5) clearInterval(timer)\n//   i++\n//   JLHardware.send(i,'发送次数','number')\n// }, 1000)\n\n// 按键点击\nlet j = 0\nfunction click(){\n  j++\n  JLHardware.send(j,'发送次数','number')\n\n  // 点击五次取消点击发送\n  // if(j >= 5) JLHardware.off('click', click)\n}\nJLHardware.on('click', click)\n\n// 其他事件\nJLHardware.on('change', (e)=>{\n    JLHardware.send(e,'change','object')\n})\n",
+    "desc": "",
+    "options": {
+      "icon": "ArrowLeftBold"
+    },
+    "style": {
+      "type": "",
+      "size": 1,
+      "round": "circle"
+    }
+  },
+  {
+    "id": "#17406327989076753",
+    "macro": "right",
+    "value": 202,
+    "event": "key",
+    "input_type": "button",
+    "code": "\n// 实现一个定时传感器\n// let i = 0\n// const timer =setInterval(()=>{\n//   if(i>5) clearInterval(timer)\n//   i++\n//   JLHardware.send(i,'发送次数','number')\n// }, 1000)\n\n// 按键点击\nlet j = 0\nfunction click(){\n  j++\n  JLHardware.send(j,'发送次数','number')\n\n  // 点击五次取消点击发送\n  // if(j >= 5) JLHardware.off('click', click)\n}\nJLHardware.on('click', click)\n\n// 其他事件\nJLHardware.on('change', (e)=>{\n    JLHardware.send(e,'change','object')\n})\n",
+    "desc": "",
+    "options": {
+      "icon": "ArrowRightBold"
+    },
+    "style": {
+      "type": "",
+      "size": 1,
+      "round": "circle"
+    }
+  },
+  {
+    "id": "#17406328283615868",
+    "macro": "down",
+    "value": 203,
+    "event": "key",
+    "input_type": "button",
+    "code": "\n// 实现一个定时传感器\n// let i = 0\n// const timer =setInterval(()=>{\n//   if(i>5) clearInterval(timer)\n//   i++\n//   JLHardware.send(i,'发送次数','number')\n// }, 1000)\n\n// 按键点击\nlet j = 0\nfunction click(){\n  j++\n  JLHardware.send(j,'发送次数','number')\n\n  // 点击五次取消点击发送\n  // if(j >= 5) JLHardware.off('click', click)\n}\nJLHardware.on('click', click)\n\n// 其他事件\nJLHardware.on('change', (e)=>{\n    JLHardware.send(e,'change','object')\n})\n",
+    "desc": "",
+    "options": {
+      "icon": "ArrowDownBold"
+    },
+    "style": {
+      "type": "",
+      "size": 1,
+      "round": "circle"
+    }
+  },
+  {
+    "id": "#17406339632696925",
+    "macro": "return",
+    "value": 204,
+    "event": "key",
+    "input_type": "button",
+    "code": "\n// 实现一个定时传感器\n// let i = 0\n// const timer =setInterval(()=>{\n//   if(i>5) clearInterval(timer)\n//   i++\n//   JLHardware.send(i,'发送次数','number')\n// }, 1000)\n\n// 按键点击\nlet j = 0\nfunction click(){\n  j++\n  JLHardware.send(j,'发送次数','number')\n\n  // 点击五次取消点击发送\n  // if(j >= 5) JLHardware.off('click', click)\n}\nJLHardware.on('click', click)\n\n// 其他事件\nJLHardware.on('change', (e)=>{\n    JLHardware.send(e,'change','object')\n})\n",
+    "desc": "",
+    "options": {
+      "icon": "DArrowLeft"
+    },
+    "style": {
+      "type": "",
+      "size": 1,
+      "round": "circle"
+    }
+  },
+  {
+    "id": "#17406451356683995",
+    "macro": "ok",
+    "value": 205,
+    "event": "key",
+    "input_type": "button",
+    "code": "\n// 实现一个定时传感器\n// let i = 0\n// const timer =setInterval(()=>{\n//   if(i>5) clearInterval(timer)\n//   i++\n//   JLHardware.send(i,'发送次数','number')\n// }, 1000)\n\n// 按键点击\nlet j = 0\nfunction click(){\n  j++\n  JLHardware.send(j,'发送次数','number')\n\n  // 点击五次取消点击发送\n  // if(j >= 5) JLHardware.off('click', click)\n}\nJLHardware.on('click', click)\n\n// 其他事件\nJLHardware.on('change', (e)=>{\n    JLHardware.send(e,'change','object')\n})\n",
+    "desc": "",
+    "options": {
+      "icon": "Pointer"
+    },
+    "style": {
+      "type": "",
+      "size": 1,
+      "round": "circle"
+    }
+  }
+]

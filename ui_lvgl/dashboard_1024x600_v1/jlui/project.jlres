@@ -1,0 +1,75 @@
+{
+  "image": {
+    "c_data": [],
+    "color_format": "true-color-alpha"
+  },
+  "image_c_array": {
+    "c_data": []
+  },
+  "font": {
+    "c_data": [
+      {
+        "id": "$MGg6OQThh8XAlqpp",
+        "name": "",
+        "font": 38,
+        "font_family": "lyrics",
+        "content": "",
+        "range": "",
+        "fs_type": "flash",
+        "font_format": "file",
+        "oldId": "$MGg6OQThh8XAlqpp",
+        "oldFont": 32
+      },
+      {
+        "id": "$94gdOGaPGcA7uMwY",
+        "name": "",
+        "font": 32,
+        "font_family": "simsun",
+        "content": "1234567890%\n正在升级，请勿断电\n升级成功！\n升级失败！",
+        "range": "",
+        "fs_type": "generated",
+        "font_format": "default",
+        "oldId": "$94gdOGaPGcA7uMwY",
+        "oldFont": 32
+      }
+    ]
+  },
+  "event": {
+    "events": [
+      {
+        "id": "$hyuqDuQ4h93sfASC",
+        "name": "res_event_music_pause_play",
+        "event_id": "0x10000",
+        "type": "custom",
+        "code": "",
+        "content": ""
+      },
+      {
+        "id": "$KwyKKsI8U9eSzOBw",
+        "name": "res_event_music_next",
+        "event_id": "0x10001",
+        "type": "custom",
+        "code": "",
+        "content": ""
+      },
+      {
+        "id": "$mY0xT9935mJqgaHu",
+        "name": "res_event_music_prev",
+        "event_id": "0x10002",
+        "type": "custom",
+        "code": "",
+        "content": ""
+      }
+    ],
+    "system_events": []
+  },
+  "gif": {
+    "c_data": []
+  },
+  "video": {
+    "c_data": []
+  },
+  "lottie": {
+    "c_data": []
+  }
+}

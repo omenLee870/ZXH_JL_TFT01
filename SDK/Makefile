@@ -1,4 +1,4 @@
-
+﻿
 # make 编译并下载
 # make VERBOSE=1 显示编译详细过程
 # make clean 清除编译临时文件
@@ -257,6 +257,11 @@ all: pre_build
 pre_build:
 	$(info +CC build/genFileList.c)
 	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P build/genFileList.c -o build/fileList.mk
+ifneq ($(wildcard build/genUIFileList.c),)
+	$(info +CC build/genUIFileList.c)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P build/genUIFileList.c >> build/fileList.mk
+	cmd /c call build/append_ui_include.bat
+endif
 
 
 clean:

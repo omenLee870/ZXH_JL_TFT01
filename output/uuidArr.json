@@ -1,0 +1,100 @@
+[
+ {
+  "uuid": "32",
+  "defaultValue": 32
+ },
+ {
+  "uuid": "256",
+  "defaultValue": 256
+ },
+ {
+  "uuid": 40,
+  "defaultValue": 40
+ },
+ {
+  "uuid": 50,
+  "defaultValue": 50
+ },
+ {
+  "uuid": 3,
+  "defaultValue": 3
+ },
+ {
+  "defaultValue": "1. uac音频参数（含UAC协议版本）修改后需要在 “设备管理器” 卸载一次，才能正常工作；\n2. 对于多数安卓（苹果）手机而言，要支持播歌、录音、通话，声音经样机输入输出（不经过手机扬声器输出，麦克风输入），最佳组合是 关闭读卡器 + USB扬声器 2ch 24bit + USB麦克风 1ch 16bit。USB扬声器可配置成16 + 24bit，手机会以24bit打开。至于采样率以及有几个采样率，则没有要求；\n3. 设备类开关不同的组合，会使USB呈现不同的Product ID，这是为了兼容Windows 7等不支持自动更新驱动的老系统。如果需要固定Product ID，要修改代码。\n以下为uac v2.0需要注意的：\n4. uac 2.0需要使能spk的多采样率以及mic的多采样率才能被正确枚举；\n5. 从Windodws 10 1703开始才支持uac 2.0，Linux则较早就支持，基于兼容性考虑，请谨慎选用；"
+ },
+ {
+  "uuid": "16",
+  "defaultValue": "16"
+ },
+ {
+  "uuid": "6",
+  "defaultValue": "6"
+ },
+ {
+  "uuid": "0",
+  "defaultValue": "0"
+ },
+ {
+  "uuid": "0x12345678",
+  "defaultValue": "0x12345678"
+ },
+ {
+  "uuid": "具体IO在PMC工程中配置",
+  "defaultValue": "具体IO在PMC工程中配置"
+ },
+ {
+  "uuid": "0",
+  "defaultValue": 0
+ },
+ {
+  "uuid": "1",
+  "defaultValue": "1"
+ },
+ {
+  "uuid": "2",
+  "defaultValue": "2"
+ },
+ {
+  "uuid": "3",
+  "defaultValue": "3"
+ },
+ {
+  "uuid": "JL380N_dashboard",
+  "defaultValue": "JL380N_dashboard"
+ },
+ {
+  "uuid": [
+   255,
+   255,
+   255,
+   255,
+   255,
+   255
+  ],
+  "defaultValue": "FF FF FF FF FF FF"
+ },
+ {
+  "uuid": "JL380N-AP",
+  "defaultValue": "JL380N-AP"
+ },
+ {
+  "uuid": "12345678",
+  "defaultValue": "12345678"
+ },
+ {
+  "uuid": "JL380N-STA",
+  "defaultValue": "JL380N-STA"
+ },
+ {
+  "uuid": "12345678",
+  "defaultValue": "12345678"
+ },
+ {
+  "uuid": "JL380N-P2P",
+  "defaultValue": "JL380N-P2P"
+ },
+ {
+  "uuid": 214,
+  "defaultValue": "SPI的GPIO配置在 板级配置->多芯片连接"
+ }
+]
