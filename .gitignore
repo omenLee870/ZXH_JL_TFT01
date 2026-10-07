@@ -1,0 +1,41 @@
+# Compiler objects and dependency files
+*.o
+*.obj
+*.o.d
+*.obj.d
+*.c.d
+*.cpp.d
+*.cxx.d
+
+# SDK object tree and generated file list
+/SDK/objs/
+/SDK/build/fileList.mk
+/SDK/cpu/br33/sdk.ld
+
+# GUI simulator workspace (recreated by JieLiGuiBuilder)
+/ui_lvgl/*/lvgl-simulator/
+
+# Local UI backups and firmware output
+/ui_backups/
+/output/
+
+# BR33 linker and download outputs; retain source UI resource packages
+/SDK/cpu/br33/tools/aac.bin
+/SDK/cpu/br33/tools/aec.bin
+/SDK/cpu/br33/tools/app.bin
+/SDK/cpu/br33/tools/d_ram_data.bin
+/SDK/cpu/br33/tools/data.bin
+/SDK/cpu/br33/tools/data_code.bin
+/SDK/cpu/br33/tools/i_ram_data_code.bin
+/SDK/cpu/br33/tools/pmc_ram_data_code.bin
+/SDK/cpu/br33/tools/psr_data_code.bin
+/SDK/cpu/br33/tools/startup_entry.bin
+/SDK/cpu/br33/tools/text.bin
+/SDK/cpu/br33/tools/user_api.bin
+/SDK/cpu/br33/tools/sdk.elf*
+/SDK/cpu/br33/tools/sdk.map
+/SDK/cpu/br33/tools/download/watch/
+
+# Reproducible disassembly and symbol listings
+/SDK/cpu/br33/tools/sdk.lst
+/SDK/cpu/br33/tools/symbol_tbl.txt

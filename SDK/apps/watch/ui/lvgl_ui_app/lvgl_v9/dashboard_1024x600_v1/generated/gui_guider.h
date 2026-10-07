@@ -236,6 +236,90 @@ typedef struct {
 	lv_timer_t *hardware_test_timer_1;
 } lv_ui_hardware_test;
 
+typedef struct {
+	// Screen chongwuyibiao
+	lv_obj_t *chongwuyibiao;
+	bool      chongwuyibiao_del;
+	lv_obj_t *chongwuyibiao_caodirongqi;
+	lv_obj_t *chongwuyibiao_caodi;
+	lv_obj_t *chongwuyibiao_yun4;
+	lv_obj_t *chongwuyibiao_yun2;
+	lv_obj_t *chongwuyibiao_yun1;
+	lv_obj_t *chongwuyibiao_yun3;
+	lv_obj_t *chongwuyibiao_xiaogou;
+	lv_obj_t *chongwuyibiao_dianliangtiao;
+	lv_obj_t *chongwuyibiao_zuocedengtiao;
+	lv_obj_t *chongwuyibiao_youcedengtiao;
+	lv_obj_t *chongwuyibiao_dianchirongqi;
+	lv_obj_t *chongwuyibiao_dianchizhuti;
+	lv_obj_t *chongwuyibiao_dianliangshuzi;
+	lv_obj_t *chongwuyibiao_dianchizhengji;
+	lv_obj_t *chongwuyibiao_chesushuzi;
+	lv_obj_t *chongwuyibiao_chesudanwei;
+	lv_obj_t *chongwuyibiao_shijian;
+	lv_obj_t *chongwuyibiao_wendu;
+	lv_obj_t *chongwuyibiao_riqixingqi;
+	lv_obj_t *chongwuyibiao_lichengbiaoti;
+	lv_obj_t *chongwuyibiao_lichengshuzi;
+	lv_obj_t *chongwuyibiao_lichengdanwei;
+	lv_obj_t *chongwuyibiao_jiashimoshi;
+	lv_obj_t *chongwuyibiao_guzhangxinxi;
+	lv_obj_t *chongwuyibiao_tianqitubiao;
+	lv_obj_t *chongwuyibiao_taiyangzhongxin;
+	lv_obj_t *chongwuyibiao_taiyangguangmang_1;
+	lv_obj_t *chongwuyibiao_taiyangguangmang_2;
+	lv_obj_t *chongwuyibiao_taiyangguangmang_3;
+	lv_obj_t *chongwuyibiao_taiyangguangmang_4;
+	lv_obj_t *chongwuyibiao_taiyangguangmang_5;
+	lv_obj_t *chongwuyibiao_taiyangguangmang_6;
+	lv_obj_t *chongwuyibiao_taiyangguangmang_7;
+	lv_obj_t *chongwuyibiao_taiyangguangmang_8;
+	lv_obj_t *chongwuyibiao_zuozhuanxiang;
+	lv_obj_t *chongwuyibiao_zuozhuanxiangguangyunhengxian;
+	lv_obj_t *chongwuyibiao_zuozhuanxiangguangyunjiantou;
+	lv_obj_t *chongwuyibiao_zuozhuanxianghengxian;
+	lv_obj_t *chongwuyibiao_zuozhuanxiangjiantou;
+	lv_obj_t *chongwuyibiao_youzhuanxiang;
+	lv_obj_t *chongwuyibiao_youzhuanxiangguangyunhengxian;
+	lv_obj_t *chongwuyibiao_youzhuanxiangguangyunjiantou;
+	lv_obj_t *chongwuyibiao_youzhuanxianghengxian;
+	lv_obj_t *chongwuyibiao_youzhuanxiangjiantou;
+	lv_obj_t *chongwuyibiao_xinhaozhu_1;
+	lv_obj_t *chongwuyibiao_xinhaozhu_2;
+	lv_obj_t *chongwuyibiao_xinhaozhu_3;
+	lv_obj_t *chongwuyibiao_xinhaozhu_4;
+	lv_obj_t *chongwuyibiao_shachetubiao;
+	lv_obj_t *chongwuyibiao_shacheneiquan;
+	lv_obj_t *chongwuyibiao_shachezuohuan;
+	lv_obj_t *chongwuyibiao_shacheyouhuan;
+	lv_obj_t *chongwuyibiao_shachegantanhao;
+	lv_obj_t *chongwuyibiao_jinguangdengtubiao;
+	lv_obj_t *chongwuyibiao_jinguangdenglunkuo;
+	lv_obj_t *chongwuyibiao_jinguangdengguangxian_1;
+	lv_obj_t *chongwuyibiao_jinguangdengguangxian_2;
+	lv_obj_t *chongwuyibiao_jinguangdengguangxian_3;
+	lv_obj_t *chongwuyibiao_yuanguangdengtubiao;
+	lv_obj_t *chongwuyibiao_yuanguangdenglunkuo;
+	lv_obj_t *chongwuyibiao_yuanguangdengguangxian_1;
+	lv_obj_t *chongwuyibiao_yuanguangdengguangxian_2;
+	lv_obj_t *chongwuyibiao_yuanguangdengguangxian_3;
+	lv_obj_t *chongwuyibiao_shikuodengtubiao;
+	lv_obj_t *chongwuyibiao_shikuodengxian_1;
+	lv_obj_t *chongwuyibiao_shikuodengxian_2;
+	lv_obj_t *chongwuyibiao_shikuodengxian_3;
+	lv_obj_t *chongwuyibiao_shikuodengxian_4;
+	lv_obj_t *chongwuyibiao_shikuodengxian_5;
+	lv_obj_t *chongwuyibiao_shikuodengxian_6;
+	lv_obj_t *chongwuyibiao_shikuodengxian_7;
+	lv_obj_t *chongwuyibiao_shikuodengxian_8;
+	lv_obj_t *chongwuyibiao_xunhangtubiao;
+	lv_obj_t *chongwuyibiao_xunhangyuanhu;
+	lv_obj_t *chongwuyibiao_xunhangzhizhen;
+	lv_obj_t *chongwuyibiao_xunhangkedu_1;
+	lv_obj_t *chongwuyibiao_xunhangkedu_2;
+	lv_obj_t *chongwuyibiao_xunhangkedu_3;
+} lv_ui_chongwuyibiao;
+
 // generate lv_ui gui_guider
 typedef struct {
 	lv_ui_page_map *page_map;
@@ -245,6 +329,7 @@ typedef struct {
 	lv_ui_page_video *page_video;
 	lv_ui_upgrade_page *upgrade_page;
 	lv_ui_hardware_test *hardware_test;
+	lv_ui_chongwuyibiao *chongwuyibiao;
 	
 	lv_group_t *default_group;
 } lv_ui;
@@ -313,6 +398,9 @@ void unload_scr_upgrade_page(lv_ui *ui);
 // Screen hardware_test
 lv_obj_t * setup_scr_hardware_test(lv_ui *ui);
 void unload_scr_hardware_test(lv_ui *ui);
+// Screen chongwuyibiao
+lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui);
+void unload_scr_chongwuyibiao(lv_ui *ui);
 #ifdef __cplusplus
 }
 #endif

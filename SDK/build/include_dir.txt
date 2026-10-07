@@ -297,3 +297,15 @@
 -Iapps/common/c++/inlcude
 -Iapps/watch/jlstreamtran
 
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_events
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_fonts
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_group
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_images
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_msg
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_res
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_timelines
+-Iapps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/i18n

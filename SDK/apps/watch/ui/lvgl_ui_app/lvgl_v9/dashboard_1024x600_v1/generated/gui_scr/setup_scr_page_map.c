@@ -13,171 +13,165 @@
 
 static const char* page_map_imgList_gear_mode_imgs[3] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\SPORT.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\TTFAR.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\FREE.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\SPORT.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\TTFAR.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\FREE.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00000e.zip",
-	"storage/res_nor_mode/C/lvgl/4b00000f.zip",
-	"storage/res_nor_mode/C/lvgl/4b000010.zip"
+	"storage/res_nor_mode/C/lvgl/4b000014.zip",
+	"storage/res_nor_mode/C/lvgl/4b000015.zip",
+	"storage/res_nor_mode/C/lvgl/4b000016.zip"
 #endif
 };
 static const char* page_map_imgList_bluetooth_imgs[2] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_25.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_26.png"
-#else
-	"storage/res_nor_mode/C/lvgl/4b000012.zip",
-	"storage/res_nor_mode/C/lvgl/4b000013.zip"
-#endif
-};
-static const char* page_map_imgList_phone_bl_imgs[2] = {
-#if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_23.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_24.png"
-#else
-	"storage/res_nor_mode/C/lvgl/4b000014.zip",
-	"storage/res_nor_mode/C/lvgl/4b000015.zip"
-#endif
-};
-static const char* page_map_imgList_gps_imgs[2] = {
-#if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_29.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_30.png"
-#else
-	"storage/res_nor_mode/C/lvgl/4b000016.zip",
-	"storage/res_nor_mode/C/lvgl/4b000017.zip"
-#endif
-};
-static const char* page_map_imgList_networksignal_imgs[2] = {
-#if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_27.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_28.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_25.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_26.png"
 #else
 	"storage/res_nor_mode/C/lvgl/4b000018.zip",
 	"storage/res_nor_mode/C/lvgl/4b000019.zip"
 #endif
 };
-static const char* page_map_imgList_soc_beam_imgs[3] = {
+static const char* page_map_imgList_phone_bl_imgs[2] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_20.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_21.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_22.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_23.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_24.png"
+#else
+	"storage/res_nor_mode/C/lvgl/4b00001a.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001b.zip"
+#endif
+};
+static const char* page_map_imgList_gps_imgs[2] = {
+#if LV_USE_GUIBUILDER_SIMULATOR
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_29.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_30.png"
 #else
 	"storage/res_nor_mode/C/lvgl/4b00001c.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001d.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001e.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001d.zip"
+#endif
+};
+static const char* page_map_imgList_networksignal_imgs[2] = {
+#if LV_USE_GUIBUILDER_SIMULATOR
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_27.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_28.png"
+#else
+	"storage/res_nor_mode/C/lvgl/4b00001e.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001f.zip"
+#endif
+};
+static const char* page_map_imgList_soc_beam_imgs[3] = {
+#if LV_USE_GUIBUILDER_SIMULATOR
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_20.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_21.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_22.png"
+#else
+	"storage/res_nor_mode/C/lvgl/4b000022.zip",
+	"storage/res_nor_mode/C/lvgl/4b000023.zip",
+	"storage/res_nor_mode/C/lvgl/4b000024.zip"
 #endif
 };
 static const char* page_map_imglist_bat_imgs[100] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat001.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat002.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat003.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat004.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat005.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat006.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat007.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat008.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat009.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat010.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat011.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat012.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat013.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat014.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat015.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat016.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat017.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat018.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat019.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat020.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat021.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat022.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat023.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat024.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat025.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat026.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat027.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat028.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat029.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat030.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat031.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat032.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat033.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat034.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat035.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat036.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat037.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat038.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat039.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat040.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat041.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat042.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat043.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat044.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat045.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat046.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat047.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat048.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat049.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat050.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat051.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat052.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat053.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat054.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat055.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat056.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat057.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat058.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat059.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat060.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat061.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat062.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat063.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat064.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat065.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat066.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat067.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat068.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat069.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat070.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat071.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat072.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat073.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat074.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat075.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat076.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat077.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat078.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat079.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat080.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat081.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat082.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat083.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat084.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat085.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat086.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat087.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat088.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat089.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat090.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat091.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat092.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat093.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat094.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat095.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat096.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat097.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat098.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat099.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\battery\\bat100.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat001.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat002.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat003.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat004.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat005.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat006.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat007.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat008.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat009.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat010.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat011.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat012.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat013.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat014.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat015.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat016.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat017.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat018.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat019.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat020.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat021.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat022.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat023.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat024.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat025.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat026.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat027.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat028.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat029.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat030.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat031.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat032.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat033.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat034.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat035.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat036.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat037.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat038.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat039.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat040.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat041.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat042.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat043.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat044.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat045.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat046.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat047.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat048.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat049.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat050.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat051.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat052.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat053.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat054.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat055.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat056.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat057.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat058.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat059.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat060.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat061.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat062.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat063.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat064.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat065.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat066.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat067.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat068.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat069.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat070.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat071.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat072.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat073.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat074.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat075.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat076.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat077.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat078.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat079.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat080.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat081.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat082.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat083.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat084.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat085.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat086.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat087.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat088.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat089.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat090.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat091.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat092.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat093.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat094.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat095.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat096.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat097.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat098.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat099.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat100.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001f.zip",
-	"storage/res_nor_mode/C/lvgl/4b000020.zip",
-	"storage/res_nor_mode/C/lvgl/4b000021.zip",
-	"storage/res_nor_mode/C/lvgl/4b000022.zip",
-	"storage/res_nor_mode/C/lvgl/4b000023.zip",
-	"storage/res_nor_mode/C/lvgl/4b000024.zip",
 	"storage/res_nor_mode/C/lvgl/4b000025.zip",
 	"storage/res_nor_mode/C/lvgl/4b000026.zip",
 	"storage/res_nor_mode/C/lvgl/4b000027.zip",
@@ -271,7 +265,13 @@ static const char* page_map_imglist_bat_imgs[100] = {
 	"storage/res_nor_mode/C/lvgl/4b00007f.zip",
 	"storage/res_nor_mode/C/lvgl/4b000080.zip",
 	"storage/res_nor_mode/C/lvgl/4b000081.zip",
-	"storage/res_nor_mode/C/lvgl/4b000082.zip"
+	"storage/res_nor_mode/C/lvgl/4b000082.zip",
+	"storage/res_nor_mode/C/lvgl/4b000083.zip",
+	"storage/res_nor_mode/C/lvgl/4b000084.zip",
+	"storage/res_nor_mode/C/lvgl/4b000085.zip",
+	"storage/res_nor_mode/C/lvgl/4b000086.zip",
+	"storage/res_nor_mode/C/lvgl/4b000087.zip",
+	"storage/res_nor_mode/C/lvgl/4b000088.zip"
 #endif
 };
 
@@ -305,7 +305,6 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	ui_style_set(ui_scr->page_map_view_1, GUI_CTRL_CONT);
 
 	//Set style for page_map_view_1. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_bg_color(ui_scr->page_map_view_1, lv_color_make(0x00, 0x00, 0x00), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_bg_opa(ui_scr->page_map_view_1, 51, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_imgList_gear_mode
@@ -430,10 +429,6 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_scrollbar_mode(ui_scr->page_map_view_2, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->page_map_view_2, GUI_CTRL_CONT);
 
-	//Set style for page_map_view_2. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_bg_color(ui_scr->page_map_view_2, lv_color_make(0x00, 0x00, 0x00), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_bg_opa(ui_scr->page_map_view_2, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
-
 	//Write codes page_map_lbl_endurance
 	ui_scr->page_map_lbl_endurance = lv_label_create(ui_scr->page_map_view_2);
 	lv_label_set_text(ui_scr->page_map_lbl_endurance, "100km");
@@ -537,7 +532,6 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	//Set style for page_map_view_3. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_radius(ui_scr->page_map_view_3, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_bg_color(ui_scr->page_map_view_3, lv_color_make(0x08, 0x17, 0x27), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_bg_opa(ui_scr->page_map_view_3, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_1
 	ui_scr->page_map_lbl_1 = lv_label_create(ui_scr->page_map_view_3);

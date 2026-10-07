@@ -25,6 +25,12 @@ extern lv_font_t lv_font_MiSans_Medium_24;
 extern lv_font_t lv_font_MiSans_Medium_26;
 extern lv_font_t lv_font_MiSans_Medium_30;
 extern lv_font_t lv_font_MiSans_Medium_40;
+extern lv_font_t lv_font_Lato_Regular_20;
+extern lv_font_t lv_font_Lato_Regular_88;
+extern lv_font_t lv_font_Lato_Regular_44;
+extern lv_font_t lv_font_NotoSansSC_Medium_20;
+extern lv_font_t lv_font_Lato_Regular_24;
+extern lv_font_t lv_font_montserratMedium_16;
 LV_FONT_DECLARE(lv_font_simsun_32);
 
 #if LV_USE_GUIBUILDER_SIMULATOR && LV_USE_CUSTOM_FONT_FN

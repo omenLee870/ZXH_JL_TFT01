@@ -9,6 +9,13 @@
 
 
 
+
+
+g_mpi_vi_bind_ops
+g_mpi_vdec_bind_ops
+g_mpi_vpss_bind_ops
+g_mpi_vo_bind_ops
+g_mpi_venc_bind_ops
 sdk_bt_irq_handle
 
 
@@ -97,3 +104,8 @@ write_file_adapter
 fade_node_adapter
 limiter_node_adapter
 a2dp_1sbc_codec_private
+sdfile_vfs_ops
+
+
+fb_dev_ops
+fb_out_dev_ops

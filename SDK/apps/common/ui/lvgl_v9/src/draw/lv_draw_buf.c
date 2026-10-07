@@ -14,6 +14,13 @@
 #include "../misc/lv_area_private.h"
 #include "convert/lv_draw_buf_convert.h"
 
+/* Optional application observer: the default does not allocate or log. */
+__attribute__((weak)) void lv_draw_buf_ram_trace(const lv_draw_buf_t *draw_buf, bool allocated)
+{
+    LV_UNUSED(draw_buf);
+    LV_UNUSED(allocated);
+}
+
 /*********************
  *      DEFINES
  *********************/
@@ -281,6 +288,7 @@ lv_draw_buf_t *lv_draw_buf_create_ex(const lv_draw_buf_handlers_t *handlers, uin
     void *buf = draw_buf_malloc(handlers, size, cf);
     /*Do not assert here as LVGL or the app might just want to try creating a draw_buf*/
     if (buf == NULL) {
+        lv_draw_buf_ram_trace(NULL, true);
         LV_LOG_WARN("No memory: %"LV_PRIu32"x%"LV_PRIu32", cf: %d, stride: %"LV_PRIu32", %"LV_PRIu32"Byte, ",
                     w, h, cf, stride, size);
         lv_free(draw_buf);
@@ -298,6 +306,7 @@ lv_draw_buf_t *lv_draw_buf_create_ex(const lv_draw_buf_handlers_t *handlers, uin
     draw_buf->unaligned_data = buf;
     draw_buf->data_size = size;
     draw_buf->handlers = handlers;
+    lv_draw_buf_ram_trace(draw_buf, true);
     LV_PROFILER_DRAW_END;
     return draw_buf;
 }
@@ -370,6 +379,8 @@ void lv_draw_buf_destroy(lv_draw_buf_t *draw_buf)
     LV_PROFILER_DRAW_BEGIN;
     if (lv_draw_buf_has_flag(draw_buf, LV_IMAGE_FLAGS_ALLOCATED)) {
         LV_ASSERT_NULL(draw_buf->handlers);
+
+        lv_draw_buf_ram_trace(draw_buf, false);
 
         const lv_draw_buf_handlers_t *handlers = draw_buf->handlers;
         draw_buf_free(handlers, draw_buf->unaligned_data);

@@ -20,7 +20,7 @@
 
 #define TCFG_DEBUG_UART_ENABLE                    1                // 调试串口
 #if TCFG_DEBUG_UART_ENABLE
-#define TCFG_DEBUG_UART_TX_PIN                    IO_PORTA_13      // 输出IO
+#define TCFG_DEBUG_UART_TX_PIN                    IO_PORTA_12      // 输出IO
 #define TCFG_DEBUG_UART_BAUDRATE                  1000000          // 波特率
 #endif // TCFG_DEBUG_UART_ENABLE
 

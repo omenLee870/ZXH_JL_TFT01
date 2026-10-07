@@ -48,11 +48,11 @@ REM %OBJDUMP% -t %ELFFILE% > symbol_tbl.txt
 
 
 
-set case_suffix=_watch
 
 
 
 
+set case_suffix=_dashboard
 
 
 
@@ -99,4 +99,4 @@ copy tone_zh%case_suffix%.cfg tone_zh.cfg
 
 
 call download_befor.bat
-call download/watch/download.bat
+call download/watch/download_lvgl.bat

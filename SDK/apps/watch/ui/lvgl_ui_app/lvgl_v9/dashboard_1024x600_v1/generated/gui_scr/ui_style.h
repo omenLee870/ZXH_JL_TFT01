@@ -27,6 +27,9 @@ extern lv_style_t gui_imgbtn_main_default_style;
 extern lv_style_t gui_imgbtn_main_pressed_style;
 extern lv_style_t gui_imgbtn_main_checked_style;
 
+// line
+extern lv_style_t gui_line_main_default_style;
+
 // label
 extern lv_style_t gui_label_main_default_style;
 
@@ -40,6 +43,11 @@ extern lv_style_t gui_ta_scrollbar_default_style;
 // bar
 extern lv_style_t gui_bar_main_default_style;
 extern lv_style_t gui_bar_indicator_default_style;
+
+// arc
+extern lv_style_t gui_arc_main_default_style;
+extern lv_style_t gui_arc_indicator_default_style;
+extern lv_style_t gui_arc_knob_default_style;
 
 // arcmenu
 extern lv_style_t gui_arcmenu_main_default_style;
@@ -61,10 +69,12 @@ enum {
 	GUI_CTRL_IMG,
 	GUI_CTRL_SCR,
 	GUI_CTRL_IMGBTN,
+	GUI_CTRL_LINE,
 	GUI_CTRL_LABEL,
 	GUI_CTRL_IMGLIST,
 	GUI_CTRL_TEXTAREA,
 	GUI_CTRL_BAR,
+	GUI_CTRL_ARC,
 	GUI_CTRL_ARCMENU,
 	GUI_CTRL_CONT,
 	GUI_CTRL_BUTTON,

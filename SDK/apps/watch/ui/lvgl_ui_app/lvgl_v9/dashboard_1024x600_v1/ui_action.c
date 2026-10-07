@@ -2,11 +2,13 @@
 #include "generated/gui_guider.h"
 #include "generated/gui_events/events_init.h"
 #include "stdio.h"
+#include "custom/neicun_zhuizong.h"
 
 lv_ui guider_ui;
 
 void jl_gui_init(void)
 {
+    neicun_zhuizong_kaishi();
 #if !LV_USE_GUIBUILDER_SIMULATOR
     /* 上次HTTP OTA预留区(UI资源)升级掉电中断: 直接进内置字库升级页等待重新升级 */
     extern int ui_update_page_should_boot_recover(void);
@@ -53,5 +55,6 @@ void jl_gui_init(void)
     setup_ui(&guider_ui);
     events_init(&guider_ui);
     custom_init(&guider_ui);
+    neicun_zhuizong_jieduan("ui_chushihua_hou");
 
 }

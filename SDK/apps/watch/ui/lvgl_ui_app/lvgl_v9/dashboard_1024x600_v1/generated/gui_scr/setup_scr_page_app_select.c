@@ -13,34 +13,28 @@
 
 static const char* page_app_select_animimg_1_imgs[21] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_0.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_1.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_2.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_3.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_4.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_5.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_6.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_7.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_8.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_9.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_0.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_1.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_2.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_3.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_4.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_5.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_6.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_7.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_8.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_9.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_10.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_0.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_1.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_2.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_3.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_4.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_5.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_6.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_7.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_8.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882465_9.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_0.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_1.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_2.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_3.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_4.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_5.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_6.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_7.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_8.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_9.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_10.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00008b.zip",
-	"storage/res_nor_mode/C/lvgl/4b00008c.zip",
-	"storage/res_nor_mode/C/lvgl/4b00008d.zip",
-	"storage/res_nor_mode/C/lvgl/4b00008e.zip",
-	"storage/res_nor_mode/C/lvgl/4b00008f.zip",
-	"storage/res_nor_mode/C/lvgl/4b000090.zip",
 	"storage/res_nor_mode/C/lvgl/4b000091.zip",
 	"storage/res_nor_mode/C/lvgl/4b000092.zip",
 	"storage/res_nor_mode/C/lvgl/4b000093.zip",
@@ -55,66 +49,72 @@ static const char* page_app_select_animimg_1_imgs[21] = {
 	"storage/res_nor_mode/C/lvgl/4b00009c.zip",
 	"storage/res_nor_mode/C/lvgl/4b00009d.zip",
 	"storage/res_nor_mode/C/lvgl/4b00009e.zip",
-	"storage/res_nor_mode/C/lvgl/4b00009f.zip"
-#endif
-};
-static const char* page_app_select_imglist_1_imgs[9] = {
-#if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_duoyun.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_baoyu.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_dayu.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_leiyu.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_qing.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_wumai.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_xiaoyu.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_ye.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_yintian.png"
-#else
+	"storage/res_nor_mode/C/lvgl/4b00009f.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a0.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a1.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a2.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a3.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a4.zip",
-	"storage/res_nor_mode/C/lvgl/4b0000a5.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000a5.zip"
+#endif
+};
+static const char* page_app_select_imglist_1_imgs[9] = {
+#if LV_USE_GUIBUILDER_SIMULATOR
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_duoyun.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_baoyu.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_dayu.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_leiyu.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_qing.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_wumai.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_xiaoyu.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_ye.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_yintian.png"
+#else
 	"storage/res_nor_mode/C/lvgl/4b0000a6.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a7.zip",
-	"storage/res_nor_mode/C/lvgl/4b0000a8.zip"
+	"storage/res_nor_mode/C/lvgl/4b0000a8.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000a9.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000aa.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000ab.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000ac.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000ad.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000ae.zip"
 #endif
 };
 static const char* page_app_select_imgList_bluetooth_imgs[2] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_25.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_26.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_25.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_26.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000012.zip",
-	"storage/res_nor_mode/C/lvgl/4b000013.zip"
+	"storage/res_nor_mode/C/lvgl/4b000018.zip",
+	"storage/res_nor_mode/C/lvgl/4b000019.zip"
 #endif
 };
 static const char* page_app_select_imgList_phone_bl_imgs[2] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_23.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_24.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_23.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_24.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000014.zip",
-	"storage/res_nor_mode/C/lvgl/4b000015.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001a.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001b.zip"
 #endif
 };
 static const char* page_app_select_imgList_gps_imgs[2] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_29.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_30.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_29.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_30.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000016.zip",
-	"storage/res_nor_mode/C/lvgl/4b000017.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001c.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001d.zip"
 #endif
 };
 static const char* page_app_select_imgList_networksignal_imgs[2] = {
 #if LV_USE_GUIBUILDER_SIMULATOR
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_27.png",
-	"A:\\watch_sdk\\standard\\watch_master\\JL380N\\v0.0.1\\ui_project\\dashboard_1024x600_v1\\project\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_28.png"
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_27.png",
+	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_28.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000018.zip",
-	"storage/res_nor_mode/C/lvgl/4b000019.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001e.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001f.zip"
 #endif
 };
 
@@ -393,6 +393,10 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	lv_obj_add_flag(ui_scr->page_app_select_view_select_app_map, LV_OBJ_FLAG_HIDDEN);
 	ui_style_set(ui_scr->page_app_select_view_select_app_map, GUI_CTRL_CONT);
 
+	//Set style for page_app_select_view_select_app_map. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->page_app_select_view_select_app_map, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(ui_scr->page_app_select_view_select_app_map, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
 	//Write codes page_app_select_lbl_17
 	ui_scr->page_app_select_lbl_17 = lv_label_create(ui_scr->page_app_select_view_select_app_map);
 	lv_label_set_text(ui_scr->page_app_select_lbl_17, "9:50到达");
@@ -479,6 +483,10 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	lv_obj_set_scrollbar_mode(ui_scr->page_app_select_view_select_app_music, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->page_app_select_view_select_app_music, LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->page_app_select_view_select_app_music, GUI_CTRL_CONT);
+
+	//Set style for page_app_select_view_select_app_music. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->page_app_select_view_select_app_music, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(ui_scr->page_app_select_view_select_app_music, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_slider_1
 	ui_scr->page_app_select_slider_1 = lv_slider_create(ui_scr->page_app_select_view_select_app_music);

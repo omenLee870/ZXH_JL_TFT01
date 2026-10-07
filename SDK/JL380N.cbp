@@ -4788,5 +4788,12 @@
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_timelines/gui_timelines.h" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/i18n/lv_i18n.c" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/i18n/lv_i18n.h" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_test.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_pet_dashboard.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_chongwuyibiao.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_donghua.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_donghua.h" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/neicun_zhuizong.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/neicun_zhuizong.h" />
 </Project>
 </CodeBlocks_project_file>

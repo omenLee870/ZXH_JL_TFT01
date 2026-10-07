@@ -117,8 +117,16 @@ static uint8_t *lv_load_font_from_sd(const char *src)
 }
 
 
+/* Optional observer; the application may provide a strong implementation. */
+__attribute__((weak)) void lv_font_ram_trace(const char *src, bool beginning)
+{
+    LV_UNUSED(src);
+    LV_UNUSED(beginning);
+}
+
 lv_font_t *lv_font_load_bin(const char *src)
 {
+    lv_font_ram_trace(src, true);
     uint8_t *ptr = NULL;
     if (src[PREFIX_NUM] == FLASH_PREFIX) {
         ptr = lv_load_font_from_flash(src);
@@ -204,6 +212,7 @@ lv_font_t *lv_font_load_bin(const char *src)
     //cache
     //font_dsc->cache = NULL;
 
+    lv_font_ram_trace(src, false);
     return font;
 }
 
@@ -228,4 +237,3 @@ void lv_font_free_bin(lv_font_t *font)
         lv_free((void *)font);
     }
 }
-

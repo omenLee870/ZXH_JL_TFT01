@@ -726,3 +726,9 @@ void events_init_upgrade_page(lv_ui *ui)
 	lv_ui_upgrade_page * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_UPGRADE_PAGE);
 	lv_obj_add_event_cb(ui_scr->upgrade_page, scr_loaded_handler, LV_EVENT_SCREEN_LOADED, ui);
 }
+
+void events_init_chongwuyibiao(lv_ui *ui)
+{
+	lv_ui_chongwuyibiao * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_CHONGWUYIBIAO);
+	lv_obj_add_event_cb(ui_scr->chongwuyibiao, scr_loaded_handler, LV_EVENT_SCREEN_LOADED, ui);
+}

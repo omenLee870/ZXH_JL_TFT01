@@ -35,6 +35,10 @@ lv_obj_t * setup_scr_page_music(lv_ui *ui)
 	lv_obj_set_scrollbar_mode(ui_scr->page_music_view_1, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->page_music_view_1, GUI_CTRL_CONT);
 
+	//Set style for page_music_view_1. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->page_music_view_1, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(ui_scr->page_music_view_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
 	//Write codes page_music_img_1
 	ui_scr->page_music_img_1 = lv_image_create(ui_scr->page_music);
 	lv_image_set_src(ui_scr->page_music_img_1, gui_get_res_path(GUI_RES_DIE_PNG));

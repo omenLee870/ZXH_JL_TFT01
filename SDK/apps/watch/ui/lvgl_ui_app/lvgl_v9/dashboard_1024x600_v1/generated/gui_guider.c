@@ -59,6 +59,7 @@ gui_scr_t * ui_get_scr(int32_t scr_id)
 	if (scr_id == GUI_SCREEN_PAGE_VIDEO) return gui_scr_create(GUI_SCREEN_PAGE_VIDEO, "page_video", NULL, (gui_scr_setup_cb_t)setup_scr_page_video, (gui_scr_unload_cb_t)unload_scr_page_video);
 	if (scr_id == GUI_SCREEN_UPGRADE_PAGE) return gui_scr_create(GUI_SCREEN_UPGRADE_PAGE, "upgrade_page", NULL, (gui_scr_setup_cb_t)setup_scr_upgrade_page, (gui_scr_unload_cb_t)unload_scr_upgrade_page);
 	if (scr_id == GUI_SCREEN_HARDWARE_TEST) return gui_scr_create(GUI_SCREEN_HARDWARE_TEST, "hardware_test", NULL, (gui_scr_setup_cb_t)setup_scr_hardware_test, (gui_scr_unload_cb_t)unload_scr_hardware_test);
+	if (scr_id == GUI_SCREEN_CHONGWUYIBIAO) return gui_scr_create(GUI_SCREEN_CHONGWUYIBIAO, "chongwuyibiao", NULL, (gui_scr_setup_cb_t)setup_scr_chongwuyibiao, (gui_scr_unload_cb_t)unload_scr_chongwuyibiao);
 	return NULL;
 }
 
@@ -100,6 +101,7 @@ void * ui_get_scr_ptr(lv_ui *ui, int32_t scr_id)
 	if (scr_id == GUI_SCREEN_PAGE_VIDEO) return ui->page_video;
 	if (scr_id == GUI_SCREEN_UPGRADE_PAGE) return ui->upgrade_page;
 	if (scr_id == GUI_SCREEN_HARDWARE_TEST) return ui->hardware_test;
+	if (scr_id == GUI_SCREEN_CHONGWUYIBIAO) return ui->chongwuyibiao;
 	return NULL;
 }
 
@@ -128,6 +130,9 @@ void ui_free_scr_ptr(lv_ui *ui, int32_t scr_id)
 	} else if (scr_id == GUI_SCREEN_HARDWARE_TEST) {
 		if (ui->hardware_test != NULL) lv_free(ui->hardware_test);
 		ui->hardware_test = NULL;
+	} else if (scr_id == GUI_SCREEN_CHONGWUYIBIAO) {
+		if (ui->chongwuyibiao != NULL) lv_free(ui->chongwuyibiao);
+		ui->chongwuyibiao = NULL;
 	}
 }
 
@@ -154,7 +159,7 @@ void setup_ui(lv_ui *ui)
 #endif
 	gui_group_init();
 	ui_scr_manager_init();
-	gui_scr_t *scr = ui_get_scr(GUI_SCREEN_PAGE_APP_SELECT);
+	gui_scr_t *scr = ui_get_scr(GUI_SCREEN_CHONGWUYIBIAO);
 	ui_load_scr_anim(ui, scr, LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false, false);
 	events_init(ui);
 	gui_timelines_init(ui);

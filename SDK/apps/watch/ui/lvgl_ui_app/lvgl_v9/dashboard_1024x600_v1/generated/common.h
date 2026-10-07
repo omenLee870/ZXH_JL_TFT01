@@ -10,7 +10,7 @@ extern "C" {
 #define GUI_UIT_VERSION_MAJOR 1
 #define GUI_UIT_VERSION_MINOR 0
 #define GUI_UIT_VERSION_PATCH 0
-#define GUI_UIT_VERSION_INFO "20260915"
+#define GUI_UIT_VERSION_INFO "20260920"
 
 #define GUI_CORE_VERSION_MAJOR 0
 #define GUI_CORE_VERSION_MINOR 0
@@ -41,6 +41,7 @@ typedef enum {
 	GUI_SCREEN_PAGE_VIDEO,
 	GUI_SCREEN_UPGRADE_PAGE,
 	GUI_SCREEN_HARDWARE_TEST,
+	GUI_SCREEN_CHONGWUYIBIAO,
 } gui_screen_id_t;
 
 static const int32_t gui_screen_ids[] = {
@@ -51,6 +52,7 @@ static const int32_t gui_screen_ids[] = {
 	GUI_SCREEN_PAGE_VIDEO,
 	GUI_SCREEN_UPGRADE_PAGE,
 	GUI_SCREEN_HARDWARE_TEST,
+	GUI_SCREEN_CHONGWUYIBIAO,
 };
 
 #define GUI_KEY_F1 1

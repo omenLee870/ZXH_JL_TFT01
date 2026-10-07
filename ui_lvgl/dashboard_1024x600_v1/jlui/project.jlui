@@ -1,7 +1,7 @@
 {
   "id": "BsX7R8yEotpyLety",
   "name": "br33_UI_DASHBOARD_1024x600",
-  "preview": "page_app_select",
+  "preview": "chongwuyibiao",
   "author": {
     "company": "",
     "username": "",
@@ -12,10 +12,10 @@
     "width": 1024,
     "height": 600
   },
-  "entry": "page_app_select",
+  "entry": "chongwuyibiao",
   "config": {},
   "createTime": 1783579888227,
-  "updateTime": 1789635421645,
+  "updateTime": 1791363171185,
   "version": "1.0.0",
   "description": "",
   "core": {
@@ -176,6 +176,10 @@
     },
     {
       "name": "hardware_test",
+      "type": "Standard"
+    },
+    {
+      "name": "chongwuyibiao",
       "type": "Standard"
     }
   ],

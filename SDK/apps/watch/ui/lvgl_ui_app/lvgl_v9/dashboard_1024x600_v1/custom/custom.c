@@ -329,10 +329,18 @@ static void screen_switch_func(void)
         break;
 
     case GUI_SCREEN_PAGE_VIDEO:
-        printf("cur scr is page_app select!\n");
+        next_scr = ui_get_scr(GUI_SCREEN_CHONGWUYIBIAO);
+        if (next_scr != NULL && next_scr != cur_scr) {
+            ui_load_scr_anim(&guider_ui, next_scr,
+                LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false, false);
+        }
+        break;
+
+    case GUI_SCREEN_CHONGWUYIBIAO:
         next_scr = ui_get_scr(GUI_SCREEN_PAGE_APP_SELECT);
         if (next_scr != NULL && next_scr != cur_scr) {
-            ui_load_scr_anim(&guider_ui, next_scr, LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false, false);
+            ui_load_scr_anim(&guider_ui, next_scr,
+                LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false, false);
         }
         break;
 

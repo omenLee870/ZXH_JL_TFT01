@@ -21,6 +21,9 @@ lv_style_t gui_imgbtn_main_default_style;
 lv_style_t gui_imgbtn_main_pressed_style;
 lv_style_t gui_imgbtn_main_checked_style;
 
+// line
+lv_style_t gui_line_main_default_style;
+
 // label
 lv_style_t gui_label_main_default_style;
 
@@ -34,6 +37,11 @@ lv_style_t gui_ta_scrollbar_default_style;
 // bar
 lv_style_t gui_bar_main_default_style;
 lv_style_t gui_bar_indicator_default_style;
+
+// arc
+lv_style_t gui_arc_main_default_style;
+lv_style_t gui_arc_indicator_default_style;
+lv_style_t gui_arc_knob_default_style;
 
 // arcmenu
 lv_style_t gui_arcmenu_main_default_style;
@@ -214,6 +222,16 @@ void ui_style_init(void)
 	lv_style_set_image_recolor_opa(&gui_imgbtn_main_checked_style, 0);
 	lv_style_set_image_opa(&gui_imgbtn_main_checked_style, 255);
 
+	// line
+	lv_style_init(&gui_line_main_default_style);
+	lv_style_set_outline_color(&gui_line_main_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_outline_width(&gui_line_main_default_style, 0);
+	lv_style_set_outline_opa(&gui_line_main_default_style, 128);
+	lv_style_set_outline_pad(&gui_line_main_default_style, 0);
+	lv_style_set_line_color(&gui_line_main_default_style, lv_color_make(0x54, 0xf0, 0x5a));
+	lv_style_set_line_width(&gui_line_main_default_style, 3);
+	lv_style_set_line_rounded(&gui_line_main_default_style, true);
+
 	// label
 	lv_style_init(&gui_label_main_default_style);
 	lv_style_set_radius(&gui_label_main_default_style, 0);
@@ -329,6 +347,56 @@ void ui_style_init(void)
 	lv_style_set_bg_main_stop(&gui_bar_indicator_default_style, 0);
 	lv_style_set_bg_opa(&gui_bar_indicator_default_style, 255);
 
+	// arc
+	lv_style_init(&gui_arc_main_default_style);
+	lv_style_set_radius(&gui_arc_main_default_style, 6);
+	lv_style_set_bg_color(&gui_arc_main_default_style, lv_color_make(0xf6, 0xf6, 0xf6));
+	lv_style_set_bg_grad_color(&gui_arc_main_default_style, lv_color_make(0xf6, 0xf6, 0xf6));
+	lv_style_set_bg_grad_dir(&gui_arc_main_default_style, LV_GRAD_DIR_NONE);
+	lv_style_set_bg_grad_stop(&gui_arc_main_default_style, 255);
+	lv_style_set_bg_main_stop(&gui_arc_main_default_style, 0);
+	lv_style_set_bg_opa(&gui_arc_main_default_style, 0);
+	lv_style_set_shadow_width(&gui_arc_main_default_style, 0);
+	lv_style_set_shadow_color(&gui_arc_main_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_shadow_opa(&gui_arc_main_default_style, 255);
+	lv_style_set_shadow_spread(&gui_arc_main_default_style, 0);
+	lv_style_set_shadow_offset_x(&gui_arc_main_default_style, 0);
+	lv_style_set_shadow_offset_y(&gui_arc_main_default_style, 0);
+	lv_style_set_border_color(&gui_arc_main_default_style, lv_color_make(0x00, 0x00, 0x00));
+	lv_style_set_border_width(&gui_arc_main_default_style, 0);
+	lv_style_set_border_opa(&gui_arc_main_default_style, 255);
+	lv_style_set_border_side(&gui_arc_main_default_style, LV_BORDER_SIDE_FULL);
+	lv_style_set_outline_color(&gui_arc_main_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_outline_width(&gui_arc_main_default_style, 0);
+	lv_style_set_outline_opa(&gui_arc_main_default_style, 128);
+	lv_style_set_outline_pad(&gui_arc_main_default_style, 0);
+	lv_style_set_pad_left(&gui_arc_main_default_style, 0);
+	lv_style_set_pad_right(&gui_arc_main_default_style, 0);
+	lv_style_set_pad_top(&gui_arc_main_default_style, 0);
+	lv_style_set_pad_bottom(&gui_arc_main_default_style, 0);
+	lv_style_set_pad_all(&gui_arc_main_default_style, 0);
+	lv_style_set_arc_color(&gui_arc_main_default_style, lv_color_make(0xff, 0xc9, 0x28));
+	lv_style_set_arc_opa(&gui_arc_main_default_style, 255);
+	lv_style_set_arc_width(&gui_arc_main_default_style, 3);
+	lv_style_set_arc_rounded(&gui_arc_main_default_style, true);
+	lv_style_init(&gui_arc_indicator_default_style);
+	lv_style_set_bg_opa(&gui_arc_indicator_default_style, 0);
+	lv_style_set_pad_all(&gui_arc_indicator_default_style, 0);
+	lv_style_set_arc_color(&gui_arc_indicator_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_arc_opa(&gui_arc_indicator_default_style, 0);
+	lv_style_set_arc_width(&gui_arc_indicator_default_style, 0);
+	lv_style_set_arc_rounded(&gui_arc_indicator_default_style, true);
+	lv_style_init(&gui_arc_knob_default_style);
+	lv_style_set_bg_color(&gui_arc_knob_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_bg_grad_color(&gui_arc_knob_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_bg_grad_dir(&gui_arc_knob_default_style, LV_GRAD_DIR_NONE);
+	lv_style_set_bg_grad_stop(&gui_arc_knob_default_style, 255);
+	lv_style_set_bg_main_stop(&gui_arc_knob_default_style, 0);
+	lv_style_set_bg_opa(&gui_arc_knob_default_style, 0);
+	lv_style_set_shadow_width(&gui_arc_knob_default_style, 0);
+	lv_style_set_border_width(&gui_arc_knob_default_style, 0);
+	lv_style_set_pad_all(&gui_arc_knob_default_style, 0);
+
 	// arcmenu
 	lv_style_init(&gui_arcmenu_main_default_style);
 	lv_style_set_radius(&gui_arcmenu_main_default_style, 0);
@@ -378,12 +446,12 @@ void ui_style_init(void)
 	// cont
 	lv_style_init(&gui_cont_main_default_style);
 	lv_style_set_radius(&gui_cont_main_default_style, 0);
-	lv_style_set_bg_color(&gui_cont_main_default_style, lv_color_make(0xff, 0xff, 0xff));
+	lv_style_set_bg_color(&gui_cont_main_default_style, lv_color_make(0x00, 0x00, 0x00));
 	lv_style_set_bg_grad_color(&gui_cont_main_default_style, lv_color_make(0xff, 0xff, 0xff));
 	lv_style_set_bg_grad_dir(&gui_cont_main_default_style, LV_GRAD_DIR_NONE);
 	lv_style_set_bg_grad_stop(&gui_cont_main_default_style, 255);
 	lv_style_set_bg_main_stop(&gui_cont_main_default_style, 0);
-	lv_style_set_bg_opa(&gui_cont_main_default_style, 0);
+	lv_style_set_bg_opa(&gui_cont_main_default_style, 255);
 	lv_style_set_shadow_width(&gui_cont_main_default_style, 0);
 	lv_style_set_shadow_color(&gui_cont_main_default_style, lv_color_make(0x21, 0x95, 0xf6));
 	lv_style_set_shadow_opa(&gui_cont_main_default_style, 255);
@@ -484,6 +552,9 @@ void ui_style_set(lv_obj_t * obj, gui_ctrl_type_t type)
 		lv_obj_add_style(obj, &gui_imgbtn_main_pressed_style, LV_PART_MAIN|LV_STATE_PRESSED);
 		lv_obj_add_style(obj, &gui_imgbtn_main_checked_style, LV_PART_MAIN|LV_STATE_CHECKED);
 	break;
+	case GUI_CTRL_LINE:
+		lv_obj_add_style(obj, &gui_line_main_default_style, LV_PART_MAIN|LV_STATE_DEFAULT);
+	break;
 	case GUI_CTRL_LABEL:
 		lv_obj_add_style(obj, &gui_label_main_default_style, LV_PART_MAIN|LV_STATE_DEFAULT);
 	break;
@@ -497,6 +568,11 @@ void ui_style_set(lv_obj_t * obj, gui_ctrl_type_t type)
 	case GUI_CTRL_BAR:
 		lv_obj_add_style(obj, &gui_bar_main_default_style, LV_PART_MAIN|LV_STATE_DEFAULT);
 		lv_obj_add_style(obj, &gui_bar_indicator_default_style, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+	break;
+	case GUI_CTRL_ARC:
+		lv_obj_add_style(obj, &gui_arc_main_default_style, LV_PART_MAIN|LV_STATE_DEFAULT);
+		lv_obj_add_style(obj, &gui_arc_indicator_default_style, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+		lv_obj_add_style(obj, &gui_arc_knob_default_style, LV_PART_KNOB|LV_STATE_DEFAULT);
 	break;
 	case GUI_CTRL_ARCMENU:
 		lv_obj_add_style(obj, &gui_arcmenu_main_default_style, LV_PART_MAIN|LV_STATE_DEFAULT);
