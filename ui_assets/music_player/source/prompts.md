@@ -1,0 +1,11 @@
+# 素材来源与制作提示
+
+小狗和唱片使用内置 imagegen 工具；底板、按钮和蓝牙图标由独立 SVG 绘制并导出为 PNG。尺寸整理保留透明通道，不涉及固件代码或工具项目配置修改。
+
+## 小狗（background-extraction）
+
+Use case: background-extraction. Edit target: the supplied dashboard reference image. Extract ONLY the exact white cartoon dog with cyan/turquoise headphones in the middle, including its two white paws resting on the bar and the single cyan musical note to its right. Preserve the reference character's exact silhouette, proportions, adorable rounded fluffy head, ears, black outline, face (round eyes, small black nose and smiling mouth), pink cheeks, and detailed cyan headphones with dark inner padding and white gleam highlights. This is a production transparent PNG sprite for embedded LVGL UI. Remove the black background and the gray player bar beneath/behind the dog. The area inside the face and paws remains opaque white; black outline remains opaque. Transparent background everywhere outside the character and musical note, no fake checkerboard. Closely frame the complete dog and note with small even transparent padding, horizontally wider than tall, front view, same pose. Do not include text, controls, dashboard, numbers, disc, additional objects. Do not redesign or simplify the dog. Output a single clean independent sprite.
+
+## 唱片（background-extraction）
+
+Use case: background-extraction. Edit target: attached dashboard. Create one independent transparent PNG of ONLY the circular navy-blue vinyl record album-cover placeholder from the far left of its music player. Preserve the visual style shown in the reference: perfectly round disc, thin warm gold outer rim, rich deep blue radial vinyl grooves and subtle angular reflected light, expressive irregular gold brush accents sweeping around the lower right/lower edge, round small warm gold center label with tiny dark spindle hole. Front view, not tilted, no perspective, disc fills about 92% of square image. Production asset for small embedded UI. Output ONLY this one disc on genuine transparent background, including transparency at corners outside the circular silhouette. No dog, gray music bar, words, numbers, music controls, square album cover, cast shadow or extra elements. Do not render an entire dashboard.

@@ -139,6 +139,18 @@ lv_obj_t * setup_scr_page_music(lv_ui *ui)
 	lv_obj_set_size(ui_scr->page_music_imgbtn_1, 77, 80);
 	lv_obj_set_scrollbar_mode(ui_scr->page_music_imgbtn_1, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->page_music_imgbtn_1, GUI_CTRL_IMGBTN);
+
+	//Set style for page_music_imgbtn_1. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_text_font(ui_scr->page_music_imgbtn_1, &lv_font_MiSans_Medium_14, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for page_music_imgbtn_1. Part: LV_PART_MAIN, State: LV_STATE_PRESSED
+	lv_obj_set_style_bg_opa(ui_scr->page_music_imgbtn_1, 0, LV_PART_MAIN|LV_STATE_PRESSED);
+	lv_obj_set_style_text_font(ui_scr->page_music_imgbtn_1, &lv_font_MiSans_Medium_14, LV_PART_MAIN|LV_STATE_PRESSED);
+
+	//Set style for page_music_imgbtn_1. Part: LV_PART_MAIN, State: LV_STATE_CHECKED
+	lv_obj_set_style_bg_opa(ui_scr->page_music_imgbtn_1, 0, LV_PART_MAIN|LV_STATE_CHECKED);
+	lv_obj_set_style_text_font(ui_scr->page_music_imgbtn_1, &lv_font_MiSans_Medium_14, LV_PART_MAIN|LV_STATE_CHECKED);
+	lv_obj_set_style_image_recolor(ui_scr->page_music_imgbtn_1, lv_color_make(0xFF, 0xFF, 0xFF), LV_PART_MAIN|LV_STATE_CHECKED);
 	lv_imagebutton_set_src(ui_scr->page_music_imgbtn_1, LV_IMGBTN_STATE_RELEASED, NULL, gui_get_res_path(GUI_RES_IMAGE_4225207_1_PNG), NULL);
 	lv_imagebutton_set_src(ui_scr->page_music_imgbtn_1, LV_IMGBTN_STATE_PRESSED, NULL, gui_get_res_path(GUI_RES_IMAGE_4225207_1_PNG), NULL);
 	lv_imagebutton_set_src(ui_scr->page_music_imgbtn_1, LV_IMGBTN_STATE_CHECKED_RELEASED, NULL, gui_get_res_path(GUI_RES_IMAGE_4225207_0_PNG), NULL);

@@ -1,0 +1,56 @@
+[
+  {
+    "file": "album_vinyl.png",
+    "width": 96,
+    "height": 96,
+    "alpha": true
+  },
+  {
+    "file": "bluetooth_connected.png",
+    "width": 28,
+    "height": 36,
+    "alpha": true
+  },
+  {
+    "file": "button_next.png",
+    "width": 40,
+    "height": 40,
+    "alpha": true
+  },
+  {
+    "file": "button_pause.png",
+    "width": 40,
+    "height": 40,
+    "alpha": true
+  },
+  {
+    "file": "button_play.png",
+    "width": 40,
+    "height": 40,
+    "alpha": true
+  },
+  {
+    "file": "button_previous.png",
+    "width": 40,
+    "height": 40,
+    "alpha": true
+  },
+  {
+    "file": "controls_background.png",
+    "width": 268,
+    "height": 84,
+    "alpha": true
+  },
+  {
+    "file": "dog_headphones.png",
+    "width": 216,
+    "height": 142,
+    "alpha": true
+  },
+  {
+    "file": "music_bar.png",
+    "width": 720,
+    "height": 116,
+    "alpha": true
+  }
+]

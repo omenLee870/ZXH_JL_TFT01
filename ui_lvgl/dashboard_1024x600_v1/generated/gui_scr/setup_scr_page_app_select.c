@@ -35,9 +35,6 @@ static const char* page_app_select_animimg_1_imgs[21] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_9.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\anim_copy\\image_0882473_10.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000091.zip",
-	"storage/res_nor_mode/C/lvgl/4b000092.zip",
-	"storage/res_nor_mode/C/lvgl/4b000093.zip",
 	"storage/res_nor_mode/C/lvgl/4b000094.zip",
 	"storage/res_nor_mode/C/lvgl/4b000095.zip",
 	"storage/res_nor_mode/C/lvgl/4b000096.zip",
@@ -55,7 +52,10 @@ static const char* page_app_select_animimg_1_imgs[21] = {
 	"storage/res_nor_mode/C/lvgl/4b0000a2.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a3.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a4.zip",
-	"storage/res_nor_mode/C/lvgl/4b0000a5.zip"
+	"storage/res_nor_mode/C/lvgl/4b0000a5.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000a6.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000a7.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000a8.zip"
 #endif
 };
 static const char* page_app_select_imglist_1_imgs[9] = {
@@ -70,15 +70,15 @@ static const char* page_app_select_imglist_1_imgs[9] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_ye.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_yintian.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b0000a6.zip",
-	"storage/res_nor_mode/C/lvgl/4b0000a7.zip",
-	"storage/res_nor_mode/C/lvgl/4b0000a8.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a9.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000aa.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000ab.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000ac.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000ad.zip",
-	"storage/res_nor_mode/C/lvgl/4b0000ae.zip"
+	"storage/res_nor_mode/C/lvgl/4b0000ae.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000af.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000b0.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000b1.zip"
 #endif
 };
 static const char* page_app_select_imgList_bluetooth_imgs[2] = {
@@ -86,8 +86,8 @@ static const char* page_app_select_imgList_bluetooth_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_25.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_26.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000018.zip",
-	"storage/res_nor_mode/C/lvgl/4b000019.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001b.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001c.zip"
 #endif
 };
 static const char* page_app_select_imgList_phone_bl_imgs[2] = {
@@ -95,8 +95,8 @@ static const char* page_app_select_imgList_phone_bl_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_23.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_24.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001a.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001b.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001d.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001e.zip"
 #endif
 };
 static const char* page_app_select_imgList_gps_imgs[2] = {
@@ -104,8 +104,8 @@ static const char* page_app_select_imgList_gps_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_29.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_30.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001c.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001d.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001f.zip",
+	"storage/res_nor_mode/C/lvgl/4b000020.zip"
 #endif
 };
 static const char* page_app_select_imgList_networksignal_imgs[2] = {
@@ -113,8 +113,8 @@ static const char* page_app_select_imgList_networksignal_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_27.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_28.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001e.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001f.zip"
+	"storage/res_nor_mode/C/lvgl/4b000021.zip",
+	"storage/res_nor_mode/C/lvgl/4b000022.zip"
 #endif
 };
 
