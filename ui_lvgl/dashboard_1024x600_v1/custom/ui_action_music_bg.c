@@ -4,6 +4,9 @@
  * @note  JPEG 数据全程在内存中操作
  */
 #if !LV_USE_GUIBUILDER_SIMULATOR
+#ifdef PET_DASHBOARD_BIP_TEST
+#include "pet_dashboard_bip_test_support.h"
+#else
 #include <string.h>
 #include <stdlib.h>
 #include "app_config.h"
@@ -15,6 +18,9 @@
 #include "lvgl.h"
 #include "ui.h"
 #include "fs/fs.h"
+#endif
+#include "pet_dashboard_music.h"
+
 
 // ======================= 配置宏 =======================
 #define MAX_DISP_W              208                 // 显示最大宽度
@@ -46,6 +52,10 @@ struct bip_file_info {
     u16 timer;                      // 延迟请求定时器
     u16 tid;					    //延时更新专辑图片
     volatile s8 file_status;        // 数据状态
+    char selected_handle[8];        // 手机当前封面
+    char transfer_handle[8];        // 当前请求（包含尚未收到 START 的阶段）
+    char buffer_handle[8];          // 缓存图片所属封面
+    bool transfer_pending;         // 请求已投递，包含尚未 START 的阶段
     void (*callback)(void);         // 完成回调
 };
 
@@ -59,11 +69,56 @@ void pet_dashboard_music_album_reset(void)
     if (!bip_initialized) return;
     os_mutex_pend(&bip_file.mutex, 0);
     bip_file.file_status = BIP_FILE_STATUS_ERR;
+    bip_file.selected_handle[0] = '\0';
+    bip_file.transfer_handle[0] = '\0';
+    bip_file.buffer_handle[0] = '\0';
+    bip_file.transfer_pending = false;
     os_mutex_post(&bip_file.mutex);
 }
 
+/** @brief 在 SDK 处理新句柄前标记归属，保留正在完成的旧传输。 */
+void pet_dashboard_music_album_select(const char *handle)
+{
+    if (!bip_initialized) return;
+    os_mutex_pend(&bip_file.mutex, 0);
+    if (strcmp(bip_file.selected_handle, handle)) {
+        /* 新句柄到达时旧请求可能还未 START，不能给旧数据贴上新句柄。 */
+        if (!bip_file.transfer_pending) strcpy(bip_file.transfer_handle, handle);
+        strcpy(bip_file.selected_handle, handle);
+        if (bip_file.file_status == BIP_FILE_STATUS_OK &&
+            strcmp(bip_file.buffer_handle, handle)) bip_file.file_status = BIP_FILE_STATUS_ERR;
+        printf("[BIP] select handle=%s transfer=%s pending=%u\n",
+               handle, bip_file.transfer_handle, bip_file.transfer_pending);
+    }
+    os_mutex_post(&bip_file.mutex);
+}
+
+/** @brief 同一时刻仅投递一次取图；传输中换封面由 SDK 在 STOP 后续取。 */
+int pet_dashboard_music_album_request(void)
+{
+    if (!bip_initialized) return -1;
+    os_mutex_pend(&bip_file.mutex, 0);
+    if (bip_file.transfer_pending) {
+        printf("[PET_MUSIC] cover queued by SDK handle=%s\n", bip_file.selected_handle);
+        os_mutex_post(&bip_file.mutex);
+        return 0;
+    }
+    bip_file.transfer_pending = true;
+    strcpy(bip_file.transfer_handle, bip_file.selected_handle);
+    os_mutex_post(&bip_file.mutex);
+    int ret = bt_cmd_prepare(USER_CTRL_BIP_GET_IMAGE, 0, NULL);
+    if (ret) {
+        os_mutex_pend(&bip_file.mutex, 0);
+        bip_file.transfer_pending = false;
+        os_mutex_post(&bip_file.mutex);
+    }
+    return ret;
+}
+
+#ifndef PET_DASHBOARD_BIP_TEST
 static uint32_t music_angle_idx = 0;
 static bool music_rotation_enabled = true;
+#endif
 
 // ======================= 互斥锁操作 =======================
 static int bip_file_mutex_init(void)
@@ -136,6 +191,8 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
         __bip_info->buffer_size = (length > 0 && length < 2 * 1024 * 1024) ? length : 50 * 1024;
         __bip_info->buffer = (u8 *)malloc(__bip_info->buffer_size);
         __bip_info->buffer_offset = 0;
+        __bip_info->transfer_pending = true;
+        strcpy(__bip_info->buffer_handle, __bip_info->transfer_handle);
         if (__bip_info->buffer) {
             __bip_info->file_status = BIP_FILE_STATUS_UPDATE;
             __bip_info->buffer_offset = 0;
@@ -148,11 +205,11 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
         break;
 
     case BIP_DATA_STATUS_CONTINUE:
+        bip_file_mutex_lock();
         if (__bip_info->file_status == BIP_FILE_STATUS_UPDATE && __bip_info->buffer) {
-            bip_file_mutex_lock();
             bip_file_data_update(packet, body_len);
-            bip_file_mutex_unlock();
         }
+        bip_file_mutex_unlock();
         break;
 
     case BIP_DATA_STATUS_STOP:
@@ -163,12 +220,19 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
                 bip_file_data_update(packet, body_len);
             }
             if (__bip_info->file_status == BIP_FILE_STATUS_UPDATE)
-                __bip_info->file_status = BIP_FILE_STATUS_OK;
-            printf("[BIP] receive done state=%d bytes=%u\n",
-                   __bip_info->file_status, __bip_info->buffer_offset);
+                __bip_info->file_status = strcmp(__bip_info->buffer_handle,
+                                                __bip_info->selected_handle) ?
+                                         BIP_FILE_STATUS_ERR : BIP_FILE_STATUS_OK;
+            printf("[BIP] receive done state=%d bytes=%u handle=%s wanted=%s\n",
+                   __bip_info->file_status, __bip_info->buffer_offset,
+                   __bip_info->buffer_handle, __bip_info->selected_handle);
         } else {
             __bip_info->file_status = BIP_FILE_STATUS_ERR;
         }
+        /* SDK 在 STOP 后自动发送不同的新句柄，下一次 START 属于它。 */
+        __bip_info->transfer_pending = __bip_info->selected_handle[0] &&
+                                      strcmp(__bip_info->transfer_handle, __bip_info->selected_handle);
+        strcpy(__bip_info->transfer_handle, __bip_info->selected_handle);
         bip_file_mutex_unlock();
 
         // 通知 UI 线程更新图片
@@ -178,9 +242,24 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
         }
         break;
 
-    case BIP_DATA_STATUS_ERR:
     case BIP_DATA_STATUS_ERR_GET:
+        /* 重复取图是请求状态，既不终止数据流，也不失效完整缓存。 */
+        printf("[BIP] duplicate request ignored\n");
+        break;
+
     case BIP_DATA_STATUS_GET_NULL:
+        bip_file_mutex_lock();
+        if (__bip_info->transfer_pending) {
+            printf("[BIP] request pending, keep receiving\n");
+            bip_file_mutex_unlock();
+            break;
+        }
+        __bip_info->file_status = BIP_FILE_STATUS_ERR;
+        __bip_info->transfer_pending = false;
+        bip_file_mutex_unlock();
+        break;
+
+    case BIP_DATA_STATUS_ERR:
         printf("BIP_ERR\n");
         bip_file_mutex_lock();
         if (__bip_info->buffer) {
@@ -188,6 +267,7 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
             __bip_info->buffer = NULL;
         }
         __bip_info->file_status = BIP_FILE_STATUS_ERR;
+        __bip_info->transfer_pending = false;
         bip_file_mutex_unlock();
         break;
 
@@ -208,6 +288,7 @@ void bip_file_set_callback(void (*callback)(void))
 }
 
 // ======================= 图像解码与显示 =======================
+#ifndef PET_DASHBOARD_BIP_TEST
 static rgb_color_t fast_avg_color_from_yuv420_nv12(const uint8_t *y, const uint8_t *uv,
         uint32_t width, uint32_t height,
         uint32_t stride_y, uint32_t stride_uv,
@@ -366,6 +447,7 @@ void ui_music_album_pic_handler(void)
     mpi_video_frame_info_t frame = {0};
     uint8_t *jpeg_buf = NULL;
     uint32_t jpeg_len = 0;
+    char jpeg_handle[8];
 
     // 从全局内存中获取JPEG数据
     bip_file_mutex_lock();
@@ -384,6 +466,7 @@ void ui_music_album_pic_handler(void)
         return;
     }
     memcpy(jpeg_buf, __bip_info->buffer, jpeg_len);
+    strcpy(jpeg_handle, __bip_info->buffer_handle);
     bip_file_mutex_unlock();
 
     stream.addr = jpeg_buf;
@@ -492,7 +575,7 @@ void ui_music_album_pic_handler(void)
     img_dsc.data_size = rgb_size;
     img_dsc.data = s_rgb_buf;
 
-    if (dashboard) chongwuyibiao_yinyue_fengmian(&img_dsc);
+    if (dashboard) chongwuyibiao_yinyue_fengmian_identified(&img_dsc, jpeg_handle);
     else lv_image_set_src(img_obj, &img_dsc);
     music_rotation_enabled = true;
     lv_obj_invalidate(img_obj);
@@ -523,8 +606,9 @@ error:
 /* ------------------------------------------------------------------------------------*/
 void bip_update_pic_file()
 {
-    bt_cmd_prepare(USER_CTRL_BIP_GET_IMAGE, 0, NULL);
+    pet_dashboard_music_album_request();
 }
+#endif
 
 
 // ======================= 初始化函数（放在系统启动时调用） =======================
@@ -535,6 +619,7 @@ void bip_mem_init(void)
     printf("[BIP] init ret=%d\n", ret);
 }
 
+#ifndef PET_DASHBOARD_BIP_TEST
 void page_music_reset_rotation(void)
 {
     music_angle_idx = 0;
@@ -574,4 +659,5 @@ void page_music_rotate_timer_cb(lv_timer_t *src)
         music_angle_idx = 0;
     }
 }
+#endif
 #endif

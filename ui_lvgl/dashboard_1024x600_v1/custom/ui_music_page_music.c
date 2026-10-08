@@ -5,6 +5,7 @@
 #include "fs/fs.h"
 #include "avctp_user.h"
 #include "custom.h"
+#include "pet_dashboard_music.h"
 /*#include "video/logo_show.h"*/
 
 
@@ -130,7 +131,7 @@ static int gui_src_action_page_music(int action)
             }
             lv_timer_set_repeat_count(music_album_pic_rotate, -1);
             bt_cmd_prepare(USER_CTRL_AVCTP_OPID_GET_PLAY_TIME, 0, NULL); //获取音乐播放等信息
-            bt_cmd_prepare(USER_CTRL_BIP_GET_IMAGE, 0, NULL);//获取专辑照片
+            pet_dashboard_music_album_request(); // 与仪表共用取图去重
         }
         break;
     case GUI_SCREEN_ACTION_UNLOAD:
@@ -158,7 +159,7 @@ static int gui_src_action_page_app_select(int action)
         // UI主动获取当前音乐播放状态
         if (bt_get_total_connect_dev() > 0) {
             bt_cmd_prepare(USER_CTRL_AVCTP_OPID_GET_PLAY_TIME, 0, NULL); //获取音乐播放等信息
-            bt_cmd_prepare(USER_CTRL_BIP_GET_IMAGE, 0, NULL);//获取专辑照片
+            pet_dashboard_music_album_request(); // 与仪表共用取图去重
         }
         break;
     case GUI_SCREEN_ACTION_UNLOAD:

@@ -227,11 +227,11 @@ void bip_update_pic_file()
 void user_get_bt_music_info(u8 type, u32 time, u8 *info, u16 len)
 {
 #if CONFIG_LVGL_UI_ENABLE
-    if (type == 1 || type == 2) pet_dashboard_music_receive_text(type, info, len);
+    if (type == 1 || type == 2 || type == 8) pet_dashboard_music_receive_text(type, info, len);
 #endif
     //profile define type:
     //1-title 2-artist name 3-album names 4-track number
-    //5-total number of tracks 6-genre  7-playing time
+    //5-total number of tracks 6-genre 7-playing time 8-cover art handle
     //JL define 0x10-total time , 0x11 current play position
     u8  min, sec;
     //printf("type %d\n", type );
@@ -248,7 +248,7 @@ void user_get_bt_music_info(u8 type, u32 time, u8 *info, u16 len)
     if (type == 7 && info && len) {
         ms_to_time(info, len);
     }
-    /* 仪表应用按歌名变更取封面，同一专辑换歌也会更新。 */
+    /* 封面句柄由应用层去重，歌名/歌手文字变化不触发取图。 */
 
     if (time != 0) {
         min = time / 1000 / 60;

@@ -122,11 +122,11 @@ static void verify_title_scroll(lv_ui_chongwuyibiao *ui)
     lv_label_t *label = (lv_label_t *)ui->chongwuyibiao_gequmingcheng;
     const char *short_title = "晴天";
     const char *long_title = "把心事交给晚风让音乐陪伴我们一路向前";
-    pet_dashboard_music_receive_text(1, (const uint8_t *)short_title, strlen(short_title));
+    pet_dashboard_music_receive_text(2, (const uint8_t *)short_title, strlen(short_title));
     lv_obj_update_layout(ui->chongwuyibiao);
     advance(600);
     assert(label->offset.x == 0 && label->offset.y == 0);
-    pet_dashboard_music_receive_text(1, (const uint8_t *)long_title, strlen(long_title));
+    pet_dashboard_music_receive_text(2, (const uint8_t *)long_title, strlen(long_title));
     lv_obj_update_layout(ui->chongwuyibiao);
     advance(1000);
     assert(label->offset.x < 0 && label->offset.y == 0);
@@ -143,7 +143,7 @@ static void verify_title_scroll(lv_ui_chongwuyibiao *ui)
         if (label->offset.x > previous + 4) repeated = true;
     }
     assert(repeated);
-    pet_dashboard_music_receive_text(1, (const uint8_t *)short_title, strlen(short_title));
+    pet_dashboard_music_receive_text(2, (const uint8_t *)short_title, strlen(short_title));
     lv_obj_update_layout(ui->chongwuyibiao);
     advance(600);
     assert(label->offset.x == 0 && label->offset.y == 0);
@@ -153,8 +153,9 @@ static void verify_title_scroll(lv_ui_chongwuyibiao *ui)
 /** @brief 验证文本接入、封面复制以及动画暂停和退出。 */
 static void verify_media(lv_ui_chongwuyibiao *ui)
 {
-    pet_dashboard_music_receive_text(1, (const uint8_t *)"Test song", 9);
-    pet_dashboard_music_receive_text(0x80, (const uint8_t *)"Real lyric", 10);
+    pet_dashboard_music_receive_text(1, (const uint8_t *)"Real lyric", 10);
+    pet_dashboard_music_receive_text(2, (const uint8_t *)"Test song", 9);
+    pet_dashboard_music_receive_text(8, (const uint8_t *)"0000052", 7);
     assert(strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), "Test song") == 0);
     assert(strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "Real lyric") == 0);
     uint16_t pixels[96 * 96] = {0};
@@ -194,6 +195,16 @@ static void verify_media(lv_ui_chongwuyibiao *ui)
     puts("PASS: album pixels aligned, decoded from owned buffer, replacement updates pixels");
     advance(300);
     assert(lv_image_get_rotation(ui->chongwuyibiao_zhuanjifengmian) > 0);
+    uint32_t revision = pet_dashboard_music_get_view()->track_revision;
+    int32_t lyric_angle = lv_image_get_rotation(ui->chongwuyibiao_zhuanjifengmian);
+    pet_dashboard_music_receive_text(1, (const uint8_t *)"Next lyric line", 15);
+    pet_dashboard_music_receive_text(2, (const uint8_t *)"Test song", 9);
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), "Test song"));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "Next lyric line"));
+    assert(pet_dashboard_music_get_view()->track_revision == revision);
+    assert(lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian) == shown);
+    assert(lv_image_get_rotation(ui->chongwuyibiao_zhuanjifengmian) == lyric_angle);
+    puts("PASS: TITLE updates lyric label while ARTIST heading, album pixels and rotation remain stable");
     assert(!lv_obj_has_flag(ui->chongwuyibiao_yinfuyou, LV_OBJ_FLAG_HIDDEN));
     assert(lv_obj_has_flag(ui->chongwuyibiao_yinfuzuo, LV_OBJ_FLAG_HIDDEN));
     advance(450);
@@ -215,9 +226,17 @@ static void verify_media(lv_ui_chongwuyibiao *ui)
     advance(150);
     assert(lv_image_get_rotation(ui->chongwuyibiao_zhuanjifengmian) == angle);
     pet_dashboard_music_request(PET_MUSIC_TOGGLE_VIEW);
-    pet_dashboard_music_receive_text(1, (const uint8_t *)"Another song", 12);
+    pet_dashboard_music_receive_text(1, (const uint8_t *)"New first lyric", 15);
+    pet_dashboard_music_receive_text(2, (const uint8_t *)"Another song", 12);
+    assert(lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian) == shown);
+    pet_dashboard_music_receive_text(8, (const uint8_t *)"0000053", 7);
     assert(!lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian));
-    assert(strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "暂无歌词") == 0);
+    chongwuyibiao_yinyue_fengmian_identified(&cover, "0000052");
+    assert(!lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian));
+    chongwuyibiao_yinyue_fengmian_identified(&cover, "0000053");
+    assert(lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian) == shown);
+    assert(strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "New first lyric") == 0);
+    puts("PASS: heading keeps cover; new handle clears it; stale decoded cover rejected");
 }
 
 /** @brief 验证实际控件显隐、点击以及页面删除和重建。 */

@@ -140,6 +140,13 @@ void chongwuyibiao_yinyue_fengmian(const lv_image_dsc_t *image)
     chongwuyibiao_yinyue_donghua_chongzhi();
 }
 
+/** @brief 只接受当前状态对应的封面，旧解码结果不覆盖新歌曲。 */
+void chongwuyibiao_yinyue_fengmian_identified(const lv_image_dsc_t *image, const char *handle)
+{
+    if (!handle || strcmp(latest_view.cover_handle, handle)) return;
+    chongwuyibiao_yinyue_fengmian(image);
+}
+
 #if !LV_USE_GUIBUILDER_SIMULATOR
 /** @brief 每张封面只记录一次绘制任务，核对圆形图片是否直接绘入主图层。 */
 static void cover_draw_event(lv_event_t *event)
@@ -212,6 +219,10 @@ static void jiemian_shuaxin(const pet_dashboard_music_view_t *view)
         jiemian_qiehuan((flags & VIEW_MUSIC) != 0);
     }
     chongwuyibiao_yinyue_donghua_yunxu(shitu.loaded && view->playing && view->music_visible);
+#if !LV_USE_GUIBUILDER_SIMULATOR
+    /* 图片可能先于状态快照完成；状态到达后补用同句柄的接收缓存。 */
+    if (changed_track && shitu.loaded && view->connected) ui_music_album_pic_handler();
+#endif
 }
 
 #if !LV_USE_GUIBUILDER_SIMULATOR
