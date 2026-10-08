@@ -449,8 +449,8 @@
 /* 单批最多挂多少个任务节点。uint8_t 的任务计数约定上限为 255, 且限制单批的边缘内存占用。 */
 #define JLGPU_VEC_BATCH_CHUNK 255
 
-//lvgl内存池使用psram
-#define LV_USE_STDLIB_MALLOC_FROM_PSRAM 0
+// LVGL 字形缓存、位图及其他 lv_malloc 数据使用 PSRAM；无 PSRAM 时回退 SRAM。
+#define LV_USE_STDLIB_MALLOC_FROM_PSRAM 1
 
 //链表内存池
 #define JLGPU_LIST_MEM_POOL_SIZE 30*1024

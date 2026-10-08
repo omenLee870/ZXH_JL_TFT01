@@ -10,17 +10,29 @@
 #include <string.h>
 #include <stdlib.h>
 #include "app_config.h"
+#include "malloc.h"
 #include "btstack/avctp_user.h"
 #include "mpi_common.h"
 #include "mpi_vdec.h"
 #include "custom.h"
 #include "chongwuyibiao_yinyue.h"
 #include "lvgl.h"
+#include "lv_port_disp.h"
 #include "ui.h"
 #include "fs/fs.h"
 #endif
 #include "pet_dashboard_music.h"
 
+/* JPEG 接收缓存和解码副本必须成对使用同一分配器，不向 RAM0 回退。 */
+#if TCFG_PSRAM_DEV_ENABLE
+#define BIP_JPEG_MALLOC(size)       malloc_psram(size)
+#define BIP_JPEG_REALLOC(ptr, size) realloc_psram(ptr, size)
+#define BIP_JPEG_FREE(ptr)          free_psram(ptr)
+#else
+#define BIP_JPEG_MALLOC(size)       malloc(size)
+#define BIP_JPEG_REALLOC(ptr, size) realloc(ptr, size)
+#define BIP_JPEG_FREE(ptr)          free(ptr)
+#endif
 
 // ======================= 配置宏 =======================
 #define MAX_DISP_W              208                 // 显示最大宽度
@@ -148,7 +160,7 @@ static void bip_file_data_update(u8 *data, u32 length)
         u32 required = __bip_info->buffer_offset + length;
         u32 new_size = MAX(required, __bip_info->buffer_size * 2);
         if (new_size > 2 * 1024 * 1024) new_size = 2 * 1024 * 1024;
-        u8 *new_buf = (u8 *)realloc(__bip_info->buffer, new_size);
+        u8 *new_buf = (u8 *)BIP_JPEG_REALLOC(__bip_info->buffer, new_size);
         if (!new_buf) {
             printf("realloc failed, drop data\n");
             __bip_info->file_status = BIP_FILE_STATUS_ERR;
@@ -184,12 +196,12 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
 
         // 释放旧数据
         if (__bip_info->buffer) {
-            free(__bip_info->buffer);
+            BIP_JPEG_FREE(__bip_info->buffer);
             __bip_info->buffer = NULL;
         }
         // 初始分配 50KB，若 length 有效则按 length 分配
         __bip_info->buffer_size = (length > 0 && length < 2 * 1024 * 1024) ? length : 50 * 1024;
-        __bip_info->buffer = (u8 *)malloc(__bip_info->buffer_size);
+        __bip_info->buffer = (u8 *)BIP_JPEG_MALLOC(__bip_info->buffer_size);
         __bip_info->buffer_offset = 0;
         __bip_info->transfer_pending = true;
         strcpy(__bip_info->buffer_handle, __bip_info->transfer_handle);
@@ -263,7 +275,7 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
         printf("BIP_ERR\n");
         bip_file_mutex_lock();
         if (__bip_info->buffer) {
-            free(__bip_info->buffer);
+            BIP_JPEG_FREE(__bip_info->buffer);
             __bip_info->buffer = NULL;
         }
         __bip_info->file_status = BIP_FILE_STATUS_ERR;
@@ -434,15 +446,23 @@ void ui_music_album_pic_handler(void)
         return;
     }
 
+#if LV_USE_DRAW_JLGPU_LIST == 2
+    /* 申请和复制 JPEG 也会访问 PSRAM，必须放在真正结束上一帧推屏之后。 */
+    if (!lv_jlgpu_run_disp_wait_idle()) return;
+    printf("[BIP] display drained before JPEG copy\n");
+#endif
+
     mpi_ret_t ret;
-    mpi_vdec_chn_t chn = 0;
+    mpi_vdec_chn_t chn = -1;
+    bool chn_created = false;
+    bool chn_started = false;
     mpi_vdec_chn_attr_t attr = {
         .hw_dev = 0,
         .type = MPI_VDEC_TYPE_JPEG,
         .output_mode = MPI_VDEC_OUTPUT_FRAME,
-        .frame_buf_size = 1 * 1024 * 1024,
     };
     mpi_vdec_pic_info_t pic_info = {0};
+    mpi_vdec_probe_info_t probe_info = {0};
     mpi_stream_t stream = {0};
     mpi_video_frame_info_t frame = {0};
     uint8_t *jpeg_buf = NULL;
@@ -459,7 +479,7 @@ void ui_music_album_pic_handler(void)
     }
     jpeg_len = __bip_info->buffer_offset;
     printf("[BIP] decode JPEG bytes=%u\n", jpeg_len);
-    jpeg_buf = (uint8_t *)malloc(jpeg_len);
+    jpeg_buf = (uint8_t *)BIP_JPEG_MALLOC(jpeg_len);
     if (!jpeg_buf) {
         bip_file_mutex_unlock();
         printf("malloc jpeg buffer failed\n");
@@ -472,11 +492,27 @@ void ui_music_album_pic_handler(void)
     stream.addr = jpeg_buf;
     stream.len = jpeg_len;
 
+    ret = mpi_vdec_probe_pic_info(&stream, &probe_info);
+    if (ret != MPI_SUCCESS || probe_info.format != MPI_PIXEL_FMT_YUV420SP ||
+        !probe_info.align_width || !probe_info.align_height) {
+        printf("[BIP] unsupported JPEG ret=%d format=%u\n", ret, probe_info.format);
+        goto error;
+    }
+    /* 与 SDK JPEG 示例相同：按对齐尺寸计算 YUV 帧，再留 lbuf 管理空间。 */
+    uint64_t frame_bytes = (uint64_t)probe_info.align_width * probe_info.align_height * 3U / 2U + 1024U;
+    if (frame_bytes > UINT32_MAX) goto error;
+    attr.frame_buf_size = (uint32_t)frame_bytes;
+    ret = mpi_vdec_find_free_chn(&chn);
+    if (ret != MPI_SUCCESS) goto error;
+    printf("[BIP] decoder prepare chn=%d frame_pool=%u align=%ux%u\n",
+           chn, attr.frame_buf_size, probe_info.align_width, probe_info.align_height);
+
     ret = mpi_vdec_create_chn(chn, &attr);
     if (ret != MPI_SUCCESS) {
         printf("vdec create failed: %d\n", ret);
         goto error;
     }
+    chn_created = true;
 
     ret = mpi_vdec_get_pic_info(chn, &stream, &pic_info);
     if (ret != MPI_SUCCESS) {
@@ -491,6 +527,8 @@ void ui_music_album_pic_handler(void)
         printf("vdec start failed: %d\n", ret);
         goto error;
     }
+    chn_started = true;
+    printf("[BIP] decoder started chn=%d\n", chn);
 
     ret = mpi_vdec_send_stream(chn, &stream);
     if (ret != MPI_SUCCESS) {
@@ -584,17 +622,17 @@ void ui_music_album_pic_handler(void)
     mpi_vdec_release_frame(chn, &frame);
     mpi_vdec_stop_chn(chn);
     mpi_vdec_destroy_chn(chn);
-    free(jpeg_buf);
+    BIP_JPEG_FREE(jpeg_buf);
     return;  // 正常退出
 
 error:
-    if (frame.y_addr) {
+    if (chn_created && frame.y_addr) {
         mpi_vdec_release_frame(chn, &frame);
     }
-    mpi_vdec_stop_chn(chn);
-    mpi_vdec_destroy_chn(chn);
+    if (chn_started) mpi_vdec_stop_chn(chn);
+    if (chn_created) mpi_vdec_destroy_chn(chn);
     if (jpeg_buf) {
-        free(jpeg_buf);
+        BIP_JPEG_FREE(jpeg_buf);
     }
     return;
 }

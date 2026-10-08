@@ -1,6 +1,7 @@
 #if !LV_USE_GUIBUILDER_SIMULATOR
 #include "lv_ui.h"
 #include "app_config.h"
+#include "lv_port_disp.h"
 #include "asm/dcache.h"
 #if TCFG_PSRAM_DEV_ENABLE
 #include "asm/psram_api.h"
@@ -25,6 +26,7 @@ void ui_music_album_pic_handler(void);
 #define VIEW_MUSIC 4U
 #define COVER_BYTES (96U * 96U * 2U)
 #define COVER_ALIGN (LV_DRAW_BUF_ALIGN > 32 ? LV_DRAW_BUF_ALIGN : 32)
+#define LYRIC_WAIT_MS 1000U
 
 typedef struct {
     lv_obj_t *pingmu;
@@ -40,11 +42,13 @@ typedef struct {
     lv_obj_t *title;
     lv_obj_t *lyric;
     lv_obj_t *cover;
+    lv_timer_t *lyric_wait_timer;
     const void *default_cover;
     char default_cover_path[256];
     bool loaded;
     bool xianshi;
     bool cover_draw_pending;
+    bool lyric_state_known;
 } yinyue_shitu_t;
 
 static yinyue_shitu_t shitu;
@@ -54,6 +58,15 @@ static lv_image_dsc_t cover_descriptor;
 static void *cover_storage;
 static uint16_t *cover_pixels;
 static bool cover_ready;
+
+static bool cover_wait_idle(void)
+{
+#if !LV_USE_GUIBUILDER_SIMULATOR && LV_USE_DRAW_JLGPU_LIST == 2
+    return lv_jlgpu_run_disp_wait_idle();
+#else
+    return true;
+#endif
+}
 
 /** @brief 与 demo 使用相同的 PSRAM 分配方式，并保留独立、对齐的像素缓存。 */
 static bool cover_buffer_prepare(void)
@@ -74,6 +87,7 @@ static void cover_refresh(void)
 {
     if (!shitu.cover) return;
     const void *source = cover_ready ? &cover_descriptor : shitu.default_cover;
+    if (!cover_wait_idle()) return;
     /* 先清理旧资源，避免 SDK 切回 BIN 时把静态图片描述符当成字符串释放。 */
     if (lv_image_get_src(shitu.cover) != source) lv_image_set_src(shitu.cover, NULL);
     lv_image_set_src(shitu.cover, source);
@@ -100,6 +114,8 @@ void chongwuyibiao_yinyue_fengmian(const lv_image_dsc_t *image)
 #endif
         return;
     }
+    /* LIST==2 在另一线程读这块像素；等上一帧真正完成后再覆盖。 */
+    if (!cover_wait_idle()) return;
     lv_image_cache_drop(&cover_descriptor);
     memcpy(cover_pixels, image->data, COVER_BYTES);
 #if !LV_USE_GUIBUILDER_SIMULATOR
@@ -193,10 +209,31 @@ static void jiemian_qiehuan(bool yinyue)
     chongwuyibiao_donghua_yunxu(!yinyue);
 }
 
+/** @brief 歌词到达、断开或删除页面时取消等待，避免回调访问旧控件。 */
+static void lyric_wait_cancel(void)
+{
+    if (!shitu.lyric_wait_timer) return;
+    lv_timer_delete(shitu.lyric_wait_timer);
+    shitu.lyric_wait_timer = NULL;
+}
+
+/** @brief 空歌词只表示尚未收到，短暂等待后才显示无歌词提示。 */
+static void lyric_wait_timeout(lv_timer_t *timer)
+{
+    LV_UNUSED(timer);
+    lyric_wait_cancel();
+    if (shitu.lyric && latest_view.connected && !latest_view.lyric[0]) {
+        lv_label_set_text(shitu.lyric, "暂无歌词");
+    }
+}
+
 /** @brief 在 LVGL 线程绘制状态，页面未创建时仅保存快照。 */
 static void jiemian_shuaxin(const pet_dashboard_music_view_t *view)
 {
     bool changed_track = latest_view.track_revision != view->track_revision;
+    bool wait_for_lyric = !shitu.lyric_state_known || !latest_view.connected ||
+                          strcmp(latest_view.title, view->title) ||
+                          (latest_view.lyric[0] && !view->lyric[0]);
     latest_view = *view;
     if (changed_track || !view->connected) {
         cover_ready = false;
@@ -205,11 +242,19 @@ static void jiemian_shuaxin(const pet_dashboard_music_view_t *view)
         chongwuyibiao_yinyue_donghua_chongzhi();
     }
     if (shitu.pingmu == NULL) return;
+    shitu.lyric_state_known = true;
+    if (!view->connected || view->lyric[0]) {
+        lyric_wait_cancel();
+    } else if (wait_for_lyric) {
+        lyric_wait_cancel();
+        shitu.lyric_wait_timer = lv_timer_create(lyric_wait_timeout, LYRIC_WAIT_MS, NULL);
+    }
     uint32_t flags = (view->connected ? VIEW_CONNECTED : 0) |
                      (view->playing ? VIEW_PLAYING : 0) |
                      (view->music_visible ? VIEW_MUSIC : 0);
     const char *title = view->title[0] ? view->title : "等待歌曲信息";
-    const char *lyric = view->lyric[0] ? view->lyric : "暂无歌词";
+    const char *lyric = view->lyric[0] ? view->lyric :
+                        (shitu.lyric_wait_timer ? "" : "暂无歌词");
     if (strcmp(lv_label_get_text(shitu.title), title)) lv_label_set_text(shitu.title, title);
     if (strcmp(lv_label_get_text(shitu.lyric), lyric)) lv_label_set_text(shitu.lyric, lyric);
     xianshi_kongzhi(shitu.lanyatubiao, (flags & VIEW_CONNECTED) != 0);
@@ -288,6 +333,7 @@ static void pingmu_shijian(lv_event_t *shijian)
         chongwuyibiao_yinyue_donghua_yunxu(false);
         break;
     case LV_EVENT_DELETE:
+        lyric_wait_cancel();
         chongwuyibiao_yinyue_donghua_jieshu();
         lv_memset(&shitu, 0, sizeof(shitu));
         break;
@@ -301,6 +347,7 @@ void chongwuyibiao_yinyue_bangding(lv_ui_chongwuyibiao *jiemian)
 {
     if (jiemian == NULL || jiemian->chongwuyibiao == NULL) return;
     if (shitu.pingmu == jiemian->chongwuyibiao) return;
+    lyric_wait_cancel();
     lv_memset(&shitu, 0, sizeof(shitu));
     shitu.pingmu = jiemian->chongwuyibiao;
     shitu.caodi = jiemian->chongwuyibiao_caodirongqi;

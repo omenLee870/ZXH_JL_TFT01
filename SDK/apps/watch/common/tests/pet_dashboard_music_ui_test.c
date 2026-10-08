@@ -4,6 +4,7 @@
 #include "gui_guider.h"
 #include "chongwuyibiao_donghua.h"
 #include "chongwuyibiao_yinyue.h"
+#include "chongwuyibiao_yinyue_donghua.h"
 #include "pet_dashboard_music.h"
 #include <assert.h>
 #include <stdio.h>
@@ -116,17 +117,99 @@ static void advance(uint32_t ms)
     }
 }
 
+static void set_heading(const char *heading)
+{
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    pet_dashboard_music_receive_text(1, (const uint8_t *)heading, strlen(heading));
+    pet_dashboard_music_receive_text(2, (const uint8_t *)"Artist", 6);
+#else
+    pet_dashboard_music_receive_text(2, (const uint8_t *)heading, strlen(heading));
+#endif
+}
+
+/** @brief 歌词立即显示，歌曲信息的分隔符不决定歌词是否有效。 */
+static void verify_metadata(lv_ui_chongwuyibiao *ui)
+{
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    set_heading("J字情书");
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), "J字情书"));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), ""));
+    advance(200); /* 普通信息先到，歌词稍晚到时不能闪无歌词提示。 */
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), ""));
+    const char *heading = "J字情书 - 孙睡觉/四七";
+    const char *lyric = "你要去找太阳";
+    pet_dashboard_music_receive_text(1, (const uint8_t *)lyric, strlen(lyric));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), "J字情书"));
+    pet_dashboard_music_receive_text(2, (const uint8_t *)heading, strlen(heading));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), heading));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), lyric));
+    advance(900); /* 原等待期限到达不能再覆盖真实歌词。 */
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), lyric));
+    set_heading("J字情书");
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), "J字情书"));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), lyric));
+    puts("PASS: ordinary metadata displays song title and preserves real lyrics on actual LVGL labels");
+#else
+    const char *heading = "歌曲信息不带分隔符";
+    const char *lyric = "第一句实际歌词";
+    pet_dashboard_music_receive_text(1, (const uint8_t *)lyric, strlen(lyric));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), lyric));
+    pet_dashboard_music_receive_text(2, (const uint8_t *)heading, strlen(heading));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), heading));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), lyric));
+    lyric = "下一句实际歌词";
+    pet_dashboard_music_receive_text(1, (const uint8_t *)lyric, strlen(lyric));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), lyric));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), heading));
+    set_heading(heading);
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), lyric));
+    puts("PASS: lyrics immediately reach their LVGL label without requiring a heading separator");
+#endif
+}
+
+/** @brief 无歌词超时、重复刷新以及连续切歌使用实际 LVGL 定时器验证。 */
+static void verify_lyric_wait(lv_ui_chongwuyibiao *ui)
+{
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    set_heading("纯音乐 A");
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), ""));
+    advance(700);
+    pet_dashboard_music_request(PET_MUSIC_REFRESH);
+    set_heading("纯音乐 A");
+    pet_dashboard_music_receive_text(8, (const uint8_t *)"0000054", 7);
+    advance(200);
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), ""));
+    advance(130);
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "暂无歌词"));
+    pet_dashboard_music_request(PET_MUSIC_REFRESH);
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "暂无歌词"));
+    /* 歌词超过等待期才到，仍立即替换提示。 */
+    pet_dashboard_music_receive_text(0x80, (const uint8_t *)"Late lyric", 10);
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "Late lyric"));
+    set_heading("纯音乐 B");
+    advance(700);
+    set_heading("纯音乐 C");
+    advance(400);
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), ""));
+    advance(630);
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "暂无歌词"));
+    puts("PASS: delayed lyrics show immediately without placeholder flash; no-lyrics timeout survives refresh/cover updates and restarts on new song");
+#else
+    (void)ui;
+#endif
+}
+
 /** @brief 用真实字体验证短歌名静止、长歌名左滑循环及重复通知不中断。 */
 static void verify_title_scroll(lv_ui_chongwuyibiao *ui)
 {
     lv_label_t *label = (lv_label_t *)ui->chongwuyibiao_gequmingcheng;
     const char *short_title = "晴天";
     const char *long_title = "把心事交给晚风让音乐陪伴我们一路向前";
-    pet_dashboard_music_receive_text(2, (const uint8_t *)short_title, strlen(short_title));
+    set_heading(short_title);
     lv_obj_update_layout(ui->chongwuyibiao);
     advance(600);
     assert(label->offset.x == 0 && label->offset.y == 0);
-    pet_dashboard_music_receive_text(2, (const uint8_t *)long_title, strlen(long_title));
+    set_heading(long_title);
     lv_obj_update_layout(ui->chongwuyibiao);
     advance(1000);
     assert(label->offset.x < 0 && label->offset.y == 0);
@@ -143,7 +226,7 @@ static void verify_title_scroll(lv_ui_chongwuyibiao *ui)
         if (label->offset.x > previous + 4) repeated = true;
     }
     assert(repeated);
-    pet_dashboard_music_receive_text(2, (const uint8_t *)short_title, strlen(short_title));
+    set_heading(short_title);
     lv_obj_update_layout(ui->chongwuyibiao);
     advance(600);
     assert(label->offset.x == 0 && label->offset.y == 0);
@@ -153,10 +236,16 @@ static void verify_title_scroll(lv_ui_chongwuyibiao *ui)
 /** @brief 验证文本接入、封面复制以及动画暂停和退出。 */
 static void verify_media(lv_ui_chongwuyibiao *ui)
 {
+    /* 前面的歌词等待测试已推进时钟，动画断言从固定音符相位开始。 */
+    chongwuyibiao_yinyue_donghua_yunxu(false);
+    chongwuyibiao_yinyue_donghua_yunxu(true);
+    /* 歌曲信息保留完整组合原文。 */
+    const char *song = "Test song - Artist";
+    const char *next_song = "Another song - Artist";
     pet_dashboard_music_receive_text(1, (const uint8_t *)"Real lyric", 10);
-    pet_dashboard_music_receive_text(2, (const uint8_t *)"Test song", 9);
+    pet_dashboard_music_receive_text(2, (const uint8_t *)song, strlen(song));
     pet_dashboard_music_receive_text(8, (const uint8_t *)"0000052", 7);
-    assert(strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), "Test song") == 0);
+    assert(strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), song) == 0);
     assert(strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "Real lyric") == 0);
     uint16_t pixels[96 * 96] = {0};
     unsigned int pixel;
@@ -198,8 +287,8 @@ static void verify_media(lv_ui_chongwuyibiao *ui)
     uint32_t revision = pet_dashboard_music_get_view()->track_revision;
     int32_t lyric_angle = lv_image_get_rotation(ui->chongwuyibiao_zhuanjifengmian);
     pet_dashboard_music_receive_text(1, (const uint8_t *)"Next lyric line", 15);
-    pet_dashboard_music_receive_text(2, (const uint8_t *)"Test song", 9);
-    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), "Test song"));
+    pet_dashboard_music_receive_text(2, (const uint8_t *)song, strlen(song));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_gequmingcheng), song));
     assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "Next lyric line"));
     assert(pet_dashboard_music_get_view()->track_revision == revision);
     assert(lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian) == shown);
@@ -227,7 +316,7 @@ static void verify_media(lv_ui_chongwuyibiao *ui)
     assert(lv_image_get_rotation(ui->chongwuyibiao_zhuanjifengmian) == angle);
     pet_dashboard_music_request(PET_MUSIC_TOGGLE_VIEW);
     pet_dashboard_music_receive_text(1, (const uint8_t *)"New first lyric", 15);
-    pet_dashboard_music_receive_text(2, (const uint8_t *)"Another song", 12);
+    pet_dashboard_music_receive_text(2, (const uint8_t *)next_song, strlen(next_song));
     assert(lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian) == shown);
     pet_dashboard_music_receive_text(8, (const uint8_t *)"0000053", 7);
     assert(!lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian));
@@ -258,8 +347,10 @@ int main(void)
     expect(&ui, false, false, false);
     pet_dashboard_music_update(true, true, 100);
     expect(&ui, true, true, true);
+    verify_metadata(&ui);
     verify_media(&ui);
     verify_title_scroll(&ui);
+    verify_lyric_wait(&ui);
     lv_obj_send_event(ui.chongwuyibiao_tinggexiaogou, LV_EVENT_CLICKED, NULL);
     expect(&ui, true, true, false);
     assert(lv_strcmp(lv_label_get_text(ui.chongwuyibiao_chesushuzi), "46") == 0);
@@ -278,15 +369,26 @@ int main(void)
     expect(&ui, true, true, false);
 
     lv_obj_t *other = lv_obj_create(NULL);
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    set_heading("等待期间删除页面");
+    advance(300);
+    assert(!strcmp(lv_label_get_text(ui.chongwuyibiao_geciwenzi), ""));
+#endif
     lv_screen_load(other);
     lv_obj_delete(ui.chongwuyibiao);
+    advance(1600); /* 已删除页面的等待回调不能继续执行。 */
     pet_dashboard_music_poll(8000); /* 删除页面后仍可推进应用状态。 */
     lv_ui_chongwuyibiao rebuilt = {0};
     create_view(&rebuilt);
     lv_screen_load(rebuilt.chongwuyibiao);
     expect(&rebuilt, true, true, false); /* 手动返回状态不随重建丢失。 */
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    assert(!strcmp(lv_label_get_text(rebuilt.chongwuyibiao_geciwenzi), ""));
+    advance(300);
+#endif
     pet_dashboard_music_update(false, false, 9000);
     expect(&rebuilt, false, false, false);
+    advance(1600); /* 断开时取消等待。 */
     lv_screen_load(other);
     lv_obj_delete(rebuilt.chongwuyibiao);
     pet_dashboard_music_update(true, true, 10000);
@@ -294,8 +396,15 @@ int main(void)
     create_view(&playing);
     lv_screen_load(playing.chongwuyibiao);
     expect(&playing, true, true, true);
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    assert(!strcmp(lv_label_get_text(playing.chongwuyibiao_geciwenzi), ""));
+    advance(1030);
+    assert(!strcmp(lv_label_get_text(playing.chongwuyibiao_geciwenzi), "暂无歌词"));
+    set_heading("再次删除等待中的页面");
+#endif
     lv_screen_load(other);
     lv_obj_delete(playing.chongwuyibiao);
+    advance(1600);
     lv_freetype_font_delete(title_font);
     puts("PASS: LVGL visibility, metadata, album copy/reset, rotation/pause, alternating note/fade, deletion/recreation");
     return 0;

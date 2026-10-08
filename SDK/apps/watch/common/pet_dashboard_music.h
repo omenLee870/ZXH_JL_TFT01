@@ -3,12 +3,12 @@
 
 #include <stdint.h>
 
-/* 1：已验证的蓝牙歌词模式（TITLE=歌词，ARTIST=歌曲信息）；0：普通歌曲模式。 */
+/* 0：普通歌曲；1：固定歌词格式；2：普通属性与已验证的蓝牙歌词扩展共存。 */
 #ifndef PET_DASHBOARD_BT_LYRICS_MODE
-#define PET_DASHBOARD_BT_LYRICS_MODE 1
+#define PET_DASHBOARD_BT_LYRICS_MODE 2
 #endif
-#if PET_DASHBOARD_BT_LYRICS_MODE != 0 && PET_DASHBOARD_BT_LYRICS_MODE != 1
-#error "PET_DASHBOARD_BT_LYRICS_MODE must be 0 or 1"
+#if PET_DASHBOARD_BT_LYRICS_MODE < 0 || PET_DASHBOARD_BT_LYRICS_MODE > 2
+#error "PET_DASHBOARD_BT_LYRICS_MODE must be 0, 1 or 2"
 #endif
 
 /* 应用层输出，UI 只按这些状态显示。 */

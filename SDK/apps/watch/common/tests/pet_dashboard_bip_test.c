@@ -10,6 +10,33 @@ u8 bip_file_status_get(void);
 static unsigned commands, notifications;
 static bool reject_command;
 
+#if TCFG_PSRAM_DEV_ENABLE
+/* Only the JPEG receive cache is allocated in this host test. Check pool
+ * ownership across replacement, realloc failure, and error cleanup. */
+static void *psram_live;
+static bool reject_psram;
+void *malloc_psram(size_t size)
+{
+    assert(psram_live == NULL);
+    psram_live = malloc(size);
+    return psram_live;
+}
+void *realloc_psram(void *ptr, size_t size)
+{
+    assert(ptr != NULL && ptr == psram_live);
+    if (reject_psram) { reject_psram = false; return NULL; }
+    void *grown = realloc(ptr, size);
+    if (grown) psram_live = grown;
+    return grown;
+}
+void free_psram(void *ptr)
+{
+    assert(ptr != NULL && ptr == psram_live);
+    free(ptr);
+    psram_live = NULL;
+}
+#endif
+
 /** @brief 检查真实接收代码的加锁配对。 */
 int os_mutex_create(OS_MUTEX *mutex) { *mutex = 0; return 0; }
 int os_mutex_pend(OS_MUTEX *mutex, int timeout)
@@ -87,5 +114,27 @@ int main(void)
     assert(!bip_file_data_get());
     assert(notifications == 4);
     puts("PASS: rejected commands retry; disconnect drops late STOP; real error frees buffer");
+
+    pet_dashboard_music_album_select("0000057");
+    assert(pet_dashboard_music_album_request() == 0);
+    bip_rx_data_handle(data, 2, 3, 1);
+    bip_rx_data_handle(data + 2, 4, 0, 3);
+    assert(bip_file_status_get() == 1 && bip_file_data_size() == 6);
+    assert(!memcmp(bip_file_data_get(), data, 6));
+    /* START must release the previous cache before allocating a new one. */
+    bip_rx_data_handle(data, 2, 3, 1);
+#if TCFG_PSRAM_DEV_ENABLE
+    buffer = bip_file_data_get();
+    reject_psram = true;
+    bip_rx_data_handle(data + 2, 4, 0, 2);
+    assert(bip_file_status_get() == 0 && bip_file_data_get() == buffer);
+    assert(bip_file_data_size() == 2); /* Failed realloc keeps the owned allocation. */
+#endif
+    bip_rx_data_handle(NULL, 0, 0, 4);
+    assert(bip_file_data_get() == NULL);
+#if TCFG_PSRAM_DEV_ENABLE
+    assert(psram_live == NULL);
+#endif
+    puts("PASS: JPEG growth preserves bytes; replacement and failed growth keep allocation/free paired");
     return 0;
 }

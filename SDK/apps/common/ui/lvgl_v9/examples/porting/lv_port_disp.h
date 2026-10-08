@@ -65,6 +65,8 @@ void lv_jl_lcd_align_render_area(lv_area_t *area);
  * 释放被渲染引用过的显示 buffer 前调用: 先删除/停用相关控件, 再调用本函数,
  * 返回后不再有渲染引用, 可安全释放 buffer 或拆显示通路。 */
 void lv_jlgpu_run_disp_drain(void);
+/* 仅从 LVGL 线程调用。超时返回 false，调用方必须保留在途帧引用的数据。 */
+bool lv_jlgpu_run_disp_wait_idle(void);
 
 /**********************
  *      MACROS

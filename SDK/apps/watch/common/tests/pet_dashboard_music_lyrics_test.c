@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#if !PET_DASHBOARD_BT_LYRICS_MODE
-#error "This test requires the explicit Bluetooth lyrics mode"
+#if PET_DASHBOARD_BT_LYRICS_MODE != 1
+#error "This test requires the fixed Bluetooth lyrics mode"
 #endif
 
 static pet_dashboard_music_view_t rendered;

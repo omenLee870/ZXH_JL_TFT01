@@ -29,6 +29,13 @@ static bool cover_requested;
 /* SDK 按 TITLE→ARTIST 返回属性，保留本组歌词供随后到达的歌曲信息关联。 */
 static char pending_lyric[256];
 static bool pending_lyric_valid;
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+/* 保存真实歌名，普通信息补发不能清掉同首歌已经收到的歌词。 */
+static char metadata_title[256];
+static bool metadata_is_lyrics;
+static uint32_t pending_text_at;
+static void music_apply_pending_text(void);
+#endif
 #endif
 #ifndef PET_DASHBOARD_MUSIC_SIMULATOR
 static uint16_t check_timer;
@@ -89,6 +96,11 @@ void pet_dashboard_music_reset(void)
 #if PET_DASHBOARD_BT_LYRICS_MODE
     pending_lyric[0] = '\0';
     pending_lyric_valid = false;
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    metadata_title[0] = '\0';
+    metadata_is_lyrics = false;
+    pending_text_at = 0;
+#endif
 #endif
 }
 
@@ -116,6 +128,10 @@ void pet_dashboard_music_update(uint8_t connected, uint8_t playing, uint32_t now
 #if PET_DASHBOARD_BT_LYRICS_MODE
         pending_lyric[0] = '\0';
         pending_lyric_valid = false;
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+        metadata_title[0] = '\0';
+        metadata_is_lyrics = false;
+#endif
 #endif
     } else if (playing) {
         exit_pending = false;
@@ -132,6 +148,13 @@ void pet_dashboard_music_update(uint8_t connected, uint8_t playing, uint32_t now
     }
     view.connected = connected;
     view.playing = playing;
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    /* 同组 TITLE 与 ARTIST 一起解释；只有 TITLE 时按已确认格式补发。 */
+    if (connected && pending_lyric_valid && (uint32_t)(now_ms - pending_text_at) >= 100U) {
+        music_apply_pending_text();
+        pending_lyric_valid = false;
+    }
+#endif
     music_publish(false);
 }
 
@@ -207,7 +230,57 @@ static void music_cover_changed(const char *handle)
 #endif
 }
 
-/** @brief 按确认的字段分工更新快照，所有处理均在应用线程完成。 */
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+static void music_apply_normal_title(const char *title)
+{
+    if (strcmp(metadata_title, title)) {
+        view.lyric[0] = '\0';
+        view.artist[0] = '\0';
+    }
+    strcpy(metadata_title, title);
+    strcpy(view.title, title);
+}
+
+static void music_apply_pending_text(void)
+{
+    if (metadata_is_lyrics) strcpy(view.lyric, pending_lyric);
+    else music_apply_normal_title(pending_lyric);
+}
+
+/* 当前实机歌词扩展用 ARTIST="歌名 - 歌手"，TITLE 为歌词；保留组合原文。 */
+static const char *music_heading_separator(const char *heading)
+{
+    const char *separator = strstr(heading, " - ");
+    return separator && separator != heading && separator[3] ? separator : NULL;
+}
+
+static void music_apply_metadata_pair(const char *artist)
+{
+    const char *separator = music_heading_separator(artist);
+    metadata_is_lyrics = separator != NULL;
+    if (separator) {
+        char title[256];
+        unsigned title_len = (unsigned)(separator - artist);
+        memcpy(title, artist, title_len);
+        title[title_len] = '\0';
+        if (strcmp(metadata_title, title) && !pending_lyric_valid) view.lyric[0] = '\0';
+        strcpy(metadata_title, title);
+        strcpy(view.title, artist);
+        if (pending_lyric_valid) strcpy(view.lyric, pending_lyric);
+        artist = separator + 3;
+    } else if (pending_lyric_valid) {
+        music_apply_normal_title(pending_lyric);
+    }
+    music_copy_text(view.artist, sizeof(view.artist), (const uint8_t *)artist, strlen(artist));
+    pending_lyric_valid = false;
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+    printf("[PET_MUSIC] metadata format=%s title=%s lyric=%s\n",
+           metadata_is_lyrics ? "lyrics" : "normal", view.title, view.lyric);
+#endif
+}
+#endif
+
+/** @brief 普通歌曲信息与歌词独立更新，所有处理均在应用线程完成。 */
 static void music_apply_text(uint8_t type, const uint8_t *text, uint16_t length)
 {
     if (!view.connected) return;
@@ -219,7 +292,23 @@ static void music_apply_text(uint8_t type, const uint8_t *text, uint16_t length)
         return;
     }
     char copy[256];
-#if PET_DASHBOARD_BT_LYRICS_MODE
+#if PET_DASHBOARD_BT_LYRICS_MODE == 2
+    music_copy_text(copy, sizeof(copy), text, length);
+    if (type == 1) {
+        strcpy(pending_lyric, copy);
+        pending_lyric_valid = true;
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+        pending_text_at = sys_timer_get_ms();
+#else
+        pending_text_at = last_tick;
+#endif
+        return;
+    } else if (type == 2) {
+        if (copy[0]) music_apply_metadata_pair(copy);
+    } else if (type == 0x80) {
+        strcpy(view.lyric, copy);
+    }
+#elif PET_DASHBOARD_BT_LYRICS_MODE == 1
     music_copy_text(copy, sizeof(copy), text, length);
     if (type == 1) {
         strcpy(pending_lyric, copy);
@@ -378,7 +467,8 @@ int pet_dashboard_music_start(void)
     if (check_timer != 0) return 0;
     check_timer = sys_timer_add(0, music_timer, MUSIC_CHECK_PERIOD_MS);
     if (check_timer == 0) return -1;
-    printf("[PET_MUSIC] text mode=%s\n", PET_DASHBOARD_BT_LYRICS_MODE ? "lyrics" : "normal");
+    printf("[PET_MUSIC] text mode=%s\n", PET_DASHBOARD_BT_LYRICS_MODE == 2 ? "mixed-v2" :
+           PET_DASHBOARD_BT_LYRICS_MODE ? "lyrics" : "normal");
     pet_dashboard_music_poll(sys_timer_get_ms());
 #else
     music_publish(true);

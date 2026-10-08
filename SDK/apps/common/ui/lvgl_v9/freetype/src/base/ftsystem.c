@@ -33,6 +33,19 @@
 #include <freetype/fterrors.h>
 #include <freetype/fttypes.h>
 #include "fs/fs.h"
+#include "app_config.h"
+#include "malloc.h"
+
+/* This build uses the native FreeType port, independently of lv_malloc.
+ * Keep all of its alloc/realloc/free callbacks in the same memory pool. */
+#if TCFG_PSRAM_DEV_ENABLE
+#undef ft_smalloc
+#undef ft_srealloc
+#undef ft_sfree
+#define ft_smalloc  malloc_psram
+#define ft_srealloc realloc_psram
+#define ft_sfree    free_psram
+#endif
 
 #define USE_FS_ACCELERATE 1
 #define LV_TTF_FILE_NAME_LEN  (15)

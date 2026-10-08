@@ -1071,13 +1071,31 @@ void disp_flush_post_msg(void)
  * 阻塞到在飞渲染结束, 即可安全释放。
  * 语义: jlgpu_run_disp_sem(初值1) 在 disp_flush pend、在 run_disp_cb post,
  *       因此 sem==0 表示有任务在队列/在飞; pend 成功即表示渲染线程已空闲。 */
-void lv_jlgpu_run_disp_drain(void)
+bool lv_jlgpu_run_disp_wait_idle(void)
 {
     if (os_sem_pend(&jlgpu_run_disp_sem, 300) == OS_ERR_NONE) {
+        /* lcd->draw 返回只代表提交了传输；其它推屏入口也可能留下在途 DBI。 */
+        extern int lcd_busy(void);
+        uint32_t begin = get_system_ms();
+        while (lcd_busy()) {
+            if ((uint32_t)(get_system_ms() - begin) >= 2000U) {
+                os_sem_post(&jlgpu_run_disp_sem);
+                printf("lv_jlgpu_run_disp_wait_idle: LCD timeout\n");
+                return false;
+            }
+            os_time_dly(1);
+        }
         os_sem_post(&jlgpu_run_disp_sem);
+        return true;
     } else {
         printf("lv_jlgpu_run_disp_drain: timeout\n");
+        return false;
     }
+}
+
+void lv_jlgpu_run_disp_drain(void)
+{
+    (void)lv_jlgpu_run_disp_wait_idle();
 }
 #endif
 
@@ -1623,13 +1641,7 @@ static void _jlgpu_run_disp_cb(void *ptr)
         /* 窗口与落点由生产者按脏区定好(见 lv_jlgpu_prepare_render_area), 这里直接用 */
         jlgpu_task_list_disp_run(disp_drv, unit, &lv_jl_lcd.render_area, px_map + lv_jl_lcd.render_ofs);
 
-        //处理完成后立刻释放当前unit链表内存
-#if JLGPU_PUSH_SYNC_WITH_LVGL
-        /* SYNC 模式:链表内存必须等推屏(lcd->draw)返回后再释放(与 LIST==1 顺序一致),
-         * 释放点挪到下面 lcd->draw 之后 */
-#else
-        lv_jlgpu_task_list_free(unit);
-#endif
+        /* GPU→DBI 联动期间仍可能读取任务链，释放点必须在真实推屏结束之后。 */
 
 #if LV_JLGPU_DISP_PROFILE
         int64_t t1 = get_system_us();
@@ -1675,13 +1687,13 @@ static void _jlgpu_run_disp_cb(void *ptr)
         lv_jl_lcd.lcd->set_draw_area(full_area.x1, full_area.x2, full_area.y1, full_area.y2);
         lv_jl_lcd.lcd->draw((uint8_t *)px_map, full_area.x1, full_area.x2, full_area.y1, full_area.y2);
 
+        /* draw 是异步提交；等 tgen_done 清 busy 才能释放链表、独占门及完成信号。 */
+        lv_jl_lcd_wait_or_recover_stuck();
+
         /* 推屏结束,放开独占门(见上面的 jlgpu_push_gate_enter) */
         jlgpu_push_gate_leave();
 
-#if JLGPU_PUSH_SYNC_WITH_LVGL
-        /* 推屏已返回,这时才释放链表内存(原实现在 lcd->draw 之前释放) */
         lv_jlgpu_task_list_free(unit);
-#endif
 
 
 #if LV_JLGPU_DISP_PROFILE

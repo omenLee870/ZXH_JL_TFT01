@@ -17,4 +17,9 @@ int os_mutex_pend(OS_MUTEX *mutex, int timeout);
 int os_mutex_post(OS_MUTEX *mutex);
 int bt_cmd_prepare(int command, int length, void *data);
 void bt_music_post_msg_to_lvgl_ui(const char *message);
+#if TCFG_PSRAM_DEV_ENABLE
+void *malloc_psram(size_t size);
+void *realloc_psram(void *ptr, size_t size);
+void free_psram(void *ptr);
+#endif
 #endif
