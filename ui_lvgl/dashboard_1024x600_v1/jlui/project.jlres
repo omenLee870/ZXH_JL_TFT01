@@ -118,6 +118,26 @@
         "range": "",
         "fs_type": "default",
         "font_format": "default"
+      },
+      {
+        "id": "$ZwMBhQOHkEmllYPd",
+        "name": "",
+        "font": 26,
+        "font_family": "lyrics",
+        "content": "",
+        "range": "",
+        "fs_type": "flash",
+        "font_format": "file"
+      },
+      {
+        "id": "$sRnXZO5geedvJpkK",
+        "name": "",
+        "font": 20,
+        "font_family": "lyrics",
+        "content": "",
+        "range": "",
+        "fs_type": "flash",
+        "font_format": "file"
       }
     ]
   },

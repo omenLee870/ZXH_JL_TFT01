@@ -449,7 +449,8 @@ void bt_music_post_msg_to_lvgl_ui(const char *msg, ...)
         ui_music_artist_handler(va_arg(argptr, char *));
     } else if (strstr(msg, "music_album_pic")) {
         /*lvgl_rpc_post_func(mpi_vdec_demo, 1, NULL); //ui_music_album_pic_handler, 0);*/
-        lvgl_rpc_post_func(mpi_vdec_demo_wrapper, 1, NULL);
+        int ret = lvgl_rpc_post_func(mpi_vdec_demo_wrapper, 1, NULL);
+        printf("[BIP] UI notify ret=%d\n", ret);
     } else if (strstr(msg, "music_volume")) {
         ui_music_volume_handler(va_arg(argptr, int));
     } else if (strstr(msg, "player_state")) {

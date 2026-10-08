@@ -1,0 +1,306 @@
+#include "pet_dashboard_music.h"
+#include <string.h>
+
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+#include "app_config.h"
+#include "app_msg.h"
+#include "system/timer.h"
+#include <stdlib.h>
+#if TCFG_APP_BT_EN && TCFG_USER_BT_CLASSIC_ENABLE
+#include "btstack/avctp_user.h"
+#include "bt_event_func.h"
+#include "bt.h"
+#endif
+#else
+#include <stdbool.h>
+#endif
+
+#define MUSIC_CHECK_PERIOD_MS 100U
+#define MUSIC_EXIT_DELAY_MS 3000U
+
+static pet_dashboard_music_view_t view;
+static pet_dashboard_music_view_t sent_view;
+static bool notify_pending = true;
+static bool exit_pending;
+static uint32_t stopped_at;
+static uint32_t last_tick;
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+static uint16_t check_timer;
+static uint32_t metadata_checked_at;
+static bool metadata_requested;
+#endif
+
+/** @brief 默认显示出口，UI 适配层提供实际实现。 */
+__attribute__((weak)) int pet_dashboard_music_notify(const pet_dashboard_music_view_t *state)
+{
+    (void)state;
+    return 0;
+}
+
+/** @brief 未启用 BIP 接收服务时的空实现。 */
+__attribute__((weak)) void pet_dashboard_music_album_reset(void)
+{
+}
+
+/** @brief 只在状态改变或主动刷新时通知显示层。 */
+static void music_publish(bool force)
+{
+    if (force || memcmp(&view, &sent_view, sizeof(view)) != 0) {
+        notify_pending = true;
+    }
+    if (notify_pending && pet_dashboard_music_notify(&view) == 0) {
+        sent_view = view;
+        notify_pending = false;
+    }
+}
+
+/** @brief 初始化业务状态，不操作页面控件。 */
+void pet_dashboard_music_reset(void)
+{
+    memset(&view, 0, sizeof(view));
+    sent_view = view;
+    notify_pending = true;
+    exit_pending = false;
+    stopped_at = 0;
+    last_tick = 0;
+}
+
+/** @brief 获取状态快照，仅供应用线程或仿真检查。 */
+const pet_dashboard_music_view_t *pet_dashboard_music_get_view(void)
+{
+    return &view;
+}
+
+/** @brief 根据真实连接和播放状态推进显示规则，now_ms 为单调毫秒时钟。 */
+void pet_dashboard_music_update(uint8_t connected, uint8_t playing, uint32_t now_ms)
+{
+    last_tick = now_ms;
+    playing = connected && playing;
+    if (!connected) {
+        if (view.connected) {
+            pet_dashboard_music_album_reset();
+            view.title[0] = view.artist[0] = view.lyric[0] = '\0';
+            view.track_revision++;
+        }
+        view.music_visible = false;
+        exit_pending = false;
+    } else if (playing) {
+        exit_pending = false;
+        /* 只在开始/恢复播放时进入，手动返回后持续播放不再抢占。 */
+        if (!view.playing) view.music_visible = true;
+    } else if (view.music_visible) {
+        if (!exit_pending) {
+            stopped_at = now_ms;
+            exit_pending = true;
+        } else if ((uint32_t)(now_ms - stopped_at) >= MUSIC_EXIT_DELAY_MS) {
+            view.music_visible = false;
+            exit_pending = false;
+        }
+    }
+    view.connected = connected;
+    view.playing = playing;
+    music_publish(false);
+}
+
+/** @brief 查询 A2DP 状态；未初始化或未连接时按停止处理。 */
+void pet_dashboard_music_poll(uint32_t now_ms)
+{
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+    bool connected = false;
+    bool playing = false;
+#if TCFG_APP_BT_EN && TCFG_USER_BT_CLASSIC_ENABLE
+    if (get_bt_init_status()) {
+        connected = bt_get_total_connect_dev() > 0;
+        playing = connected && bt_a2dp_get_status() == BT_MUSIC_STATUS_STARTING;
+        /* 主动补取信息，兼容没有及时发送歌曲变更通知的手机。 */
+        if (connected && (!metadata_requested || (playing && !view.playing) ||
+                          (playing && (uint32_t)(now_ms - metadata_checked_at) >= 2000U))) {
+            bt_cmd_prepare(USER_CTRL_AVCTP_OPID_GET_MUSIC_INFO, 0, NULL);
+            metadata_checked_at = now_ms;
+            metadata_requested = true;
+        }
+    }
+    if (!connected) metadata_requested = false;
+#endif
+    pet_dashboard_music_update(connected, playing, now_ms);
+#else
+    pet_dashboard_music_update(view.connected, view.playing, now_ms);
+#endif
+}
+
+/** @brief 限长复制完整 UTF-8 字符，丢弃无效字节和控制字符。 */
+static void music_copy_text(char *out, unsigned capacity, const uint8_t *in, unsigned length)
+{
+    unsigned i = 0, used = 0;
+    while (i < length && in[i] != 0 && used + 1 < capacity) {
+        unsigned n = in[i] < 0x80 ? 1 : in[i] >= 0xc2 && in[i] <= 0xdf ? 2 :
+                     in[i] >= 0xe0 && in[i] <= 0xef ? 3 :
+                     in[i] >= 0xf0 && in[i] <= 0xf4 ? 4 : 0;
+        if (!n) { i++; continue; }
+        if (i + n > length || used + n >= capacity) break;
+        unsigned j;
+        for (j = 1; j < n && (in[i + j] & 0xc0) == 0x80; j++) {}
+        if (j != n || (n == 3 && ((in[i] == 0xe0 && in[i+1] < 0xa0) ||
+                                  (in[i] == 0xed && in[i+1] >= 0xa0))) ||
+            (n == 4 && ((in[i] == 0xf0 && in[i+1] < 0x90) ||
+                       (in[i] == 0xf4 && in[i+1] >= 0x90)))) { i++; continue; }
+        if (n == 1 && (in[i] < 0x20 || in[i] == 0x7f)) {
+            if (in[i] == '\n' || in[i] == '\r' || in[i] == '\t') out[used++] = ' ';
+        } else {
+            memcpy(out + used, in + i, n);
+            used += n;
+        }
+        i += n;
+    }
+    out[used] = '\0';
+}
+
+/** @brief 在应用线程更新歌曲信息；换歌清掉上一首的歌词。 */
+static void music_apply_text(uint8_t type, const uint8_t *text, uint16_t length)
+{
+    if (!view.connected) return;
+    char copy[256];
+    music_copy_text(copy, type == 2 ? sizeof(view.artist) : sizeof(copy), text, length);
+    if (type == 1) {
+        if (strcmp(view.title, copy) == 0) return;
+        strcpy(view.title, copy);
+        view.artist[0] = view.lyric[0] = '\0';
+        view.track_revision++;
+        pet_dashboard_music_album_reset();
+#if !defined(PET_DASHBOARD_MUSIC_SIMULATOR) && TCFG_BT_SUPPORT_BIP
+        /* 同一专辑内换歌也必须取图，不能只比较专辑名。 */
+        if (copy[0]) {
+            int ret = bt_cmd_prepare(USER_CTRL_BIP_GET_IMAGE, 0, NULL);
+            printf("[PET_MUSIC] cover request rev=%u ret=%d title=%s\n",
+                   view.track_revision, ret, copy);
+        }
+#endif
+    } else if (type == 2) strcpy(view.artist, copy);
+    else if (type == 0x80) strcpy(view.lyric, copy);
+    music_publish(false);
+}
+
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+typedef struct {
+    uint16_t length;
+    uint8_t type;
+    uint8_t data[256];
+} music_text_message_t;
+
+/** @brief 消费跨线程的独立文本副本，释放消息所有权。 */
+static void music_text_callback(void *priv)
+{
+    music_text_message_t *message = priv;
+    music_apply_text(message->type, message->data, message->length);
+    free(message);
+}
+#endif
+
+/** @brief 拷贝蓝牙临时数据后投递应用线程，避免保存回调指针。 */
+int pet_dashboard_music_receive_text(uint8_t type, const uint8_t *text, uint16_t length)
+{
+    if (type != 1 && type != 2 && type != 0x80) return -1;
+    if (!text && length) return -1;
+    if (length > 255) length = 255;
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+    music_text_message_t *message = malloc(sizeof(*message));
+    if (!message) return -1;
+    message->length = length;
+    message->type = type;
+    if (length) memcpy(message->data, text, length);
+    int argv[3] = {(int)music_text_callback, 1, (int)message};
+    int ret = os_taskq_post_type("app_core", Q_CALLBACK, 3, argv);
+    if (ret) free(message);
+    return ret;
+#else
+    music_apply_text(type, text, length);
+    return 0;
+#endif
+}
+
+/** @brief 手动切换显示，暂停时打开音乐区重新计时三秒。 */
+static void music_toggle(uint32_t now_ms)
+{
+    if (!view.connected) return;
+    view.music_visible = !view.music_visible;
+    exit_pending = view.music_visible && !view.playing;
+    if (exit_pending) stopped_at = now_ms;
+    music_publish(false);
+}
+
+/** @brief 发送手机媒体控制命令，显示状态以蓝牙实际反馈为准。 */
+static void music_control(pet_dashboard_music_request_t request)
+{
+#if !defined(PET_DASHBOARD_MUSIC_SIMULATOR) && TCFG_APP_BT_EN && TCFG_USER_BT_CLASSIC_ENABLE
+    if (!view.connected || !get_bt_init_status() || bt_get_total_connect_dev() == 0) return;
+    USER_CMD_TYPE op;
+    switch (request) {
+    case PET_MUSIC_PREVIOUS: op = USER_CTRL_AVCTP_OPID_PREV; break;
+    case PET_MUSIC_NEXT: op = USER_CTRL_AVCTP_OPID_NEXT; break;
+    case PET_MUSIC_PLAY: op = USER_CTRL_AVCTP_OPID_PLAY; break;
+    case PET_MUSIC_PAUSE: op = USER_CTRL_AVCTP_OPID_PAUSE; break;
+    default: return;
+    }
+    bt_cmd_prepare(op, 0, 0);
+#else
+    (void)request;
+#endif
+}
+
+/** @brief 在应用线程执行输入请求，先同步最新播放状态。 */
+static void music_handle_request(pet_dashboard_music_request_t request, uint32_t now_ms)
+{
+    pet_dashboard_music_poll(now_ms);
+    if (request == PET_MUSIC_REFRESH) music_publish(true);
+    else if (request == PET_MUSIC_TOGGLE_VIEW) music_toggle(now_ms);
+    else music_control(request);
+}
+
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+/** @brief 应用线程的周期检测，UI 不承担检测和计时。 */
+static void music_timer(void *priv)
+{
+    (void)priv;
+    pet_dashboard_music_poll(sys_timer_get_ms());
+}
+
+/** @brief 截获仪表音乐请求，适用于所有应用模式。 */
+static int music_app_message(int *msg)
+{
+    if (msg[0] != APP_MSG_PET_DASHBOARD_MUSIC) return 0;
+    music_handle_request((pet_dashboard_music_request_t)msg[1], sys_timer_get_ms());
+    return 1;
+}
+
+APP_MSG_PROB_HANDLER(pet_dashboard_music_message) = {
+    .owner = 0xff,
+    .from = MSG_FROM_APP,
+    .handler = music_app_message,
+};
+#endif
+
+/** @brief 启动应用层检测；重复调用不会重置手动选择。 */
+int pet_dashboard_music_start(void)
+{
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+    if (check_timer != 0) return 0;
+    check_timer = sys_timer_add(0, music_timer, MUSIC_CHECK_PERIOD_MS);
+    if (check_timer == 0) return -1;
+    pet_dashboard_music_poll(sys_timer_get_ms());
+#else
+    music_publish(true);
+#endif
+    return 0;
+}
+
+/** @brief 跨线程投递用户操作，仿真直接调用相同处理流程。 */
+int pet_dashboard_music_request(pet_dashboard_music_request_t request)
+{
+    if (request < PET_MUSIC_REFRESH || request > PET_MUSIC_PAUSE) return -1;
+#ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+    return app_send_message(APP_MSG_PET_DASHBOARD_MUSIC, request);
+#else
+    music_handle_request(request, last_tick);
+    return 0;
+#endif
+}

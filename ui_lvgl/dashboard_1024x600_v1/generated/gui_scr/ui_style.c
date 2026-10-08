@@ -130,6 +130,7 @@ void ui_style_init(void)
 	lv_style_init(&gui_img_main_default_style);
 	lv_style_set_radius(&gui_img_main_default_style, 0);
 	lv_style_set_clip_corner(&gui_img_main_default_style, true);
+	lv_style_set_clip_corner(&gui_img_main_default_style, true);
 	lv_style_set_bg_color(&gui_img_main_default_style, lv_color_make(0xff, 0xff, 0xff));
 	lv_style_set_bg_grad_color(&gui_img_main_default_style, lv_color_make(0xff, 0xff, 0xff));
 	lv_style_set_bg_grad_dir(&gui_img_main_default_style, LV_GRAD_DIR_NONE);

@@ -17,9 +17,9 @@ static const char* page_map_imgList_gear_mode_imgs[3] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\TTFAR.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\FREE.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000014.zip",
 	"storage/res_nor_mode/C/lvgl/4b000015.zip",
-	"storage/res_nor_mode/C/lvgl/4b000016.zip"
+	"storage/res_nor_mode/C/lvgl/4b000016.zip",
+	"storage/res_nor_mode/C/lvgl/4b000017.zip"
 #endif
 };
 static const char* page_map_imgList_bluetooth_imgs[2] = {
@@ -27,8 +27,8 @@ static const char* page_map_imgList_bluetooth_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_25.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_26.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000018.zip",
-	"storage/res_nor_mode/C/lvgl/4b000019.zip"
+	"storage/res_nor_mode/C/lvgl/4b000019.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001a.zip"
 #endif
 };
 static const char* page_map_imgList_phone_bl_imgs[2] = {
@@ -36,8 +36,8 @@ static const char* page_map_imgList_phone_bl_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_23.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_24.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001a.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001b.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001b.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001c.zip"
 #endif
 };
 static const char* page_map_imgList_gps_imgs[2] = {
@@ -45,8 +45,8 @@ static const char* page_map_imgList_gps_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_29.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_30.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001c.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001d.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001d.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001e.zip"
 #endif
 };
 static const char* page_map_imgList_networksignal_imgs[2] = {
@@ -54,8 +54,8 @@ static const char* page_map_imgList_networksignal_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_27.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_28.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001e.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001f.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001f.zip",
+	"storage/res_nor_mode/C/lvgl/4b000020.zip"
 #endif
 };
 static const char* page_map_imgList_soc_beam_imgs[3] = {
@@ -64,9 +64,9 @@ static const char* page_map_imgList_soc_beam_imgs[3] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_21.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_22.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000022.zip",
 	"storage/res_nor_mode/C/lvgl/4b000023.zip",
-	"storage/res_nor_mode/C/lvgl/4b000024.zip"
+	"storage/res_nor_mode/C/lvgl/4b000024.zip",
+	"storage/res_nor_mode/C/lvgl/4b000025.zip"
 #endif
 };
 static const char* page_map_imglist_bat_imgs[100] = {
@@ -172,7 +172,6 @@ static const char* page_map_imglist_bat_imgs[100] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat099.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat100.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000025.zip",
 	"storage/res_nor_mode/C/lvgl/4b000026.zip",
 	"storage/res_nor_mode/C/lvgl/4b000027.zip",
 	"storage/res_nor_mode/C/lvgl/4b000028.zip",
@@ -271,7 +270,8 @@ static const char* page_map_imglist_bat_imgs[100] = {
 	"storage/res_nor_mode/C/lvgl/4b000085.zip",
 	"storage/res_nor_mode/C/lvgl/4b000086.zip",
 	"storage/res_nor_mode/C/lvgl/4b000087.zip",
-	"storage/res_nor_mode/C/lvgl/4b000088.zip"
+	"storage/res_nor_mode/C/lvgl/4b000088.zip",
+	"storage/res_nor_mode/C/lvgl/4b000089.zip"
 #endif
 };
 

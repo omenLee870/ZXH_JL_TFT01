@@ -11,6 +11,7 @@
 #include "mpi_common.h"
 #include "mpi_vdec.h"
 #include "custom.h"
+#include "chongwuyibiao_yinyue.h"
 #include "lvgl.h"
 #include "ui.h"
 #include "fs/fs.h"
@@ -49,7 +50,17 @@ struct bip_file_info {
 };
 
 static struct bip_file_info bip_file;
+static bool bip_initialized;
 #define __bip_info (&bip_file)
+
+/** @brief 换歌后让上一首的 JPEG 缓存失效，不操作页面控件。 */
+void pet_dashboard_music_album_reset(void)
+{
+    if (!bip_initialized) return;
+    os_mutex_pend(&bip_file.mutex, 0);
+    bip_file.file_status = BIP_FILE_STATUS_ERR;
+    os_mutex_post(&bip_file.mutex);
+}
 
 static uint32_t music_angle_idx = 0;
 static bool music_rotation_enabled = true;
@@ -73,14 +84,19 @@ static int bip_file_mutex_unlock(void)
 // ======================= 内部数据更新函数 =======================
 static void bip_file_data_update(u8 *data, u32 length)
 {
-    if (!__bip_info->buffer) {
+    if (!__bip_info->buffer || (!data && length) ||
+        length > 2 * 1024 * 1024 - __bip_info->buffer_offset) {
+        __bip_info->file_status = BIP_FILE_STATUS_ERR;
         return;
     }
     if (__bip_info->buffer_offset + length > __bip_info->buffer_size) {
-        u32 new_size = __bip_info->buffer_size * 2;
+        u32 required = __bip_info->buffer_offset + length;
+        u32 new_size = MAX(required, __bip_info->buffer_size * 2);
+        if (new_size > 2 * 1024 * 1024) new_size = 2 * 1024 * 1024;
         u8 *new_buf = (u8 *)realloc(__bip_info->buffer, new_size);
         if (!new_buf) {
             printf("realloc failed, drop data\n");
+            __bip_info->file_status = BIP_FILE_STATUS_ERR;
             return;
         }
         __bip_info->buffer = new_buf;
@@ -104,7 +120,7 @@ u32 bip_file_data_size(void)
 // ======================= BIP 回调处理（内存版本） =======================
 void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status)
 {
-    printf("[BIP] status=%d, len=%d\n", bip_data_status, body_len);
+    printf("[BIP] rx status=%u chunk=%u total=%u\n", bip_data_status, body_len, length);
 
     switch (bip_data_status) {
     case BIP_DATA_STATUS_START:
@@ -119,11 +135,11 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
         // 初始分配 50KB，若 length 有效则按 length 分配
         __bip_info->buffer_size = (length > 0 && length < 2 * 1024 * 1024) ? length : 50 * 1024;
         __bip_info->buffer = (u8 *)malloc(__bip_info->buffer_size);
+        __bip_info->buffer_offset = 0;
         if (__bip_info->buffer) {
             __bip_info->file_status = BIP_FILE_STATUS_UPDATE;
             __bip_info->buffer_offset = 0;
-            memcpy(__bip_info->buffer, packet, body_len);
-            __bip_info->buffer_offset = body_len;
+            bip_file_data_update(packet, body_len);
         } else {
             __bip_info->file_status = BIP_FILE_STATUS_ERR;
             printf("malloc failed\n");
@@ -142,12 +158,14 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
     case BIP_DATA_STATUS_STOP:
         printf("BIP_STOP\n");
         bip_file_mutex_lock();
-        if (__bip_info->buffer) {
+        if (__bip_info->buffer && __bip_info->file_status == BIP_FILE_STATUS_UPDATE) {
             if (body_len > 0) {
                 bip_file_data_update(packet, body_len);
             }
-            __bip_info->file_status = BIP_FILE_STATUS_OK;
-            printf("Image received, total size = %u bytes\n", __bip_info->buffer_offset);
+            if (__bip_info->file_status == BIP_FILE_STATUS_UPDATE)
+                __bip_info->file_status = BIP_FILE_STATUS_OK;
+            printf("[BIP] receive done state=%d bytes=%u\n",
+                   __bip_info->file_status, __bip_info->buffer_offset);
         } else {
             __bip_info->file_status = BIP_FILE_STATUS_ERR;
         }
@@ -161,6 +179,8 @@ void bip_rx_data_handle(u8 *packet, u16 body_len, u32 length, u8 bip_data_status
         break;
 
     case BIP_DATA_STATUS_ERR:
+    case BIP_DATA_STATUS_ERR_GET:
+    case BIP_DATA_STATUS_GET_NULL:
         printf("BIP_ERR\n");
         bip_file_mutex_lock();
         if (__bip_info->buffer) {
@@ -296,7 +316,16 @@ void ui_music_album_pic_handler(void)
     lv_obj_t *img_obj = NULL;
     int32_t current_screen_id = gui_scr_get_id(gui_scr_get_act()); // 假设有该函数
 
-    if (current_screen_id == GUI_SCREEN_PAGE_MUSIC) {
+    bool dashboard = current_screen_id == GUI_SCREEN_CHONGWUYIBIAO;
+    printf("[BIP] decode enter screen=%d dashboard=%u\n", current_screen_id, dashboard);
+    if (dashboard) {
+        lv_ui_chongwuyibiao *ui_scr = ui_get_scr_ptr(&guider_ui, GUI_SCREEN_CHONGWUYIBIAO);
+        if (!ui_scr) {
+            printf("[BIP] decode skip: dashboard not created\n");
+            return;
+        }
+        img_obj = ui_scr->chongwuyibiao_zhuanjifengmian;
+    } else if (current_screen_id == GUI_SCREEN_PAGE_MUSIC) {
         lv_ui_page_music *ui_scr = ui_get_scr_ptr(&guider_ui, GUI_SCREEN_PAGE_MUSIC);
         if (!ui_scr) {
             return;
@@ -314,11 +343,13 @@ void ui_music_album_pic_handler(void)
         img_obj = ui_scr->page_app_select_img_3;
     } else {
         // 不是目标页面，不解码不显示，直接返回
+        printf("[BIP] decode skip: other screen\n");
         return;
     }
 
     // 确保图像控件有效
     if (!img_obj || !lv_obj_is_valid(img_obj)) {
+        printf("[BIP] decode skip: invalid image widget\n");
         return;
     }
 
@@ -339,11 +370,13 @@ void ui_music_album_pic_handler(void)
     // 从全局内存中获取JPEG数据
     bip_file_mutex_lock();
     if (__bip_info->buffer == NULL || __bip_info->file_status != BIP_FILE_STATUS_OK) {
+        printf("[BIP] decode skip: cache state=%d bytes=%u buffer=%u\n",
+               __bip_info->file_status, __bip_info->buffer_offset, __bip_info->buffer != NULL);
         bip_file_mutex_unlock();
-        printf("No valid BIP image in memory\n");
         return;
     }
     jpeg_len = __bip_info->buffer_offset;
+    printf("[BIP] decode JPEG bytes=%u\n", jpeg_len);
     jpeg_buf = (uint8_t *)malloc(jpeg_len);
     if (!jpeg_buf) {
         bip_file_mutex_unlock();
@@ -367,6 +400,8 @@ void ui_music_album_pic_handler(void)
         printf("get pic info failed: %d\n", ret);
         goto error;
     }
+    printf("[BIP] JPEG info width=%u height=%u stride=%u\n",
+           pic_info.width, pic_info.height, pic_info.align_width);
 
     ret = mpi_vdec_start_chn(chn);
     if (ret != MPI_SUCCESS) {
@@ -386,6 +421,7 @@ void ui_music_album_pic_handler(void)
         printf("get frame failed: %d\n", ret);
         goto error;
     }
+    printf("[BIP] decoded frame y=%u uv=%u\n", frame.y_addr != NULL, frame.c_addr != NULL);
 
     // 计算平均颜色并设置背景
     rgb_color_t avg = fast_avg_color_from_yuv420_nv12(
@@ -402,6 +438,7 @@ void ui_music_album_pic_handler(void)
     if (disp_h > MAX_DISP_H) {
         disp_h = MAX_DISP_H;
     }
+    if (dashboard) disp_w = disp_h = 96;
     uint32_t rgb_size = disp_w * disp_h * 2;
 
     static void *s_rgb_buf = NULL;
@@ -427,24 +464,39 @@ void ui_music_album_pic_handler(void)
         s_rgb_size = rgb_size;
     }
 
-    yuv420_nv12_to_rgb565_scaled(frame.y_addr, frame.c_addr,
-                                 pic_info.width, pic_info.height,
+    /* 仪表封面居中裁成正方形，再由工具中的圆形容器裁边。 */
+    uint32_t source_w = pic_info.width, source_h = pic_info.height;
+    const uint8_t *source_y = frame.y_addr, *source_uv = frame.c_addr;
+    if (dashboard) {
+        uint32_t side = MIN(source_w, source_h);
+        uint32_t x = ((source_w - side) / 2) & ~1U;
+        uint32_t y = ((source_h - side) / 2) & ~1U;
+        source_y += y * pic_info.align_width + x;
+        source_uv += (y / 2) * pic_info.align_width + x;
+        source_w = source_h = side;
+    }
+    yuv420_nv12_to_rgb565_scaled(source_y, source_uv,
+                                 source_w, source_h,
                                  pic_info.align_width, pic_info.align_width,
                                  disp_w, disp_h,
                                  (uint16_t *)s_rgb_buf);
 
     // 更新已有图像控件的图片源
     static lv_image_dsc_t img_dsc;
+    lv_image_cache_drop(&img_dsc);
+    img_dsc.header.magic = LV_IMAGE_HEADER_MAGIC;
     img_dsc.header.cf = LV_COLOR_FORMAT_NATIVE;
     img_dsc.header.w = disp_w;
     img_dsc.header.h = disp_h;
+    img_dsc.header.stride = disp_w * 2;
     img_dsc.data_size = rgb_size;
     img_dsc.data = s_rgb_buf;
 
-    lv_image_set_src(img_obj, &img_dsc);
+    if (dashboard) chongwuyibiao_yinyue_fengmian(&img_dsc);
+    else lv_image_set_src(img_obj, &img_dsc);
     music_rotation_enabled = true;
     lv_obj_invalidate(img_obj);
-    printf("Updated image on screen %d, size %ux%u\n", current_screen_id, disp_w, disp_h);
+    printf("[BIP] image delivered screen=%d size=%ux%u\n", current_screen_id, disp_w, disp_h);
 
     mpi_vdec_release_frame(chn, &frame);
     mpi_vdec_stop_chn(chn);
@@ -478,7 +530,9 @@ void bip_update_pic_file()
 // ======================= 初始化函数（放在系统启动时调用） =======================
 void bip_mem_init(void)
 {
-    bip_file_mutex_init();
+    int ret = bip_file_mutex_init();
+    bip_initialized = ret == 0;
+    printf("[BIP] init ret=%d\n", ret);
 }
 
 void page_music_reset_rotation(void)

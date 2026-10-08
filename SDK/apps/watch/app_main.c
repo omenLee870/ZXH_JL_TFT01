@@ -47,6 +47,7 @@
 #include "health_manager.h"
 #include "clock_manager/clock_manager.h"
 #include "product_test.h"
+#include "pet_dashboard_music.h"
 #include "chgbox_ctrl.h"
 #include "mix_record_api.h"
 #include "rcsp_mix_record.h"
@@ -838,6 +839,13 @@ static void app_task_loop(void *p)
     //sys_timer_add(NULL, mem_printf, 1000);
     mode = app_task_init();
 
+#if CONFIG_LVGL_UI_ENABLE
+    /* sys_timer 回调与用户操作均在 app_core 处理。 */
+    if (pet_dashboard_music_start() != 0) {
+        printf("pet dashboard music timer start failed\n");
+    }
+#endif
+
     /* sys_timer_add(NULL, task_info_cb, 500); */
 
 
@@ -1006,4 +1014,3 @@ void app_main()
         asm("idle");
     }
 }
-

@@ -1,11 +1,6 @@
 #include "chongwuyibiao_donghua.h"
 #include "neicun_zhuizong.h"
 
-/* 接入真实车速后可设为 0，关闭点击小狗切换 0/46 的测试入口。 */
-#ifndef CHONGWUYIBIAO_YANSHI_ENABLE
-#define CHONGWUYIBIAO_YANSHI_ENABLE 1
-#endif
-
 #define YUN_SHULIANG 4
 #define YUN_BUJIN_MS 50U
 #define YUN_ZUO 100
@@ -42,6 +37,7 @@ typedef struct {
     zhayan_jieduan_t zhayan_jieduan;
     bool yunxing;
     bool paobu;
+    bool zanting;
 } donghua_zhuangtai_t;
 
 static donghua_zhuangtai_t zhuangtai;
@@ -199,7 +195,7 @@ static void donghua_tingzhi(void)
 static void donghua_kaishi(void)
 {
     unsigned int i;
-    if (zhuangtai.yunxing) return;
+    if (zhuangtai.yunxing || zhuangtai.zanting) return;
     lv_obj_update_layout(zhuangtai.pingmu);
     for (i = 0; i < YUN_SHULIANG; i++) {
         zhuangtai.yun[i].kuandu = lv_obj_get_width(zhuangtai.yun[i].tupian);
@@ -245,11 +241,14 @@ static void xiaogou_shijian(lv_event_t *shijian)
         donghua_tingzhi();
         lv_memset(&zhuangtai, 0, sizeof(zhuangtai));
     }
-#if CHONGWUYIBIAO_YANSHI_ENABLE
-    else if (lv_event_get_code(shijian) == LV_EVENT_CLICKED && zhuangtai.yunxing) {
-        chongwuyibiao_chesu_gengxin(zhuangtai.chesu > 0 ? 0 : 46);
-    }
-#endif
+}
+
+/** @brief 音乐区显示时停止主界面动画，返回时恢复。 */
+void chongwuyibiao_donghua_yunxu(bool yunxu)
+{
+    zhuangtai.zanting = !yunxu;
+    if (!yunxu) donghua_tingzhi();
+    else if (zhuangtai.pingmu != NULL && lv_screen_active() == zhuangtai.pingmu) donghua_kaishi();
 }
 
 void chongwuyibiao_donghua_bangding(lv_ui_chongwuyibiao *jiemian)
@@ -267,8 +266,5 @@ void chongwuyibiao_donghua_bangding(lv_ui_chongwuyibiao *jiemian)
     zhuangtai.yun[3].tupian = jiemian->chongwuyibiao_yun4;
     lv_obj_add_event_cb(zhuangtai.pingmu, pingmu_shijian, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(zhuangtai.xiaogou, xiaogou_shijian, LV_EVENT_ALL, NULL);
-#if CHONGWUYIBIAO_YANSHI_ENABLE
-    lv_obj_add_flag(jiemian->chongwuyibiao_xiaogou, LV_OBJ_FLAG_CLICKABLE);
-#endif
     if (lv_screen_active() == zhuangtai.pingmu) donghua_kaishi();
 }

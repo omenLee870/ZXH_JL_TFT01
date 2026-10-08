@@ -136,10 +136,16 @@ void ui_style_init(void)
 	lv_style_set_bg_grad_stop(&gui_img_main_default_style, 255);
 	lv_style_set_bg_main_stop(&gui_img_main_default_style, 0);
 	lv_style_set_bg_opa(&gui_img_main_default_style, 0);
+	lv_style_set_shadow_width(&gui_img_main_default_style, 0);
+	lv_style_set_border_width(&gui_img_main_default_style, 0);
 	lv_style_set_outline_color(&gui_img_main_default_style, lv_color_make(0x21, 0x95, 0xf6));
 	lv_style_set_outline_width(&gui_img_main_default_style, 0);
 	lv_style_set_outline_opa(&gui_img_main_default_style, 128);
 	lv_style_set_outline_pad(&gui_img_main_default_style, 0);
+	lv_style_set_pad_left(&gui_img_main_default_style, 0);
+	lv_style_set_pad_right(&gui_img_main_default_style, 0);
+	lv_style_set_pad_top(&gui_img_main_default_style, 0);
+	lv_style_set_pad_bottom(&gui_img_main_default_style, 0);
 	lv_style_set_image_recolor(&gui_img_main_default_style, lv_color_make(0xff, 0xff, 0xff));
 	lv_style_set_image_recolor_opa(&gui_img_main_default_style, 0);
 	lv_style_set_image_opa(&gui_img_main_default_style, 255);
@@ -170,14 +176,19 @@ void ui_style_init(void)
 	lv_style_set_shadow_spread(&gui_imgbtn_main_default_style, 0);
 	lv_style_set_shadow_offset_x(&gui_imgbtn_main_default_style, 0);
 	lv_style_set_shadow_offset_y(&gui_imgbtn_main_default_style, 0);
+	lv_style_set_border_width(&gui_imgbtn_main_default_style, 0);
 	lv_style_set_outline_color(&gui_imgbtn_main_default_style, lv_color_make(0x21, 0x95, 0xf6));
 	lv_style_set_outline_width(&gui_imgbtn_main_default_style, 0);
 	lv_style_set_outline_opa(&gui_imgbtn_main_default_style, 128);
 	lv_style_set_outline_pad(&gui_imgbtn_main_default_style, 0);
 	lv_style_set_text_color(&gui_imgbtn_main_default_style, lv_color_make(0x00, 0x00, 0x00));
-	lv_style_set_text_font(&gui_imgbtn_main_default_style, &lv_font_MiSans_Medium_14);
+	lv_style_set_text_font(&gui_imgbtn_main_default_style, &lv_font_MiSans_Medium_12);
 	lv_style_set_text_letter_space(&gui_imgbtn_main_default_style, 0);
 	lv_style_set_text_align(&gui_imgbtn_main_default_style, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_pad_left(&gui_imgbtn_main_default_style, 0);
+	lv_style_set_pad_right(&gui_imgbtn_main_default_style, 0);
+	lv_style_set_pad_top(&gui_imgbtn_main_default_style, 0);
+	lv_style_set_pad_bottom(&gui_imgbtn_main_default_style, 0);
 	lv_style_set_image_recolor(&gui_imgbtn_main_default_style, lv_color_make(0xff, 0xff, 0xff));
 	lv_style_set_image_recolor_opa(&gui_imgbtn_main_default_style, 0);
 	lv_style_set_image_opa(&gui_imgbtn_main_default_style, 255);
@@ -189,7 +200,7 @@ void ui_style_init(void)
 	lv_style_set_bg_grad_dir(&gui_imgbtn_main_pressed_style, LV_GRAD_DIR_NONE);
 	lv_style_set_bg_grad_stop(&gui_imgbtn_main_pressed_style, 255);
 	lv_style_set_bg_main_stop(&gui_imgbtn_main_pressed_style, 0);
-	lv_style_set_bg_opa(&gui_imgbtn_main_pressed_style, 0);
+	lv_style_set_bg_opa(&gui_imgbtn_main_pressed_style, 255);
 	lv_style_set_shadow_width(&gui_imgbtn_main_pressed_style, 0);
 	lv_style_set_shadow_color(&gui_imgbtn_main_pressed_style, lv_color_make(0x21, 0x95, 0xf6));
 	lv_style_set_shadow_opa(&gui_imgbtn_main_pressed_style, 255);
@@ -197,7 +208,7 @@ void ui_style_init(void)
 	lv_style_set_shadow_offset_x(&gui_imgbtn_main_pressed_style, 0);
 	lv_style_set_shadow_offset_y(&gui_imgbtn_main_pressed_style, 0);
 	lv_style_set_text_color(&gui_imgbtn_main_pressed_style, lv_color_make(0xFF, 0x33, 0xFF));
-	lv_style_set_text_font(&gui_imgbtn_main_pressed_style, &lv_font_MiSans_Medium_14);
+	lv_style_set_text_font(&gui_imgbtn_main_pressed_style, &lv_font_MiSans_Medium_12);
 	lv_style_set_image_recolor(&gui_imgbtn_main_pressed_style, lv_color_make(0x00, 0x00, 0x00));
 	lv_style_set_image_recolor_opa(&gui_imgbtn_main_pressed_style, 0);
 	lv_style_set_image_opa(&gui_imgbtn_main_pressed_style, 255);
@@ -209,7 +220,7 @@ void ui_style_init(void)
 	lv_style_set_bg_grad_dir(&gui_imgbtn_main_checked_style, LV_GRAD_DIR_NONE);
 	lv_style_set_bg_grad_stop(&gui_imgbtn_main_checked_style, 255);
 	lv_style_set_bg_main_stop(&gui_imgbtn_main_checked_style, 0);
-	lv_style_set_bg_opa(&gui_imgbtn_main_checked_style, 0);
+	lv_style_set_bg_opa(&gui_imgbtn_main_checked_style, 255);
 	lv_style_set_shadow_width(&gui_imgbtn_main_checked_style, 0);
 	lv_style_set_shadow_color(&gui_imgbtn_main_checked_style, lv_color_make(0x21, 0x95, 0xf6));
 	lv_style_set_shadow_opa(&gui_imgbtn_main_checked_style, 255);
@@ -217,8 +228,8 @@ void ui_style_init(void)
 	lv_style_set_shadow_offset_x(&gui_imgbtn_main_checked_style, 0);
 	lv_style_set_shadow_offset_y(&gui_imgbtn_main_checked_style, 0);
 	lv_style_set_text_color(&gui_imgbtn_main_checked_style, lv_color_make(0xFF, 0x33, 0xFF));
-	lv_style_set_text_font(&gui_imgbtn_main_checked_style, &lv_font_MiSans_Medium_14);
-	lv_style_set_image_recolor(&gui_imgbtn_main_checked_style, lv_color_make(0xFF, 0xFF, 0xFF));
+	lv_style_set_text_font(&gui_imgbtn_main_checked_style, &lv_font_MiSans_Medium_12);
+	lv_style_set_image_recolor(&gui_imgbtn_main_checked_style, lv_color_make(0x00, 0x00, 0x00));
 	lv_style_set_image_recolor_opa(&gui_imgbtn_main_checked_style, 0);
 	lv_style_set_image_opa(&gui_imgbtn_main_checked_style, 255);
 

@@ -3,6 +3,9 @@
 
 #include "avctp_user.h"
 
+/* 查询协议栈是否完成初始化。 */
+u8 get_bt_init_status(void);
+
 void bt_send_keypress(u8 key);
 void bt_send_pair(u8 en);
 void bt_init_ok_search_index(void);

@@ -44,6 +44,7 @@ char * gui_get_res_path(int32_t id)
 		case GUI_RES_NOTOSANSSC_MEDIUM_20_RLE_FLASH: return "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\rle\\font\\35000011.rle";
 		case GUI_RES_LATO_REGULAR_24_RLE_FLASH: return "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\rle\\font\\35000012.rle";
 		case GUI_RES_MONTSERRATMEDIUM_16_RLE_FLASH: return "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\rle\\font\\35000013.rle";
+		case GUI_RES_MISANS_MEDIUM_12_RLE_FLASH: return "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\rle\\font\\35000014.rle";
 		case GUI_RES_SPORT_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\SPORT.png";
 		case GUI_RES_TTFAR_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\TTFAR.png";
 		case GUI_RES_FREE_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\FREE.png";
@@ -475,6 +476,17 @@ char * gui_get_res_path(int32_t id)
 		case GUI_RES_CLOUD_1_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\cloud_1.png";
 		case GUI_RES_CLOUD_3_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\cloud_3.png";
 		case GUI_RES_DOG_OPEN_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_open.png";
+		case GUI_RES__PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\music_bar.png";
+		case GUI_RES__1_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\controls_background.png";
+		case GUI_RES__2_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\button_previous.png";
+		case GUI_RES__3_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\button_pause.png";
+		case GUI_RES__4_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\button_play.png";
+		case GUI_RES__5_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\button_next.png";
+		case GUI_RES__6_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\die_display.png";
+		case GUI_RES__7_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\music_note_right.png";
+		case GUI_RES__8_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\music_note_left.png";
+		case GUI_RES__9_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\dog_headphones_clean.png";
+		case GUI_RES__10_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\bluetooth_connected.png";
 		case xiaogou_biyan: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png";
 		case xiaogou_paobu_1: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png";
 		case xiaogou_paobu_2: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png";

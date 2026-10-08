@@ -58,7 +58,6 @@ static const char* page_meter_animimg_3_imgs[44] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\frames\\frame_000101.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\frames\\frame_000103.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b0000b3.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000b4.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000b5.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000b6.zip",
@@ -101,7 +100,8 @@ static const char* page_meter_animimg_3_imgs[44] = {
 	"storage/res_nor_mode/C/lvgl/4b0000db.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000dc.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000dd.zip",
-	"storage/res_nor_mode/C/lvgl/4b0000de.zip"
+	"storage/res_nor_mode/C/lvgl/4b0000de.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000df.zip"
 #endif
 };
 static const char* page_meter_animimg_1_imgs[100] = {
@@ -207,7 +207,6 @@ static const char* page_meter_animimg_1_imgs[100] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\power\\pw_099.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\power\\pw_100.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b0000df.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000e0.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000e1.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000e2.zip",
@@ -306,7 +305,8 @@ static const char* page_meter_animimg_1_imgs[100] = {
 	"storage/res_nor_mode/C/lvgl/4b00013f.zip",
 	"storage/res_nor_mode/C/lvgl/4b000140.zip",
 	"storage/res_nor_mode/C/lvgl/4b000141.zip",
-	"storage/res_nor_mode/C/lvgl/4b000142.zip"
+	"storage/res_nor_mode/C/lvgl/4b000142.zip",
+	"storage/res_nor_mode/C/lvgl/4b000143.zip"
 #endif
 };
 static const char* page_meter_animimg_2_imgs[100] = {
@@ -412,7 +412,6 @@ static const char* page_meter_animimg_2_imgs[100] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\power_R\\pwr_099.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\power_R\\pwr_100.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000143.zip",
 	"storage/res_nor_mode/C/lvgl/4b000144.zip",
 	"storage/res_nor_mode/C/lvgl/4b000145.zip",
 	"storage/res_nor_mode/C/lvgl/4b000146.zip",
@@ -511,7 +510,8 @@ static const char* page_meter_animimg_2_imgs[100] = {
 	"storage/res_nor_mode/C/lvgl/4b0001a3.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001a4.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001a5.zip",
-	"storage/res_nor_mode/C/lvgl/4b0001a6.zip"
+	"storage/res_nor_mode/C/lvgl/4b0001a6.zip",
+	"storage/res_nor_mode/C/lvgl/4b0001a7.zip"
 #endif
 };
 static const char* page_meter_imgList_bluetooth_imgs[2] = {
@@ -519,8 +519,8 @@ static const char* page_meter_imgList_bluetooth_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_25.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_26.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000018.zip",
-	"storage/res_nor_mode/C/lvgl/4b000019.zip"
+	"storage/res_nor_mode/C/lvgl/4b000019.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001a.zip"
 #endif
 };
 static const char* page_meter_imgList_phone_bl_imgs[2] = {
@@ -528,8 +528,8 @@ static const char* page_meter_imgList_phone_bl_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_23.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_24.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001a.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001b.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001b.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001c.zip"
 #endif
 };
 static const char* page_meter_imgList_gps_imgs[2] = {
@@ -537,8 +537,8 @@ static const char* page_meter_imgList_gps_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_29.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_30.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001c.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001d.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001d.zip",
+	"storage/res_nor_mode/C/lvgl/4b00001e.zip"
 #endif
 };
 static const char* page_meter_imgList_networksignal_imgs[2] = {
@@ -546,8 +546,8 @@ static const char* page_meter_imgList_networksignal_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_27.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_28.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b00001e.zip",
-	"storage/res_nor_mode/C/lvgl/4b00001f.zip"
+	"storage/res_nor_mode/C/lvgl/4b00001f.zip",
+	"storage/res_nor_mode/C/lvgl/4b000020.zip"
 #endif
 };
 static const char* page_meter_imglist_4_imgs[9] = {
@@ -562,7 +562,6 @@ static const char* page_meter_imglist_4_imgs[9] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_ye.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\weather\\tianqi_yintian.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b0000a6.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a7.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a8.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000a9.zip",
@@ -570,7 +569,8 @@ static const char* page_meter_imglist_4_imgs[9] = {
 	"storage/res_nor_mode/C/lvgl/4b0000ab.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000ac.zip",
 	"storage/res_nor_mode/C/lvgl/4b0000ad.zip",
-	"storage/res_nor_mode/C/lvgl/4b0000ae.zip"
+	"storage/res_nor_mode/C/lvgl/4b0000ae.zip",
+	"storage/res_nor_mode/C/lvgl/4b0000af.zip"
 #endif
 };
 static const char* page_meter_imgList_gear_mode_imgs[3] = {
@@ -579,9 +579,9 @@ static const char* page_meter_imgList_gear_mode_imgs[3] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\TTFAR.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\FREE.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000014.zip",
 	"storage/res_nor_mode/C/lvgl/4b000015.zip",
-	"storage/res_nor_mode/C/lvgl/4b000016.zip"
+	"storage/res_nor_mode/C/lvgl/4b000016.zip",
+	"storage/res_nor_mode/C/lvgl/4b000017.zip"
 #endif
 };
 static const char* page_meter_imglist_speed_tens_imgs[10] = {
@@ -597,7 +597,6 @@ static const char* page_meter_imglist_speed_tens_imgs[10] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\8.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\9.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b0001b2.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001b3.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001b4.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001b5.zip",
@@ -606,7 +605,8 @@ static const char* page_meter_imglist_speed_tens_imgs[10] = {
 	"storage/res_nor_mode/C/lvgl/4b0001b8.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001b9.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001ba.zip",
-	"storage/res_nor_mode/C/lvgl/4b0001bb.zip"
+	"storage/res_nor_mode/C/lvgl/4b0001bb.zip",
+	"storage/res_nor_mode/C/lvgl/4b0001bc.zip"
 #endif
 };
 static const char* page_meter_imglist_speed_ones_imgs[10] = {
@@ -622,7 +622,6 @@ static const char* page_meter_imglist_speed_ones_imgs[10] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\8.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\9.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b0001b2.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001b3.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001b4.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001b5.zip",
@@ -631,7 +630,8 @@ static const char* page_meter_imglist_speed_ones_imgs[10] = {
 	"storage/res_nor_mode/C/lvgl/4b0001b8.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001b9.zip",
 	"storage/res_nor_mode/C/lvgl/4b0001ba.zip",
-	"storage/res_nor_mode/C/lvgl/4b0001bb.zip"
+	"storage/res_nor_mode/C/lvgl/4b0001bb.zip",
+	"storage/res_nor_mode/C/lvgl/4b0001bc.zip"
 #endif
 };
 static const char* page_meter_imglist_5_imgs[2] = {
@@ -639,8 +639,8 @@ static const char* page_meter_imglist_5_imgs[2] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_21.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\alarm\\Lamp_20.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000023.zip",
-	"storage/res_nor_mode/C/lvgl/4b000022.zip"
+	"storage/res_nor_mode/C/lvgl/4b000024.zip",
+	"storage/res_nor_mode/C/lvgl/4b000023.zip"
 #endif
 };
 static const char* page_meter_imglist_bat_imgs[100] = {
@@ -746,7 +746,6 @@ static const char* page_meter_imglist_bat_imgs[100] = {
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat099.png",
 	"A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\battery\\bat100.png"
 #else
-	"storage/res_nor_mode/C/lvgl/4b000025.zip",
 	"storage/res_nor_mode/C/lvgl/4b000026.zip",
 	"storage/res_nor_mode/C/lvgl/4b000027.zip",
 	"storage/res_nor_mode/C/lvgl/4b000028.zip",
@@ -845,7 +844,8 @@ static const char* page_meter_imglist_bat_imgs[100] = {
 	"storage/res_nor_mode/C/lvgl/4b000085.zip",
 	"storage/res_nor_mode/C/lvgl/4b000086.zip",
 	"storage/res_nor_mode/C/lvgl/4b000087.zip",
-	"storage/res_nor_mode/C/lvgl/4b000088.zip"
+	"storage/res_nor_mode/C/lvgl/4b000088.zip",
+	"storage/res_nor_mode/C/lvgl/4b000089.zip"
 #endif
 };
 

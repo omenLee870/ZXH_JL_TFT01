@@ -322,6 +322,7 @@ enum {
     APP_MSG_VIDEO_REC_UI_TIMER_SYNC, /* 录像 UI 500ms 定时器启停统一投递到 app_core 执行 */
     APP_MSG_AI_TAKE_PHOTO,   /* AI 识图拍照: 独立于普通拍照, 先进入 0x32 AI 对话再拍 */
     APP_MSG_AI_VOICE_TRIGGER, /* AI 语音对话: 进入 0x32 会话后走拾音/识别/播报 */
+    APP_MSG_PET_DASHBOARD_MUSIC, /* 仪表音乐操作，参数为 pet_dashboard_music_request_t */
 };
 
 

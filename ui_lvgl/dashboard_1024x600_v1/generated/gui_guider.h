@@ -320,10 +320,7 @@ typedef struct {
 	lv_obj_t *chongwuyibiao_xunhangkedu_3;
 	lv_obj_t *chongwuyibiao_yinyuerongqi;
 	lv_obj_t *chongwuyibiao_yinyuebeijing;
-	lv_obj_t *chongwuyibiao_zhuanjifengmian;
 	lv_obj_t *chongwuyibiao_kongzhibeijing;
-	lv_obj_t *chongwuyibiao_gequmingcheng;
-	lv_obj_t *chongwuyibiao_geciwenzi;
 	lv_obj_t *chongwuyibiao_shangyiqu;
 	lv_obj_t *chongwuyibiao_shangyiqu_label;
 	lv_obj_t *chongwuyibiao_zantingjian;
@@ -332,7 +329,13 @@ typedef struct {
 	lv_obj_t *chongwuyibiao_bofangjian_label;
 	lv_obj_t *chongwuyibiao_xiayiqu;
 	lv_obj_t *chongwuyibiao_xiayiqu_label;
+	lv_obj_t *chongwuyibiao_zhuanjirongqi;
+	lv_obj_t *chongwuyibiao_zhuanjifengmian;
+	lv_obj_t *chongwuyibiao_yinfuyou;
+	lv_obj_t *chongwuyibiao_yinfuzuo;
 	lv_obj_t *chongwuyibiao_tinggexiaogou;
+	lv_obj_t *chongwuyibiao_gequmingcheng;
+	lv_obj_t *chongwuyibiao_geciwenzi;
 	lv_obj_t *chongwuyibiao_lanyalianjietubiao;
 } lv_ui_chongwuyibiao;
 

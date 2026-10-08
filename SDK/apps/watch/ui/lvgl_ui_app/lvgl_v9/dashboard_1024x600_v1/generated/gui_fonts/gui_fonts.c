@@ -510,6 +510,91 @@ void lv_font_montserratMedium_16_file()
     lv_font_montserratMedium_16 = *LV_FONT_DEFAULT;
   }
 }
+lv_font_t lv_font_MiSans_Medium_12;
+lv_font_t * lv_font_MiSans_Medium_12_ptr;
+void lv_font_MiSans_Medium_12_file()
+{
+  if (lv_font_MiSans_Medium_12_ptr != NULL) {
+    lv_font_free_bin(lv_font_MiSans_Medium_12_ptr);
+    lv_font_MiSans_Medium_12_ptr = NULL;
+    lv_memset(&lv_font_MiSans_Medium_12, 0, sizeof(lv_font_t));
+  }
+#if LV_USE_GUIBUILDER_SIMULATOR
+  lv_font_MiSans_Medium_12_ptr = lv_font_load_bin("A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\rle\\font\\35000014.rle");
+#else
+  lv_font_MiSans_Medium_12_ptr = lv_font_load_bin(gui_get_res_path(GUI_RES_MISANS_MEDIUM_12_RLE_FLASH));
+#endif
+  if (lv_font_MiSans_Medium_12_ptr != NULL) {
+    lv_font_MiSans_Medium_12 = *lv_font_MiSans_Medium_12_ptr;
+  } else {
+#if LV_USE_GUIBUILDER_SIMULATOR
+    LV_LOG_ERROR("Load Fnt Font Failed %s\n", "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\rle\\font\\35000014.rle");
+#else
+    LV_LOG_ERROR("Load Fnt Font Failed %s\n", gui_get_res_path(GUI_RES_MISANS_MEDIUM_12_RLE_FLASH));
+#endif
+    lv_font_MiSans_Medium_12 = *LV_FONT_DEFAULT;
+  }
+}
+lv_font_info_t lv_font_lyrics_26_font_info;
+lv_font_t lv_font_lyrics_26;
+lv_font_t * lv_font_lyrics_26_ptr;
+void lv_font_lyrics_26_file()
+{
+  if (lv_font_lyrics_26_ptr != NULL) {
+    lv_freetype_font_delete(lv_font_lyrics_26_ptr);
+    lv_font_lyrics_26_ptr = NULL;
+    lv_memset(&lv_font_lyrics_26_font_info, 0, sizeof(lv_font_info_t));
+    lv_memset(&lv_font_lyrics_26, 0, sizeof(lv_font_t));
+  }
+  lv_freetype_init_font_info(&lv_font_lyrics_26_font_info);
+#if LV_USE_GUIBUILDER_SIMULATOR
+  lv_font_lyrics_26_font_info.name = "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\font\\lyrics.ttf";
+#else
+  lv_font_lyrics_26_font_info.name = gui_get_res_path(GUI_RES_LYRICS_TTF_FLASH_FILE);
+#endif
+  lv_font_lyrics_26_font_info.size = 26;
+  lv_font_lyrics_26_font_info.render_mode = LV_FREETYPE_FONT_RENDER_MODE_BITMAP;
+  lv_font_lyrics_26_font_info.style = LV_FREETYPE_FONT_STYLE_NORMAL;
+  lv_font_lyrics_26_ptr = lv_freetype_font_create_with_info(&lv_font_lyrics_26_font_info);
+  if (lv_font_lyrics_26_ptr == NULL) {
+    LV_LOG_ERROR("Create Font Failed %s\n", lv_font_lyrics_26_font_info.name);
+    lv_memset(&lv_font_lyrics_26_font_info, 0, sizeof(lv_font_info_t));
+    lv_memset(&lv_font_lyrics_26, 0, sizeof(lv_font_t));
+    lv_font_lyrics_26 = *LV_FONT_DEFAULT;
+  } else {
+    lv_font_lyrics_26 = *lv_font_lyrics_26_ptr;
+  }
+}
+lv_font_info_t lv_font_lyrics_20_font_info;
+lv_font_t lv_font_lyrics_20;
+lv_font_t * lv_font_lyrics_20_ptr;
+void lv_font_lyrics_20_file()
+{
+  if (lv_font_lyrics_20_ptr != NULL) {
+    lv_freetype_font_delete(lv_font_lyrics_20_ptr);
+    lv_font_lyrics_20_ptr = NULL;
+    lv_memset(&lv_font_lyrics_20_font_info, 0, sizeof(lv_font_info_t));
+    lv_memset(&lv_font_lyrics_20, 0, sizeof(lv_font_t));
+  }
+  lv_freetype_init_font_info(&lv_font_lyrics_20_font_info);
+#if LV_USE_GUIBUILDER_SIMULATOR
+  lv_font_lyrics_20_font_info.name = "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\font\\lyrics.ttf";
+#else
+  lv_font_lyrics_20_font_info.name = gui_get_res_path(GUI_RES_LYRICS_TTF_FLASH_FILE);
+#endif
+  lv_font_lyrics_20_font_info.size = 20;
+  lv_font_lyrics_20_font_info.render_mode = LV_FREETYPE_FONT_RENDER_MODE_BITMAP;
+  lv_font_lyrics_20_font_info.style = LV_FREETYPE_FONT_STYLE_NORMAL;
+  lv_font_lyrics_20_ptr = lv_freetype_font_create_with_info(&lv_font_lyrics_20_font_info);
+  if (lv_font_lyrics_20_ptr == NULL) {
+    LV_LOG_ERROR("Create Font Failed %s\n", lv_font_lyrics_20_font_info.name);
+    lv_memset(&lv_font_lyrics_20_font_info, 0, sizeof(lv_font_info_t));
+    lv_memset(&lv_font_lyrics_20, 0, sizeof(lv_font_t));
+    lv_font_lyrics_20 = *LV_FONT_DEFAULT;
+  } else {
+    lv_font_lyrics_20 = *lv_font_lyrics_20_ptr;
+  }
+}
 
 GUI_WEAK void init_gui_fonts()
 {
@@ -533,6 +618,9 @@ GUI_WEAK void init_gui_fonts()
   lv_font_NotoSansSC_Medium_20_file();
   lv_font_Lato_Regular_24_file();
   lv_font_montserratMedium_16_file();
+  lv_font_MiSans_Medium_12_file();
+  lv_font_lyrics_26_file();
+  lv_font_lyrics_20_file();
 
 
 }
@@ -639,6 +727,23 @@ GUI_WEAK void free_gui_fonts()
     lv_font_free_bin(lv_font_montserratMedium_16_ptr);
     lv_font_montserratMedium_16_ptr = NULL;
     lv_memset(&lv_font_montserratMedium_16, 0, sizeof(lv_font_t));
+  }
+  if (lv_font_MiSans_Medium_12_ptr != NULL) {
+    lv_font_free_bin(lv_font_MiSans_Medium_12_ptr);
+    lv_font_MiSans_Medium_12_ptr = NULL;
+    lv_memset(&lv_font_MiSans_Medium_12, 0, sizeof(lv_font_t));
+  }
+  if (lv_font_lyrics_26_ptr != NULL) {
+    lv_freetype_font_delete(lv_font_lyrics_26_ptr);
+    lv_font_lyrics_26_ptr = NULL;
+    lv_memset(&lv_font_lyrics_26_font_info, 0, sizeof(lv_font_info_t));
+    lv_memset(&lv_font_lyrics_26, 0, sizeof(lv_font_t));
+  }
+  if (lv_font_lyrics_20_ptr != NULL) {
+    lv_freetype_font_delete(lv_font_lyrics_20_ptr);
+    lv_font_lyrics_20_ptr = NULL;
+    lv_memset(&lv_font_lyrics_20_font_info, 0, sizeof(lv_font_info_t));
+    lv_memset(&lv_font_lyrics_20, 0, sizeof(lv_font_t));
   }
 }
 

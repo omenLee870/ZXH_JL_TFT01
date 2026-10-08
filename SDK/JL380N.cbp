@@ -3121,6 +3121,8 @@
 <Unit filename="apps/watch/common/common_api.h" />
 <Unit filename="apps/watch/common/common_music_ctrl.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/common/common_music_ctrl.h" />
+<Unit filename="apps/watch/common/pet_dashboard_music.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/pet_dashboard_music.h" />
 <Unit filename="apps/watch/data_storage/data_call_log_storage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/data_storage/data_call_log_storage.h" />
 <Unit filename="apps/watch/data_storage/data_message_storage.c"><Option compilerVer="CC"/></Unit>
@@ -4795,5 +4797,9 @@
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_donghua.h" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/neicun_zhuizong.c" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/neicun_zhuizong.h" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_yinyue.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_yinyue.h" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_yinyue_donghua.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_yinyue_donghua.h" />
 </Project>
 </CodeBlocks_project_file>

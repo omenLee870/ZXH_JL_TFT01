@@ -11,6 +11,7 @@
 #include "../../custom/custom.h"
 #include "string.h"
 #include "../../custom/chongwuyibiao_donghua.h"
+#include "../../custom/chongwuyibiao_yinyue.h"
 #include "../../custom/neicun_zhuizong.h"
 
 
@@ -1083,18 +1084,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_yinyuebeijing, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->chongwuyibiao_yinyuebeijing, GUI_CTRL_IMG);
 
-	//Write codes chongwuyibiao_zhuanjifengmian
-	ui_scr->chongwuyibiao_zhuanjifengmian = lv_image_create(ui_scr->chongwuyibiao_yinyuerongqi);
-	lv_image_set_src(ui_scr->chongwuyibiao_zhuanjifengmian, gui_get_res_path(GUI_RES_DIE_PNG));
-	lv_image_set_pivot(ui_scr->chongwuyibiao_zhuanjifengmian, 0, 0);
-	lv_image_set_rotation(ui_scr->chongwuyibiao_zhuanjifengmian, 0);
-	lv_image_set_scale(ui_scr->chongwuyibiao_zhuanjifengmian, 69);
-	lv_image_set_inner_align(ui_scr->chongwuyibiao_zhuanjifengmian, LV_IMAGE_ALIGN_TOP_LEFT);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_zhuanjifengmian, 16, 130);
-	lv_obj_set_size(ui_scr->chongwuyibiao_zhuanjifengmian, 96, 96);
-	lv_obj_remove_flag(ui_scr->chongwuyibiao_zhuanjifengmian, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->chongwuyibiao_zhuanjifengmian, GUI_CTRL_IMG);
-
 	//Write codes chongwuyibiao_kongzhibeijing
 	ui_scr->chongwuyibiao_kongzhibeijing = lv_image_create(ui_scr->chongwuyibiao_yinyuerongqi);
 	lv_image_set_src(ui_scr->chongwuyibiao_kongzhibeijing, gui_get_res_path(GUI_RES__1_PNG));
@@ -1106,36 +1095,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	lv_obj_set_size(ui_scr->chongwuyibiao_kongzhibeijing, 268, 84);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_kongzhibeijing, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->chongwuyibiao_kongzhibeijing, GUI_CTRL_IMG);
-
-	//Write codes chongwuyibiao_gequmingcheng
-	ui_scr->chongwuyibiao_gequmingcheng = lv_label_create(ui_scr->chongwuyibiao_yinyuerongqi);
-	lv_label_set_text(ui_scr->chongwuyibiao_gequmingcheng, "晚风");
-	lv_label_set_long_mode(ui_scr->chongwuyibiao_gequmingcheng, LV_LABEL_LONG_MODE_SCROLL_CIRCULAR);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_gequmingcheng, 132, 145);
-	lv_obj_set_size(ui_scr->chongwuyibiao_gequmingcheng, 288, 34);
-	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_gequmingcheng, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->chongwuyibiao_gequmingcheng, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->chongwuyibiao_gequmingcheng, GUI_CTRL_LABEL);
-
-	//Set style for chongwuyibiao_gequmingcheng. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_gequmingcheng, &lv_font_lyrics_26, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_gequmingcheng, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_gequmingcheng, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-
-	//Write codes chongwuyibiao_geciwenzi
-	ui_scr->chongwuyibiao_geciwenzi = lv_label_create(ui_scr->chongwuyibiao_yinyuerongqi);
-	lv_label_set_text(ui_scr->chongwuyibiao_geciwenzi, "把心事交给晚风");
-	lv_label_set_long_mode(ui_scr->chongwuyibiao_geciwenzi, LV_LABEL_LONG_MODE_SCROLL_CIRCULAR);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_geciwenzi, 132, 180);
-	lv_obj_set_size(ui_scr->chongwuyibiao_geciwenzi, 288, 28);
-	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_geciwenzi, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->chongwuyibiao_geciwenzi, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->chongwuyibiao_geciwenzi, GUI_CTRL_LABEL);
-
-	//Set style for chongwuyibiao_geciwenzi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_geciwenzi, &lv_font_lyrics_20, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_geciwenzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_geciwenzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_shangyiqu
 	ui_scr->chongwuyibiao_shangyiqu = lv_imgbtn_create(ui_scr->chongwuyibiao_yinyuerongqi);
@@ -1208,9 +1167,61 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	lv_obj_set_style_pad_all(ui_scr->chongwuyibiao_xiayiqu, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_align(ui_scr->chongwuyibiao_xiayiqu_label, LV_ALIGN_CENTER, 0, 0);
 
+	//Write codes chongwuyibiao_zhuanjirongqi
+	ui_scr->chongwuyibiao_zhuanjirongqi = lv_obj_create(ui_scr->chongwuyibiao_yinyuerongqi);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_zhuanjirongqi, 16, 130);
+	lv_obj_set_size(ui_scr->chongwuyibiao_zhuanjirongqi, 96, 96);
+	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_zhuanjirongqi, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_zhuanjirongqi, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_zhuanjirongqi, GUI_CTRL_CONT);
+
+	//Set style for chongwuyibiao_zhuanjirongqi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->chongwuyibiao_zhuanjirongqi, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(ui_scr->chongwuyibiao_zhuanjirongqi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes chongwuyibiao_zhuanjifengmian
+	ui_scr->chongwuyibiao_zhuanjifengmian = lv_image_create(ui_scr->chongwuyibiao_zhuanjirongqi);
+	lv_image_set_src(ui_scr->chongwuyibiao_zhuanjifengmian, gui_get_res_path(GUI_RES__6_PNG));
+	lv_image_set_pivot(ui_scr->chongwuyibiao_zhuanjifengmian, 48, 48);
+	lv_image_set_rotation(ui_scr->chongwuyibiao_zhuanjifengmian, 0);
+	lv_image_set_scale(ui_scr->chongwuyibiao_zhuanjifengmian, 256);
+	lv_image_set_inner_align(ui_scr->chongwuyibiao_zhuanjifengmian, LV_IMAGE_ALIGN_TOP_LEFT);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_zhuanjifengmian, 0, 0);
+	lv_obj_set_size(ui_scr->chongwuyibiao_zhuanjifengmian, 96, 96);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_zhuanjifengmian, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_zhuanjifengmian, GUI_CTRL_IMG);
+
+	//Set style for chongwuyibiao_zhuanjifengmian. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->chongwuyibiao_zhuanjifengmian, 48, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_clip_corner(ui_scr->chongwuyibiao_zhuanjifengmian, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes chongwuyibiao_yinfuyou
+	ui_scr->chongwuyibiao_yinfuyou = lv_image_create(ui_scr->chongwuyibiao_yinyuerongqi);
+	lv_image_set_src(ui_scr->chongwuyibiao_yinfuyou, gui_get_res_path(GUI_RES__7_PNG));
+	lv_image_set_pivot(ui_scr->chongwuyibiao_yinfuyou, 12, 16);
+	lv_image_set_rotation(ui_scr->chongwuyibiao_yinfuyou, 120);
+	lv_image_set_scale(ui_scr->chongwuyibiao_yinfuyou, 256);
+	lv_image_set_inner_align(ui_scr->chongwuyibiao_yinfuyou, LV_IMAGE_ALIGN_TOP_LEFT);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_yinfuyou, 454, 76);
+	lv_obj_set_size(ui_scr->chongwuyibiao_yinfuyou, 24, 32);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_yinfuyou, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_yinfuyou, GUI_CTRL_IMG);
+
+	//Write codes chongwuyibiao_yinfuzuo
+	ui_scr->chongwuyibiao_yinfuzuo = lv_image_create(ui_scr->chongwuyibiao_yinyuerongqi);
+	lv_image_set_src(ui_scr->chongwuyibiao_yinfuzuo, gui_get_res_path(GUI_RES__8_PNG));
+	lv_image_set_pivot(ui_scr->chongwuyibiao_yinfuzuo, 12, 16);
+	lv_image_set_rotation(ui_scr->chongwuyibiao_yinfuzuo, -120);
+	lv_image_set_scale(ui_scr->chongwuyibiao_yinfuzuo, 256);
+	lv_image_set_inner_align(ui_scr->chongwuyibiao_yinfuzuo, LV_IMAGE_ALIGN_TOP_LEFT);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_yinfuzuo, 478, 61);
+	lv_obj_set_size(ui_scr->chongwuyibiao_yinfuzuo, 24, 32);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_yinfuzuo, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_yinfuzuo, GUI_CTRL_IMG);
+
 	//Write codes chongwuyibiao_tinggexiaogou
 	ui_scr->chongwuyibiao_tinggexiaogou = lv_image_create(ui_scr->chongwuyibiao_yinyuerongqi);
-	lv_image_set_src(ui_scr->chongwuyibiao_tinggexiaogou, gui_get_res_path(GUI_RES__6_PNG));
+	lv_image_set_src(ui_scr->chongwuyibiao_tinggexiaogou, gui_get_res_path(GUI_RES__9_PNG));
 	lv_image_set_pivot(ui_scr->chongwuyibiao_tinggexiaogou, 0, 0);
 	lv_image_set_rotation(ui_scr->chongwuyibiao_tinggexiaogou, 0);
 	lv_image_set_scale(ui_scr->chongwuyibiao_tinggexiaogou, 256);
@@ -1220,9 +1231,39 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_tinggexiaogou, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->chongwuyibiao_tinggexiaogou, GUI_CTRL_IMG);
 
+	//Write codes chongwuyibiao_gequmingcheng
+	ui_scr->chongwuyibiao_gequmingcheng = lv_label_create(ui_scr->chongwuyibiao_yinyuerongqi);
+	lv_label_set_text(ui_scr->chongwuyibiao_gequmingcheng, "等待歌曲信息");
+	lv_label_set_long_mode(ui_scr->chongwuyibiao_gequmingcheng, LV_LABEL_LONG_MODE_SCROLL_CIRCULAR);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_gequmingcheng, 132, 141);
+	lv_obj_set_size(ui_scr->chongwuyibiao_gequmingcheng, 288, 38);
+	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_gequmingcheng, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_gequmingcheng, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_gequmingcheng, GUI_CTRL_LABEL);
+
+	//Set style for chongwuyibiao_gequmingcheng. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_gequmingcheng, &lv_font_lyrics_26, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_gequmingcheng, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_gequmingcheng, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes chongwuyibiao_geciwenzi
+	ui_scr->chongwuyibiao_geciwenzi = lv_label_create(ui_scr->chongwuyibiao_yinyuerongqi);
+	lv_label_set_text(ui_scr->chongwuyibiao_geciwenzi, "暂无歌词");
+	lv_label_set_long_mode(ui_scr->chongwuyibiao_geciwenzi, LV_LABEL_LONG_MODE_SCROLL_CIRCULAR);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_geciwenzi, 132, 180);
+	lv_obj_set_size(ui_scr->chongwuyibiao_geciwenzi, 288, 28);
+	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_geciwenzi, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_geciwenzi, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_geciwenzi, GUI_CTRL_LABEL);
+
+	//Set style for chongwuyibiao_geciwenzi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_geciwenzi, &lv_font_lyrics_20, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_geciwenzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_geciwenzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
 	//Write codes chongwuyibiao_lanyalianjietubiao
 	ui_scr->chongwuyibiao_lanyalianjietubiao = lv_image_create(ui_scr->chongwuyibiao);
-	lv_image_set_src(ui_scr->chongwuyibiao_lanyalianjietubiao, gui_get_res_path(GUI_RES__7_PNG));
+	lv_image_set_src(ui_scr->chongwuyibiao_lanyalianjietubiao, gui_get_res_path(GUI_RES__10_PNG));
 	lv_image_set_pivot(ui_scr->chongwuyibiao_lanyalianjietubiao, 0, 0);
 	lv_image_set_rotation(ui_scr->chongwuyibiao_lanyalianjietubiao, 0);
 	lv_image_set_scale(ui_scr->chongwuyibiao_lanyalianjietubiao, 256);
@@ -1240,6 +1281,7 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	neicun_zhuizong_jieduan("chongwu_jingtai");
 	chongwuyibiao_donghua_bangding(ui_scr);
+	chongwuyibiao_yinyue_bangding(ui_scr);
 	return ui_scr->chongwuyibiao;
 }
 void unload_scr_chongwuyibiao(lv_ui *ui)
