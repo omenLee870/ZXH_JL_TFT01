@@ -107,10 +107,10 @@ static struct dbi_param lcd_mipi_jd9165t_1024x600 = {
     .buffer_num = 2,
     .buffer_size = LCD_BLOCK_W * LCD_BLOCK_H * 2,
 
-    .fps = 30,
+    .fps = 20,
 
     .mipi = {
-        .frame_timeout_ms = 33,
+        .frame_timeout_ms = 50,
 #if MIXED_PACKET_TYPE == 0
         .packet_category = BOTH_DCS_PACKET_AND_GENERIC_PACKET_AUTO,
 #else

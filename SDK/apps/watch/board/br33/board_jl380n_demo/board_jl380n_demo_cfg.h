@@ -820,7 +820,7 @@
 #define CONFIG_NET_PROTOCOL_UDP             1
 #define CTP_CTRL_PORT   	                3333
 #define CDP_CTRL_PORT   	                2228
-#define SCR_FRAME_TYPE   	                10   //2: jpeg, 10:jljpeg
+#define SCR_FRAME_TYPE   	                2    //2: jpeg, 10:jljpeg
 #endif
 
 #if TCFG_BT_H264_SCR_ENABLE

@@ -23,6 +23,7 @@
 
 #include "lv_port_disp.h"
 #include "lv_video_diag.h"
+#include "lv_port_video_disp.h"
 #include <stdbool.h>
 
 #include "jlgpu_framework.h"
@@ -1733,6 +1734,28 @@ static void _jlgpu_run_disp_cb(void *ptr)
 
         /* 窗口与落点由生产者按脏区定好(见 lv_jlgpu_prepare_render_area), 这里直接用 */
         lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "gpu_run", 0, 1);
+        if (lv_port_video_disp_get_instance_by_fb_index(5)) {
+            static u32 check_start;
+            static u32 check_frames;
+            static u32 check_overlap;
+            u32 scan_raw = EVA_DMM->IN0_BASE;
+            void *scan = psram_no_cache_2_cache((void *)scan_raw);
+            if (!scan) {
+                scan = (void *)scan_raw;
+            }
+            check_frames++;
+            if (scan == px_map) {
+                check_overlap++;
+            }
+            u32 now = get_system_ms();
+            if (now - check_start >= 1000) {
+                printf("[LCD_SCAN_CHECK] t=%u frames=%u overlap=%u target=%p scan=%p\n",
+                       now, check_frames, check_overlap, px_map, scan);
+                check_start = now;
+                check_frames = 0;
+                check_overlap = 0;
+            }
+        }
         jlgpu_task_list_disp_run(disp_drv, unit, &lv_jl_lcd.render_area, px_map + lv_jl_lcd.render_ofs);
 
         /* GPU→DBI 联动期间仍可能读取任务链，释放点必须在真实推屏结束之后。 */

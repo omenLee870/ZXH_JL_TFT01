@@ -811,7 +811,8 @@ int lcd_dmm_link_init(uint16_t width, uint16_t height, uint8_t jstc_en, uint8_t 
     reg_stride_param.src1_stride = 0;
 
     reg_stride_param.out_stride = out_stride;
-    reg_common_param.out_buf_line = 7;
+    /* MIPI video output needs headroom while JPEG/VPSS accesses PSRAM. */
+    reg_common_param.out_buf_line = (__this->lcd_type == LCD_TYPE_MIPI) ? 31 : 7;
     reg_common_param.out_color_fmt = out_format;
     int slice_h1 = reg_common_param.out_buf_line + 1;
 
@@ -823,6 +824,9 @@ int lcd_dmm_link_init(uint16_t width, uint16_t height, uint8_t jstc_en, uint8_t 
     }
     reg_adr_param.dst_adr0 = dmm_slice_buf0;
     reg_adr_param.dst_adr1 = dmm_slice_buf1;
+
+    printf("[LCD_DMM] w=%u h=%u slice_lines=%u out_stride=%u buf0=%p buf1=%p\n",
+           width, height, slice_h1, out_stride, dmm_slice_buf0, dmm_slice_buf1);
 
     dmm_set_ccm_param(&reg_ccm_param);
     dmm_set_gamma_param(&reg_gamma_param);
