@@ -18,6 +18,7 @@
 #include "../../../SDK/apps/watch/common/pet_dashboard_music.h"
 #else
 #include "pet_dashboard_music.h"
+#include "pet_reverse_notice.h"
 void ui_music_album_pic_handler(void);
 #endif
 
@@ -58,6 +59,55 @@ static lv_image_dsc_t cover_descriptor;
 static void *cover_storage;
 static uint16_t *cover_pixels;
 static bool cover_ready;
+static lv_obj_t *daoche_return_page;
+
+/** @brief 退出本次倒车页后取消往返标记，不影响其他入口进入的视频页。 */
+static void daoche_unload(lv_event_t *event)
+{
+    LV_UNUSED(event);
+#if !LV_USE_GUIBUILDER_SIMULATOR
+    if (daoche_return_page) pet_reverse_notice_request(false);
+#endif
+    daoche_return_page = NULL;
+}
+
+/** @brief 暂时切到现有摄像头页，返回复用原宠物页面及业务状态。 */
+bool chongwuyibiao_daoche_toggle(bool clicked)
+{
+    gui_scr_t *current = gui_scr_get_act();
+    if (!current) return false;
+    if (current->id == GUI_SCREEN_CHONGWUYIBIAO) {
+        if (!clicked) return true;
+        gui_scr_t *video = ui_get_setup_scr(GUI_SCREEN_PAGE_VIDEO);
+        if (!video || !video->scr) {
+            printf("[PET_KEY] OK camera page create failed\n");
+            return true;
+        }
+        lv_obj_remove_event_cb(video->scr, daoche_unload);
+        lv_obj_add_event_cb(video->scr, daoche_unload, LV_EVENT_SCREEN_UNLOAD_START, NULL);
+        daoche_return_page = current->scr;
+        /* 不清控件、不删除页面、不改音乐状态，摄像头沿用页面加载回调。 */
+        ui_load_scr_anim(&guider_ui, video, LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false, false);
+        if (gui_scr_get_act() != video) daoche_return_page = NULL;
+#if !LV_USE_GUIBUILDER_SIMULATOR
+        else pet_reverse_notice_request(true);
+#endif
+        printf("[PET_KEY] OK pet -> camera switched=%u\n", gui_scr_get_act() == video);
+        return true;
+    }
+    if (current->id == GUI_SCREEN_PAGE_VIDEO && daoche_return_page) {
+        if (!clicked) return true;
+        gui_scr_t *pet = gui_scr_get(GUI_SCREEN_CHONGWUYIBIAO);
+        if (pet && pet->scr == daoche_return_page && lv_obj_is_valid(pet->scr)) {
+            ui_load_scr_anim(&guider_ui, pet, LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false, false);
+            printf("[PET_KEY] OK camera -> pet switched=%u\n", gui_scr_get_act() == pet);
+        } else {
+            printf("[PET_KEY] OK saved pet page missing\n");
+        }
+        return true;
+    }
+    return false;
+}
 
 static bool cover_wait_idle(void)
 {

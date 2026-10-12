@@ -75,6 +75,10 @@ int play_tone_file_alone(const char *file_name);
 int play_tone_file_alone_callback(const char *file_name, void *priv,
                                   tone_player_cb_t callback);
 
+/* 独占提示音；播放器对象申请 PSRAM，申请失败时不回退到 RAM。 */
+int play_tone_file_alone_callback_psram(const char *file_name, void *priv,
+                                      tone_player_cb_t callback);
+
 
 /*
  * 播放文件列表,内部不会复制文件名,file_name[x]指向的文件名地址要求播放过程中有效
@@ -92,6 +96,9 @@ int play_tone_files_alone_callback(const char *const file_name[], u8 file_num,
  * 停止播放所有提示音
  */
 void tone_player_stop();
+
+/* 只停止属于指定回调及 priv 的提示音，保留队列中的其他提示音。 */
+void tone_player_stop_by_callback(void *priv, tone_player_cb_t callback);
 
 /*
  * 返回是否有提示音在播放

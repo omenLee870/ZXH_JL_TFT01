@@ -99,4 +99,5 @@ copy tone_zh%case_suffix%.cfg tone_zh.cfg
 
 
 call download_befor.bat
+if errorlevel 1 exit /b 1
 call download/watch/download_lvgl.bat

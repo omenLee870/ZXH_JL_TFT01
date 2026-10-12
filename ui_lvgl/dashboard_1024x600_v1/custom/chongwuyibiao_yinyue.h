@@ -9,6 +9,8 @@ extern "C" {
 
 /* 工具页面初始化入口，仅绑定显示和点击事件。 */
 void chongwuyibiao_yinyue_bangding(lv_ui_chongwuyibiao *jiemian);
+/* OK 往返倒车页，消费完整按键序列；仅短按完成时切换。 */
+bool chongwuyibiao_daoche_toggle(bool clicked);
 /* 解码结果由 LVGL 线程交给显示适配层。 */
 void chongwuyibiao_yinyue_fengmian(const lv_image_dsc_t *image);
 /* 携带封面归属，拒绝换歌前尚未完成的解码结果。 */

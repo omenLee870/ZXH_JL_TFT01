@@ -22,6 +22,7 @@
 /*#include "ui/common/common.h"*/
 
 #include "lv_port_disp.h"
+#include "lv_video_diag.h"
 #include <stdbool.h>
 
 #include "jlgpu_framework.h"
@@ -182,6 +183,87 @@ static OS_SEM jlgpu_run_disp_sem;      /* 消费者 -> 生产者:上一帧已处
 #if JLGPU_PUSH_SYNC_WITH_LVGL
 static OS_SEM jlgpu_push_done_sem;     /* 消费者 -> 生产者:推屏(lcd->draw)已完成 */
 #endif
+#endif
+
+#if LV_VIDEO_DIAG_ENABLE
+extern uint32_t get_system_ms(void);
+/* Sample from app_core's system timer, independently of the UI/GPU tasks.
+ * Hot paths only update scalars; no per-frame printf or added locks/waits.
+ * A concurrent stage change may straddle a sample; repeated samples identify
+ * a real stall. These snapshots are diagnostic, not synchronization state. */
+typedef struct {
+    const char *volatile stage;
+    volatile unsigned int since_ms;
+    volatile unsigned int seq;
+    volatile unsigned int detail;
+    volatile unsigned int waiting;
+} lv_video_diag_state_t;
+
+static lv_video_diag_state_t s_video_diag[LV_VIDEO_DIAG_LANES];
+static volatile unsigned int s_video_diag_active;
+static u16 s_video_diag_timer;
+
+static void lv_video_diag_watch(void *priv)
+{
+    static const char *names[LV_VIDEO_DIAG_LANES] = {"ui", "push", "frame", "drain"};
+    unsigned int now = get_system_ms();
+    (void)priv;
+    if (!s_video_diag_active) {
+        return;
+    }
+    extern int lcd_busy(void);
+    printf("[VIDEO_DIAG] tick t=%u lcd_busy=%d\n", now, lcd_busy());
+    for (int i = 0; i < LV_VIDEO_DIAG_LANES; i++) {
+        const char *stage = s_video_diag[i].stage;
+        if (!stage) {
+            continue;
+        }
+        unsigned int age = now - s_video_diag[i].since_ms;
+        unsigned int waiting = s_video_diag[i].waiting;
+        printf("[VIDEO_DIAG] %s lane=%s stage=%s seq=%u age_ms=%u wait=%u detail=0x%x\n",
+               waiting && age >= 1000U ? "STALL" : "state", names[i], stage,
+               s_video_diag[i].seq, age, waiting, s_video_diag[i].detail);
+    }
+}
+
+void lv_video_diag_mark(enum lv_video_diag_lane lane, const char *stage,
+                        unsigned int detail, unsigned int waiting)
+{
+    if (!s_video_diag_active || (unsigned int)lane >= LV_VIDEO_DIAG_LANES) {
+        return;
+    }
+    s_video_diag[lane].detail = detail;
+    s_video_diag[lane].waiting = waiting;
+    s_video_diag[lane].since_ms = get_system_ms();
+    s_video_diag[lane].stage = stage;
+    s_video_diag[lane].seq++;
+}
+
+/* app_task_init calls late initcalls in app_core. sys_timer callbacks run in
+ * the registering task, so registration must not happen in the UI thread. */
+static int lv_video_diag_timer_init(void)
+{
+    s_video_diag_timer = sys_timer_add(NULL, lv_video_diag_watch, 2000);
+    if (!s_video_diag_timer) {
+        printf("[VIDEO_DIAG] timer create failed\n");
+    }
+    return 0;
+}
+late_initcall(lv_video_diag_timer_init);
+
+void lv_video_diag_start(void)
+{
+    s_video_diag_active = 1;
+    printf("[VIDEO_DIAG] start fb5 t=%u interval_ms=2000 timer=%u\n",
+           get_system_ms(), s_video_diag_timer);
+}
+
+void lv_video_diag_stop(void)
+{
+    lv_video_diag_watch(NULL);
+    printf("[VIDEO_DIAG] stop fb5 t=%u\n", get_system_ms());
+    s_video_diag_active = 0;
+}
 #endif
 /**********************
  *      MACROS
@@ -1073,22 +1155,27 @@ void disp_flush_post_msg(void)
  *       因此 sem==0 表示有任务在队列/在飞; pend 成功即表示渲染线程已空闲。 */
 bool lv_jlgpu_run_disp_wait_idle(void)
 {
+    lv_video_diag_mark(LV_VIDEO_DIAG_DRAIN, "drain_sem", 0, 1);
     if (os_sem_pend(&jlgpu_run_disp_sem, 300) == OS_ERR_NONE) {
         /* lcd->draw 返回只代表提交了传输；其它推屏入口也可能留下在途 DBI。 */
         extern int lcd_busy(void);
         uint32_t begin = get_system_ms();
+        lv_video_diag_mark(LV_VIDEO_DIAG_DRAIN, "drain_lcd", 0, 1);
         while (lcd_busy()) {
             if ((uint32_t)(get_system_ms() - begin) >= 2000U) {
                 os_sem_post(&jlgpu_run_disp_sem);
                 printf("lv_jlgpu_run_disp_wait_idle: LCD timeout\n");
+                lv_video_diag_mark(LV_VIDEO_DIAG_DRAIN, "drain_lcd_timeout", 0, 0);
                 return false;
             }
             os_time_dly(1);
         }
         os_sem_post(&jlgpu_run_disp_sem);
+        lv_video_diag_mark(LV_VIDEO_DIAG_DRAIN, "drain_done", 0, 0);
         return true;
     } else {
         printf("lv_jlgpu_run_disp_drain: timeout\n");
+        lv_video_diag_mark(LV_VIDEO_DIAG_DRAIN, "drain_sem_timeout", 0, 0);
         return false;
     }
 }
@@ -1291,9 +1378,11 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
              * 发生，lcd_sem 一旦释放(该帧 tgen_done 到来)即可自动恢复，且对所有
              * 推屏通路(gpu_link_dbi/gxdma/jstc/普通)都成立。
              */
+            lv_video_diag_mark(LV_VIDEO_DIAG_UI, "flush_sem", 0, 1);
             if (os_sem_pend(&jlgpu_run_disp_sem, 0) != OS_ERR_NONE) {
                 printf("disp_flush: os_sem_pend failed\n");
             }
+            lv_video_diag_mark(LV_VIDEO_DIAG_UI, "flush_build", 0, 1);
 
             /*
              * 圆球特效: 把当帧的特效任务挂到本帧任务链上, 插在哪一层由
@@ -1310,6 +1399,7 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
             /* 定下本帧的 GPU 输出窗口(旋转屏收窄到脏区)与 tile 落点, 消费线程要用 */
             lv_jlgpu_prepare_render_area(&full_area, area);
 
+            lv_video_diag_mark(LV_VIDEO_DIAG_UI, "flush_post", 0, 1);
             int err = os_taskq_post(JLGPU_RUN_DISP_CB_NAME, 3, disp_drv, unit, px_map);
             if (err) {
                 os_sem_post(&jlgpu_run_disp_sem);
@@ -1327,6 +1417,7 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
             /* 关键:等推屏(lcd->draw)真正结束再放行 LVGL。
              * 原行为是 post 完就 flush_ready 返回,LVGL 立刻渲染下一帧,
              * 于是"渲染线程"和"推屏线程"会并发操作同一颗 GPU 与同一组 top SFR */
+            lv_video_diag_mark(LV_VIDEO_DIAG_UI, "flush_push_wait", 0, 1);
             if (os_sem_pend(&jlgpu_push_done_sem, 300) != OS_ERR_NONE) {
                 printf("disp_flush: push_done sem_pend failed\n");
             }
@@ -1336,6 +1427,7 @@ static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *p
 
             /* 在此处开背光可防止闪屏 */
             lv_display_flush_ready(disp_drv);
+            lv_video_diag_mark(LV_VIDEO_DIAG_UI, "flush_done", (unsigned int)err, 0);
 
             return;
 #endif
@@ -1636,9 +1728,11 @@ static void _jlgpu_run_disp_cb(void *ptr)
          * 只罩 lcd->draw 是不够的:配置联动到这里之前如果被渲染线程插入
          * (lv_jlgpu_ctx_init 里的 jlgpu_hw_set_sfr_top(NULL) + JLGXDMA_link_gpu(0)),
          * 联动会被打断,GPU top 不再产出,DMM 读不到数据 → lcd->draw 永久等待 → 整机冻死。 */
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "gpu_gate", 0, 1);
         jlgpu_push_gate_enter();
 
         /* 窗口与落点由生产者按脏区定好(见 lv_jlgpu_prepare_render_area), 这里直接用 */
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "gpu_run", 0, 1);
         jlgpu_task_list_disp_run(disp_drv, unit, &lv_jl_lcd.render_area, px_map + lv_jl_lcd.render_ofs);
 
         /* GPU→DBI 联动期间仍可能读取任务链，释放点必须在真实推屏结束之后。 */
@@ -1682,17 +1776,23 @@ static void _jlgpu_run_disp_cb(void *ptr)
 
         /* 推屏前先检测上帧 DBI 是否卡死(如插 SD 卡致 tgen_done 丢失)，卡死则强制恢复，
          * 避免 LIST==2 的 consumer 永久卡在下面 set_draw_area() 的 lcd_lock() 里 */
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "lcd_wait_before", 0, 1);
         lv_jl_lcd_wait_or_recover_stuck();
 
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "lcd_area", 0, 1);
         lv_jl_lcd.lcd->set_draw_area(full_area.x1, full_area.x2, full_area.y1, full_area.y2);
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "lcd_draw", 0, 1);
         lv_jl_lcd.lcd->draw((uint8_t *)px_map, full_area.x1, full_area.x2, full_area.y1, full_area.y2);
 
         /* draw 是异步提交；等 tgen_done 清 busy 才能释放链表、独占门及完成信号。 */
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "lcd_wait_after", 0, 1);
         lv_jl_lcd_wait_or_recover_stuck();
 
         /* 推屏结束,放开独占门(见上面的 jlgpu_push_gate_enter) */
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "gpu_gate_leave", 0, 1);
         jlgpu_push_gate_leave();
 
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "task_free", 0, 1);
         lv_jlgpu_task_list_free(unit);
 
 
@@ -1710,7 +1810,9 @@ static void _jlgpu_run_disp_cb(void *ptr)
         __lv_gpulist_flush_framerate_calc(0, 0);
 #endif
 
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "push_sem_post", 0, 1);
         os_sem_post(&jlgpu_run_disp_sem);
+        lv_video_diag_mark(LV_VIDEO_DIAG_PUSH, "push_done", 0, 0);
 
 #if JLGPU_PUSH_SYNC_WITH_LVGL
         /* 通知生产者:本帧推屏已结束,可以 flush_ready 继续下一帧 */

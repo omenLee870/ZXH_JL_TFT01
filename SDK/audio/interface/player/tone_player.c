@@ -13,6 +13,7 @@
 #include "app_config.h"
 #include "app_tone.h"
 #include "audio_dac.h"
+#include "system/malloc.h"
 
 #if TCFG_TONE_NODE_ENABLE
 
@@ -66,6 +67,18 @@ static void *open_next_file(struct tone_player *player)
     return NULL;
 }
 
+static void tone_player_memory_free(struct tone_player *player)
+{
+#if TCFG_PSRAM_DEV_ENABLE
+    if (memory_in_psram(player)) {
+        printf("[REVERSE_VOICE] player free=%p memory=PSRAM\n", player);
+        free_psram(player);
+        return;
+    }
+#endif
+    free(player);
+}
+
 void tone_player_free(struct tone_player *player)
 {
 #if !TCFG_TONE_PLAYER_ENABLE
@@ -77,7 +90,7 @@ void tone_player_free(struct tone_player *player)
 
     if (--player->ref == 0) {
         tone_file_close(player);
-        free(player);
+        tone_player_memory_free(player);
     }
     if (callback) {
         callback(cb_priv,  STREAM_EVENT_STOP);
@@ -428,11 +441,20 @@ int tone_player_init(struct tone_player *player, const char *file_name)
     return 0;
 }
 
-static struct tone_player *tone_player_create(const char *file_name)
+static struct tone_player *tone_player_create_memory(const char *file_name, bool psram)
 {
     struct tone_player *player;
 
-    player = zalloc(sizeof(*player));
+    if (psram) {
+#if TCFG_PSRAM_DEV_ENABLE
+        player = malloc_psram(sizeof(*player));
+        if (player) memset(player, 0, sizeof(*player));
+#else
+        return NULL;
+#endif
+    } else {
+        player = zalloc(sizeof(*player));
+    }
     if (!player) {
         return NULL;
     }
@@ -444,6 +466,11 @@ static struct tone_player *tone_player_create(const char *file_name)
     }
 
     return player;
+}
+
+static struct tone_player *tone_player_create(const char *file_name)
+{
+    return tone_player_create_memory(file_name, false);
 }
 
 int tone_player_add(struct tone_player *player)
@@ -619,6 +646,24 @@ int play_tone_file_alone_callback(const char *file_name, void *priv,
     return tone_player_add(player);
 }
 
+int play_tone_file_alone_callback_psram(const char *file_name, void *priv,
+                                      tone_player_cb_t callback)
+{
+#if !TCFG_TONE_PLAYER_ENABLE
+    return -ENOMEM;
+#endif
+    struct tone_player *player = tone_player_create_memory(file_name, true);
+    if (!player) {
+        if (callback) callback(priv, STREAM_EVENT_STOP);
+        return -ENOMEM;
+    }
+    player->coexist = STREAM_COEXIST_DISABLE;
+    player->priv = priv;
+    player->callback = callback;
+    printf("[REVERSE_VOICE] player=%p memory=PSRAM bytes=%u\n", player, (unsigned int)sizeof(*player));
+    return tone_player_add(player);
+}
+
 int tone_player_runing()
 {
 #if !TCFG_TONE_PLAYER_ENABLE
@@ -649,6 +694,33 @@ void tone_player_stop()
         tone_player_free(player);
     }
 
+    os_mutex_post(&g_tone_mutex);
+}
+
+void tone_player_stop_by_callback(void *priv, tone_player_cb_t callback)
+{
+#if !TCFG_TONE_PLAYER_ENABLE
+    return;
+#endif
+    struct tone_player *player, *n;
+    bool restart = false;
+    os_mutex_pend(&g_tone_mutex, 0);
+    list_for_each_entry_safe(player, n, &g_head, entry) {
+        if (player->callback != callback || player->priv != priv) continue;
+        if (g_head.next == &player->entry) restart = true;
+        __list_del_entry(&player->entry);
+        if (player->stream) {
+            jlstream_stop(player->stream, 50);
+            jlstream_release(player->stream);
+            DAC_NOISEGATE_ON();
+        }
+        tone_player_free(player);
+    }
+    /* tone_player_start 失败时会自行删除并释放该条目。 */
+    while (restart && !list_empty(&g_head)) {
+        player = list_first_entry(&g_head, struct tone_player, entry);
+        if (!tone_player_start(player)) break;
+    }
     os_mutex_post(&g_tone_mutex);
 }
 
@@ -976,6 +1048,11 @@ int tone_player_runing()
 {
     return 0;
 }
+void tone_player_stop_by_callback(void *priv, tone_player_cb_t callback)
+{
+    (void)priv;
+    (void)callback;
+}
 int play_tone_file_alone(const char *file_name)
 {
     return -ESRCH;
@@ -993,6 +1070,12 @@ int tone_player_init(struct tone_player *player, const char *file_name)
 
 int play_tone_file_alone_callback(const char *file_name, void *priv,
                                   tone_player_cb_t callback)
+{
+    return -ESRCH;
+}
+
+int play_tone_file_alone_callback_psram(const char *file_name, void *priv,
+                                      tone_player_cb_t callback)
 {
     return -ESRCH;
 }

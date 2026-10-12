@@ -20,6 +20,30 @@ static u8 key_init_cnt = 0;
 static volatile u8 g_is_key_active = 0;             //按键是否活跃标志，判断是否可进低功耗
 static volatile bool g_key_idle_query_en = false;   //是否需要判断g_is_key_active的使能标志
 
+#if KEY_DIAG_ENABLE
+static void key_diag_event(const struct key_event *key, u8 driver_type)
+{
+    const char *action;
+    /* LONG already identifies a held button; suppress periodic HOLD/NO_KEY. */
+    switch (key->event) {
+    case KEY_ACTION_LVGL_DOWN: action = "DOWN"; break;
+    case KEY_ACTION_UP: action = "UP"; break;
+    case KEY_ACTION_CLICK: action = "CLICK"; break;
+    case KEY_ACTION_LONG: action = "LONG"; break;
+    case KEY_ACTION_HOLD:
+    case KEY_ACTION_NO_KEY: return;
+    default: action = "OTHER"; break;
+    }
+    u8 value = (u8)key->value;
+    int ad_index = driver_type == KEY_DRIVER_TYPE_AD &&
+                   value >= KEY_AD_NUM0 && value <= KEY_AD_NUM19 ? value - KEY_AD_NUM0 : -1;
+    printf("[KEY_DIAG] event=%s(%u) value=%u ad_index=%d driver=%u msg_type=%u t=%u\n",
+           action, key->event, value, ad_index, driver_type, key->type, key->tmr);
+}
+#else
+static inline void key_diag_event(const struct key_event *key, u8 driver_type) {}
+#endif
+
 __attribute__((weak))
 void key_down_event_handler(u8 key_value)
 {
@@ -149,12 +173,14 @@ __notify:
     key.value = key_value;
     key.long_time = scan_para->long_time;
     key.tmr = sys_timer_get_ms();
+    key_diag_event(&key, scan_para->key_type);
     /* printf("key_value: 0x%x, event: %d\n", key_value, key_event); */
     key_event_handler(&key);
 
 #if CONFIG_LVGL_UI_ENABLE
     if (key_click.init) {
         key_click.tmr = sys_timer_get_ms();
+        key_diag_event(&key_click, scan_para->key_type);
         key_event_handler(&key_click);
     }
 #endif
@@ -189,14 +215,26 @@ void key_driver_init(void)
         if (!key->key_init) {
             continue;
         }
-        if ((!key->key_init()) && key->get_value) {
+        int init_ret = key->key_init();
+#if KEY_DIAG_ENABLE
+        printf("[KEY_DIAG] driver_init type=%d ret=%d scan_ms=%u\n",
+               key->param ? (int)key->param->key_type : -1, init_ret,
+               key->param ? key->param->scan_time : 0U);
+#endif
+        if ((!init_ret) && key->get_value) {
             key_init_cnt++;
-            sys_s_hi_timer_add((void *)key, key_driver_scan, key->param->scan_time); //注册按键扫描定时器
+            u16 scan_timer = sys_s_hi_timer_add((void *)key, key_driver_scan, key->param->scan_time); //注册按键扫描定时器
+#if KEY_DIAG_ENABLE
+            printf("[KEY_DIAG] scan_timer type=%u id=%u\n", key->param->key_type, scan_timer);
+#endif
             if (key->idle_query_en) {
                 g_key_idle_query_en = true;
             }
         }
     }
+#if KEY_DIAG_ENABLE
+    printf("[KEY_DIAG] initialized_drivers=%u\n", key_init_cnt);
+#endif
 }
 
 /* --------------------------------------------------------------------------*/

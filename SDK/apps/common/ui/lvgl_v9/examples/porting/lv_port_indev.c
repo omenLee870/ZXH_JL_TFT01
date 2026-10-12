@@ -29,6 +29,7 @@
 #define BOOL_DEFINE_CONFLICT
 #include "lcd/lcd_conf.h"
 #include "key_driver.h"
+#include "lv_port_key_dispatch.h"
 #include "app_msg.h"
 /**********************
  *      TYPEDEFS
@@ -254,10 +255,14 @@ void lv_indev_set_touch_timer_en(int en)
 
 void lv_indev_timer_read_key(void *user_data)
 {
-    lv_timer_t timer;
-    timer.user_data = indev_keypad;
-    indev_keypad->user_data = user_data;
-    lv_indev_read_timer_cb(&timer);
+    struct key_event *event = user_data;
+    if (event->value >= KEY_AD_NUM0 && event->value <= KEY_AD_NUM19) {
+        gui_scr_t *screen = gui_scr_get_act();
+        printf("[PET_KEY] ui event=%u value=%u type=%u screen=%d\n",
+               event->event, event->value, event->type, screen ? (int)screen->id : -1);
+    }
+    /* 收消息时先处理页面捷径，不能放进会被 prev_scr/disabled 拦截的 read_cb。 */
+    lv_port_key_dispatch(indev_keypad, event);
 }
 
 #if LV_USE_SIM_INERTIAL_SLIDE
@@ -630,6 +635,12 @@ static int ui_scr_key_event_handler(struct key_event *key, u8 long_handled)
 }
 
 /*Will be called by the library to read the mouse*/
+/* 页面专用按键可接管完整事件序列，避免 DOWN 被默认映射成 ENTER。 */
+_WEAK_ bool lvgl_key_event_consumed(struct key_event *event)
+{
+    return false;
+}
+
 static void keypad_read(lv_indev_t *indev_drv, lv_indev_data_t *data)
 {
     static u8 long_handled = 0;

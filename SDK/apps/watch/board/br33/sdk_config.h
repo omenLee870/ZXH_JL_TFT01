@@ -621,7 +621,7 @@
 #define TCFG_AUDIO_KWS_LANGUAGE_SEL               KWS_CH           // 模式选择
 #define TCFG_DEC_SBC_ENABLE                       1                // SBC
 #define TCFG_DEC_MSBC_ENABLE                      1                // MSBC
-#define TCFG_DEC_WAV_ENABLE                       0                // WAV
+#define TCFG_DEC_WAV_ENABLE                       1                // WAV（倒车提示音）
 #define TCFG_DEC_MP3_ENABLE                       0                // MP3
 #define TCFG_DEC_AAC_ENABLE                       0                // AAC
 #define TCFG_DEC_OPUS_ENABLE                      0                // OPUS

@@ -1,6 +1,8 @@
 #include "lvgl.h"
 #include "src/widgets/label/lv_label_private.h"
 #include "src/draw/lv_image_decoder_private.h"
+#include "src/display/lv_display_private.h"
+#include "lv_port_key_dispatch.h"
 #include "gui_guider.h"
 #include "chongwuyibiao_donghua.h"
 #include "chongwuyibiao_yinyue.h"
@@ -13,6 +15,41 @@
 static lv_font_t *title_font;
 static uint16_t frame_pixels[1024 * 600] __attribute__((aligned(32)));
 static unsigned int cover_draw_tasks;
+lv_ui guider_ui;
+static unsigned int camera_loads, camera_unloads;
+static unsigned int keypad_reads;
+
+/* 测试只替代硬件事件解码，执行与设备相同的分发入口及实际页面捷径。 */
+bool lvgl_key_event_consumed(struct key_event *event)
+{
+    return chongwuyibiao_daoche_toggle(*(const bool *)event);
+}
+
+static void test_keypad_read(lv_indev_t *indev, lv_indev_data_t *data)
+{
+    (void)indev;
+    keypad_reads++;
+    data->state = LV_INDEV_STATE_REL;
+}
+
+/* 使用实际 GUI 页面管理和 LVGL 生命周期，仅替代生成代码的入口。 */
+gui_scr_t *ui_get_setup_scr(int32_t id)
+{
+    return gui_scr_get(id);
+}
+
+void ui_load_scr_anim(lv_ui *ui, gui_scr_t *screen, lv_screen_load_anim_t anim,
+                      uint32_t time, uint32_t delay, bool clean, bool auto_del, bool push)
+{
+    assert(!clean && !auto_del && !push);
+    gui_scr_set_act_anim(screen, ui, anim, time, delay, clean, auto_del);
+}
+
+static void camera_page_event(lv_event_t *event)
+{
+    if (lv_event_get_code(event) == LV_EVENT_SCREEN_LOADED) camera_loads++;
+    if (lv_event_get_code(event) == LV_EVENT_SCREEN_UNLOAD_START) camera_unloads++;
+}
 
 /** @brief 软件渲染测试同步完成刷新，保留实际帧缓冲供像素断言。 */
 static void flush_ready(lv_display_t *display, const lv_area_t *area, uint8_t *pixels)
@@ -328,10 +365,74 @@ static void verify_media(lv_ui_chongwuyibiao *ui)
     puts("PASS: heading keeps cover; new handle clears it; stale decoded cover rejected");
 }
 
+/** @brief 实际页面往返保留音乐、封面、手动主界面及速度，倒车页有完整生命周期。 */
+static void verify_ok_camera(lv_ui_chongwuyibiao *ui)
+{
+    gui_scr_t *pet = gui_scr_create(GUI_SCREEN_CHONGWUYIBIAO, "pet", ui->chongwuyibiao, NULL, NULL);
+    lv_obj_t *video_obj = lv_obj_create(NULL);
+    gui_scr_t *video = gui_scr_create(GUI_SCREEN_PAGE_VIDEO, "video", video_obj, NULL, NULL);
+    lv_obj_add_event_cb(video_obj, camera_page_event, LV_EVENT_ALL, NULL);
+    const void *cover = lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian);
+    pet_dashboard_music_view_t saved = *pet_dashboard_music_get_view();
+    assert(chongwuyibiao_daoche_toggle(false)); /* DOWN/UP/HOLD 不切屏，也不触发确认。 */
+    assert(gui_scr_get_act() == pet);
+    lv_indev_t *keypad = lv_indev_create();
+    lv_indev_set_type(keypad, LV_INDEV_TYPE_KEYPAD);
+    lv_indev_set_read_cb(keypad, test_keypad_read);
+    lv_indev_enable(keypad, false);
+    lv_display_t *display = lv_display_get_default();
+    display->prev_scr = video_obj; /* 模拟动画遗留标志：原来的 read_cb 会直接被跳过。 */
+    lv_indev_read(keypad);
+    assert(keypad_reads == 0 && gui_scr_get_act() == pet);
+    bool click = true;
+    lv_port_key_dispatch(keypad, (struct key_event *)&click);
+    advance(30);
+    assert(gui_scr_get_act() == video && camera_loads == 1);
+    assert(keypad_reads == 0); /* OK 绕过 LVGL blocked/disabled，且不误发 ENTER。 */
+    lv_indev_delete(keypad);
+    assert(lv_obj_is_valid(ui->chongwuyibiao));
+    int32_t angle = lv_image_get_rotation(ui->chongwuyibiao_zhuanjifengmian);
+    advance(300);
+    assert(lv_image_get_rotation(ui->chongwuyibiao_zhuanjifengmian) == angle);
+    assert(chongwuyibiao_daoche_toggle(false));
+    assert(gui_scr_get_act() == video);
+    assert(chongwuyibiao_daoche_toggle(true));
+    advance(30);
+    assert(gui_scr_get_act() == pet && camera_unloads == 1);
+    assert(pet->scr == ui->chongwuyibiao);
+    assert(lv_image_get_src(ui->chongwuyibiao_zhuanjifengmian) == cover);
+    assert(!memcmp(&saved, pet_dashboard_music_get_view(), sizeof(saved)));
+    expect(ui, true, true, true);
+
+    pet_dashboard_music_request(PET_MUSIC_TOGGLE_VIEW);
+    assert(chongwuyibiao_daoche_toggle(true));
+    advance(30);
+    pet_dashboard_music_receive_text(0x80, (const uint8_t *)"Camera lyric", 12);
+    assert(chongwuyibiao_daoche_toggle(true));
+    advance(30);
+    expect(ui, true, true, false); /* 手动留在草地的状态必须保留。 */
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_chesushuzi), "46"));
+    assert(!strcmp(lv_label_get_text(ui->chongwuyibiao_geciwenzi), "Camera lyric"));
+    pet_dashboard_music_request(PET_MUSIC_TOGGLE_VIEW);
+
+    /* 从其他入口进倒车页不接管 OK，临时往返标记必须随退出清掉。 */
+    gui_scr_set_act_anim(video, &guider_ui, LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false);
+    advance(30);
+    assert(!chongwuyibiao_daoche_toggle(false));
+    assert(!chongwuyibiao_daoche_toggle(true));
+    assert(gui_scr_get_act() == video);
+    gui_scr_set_act_anim(pet, &guider_ui, LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false);
+    advance(30);
+    assert(camera_loads == 3 && camera_unloads == 3);
+    gui_scr_del(video);
+    puts("PASS: OK reaches pet/camera even with blocked/disabled LVGL input; original page, cover, manual view and live lyrics survive; camera load/unload paired");
+}
+
 /** @brief 验证实际控件显隐、点击以及页面删除和重建。 */
 int main(void)
 {
     lv_init();
+    gui_scr_init();
     title_font = lv_freetype_font_create("ui_lvgl/dashboard_1024x600_v1/import/font/lyrics.ttf",
         LV_FREETYPE_FONT_RENDER_MODE_BITMAP, 26, LV_FREETYPE_FONT_STYLE_NORMAL);
     assert(title_font && title_font->line_height == 36);
@@ -349,6 +450,7 @@ int main(void)
     expect(&ui, true, true, true);
     verify_metadata(&ui);
     verify_media(&ui);
+    verify_ok_camera(&ui);
     verify_title_scroll(&ui);
     verify_lyric_wait(&ui);
     lv_obj_send_event(ui.chongwuyibiao_tinggexiaogou, LV_EVENT_CLICKED, NULL);

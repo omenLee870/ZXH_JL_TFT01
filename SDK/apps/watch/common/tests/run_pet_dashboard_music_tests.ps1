@@ -15,6 +15,22 @@ $petOldPath = $env:Path
 $env:Path = "$(Split-Path -Parent $Compiler);$petUi/lvgl-simulator/bin;$env:Path"
 Push-Location $petRoot
 try {
+    & $Compiler -std=c11 -Wall -Wextra -Werror -DTONE_WAV_PSRAM_TEST=1 -DTCFG_PSRAM_DEV_ENABLE=1 `
+        SDK/audio/interface/player/tone_wav_psram.c SDK/apps/watch/common/tests/tone_wav_psram_test.c `
+        -o "$petOutput/wav-psram-test.exe"
+    if ($LASTEXITCODE -ne 0) { throw 'WAV PSRAM allocation test build failed.' }
+    & "$petOutput/wav-psram-test.exe"
+    if ($LASTEXITCODE -ne 0) { throw 'WAV PSRAM allocation/release test failed.' }
+
+    & $Compiler -std=c11 -Wall -Wextra -Werror -DPET_REVERSE_NOTICE_TEST=1 `
+        -DPET_DASHBOARD_MUSIC_SIMULATOR=1 -DPET_DASHBOARD_BT_LYRICS_MODE=0 `
+        -I SDK/apps/watch/common SDK/apps/watch/common/pet_reverse_notice.c `
+        SDK/apps/watch/common/pet_dashboard_music.c SDK/apps/watch/common/tests/pet_reverse_notice_test.c `
+        -o "$petOutput/reverse-notice-test.exe"
+    if ($LASTEXITCODE -ne 0) { throw '倒车播报测试编译失败。' }
+    & "$petOutput/reverse-notice-test.exe"
+    if ($LASTEXITCODE -ne 0) { throw '倒车播报测试失败。' }
+
     # 普通模式保留既有歌曲信息和状态机检查。
     & $Compiler -std=c11 -Wall -Wextra -Werror -DPET_DASHBOARD_MUSIC_SIMULATOR=1 `
         -DPET_DASHBOARD_BT_LYRICS_MODE=0 `
@@ -58,6 +74,7 @@ try {
         -DLV_USE_GUIBUILDER_SIMULATOR=1 -DPET_DASHBOARD_MUSIC_SIMULATOR=1 `
         -DPET_DASHBOARD_MUSIC_LINKED=1 -I "$petUi/lvgl" -I "$petUi/lvgl-simulator" `
         -I "$petUi/generated" -I "$petUi/custom" -I SDK/apps/watch/common `
+        -I SDK/apps/common/ui/lvgl_v9/examples/porting `
         SDK/apps/watch/common/pet_dashboard_music.c SDK/apps/watch/common/tests/pet_dashboard_music_ui_test.c `
         "$petUi/custom/chongwuyibiao_yinyue.c" "$petUi/custom/chongwuyibiao_donghua.c" `
         "$petUi/custom/chongwuyibiao_yinyue_donghua.c" `

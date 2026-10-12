@@ -83,6 +83,14 @@ vocal_remover_node_adapter
 
 eq_node_adapter
 g729_dec_plug
+
+
+
+
+
+
+
+wav_dec_plug
 fat_vfs_ops
 
 

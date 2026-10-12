@@ -14,6 +14,7 @@
 #include "custom.h"
 #include "hardware_test.h"
 #include "ui_update_page.h"
+#include "chongwuyibiao_yinyue.h"
 #include <time.h>
 #include "playback/app_playback_mpi.h"
 
@@ -50,6 +51,19 @@ static void screen_switch_func(void);
 static int hardware_test_is_adkey_value(u8 key_value)
 {
     return key_value >= KEY_AD_NUM0 && key_value <= KEY_AD_NUM19;
+}
+
+/* OK 只在宠物仪表及其临时倒车页接管；一次短按只切换一次。 */
+bool lvgl_key_event_consumed(struct key_event *event)
+{
+    if (event->value != KEY_AD_NUM1) return false;
+    if (ui_update_page_is_active() || hardware_test_adkey_is_active()) {
+        printf("[PET_KEY] OK blocked by update/test page\n");
+        return false;
+    }
+    bool consumed = chongwuyibiao_daoche_toggle(event->event == KEY_ACTION_CLICK);
+    printf("[PET_KEY] OK event=%u consumed=%u\n", event->event, consumed);
+    return consumed;
 }
 
 int ui_scr_key_event_handler_ext(struct key_event *event)

@@ -179,6 +179,8 @@ c_SRC_FILES := \
 	apps/watch/common/common_api.c \
 	apps/watch/common/common_music_ctrl.c \
 	apps/watch/common/pet_dashboard_music.c \
+	apps/watch/common/pet_reverse_notice.c \
+	audio/interface/player/tone_wav_psram.c \
 	apps/watch/data_storage/data_call_log_storage.c \
 	apps/watch/data_storage/data_message_storage.c \
 	apps/watch/data_storage/data_phonebook_storage.c \
@@ -753,6 +755,13 @@ DEP_FILES := $(OBJS:%.o=%.d)
 OBJS      := $(addprefix $(BUILD_DIR)/, $(OBJS))
 DEP_FILES := $(addprefix $(BUILD_DIR)/, $(DEP_FILES))
 
+# The closed-source WAV adapter retains its codec logic; only its heap calls
+# are renamed in an extracted copy. All other codecs keep their allocators.
+ifeq ($(WAV_PSRAM_ADAPTER_ENABLED), 1)
+WAV_PSRAM_OBJ := $(BUILD_DIR)/audio/interface/player/wav_dec_psram.c.o
+OBJS += $(WAV_PSRAM_OBJ)
+endif
+
 
 # 表示下面的不是一个文件的名字，无论是否存在 all, clean, pre_build 这样的文件
 # 还是要执行命令
@@ -766,6 +775,12 @@ DEP_FILES := $(addprefix $(BUILD_DIR)/, $(DEP_FILES))
 all: pre_build $(OUT_ELF)
 	$(info +POST-BUILD)
 	$(QUITE) $(RUN_POST_SCRIPT) sdk
+
+ifeq ($(WAV_PSRAM_ADAPTER_ENABLED), 1)
+$(WAV_PSRAM_OBJ): cpu/br33/liba/media.a build/prepare_wav_psram.ps1
+	$(info +WAV-PSRAM $@)
+	$(QUITE) powershell -NoProfile -ExecutionPolicy Bypass -File build/prepare_wav_psram.ps1 -Archive "$<" -Output "$@" -Compiler "$(CC)"
+endif
 
 pre_build:
 	$(info +PRE-BUILD)

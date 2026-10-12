@@ -6,6 +6,16 @@
 #define NO_KEY 		     0xff
 #define KEY_NOT_SUPPORT  0x01
 
+/* Temporary board key diagnostics; set to 0 after checking all buttons. */
+#ifndef KEY_DIAG_ENABLE
+#define KEY_DIAG_ENABLE 1
+#endif
+
+/* Temporary direct GPADC probe in app_core, never in the key scan IRQ. */
+#ifndef KEY_DIAG_DIRECT_ADC_ENABLE
+#define KEY_DIAG_DIRECT_ADC_ENABLE 0
+#endif
+
 
 #define     KEY_POWER           0
 #define     KEY_PREV            1

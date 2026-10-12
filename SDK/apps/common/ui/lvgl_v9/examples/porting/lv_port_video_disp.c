@@ -17,6 +17,7 @@
 #include "lv_image_dsc.h"
 #define BOOL_DEFINE_CONFLICT
 #include "lv_port_video_disp.h"
+#include "lv_video_diag.h"
 #include "jlgpu_image_filters.h"
 #if  LV_USE_VIDEO_DISP
 #include "src/draw/lv_draw_buf.h"
@@ -291,6 +292,10 @@ lv_video_disp_handle_t *lv_port_video_disp_create(lv_obj_t *parent, int32_t widt
 
     printf("lv_port_video_disp_create w:%d h:%d fmt:%d fb:%s slot:%d\n",
            width, height, format, ctx->fb_name, ctx->registry_slot);
+    if (ctx->fb_index == 5) {
+        lv_video_diag_start();
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "created", 5, 0);
+    }
 
     return (lv_video_disp_handle_t *)ctx;
 }
@@ -304,6 +309,10 @@ void lv_port_video_disp_del(lv_video_disp_handle_t *handle)
 
     if (ctx == NULL || ctx->registry_slot < 0) {
         return;
+    }
+    int diag_fb5 = ctx->fb_index == 5;
+    if (diag_fb5) {
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "delete_objects", 5, 1);
     }
 
     instance_unregister(ctx);
@@ -367,11 +376,16 @@ void lv_port_video_disp_del(lv_video_disp_handle_t *handle)
     }
 
     if (ctx->fb_dev) {
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "fb_close", ctx->fb_index, 1);
         dev_close(ctx->fb_dev);
         ctx->fb_dev = NULL;
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "fb_closed", ctx->fb_index, 0);
     }
 
     lv_free(ctx);
+    if (diag_fb5) {
+        lv_video_diag_stop();
+    }
 }
 
 /**
@@ -963,7 +977,9 @@ struct fb_map_user *lv_get_next_video_frame(lv_video_disp_handle_t *handle)
     lv_video_disp_ctx_t *ctx = (lv_video_disp_ctx_t *)handle;
 
     if (ctx && ctx->fb_dev) {
-        dev_ioctl(ctx->fb_dev, FBIOGET_FBUFFER_IDLE, (int)&ctx->fb_map);
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "fb_get", ctx->fb_index, 1);
+        int ret = dev_ioctl(ctx->fb_dev, FBIOGET_FBUFFER_IDLE, (int)&ctx->fb_map);
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "fb_get_done", (unsigned int)ret, 0);
         if ((u32)ctx->fb_map.baddr) {
             return &ctx->fb_map;
         }
@@ -986,7 +1002,9 @@ static void _lv_video_disp_render_end_cb(void *user_data)
     lv_video_disp_ctx_t *ctx = (lv_video_disp_ctx_t *)user_data;
 
     if (ctx && ctx->fb_dev && ctx->fb_map.baddr != NULL) {
-        dev_ioctl(ctx->fb_dev, FBIOPUT_FBUFFER_IDLE, (int)&ctx->fb_map);
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "fb_put", ctx->fb_index, 1);
+        int ret = dev_ioctl(ctx->fb_dev, FBIOPUT_FBUFFER_IDLE, (int)&ctx->fb_map);
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "fb_put_done", (unsigned int)ret, 0);
         ctx->fb_map.baddr = NULL;
     }
 }
@@ -996,12 +1014,13 @@ static lv_result_t lv_port_video_disp_update_frame(lv_video_disp_ctx_t *ctx)
     uint32_t stride = 0;
 
     struct fb_map_user *fb_map = lv_get_next_video_frame((lv_video_disp_handle_t *)ctx);
-    void *frame_buf = fb_map->baddr;
-    void *frame_uv_buf = fb_map->uv_baddr;
-
-    if (fb_map == NULL || frame_buf == NULL) {
+    /* Check before dereferencing: missing frames must not cause a null access. */
+    if (fb_map == NULL || fb_map->baddr == NULL) {
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "fb_no_frame", ctx->fb_index, 0);
         return LV_RESULT_INVALID;
     }
+    void *frame_buf = fb_map->baddr;
+    void *frame_uv_buf = fb_map->uv_baddr;
 
     if (ctx->video_format == LV_COLOR_FORMAT_I420 || ctx->video_format == LV_COLOR_FORMAT_NV12) {
         stride = ctx->video_width;
@@ -1032,15 +1051,18 @@ static lv_result_t lv_port_video_disp_update_frame(lv_video_disp_ctx_t *ctx)
         }
     }
 
+    lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "frame_set_src", ctx->fb_index, 1);
     if (lv_port_video_disp_set_src((lv_video_disp_handle_t *)ctx,
                                    frame_buf, frame_uv_buf,
                                    ctx->video_width, ctx->video_height,
                                    ctx->video_format, stride) != 0) {
+        lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "frame_set_src_failed", ctx->fb_index, 0);
         return LV_RESULT_INVALID;
     }
 
     lv_port_video_disp_set_render_end_cb((lv_video_disp_handle_t *)ctx,
                                          _lv_video_disp_render_end_cb, ctx);
+    lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "frame_ready", ctx->fb_index, 0);
 
     return LV_RESULT_OK;
 }
@@ -1065,6 +1087,7 @@ static void video_disp_render_start_event_cb(lv_event_t *e)
             continue;
         }
 
+        lv_video_diag_mark(LV_VIDEO_DIAG_UI, "render_start", ctx->fb_index, 1);
         lv_result_t res = lv_port_video_disp_update_frame(ctx);
         if (res != LV_RESULT_OK) {
             continue;
@@ -1084,14 +1107,17 @@ static void video_disp_render_start_event_cb(lv_event_t *e)
         }
 
         if (ctx->need_update && ctx->video_dsc != NULL && ctx->video_dsc->data != NULL) {
+            lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "image_set_src", ctx->fb_index, 1);
             for (int j = 0; j < ctx->img_obj_num; j++) {
                 if (ctx->img_obj[j]) {
                     lv_image_set_src(ctx->img_obj[j], ctx->video_dsc);
                 }
             }
             ctx->need_update = 0;
+            lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "image_src_ready", ctx->fb_index, 0);
         }
     }
+    lv_video_diag_mark(LV_VIDEO_DIAG_UI, "render_draw", 0, 1);
 }
 
 static void video_disp_render_ready_event_cb(lv_event_t *e)
@@ -1126,6 +1152,7 @@ static void video_disp_render_ready_event_cb(lv_event_t *e)
             ctx->render_end_cb(ctx->render_end_user_data);
         }
     }
+    lv_video_diag_mark(LV_VIDEO_DIAG_UI, "render_ready", 0, 0);
 }
 
 static void video_disp_flush_start_event_cb(lv_event_t *e)

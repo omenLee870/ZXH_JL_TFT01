@@ -1,6 +1,10 @@
 #include "pet_dashboard_music.h"
 #include <string.h>
 
+#if !defined(PET_DASHBOARD_MUSIC_SIMULATOR) || defined(PET_REVERSE_NOTICE_TEST)
+#include "pet_reverse_notice.h"
+#endif
+
 #ifndef PET_DASHBOARD_MUSIC_SIMULATOR
 #include "app_config.h"
 #include "app_msg.h"
@@ -133,7 +137,14 @@ void pet_dashboard_music_update(uint8_t connected, uint8_t playing, uint32_t now
         metadata_is_lyrics = false;
 #endif
 #endif
-    } else if (playing) {
+    }
+#if !defined(PET_DASHBOARD_MUSIC_SIMULATOR) || defined(PET_REVERSE_NOTICE_TEST)
+    else if (pet_reverse_notice_preserve_music_view()) {
+        /* 倒车播报引起的临时暂停/恢复不改变手动选择的草地或音乐区。 */
+        exit_pending = false;
+    }
+#endif
+    else if (playing) {
         exit_pending = false;
         /* 只在开始/恢复播放时进入，手动返回后持续播放不再抢占。 */
         if (!view.playing) view.music_visible = true;
@@ -162,6 +173,7 @@ void pet_dashboard_music_update(uint8_t connected, uint8_t playing, uint32_t now
 void pet_dashboard_music_poll(uint32_t now_ms)
 {
 #ifndef PET_DASHBOARD_MUSIC_SIMULATOR
+    pet_reverse_notice_tick(now_ms);
     bool connected = false;
     bool playing = false;
 #if TCFG_APP_BT_EN && TCFG_USER_BT_CLASSIC_ENABLE

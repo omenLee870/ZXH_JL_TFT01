@@ -1,5 +1,7 @@
 
 @echo off
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\..\..\..\tools\prepare_reverse_notice.ps1"
+if errorlevel 1 exit /b 1
 @echo copy head
 
 if exist "..\..\..\..\pmc\apps\bsp\cpu\br33\" (

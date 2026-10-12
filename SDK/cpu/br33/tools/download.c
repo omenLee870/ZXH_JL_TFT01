@@ -315,6 +315,7 @@ copy tone_zh%case_suffix%.cfg tone_zh.cfg
 
 
 call download_befor.bat
+if errorlevel 1 exit /b 1
 
 #if CONFIG_JL_UI_ENABLE
 #if GPU_DEMO_ENABLE
