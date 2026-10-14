@@ -12,6 +12,7 @@
 #include "cdp.h"
 #include "os/os_api.h"
 #include "screen_mirror.h"
+#include "zxh_vehicle_protocol.h"
 
 #define CTP_CMD_HEADER "{\"errno\":%d,\"op\":\"%s\",\"param\":{"
 #define CTP_CMD_HEADER_WITHOUT_ERR "{\"op\":\"%s\",\"param\":{"
@@ -168,6 +169,7 @@ static int cmd_put_ctp_cli_connected(void *priv, char *content)
 
 static int cmd_put_ctp_cli_disconnect(void *priv, char *content)
 {
+    zxh_vehicle_disconnect(priv);
     char buf[32];
     struct sockaddr_in *dest_addr;
     struct ctp_map_entry *map;

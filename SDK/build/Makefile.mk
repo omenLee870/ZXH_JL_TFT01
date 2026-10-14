@@ -165,6 +165,7 @@ c_SRC_FILES := \
 	apps/common/update/user_file_download/reserve_file_download.c \
 	apps/common/update/user_file_download/user_file_download.c \
 	apps/watch/app_main.c \
+	apps/watch/ble/zxh_ble.c \
 	apps/watch/audio/jlstream_event_handler.c \
 	apps/watch/audio/mix_record_api.c \
 	apps/watch/audio/rcsp_mix_record.c \
@@ -322,6 +323,7 @@ c_SRC_FILES := \
 	apps/watch/wifi/ctp/ctp_cmd.c \
 	apps/watch/wifi/ctp/ctp_cmd_handle.c \
 	apps/watch/wifi/ctp/ctp_screen_mirror_cmd.c \
+	apps/watch/wifi/ctp/zxh_vehicle_protocol.c \
 	apps/watch/wifi/ctp/ctp_video_cmd.c \
 	apps/watch/wifi/ctp/log_config.c \
 	apps/watch/wifi/lte_app_task.c \

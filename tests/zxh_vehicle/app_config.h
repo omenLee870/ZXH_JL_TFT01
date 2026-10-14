@@ -1,0 +1,1 @@
+#define TCFG_WIFI_NET_ENABLE 1

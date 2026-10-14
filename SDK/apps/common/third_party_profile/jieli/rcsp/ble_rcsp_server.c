@@ -57,6 +57,7 @@
 #include "le_alipay.h"
 
 #include "adv_hearing_aid_setting.h"
+#include "zxh_ble.h"
 
 #if TCFG_UI_ENABLE
 #include "ui/lcd/lcd_drive.h"
@@ -1276,6 +1277,7 @@ void hangup_ans_call_handle(u8 en)
 
 void bt_rcsp_custom_att_write_callback(void *hdl, hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size)
 {
+    if (zxh_ble_write(hdl, connection_handle, att_handle, transaction_mode, offset, buffer, buffer_size)) return;
     if (att_handle == ATT_CHARACTERISTIC_ae02_01_CLIENT_CONFIGURATION_HANDLE) {
         check_connetion_updata_deal(connection_handle);
     }
@@ -1338,6 +1340,7 @@ void bt_rcsp_custom_recieve_callback(u16 ble_con_hdl, void *remote_addr,
 
 uint16_t bt_rcsp_custom_att_read_callback(void *hdl, hci_con_handle_t connection_handle, uint16_t att_handle, uint16_t offset, uint8_t *buffer, uint16_t buffer_size)
 {
+    if (att_handle == ZXH_BLE_CCC_HANDLE) return zxh_ble_read(connection_handle, offset, buffer, buffer_size);
     return bt_wechat_sport_att_read_callback(hdl, connection_handle, att_handle, offset, buffer, buffer_size);
 }
 

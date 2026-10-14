@@ -9,6 +9,7 @@
 #include "bt_tws.h"
 #include "btstack/avctp_user.h"
 #include "app_main.h"
+#include "zxh_ble.h"
 
 #if (BT_AI_SEL_PROTOCOL & (RCSP_MODE_EN | GFPS_EN | MMA_EN | FMNA_EN | REALME_EN | SWIFT_PAIR_EN | DMA_EN | ONLINE_DEBUG_EN | CUSTOM_DEMO_EN | UART_SPP_EN | LE_AUDIO_CIS_RX_EN))
 
@@ -27,6 +28,7 @@
 
 void multi_protocol_state_update_callback(void *_hdl, uint8_t state, uint8_t *packet, uint16_t size)
 {
+    if (state == APP_BLE_DISCONNECTION_COMPLETE) zxh_ble_disconnected(_hdl);
     log_info("state callback 0x%x, 0x%x, 0x%x, %d\n", (u32)_hdl, state, (u32)packet, size);
     switch (state) {
     case APP_BLE_CONNECTION_COMPLETE:

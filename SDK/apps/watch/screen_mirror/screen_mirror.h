@@ -37,6 +37,7 @@ int net_scr_init(struct __NET_SCR_CFG *cfg);
 int net_scr_uninit(struct __NET_SCR_CFG *cfg);
 void map_video_enter(void);
 void map_video_leave(void);
+void screen_map_request_display(int active);
 
 int map_video_source_acquire(map_video_source_t source);
 void map_video_source_release(map_video_source_t source);

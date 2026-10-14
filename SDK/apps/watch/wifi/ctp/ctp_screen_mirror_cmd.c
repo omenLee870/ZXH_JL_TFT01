@@ -29,15 +29,19 @@ static int g_scr_inited = 0;
 #if TCFG_NET_SCR_ENABLE
 int net_scr_start(struct __NET_SCR_CFG *cfg)
 {
+    int ret;
     printf("net_scr start --\n");
     memcpy(&g_scr_cfg, cfg, sizeof(struct __NET_SCR_CFG));
-    g_scr_inited = 1;
-    return net_scr_init(&g_scr_cfg);
+    ret = net_scr_init(&g_scr_cfg);
+    g_scr_inited = !ret;
+    if (!ret) screen_map_request_display(1);
+    return ret;
 }
 
 
 int net_scr_stop(void)
 {
+    screen_map_request_display(0);
     if (!g_scr_inited) {
         return -1;
     }
@@ -49,18 +53,12 @@ int net_scr_stop(void)
 
 int net_scr_ctp_disconnect_event_handle(u8 cli_num)
 {
-    if (get_net_scr_status()) {
+    if (cli_num == 0 && get_net_scr_status()) {
         net_scr_stop();
     }
-    /* CTP断开时主动重启P2P */
-    //struct WIFI_INIT_INFO *wifi_info = ext_get_cur_wifi_info();
-
-    //printf("cur mode : %d, role: %d, ssid: %s \n", wifi_info->mode, wifi_info->p2p_role, wifi_info->ssid[P2P_MODE]);
-
-    if (cli_num == 0) {
-        wifi_adapter_stop_ap_p2p();
-        wifi_adapter_start_ap_p2p(TCFG_EXT_WIFI_AP_SSID, TCFG_EXT_WIFI_AP_PWD, TCFG_EXT_WIFI_P2P_SSID);
-    }
+    /* Losing a TCP client must not tear down the phone's AP/P2P network. */
+    if (cli_num == 0) screen_map_request_display(0);
+    printf("[CAST_SESSION] ctp_disconnect clients=%u keep_wifi=1\n", cli_num);
     return 0;
 
 }

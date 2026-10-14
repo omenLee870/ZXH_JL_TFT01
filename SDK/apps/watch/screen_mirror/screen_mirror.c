@@ -77,6 +77,11 @@ __attribute__((weak)) void screen_map_post_msg_to_lvgl_ui(const char *msg, ...)
     (void)msg;
 }
 
+__attribute__((weak)) void screen_map_request_display(int active)
+{
+    (void)active;
+}
+
 static u32 min_u32(u32 a, u32 b)
 {
     return a < b ? a : b;
