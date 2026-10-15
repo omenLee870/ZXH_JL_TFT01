@@ -1,6 +1,10 @@
 #ifndef _USER_CFG_ID_H_
 #define _USER_CFG_ID_H_
 
+/* Reserved unused VM-only slot; persistent Youyibao SIF wheel/current settings. */
+#define CFG_YYB_CALIBRATION 59
+#define CFG_YYB_ODOMETER 58
+
 //=================================================================================//
 //                            与APP CASE相关配置项[1 ~ 50]                         //
 //=================================================================================//

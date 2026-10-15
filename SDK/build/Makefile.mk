@@ -181,6 +181,8 @@ c_SRC_FILES := \
 	apps/watch/common/common_music_ctrl.c \
 	apps/watch/common/pet_dashboard_music.c \
 	apps/watch/common/pet_reverse_notice.c \
+	apps/watch/common/youyibao_sif.c \
+	apps/watch/common/youyibao_sif_protocol.c \
 	audio/interface/player/tone_wav_psram.c \
 	apps/watch/data_storage/data_call_log_storage.c \
 	apps/watch/data_storage/data_message_storage.c \

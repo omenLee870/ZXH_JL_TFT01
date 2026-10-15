@@ -14,6 +14,7 @@
 #include "custom.h"
 #include "hardware_test.h"
 #include "ui_update_page.h"
+#include "youyibao_sif_ui.h"
 #include "chongwuyibiao_yinyue.h"
 #include <time.h>
 #include "playback/app_playback_mpi.h"
@@ -490,6 +491,7 @@ void custom_init(lv_ui *ui)
 
     /* 注册双备份升级进度回调：升级开始写 flash 时自动切到内置字库的“升级进度页” */
     ui_update_page_init();
+    youyibao_sif_ui_init();
 
 #if !TCFG_DASHBOARD_HARDWARE_TEST_ENABLE
     /* 未开启硬件测试宏时，隐藏 app_select 上的 TEST 入口按钮 */

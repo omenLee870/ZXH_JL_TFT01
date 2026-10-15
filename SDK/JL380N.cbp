@@ -3123,6 +3123,9 @@
 <Unit filename="apps/watch/common/common_music_ctrl.h" />
 <Unit filename="apps/watch/common/pet_dashboard_music.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/common/pet_dashboard_music.h" />
+<Unit filename="apps/watch/common/youyibao_sif.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/youyibao_sif_protocol.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/youyibao_sif.h" />
 <Unit filename="apps/watch/data_storage/data_call_log_storage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/data_storage/data_call_log_storage.h" />
 <Unit filename="apps/watch/data_storage/data_message_storage.c"><Option compilerVer="CC"/></Unit>
@@ -4740,6 +4743,8 @@
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/camera_display_ui.h" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/custom.c" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/custom.h" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/youyibao_sif_ui.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/youyibao_sif_ui.h" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/hardware_test.c" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/hardware_test.h" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_action_music_bg.c" />

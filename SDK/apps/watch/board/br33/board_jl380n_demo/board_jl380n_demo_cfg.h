@@ -3,6 +3,18 @@
 
 #include "board_jl380n_demo_global_build_cfg.h"
 
+/* Youyibao / Tianjin Zongshen SIF: controller -> TFT, idle LOW.
+ * PC05 is unused by the enabled MIPI panel and DVP group C camera.
+ * A 5V/high-voltage vehicle line needs a receiver/level shifter to 3.3V.
+ * Keep custom settings here so sdk_config.h regeneration preserves them. */
+#define TCFG_YYB_SIF_ENABLE                 1
+#define TCFG_YYB_SIF_IO                     IO_PORTC_05
+#define TCFG_YYB_TIMEOUT_MS                 1000
+#define TCFG_YYB_WHEEL_CIRCUMFERENCE_MM      0
+#define TCFG_YYB_HALL_EDGES_PER_WHEEL_REV    0
+#define TCFG_YYB_CURRENT_TWOS_COMPLEMENT    0
+#define TCFG_YYB_SPEED_DIVISOR              17 /* ZXH-YBOFR2: 17 + speed_set - 9 */
+
 #ifdef CONFIG_BOARD_JL380N_DEMO
 
 //*********************************************************************************//
