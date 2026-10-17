@@ -29,6 +29,7 @@
 #include "mix_record_api.h"
 #endif
 #include "rcsp_mix_record.h"
+#include "app_vehicle.h"
 #include "record.h"
 
 #if (TCFG_UI_ENABLE && CONFIG_JL_UI_ENABLE)
@@ -99,6 +100,8 @@ void common_api_reboot_or_shutdown(u8 flag, u8 erase)
     watch_syscfg_write_all(p);
 #endif
 
+    /* 软件重启也要保存；车辆模块重复收尾不会重复写入未变化的里程。 */
+    if (app_vehicle_prepare_shutdown()) printf("[VEHICLE] save before reboot/poweroff failed\n");
     if (flag) {
         cpu_reset();
     } else {

@@ -10,6 +10,7 @@
 
 
 static u32 toltal_time = 0;
+static lv_timer_t *music_album_pic_rotate; /**< 页面拥有旋转定时器，卸载时删除。 */
 
 //UI 按钮事件
 void res_event_music_next(lv_event_t *e)
@@ -125,16 +126,19 @@ static int gui_src_action_page_music(int action)
     case GUI_SCREEN_ACTION_LOAD:
         // UI主动获取当前音乐播放状态
         if (bt_get_total_connect_dev() > 0) {
-            static lv_timer_t *music_album_pic_rotate = NULL;
             if (music_album_pic_rotate == NULL) {
                 music_album_pic_rotate = lv_timer_create(page_music_rotate_timer_cb, 200, NULL);
             }
-            lv_timer_set_repeat_count(music_album_pic_rotate, -1);
+            if (music_album_pic_rotate) lv_timer_set_repeat_count(music_album_pic_rotate, -1);
             bt_cmd_prepare(USER_CTRL_AVCTP_OPID_GET_PLAY_TIME, 0, NULL); //获取音乐播放等信息
             pet_dashboard_music_album_request(); // 与仪表共用取图去重
         }
         break;
     case GUI_SCREEN_ACTION_UNLOAD:
+        if (music_album_pic_rotate) {
+            lv_timer_delete(music_album_pic_rotate);
+            music_album_pic_rotate = NULL;
+        }
         lv_ui_page_music *ui_scr = ui_get_scr_ptr(&guider_ui, GUI_SCREEN_PAGE_MUSIC);
         if (!ui_scr) {
             return -1;

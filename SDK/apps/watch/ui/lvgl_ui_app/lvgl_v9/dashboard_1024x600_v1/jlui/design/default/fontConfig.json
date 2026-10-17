@@ -1,0 +1,24 @@
+{
+  "curInx": 0,
+  "data": [
+    {
+      "name": "font1",
+      "fonts": [
+        {
+          "name": "",
+          "range": "",
+          "content": ""
+        }
+      ],
+      "size": 12,
+      "bpp": 4,
+      "format": "lvgl",
+      "version": "",
+      "dir": "",
+      "switch": {
+        "disable_glyph_bitmap": false,
+        "char_row_align": false
+      }
+    }
+  ]
+}

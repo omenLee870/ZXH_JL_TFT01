@@ -1,0 +1,192 @@
+{
+  "image": {
+    "c_data": [
+      {
+        "id": "$3nodpo7njwXm0jR7",
+        "name": "xiaogou_biyan",
+        "mtype": "png",
+        "type": "image",
+        "width": 230,
+        "height": 230,
+        "path": "../import/image/main/dog_blink.png",
+        "fs_type": "default",
+        "storage_medium": "default",
+        "image_format": "default",
+        "image_color_format": 3,
+        "image_rle_block": 0,
+        "image_rle_clut": 0,
+        "image_rle_yuv": 0,
+        "quality": 80,
+        "alpha_quality": 90,
+        "image_table": true
+      },
+      {
+        "id": "$wSeXcK7vgCxGpurA",
+        "name": "xiaogou_paobu_1",
+        "mtype": "png",
+        "type": "image",
+        "width": 230,
+        "height": 230,
+        "path": "../import/image/main/dog_run_1.png",
+        "fs_type": "default",
+        "storage_medium": "default",
+        "image_format": "default",
+        "image_color_format": 3,
+        "image_rle_block": 0,
+        "image_rle_clut": 0,
+        "image_rle_yuv": 0,
+        "quality": 80,
+        "alpha_quality": 90,
+        "image_table": true
+      },
+      {
+        "id": "$EkFf8d1hLF01b2UB",
+        "name": "xiaogou_paobu_2",
+        "mtype": "png",
+        "type": "image",
+        "width": 230,
+        "height": 230,
+        "path": "../import/image/main/dog_run_2.png",
+        "fs_type": "default",
+        "storage_medium": "default",
+        "image_format": "default",
+        "image_color_format": 3,
+        "image_rle_block": 0,
+        "image_rle_clut": 0,
+        "image_rle_yuv": 0,
+        "quality": 80,
+        "alpha_quality": 90,
+        "image_table": true
+      },
+      {
+        "id": "$rx2xGPrCCVCk03go",
+        "name": "xiaogou_paobu_3",
+        "mtype": "png",
+        "type": "image",
+        "width": 230,
+        "height": 230,
+        "path": "../import/image/main/dog_run_3.png",
+        "fs_type": "default",
+        "storage_medium": "default",
+        "image_format": "default",
+        "image_color_format": 3,
+        "image_rle_block": 0,
+        "image_rle_clut": 0,
+        "image_rle_yuv": 0,
+        "quality": 80,
+        "alpha_quality": 90,
+        "image_table": true
+      }
+    ],
+    "color_format": "true-color-alpha"
+  },
+  "image_c_array": {
+    "c_data": []
+  },
+  "font": {
+    "c_data": [
+      {
+        "id": "$MGg6OQThh8XAlqpp",
+        "name": "",
+        "font": 38,
+        "font_family": "lyrics",
+        "content": "",
+        "range": "",
+        "fs_type": "flash",
+        "font_format": "file",
+        "oldId": "$MGg6OQThh8XAlqpp",
+        "oldFont": 32
+      },
+      {
+        "id": "$94gdOGaPGcA7uMwY",
+        "name": "",
+        "font": 32,
+        "font_family": "simsun",
+        "content": "1234567890%\n正在升级，请勿断电\n升级成功！\n升级失败！",
+        "range": "",
+        "fs_type": "generated",
+        "font_format": "default",
+        "oldId": "$94gdOGaPGcA7uMwY",
+        "oldFont": 32
+      },
+      {
+        "id": "$0XRIR2GzwVH6UhuF",
+        "name": "",
+        "font": 88,
+        "font_family": "Lato_Regular",
+        "content": "0123456789PR",
+        "range": "",
+        "fs_type": "default",
+        "font_format": "default"
+      },
+      {
+        "id": "$ZwMBhQOHkEmllYPd",
+        "name": "",
+        "font": 26,
+        "font_family": "lyrics",
+        "content": "",
+        "range": "",
+        "fs_type": "flash",
+        "font_format": "file"
+      },
+      {
+        "id": "$sRnXZO5geedvJpkK",
+        "name": "",
+        "font": 20,
+        "font_family": "lyrics",
+        "content": "",
+        "range": "",
+        "fs_type": "flash",
+        "font_format": "file"
+      },
+      {
+        "id": "$9w2ZR9gyGG3pHsKw",
+        "name": "",
+        "font": 32,
+        "font_family": "MiSans_Medium",
+        "content": "清零小计里程？恢复默认设置保存失败备忙行驶中不能",
+        "range": "",
+        "fs_type": "default",
+        "font_format": "default"
+      }
+    ]
+  },
+  "event": {
+    "events": [
+      {
+        "id": "$hyuqDuQ4h93sfASC",
+        "name": "res_event_music_pause_play",
+        "event_id": "0x10000",
+        "type": "custom",
+        "code": "",
+        "content": ""
+      },
+      {
+        "id": "$KwyKKsI8U9eSzOBw",
+        "name": "res_event_music_next",
+        "event_id": "0x10001",
+        "type": "custom",
+        "code": "",
+        "content": ""
+      },
+      {
+        "id": "$mY0xT9935mJqgaHu",
+        "name": "res_event_music_prev",
+        "event_id": "0x10002",
+        "type": "custom",
+        "code": "",
+        "content": ""
+      }
+    ],
+    "system_events": []
+  },
+  "gif": {
+    "c_data": []
+  },
+  "video": {
+    "c_data": []
+  },
+  "lottie": {
+    "c_data": []
+  }
+}

@@ -1,3 +1,4 @@
+#include "meter_settings.h"
 #ifdef SUPPORT_MS_EXTENSIONS
 #pragma bss_seg(".key_tone.data.bss")
 #pragma data_seg(".key_tone.data")
@@ -15,7 +16,7 @@ static int key_tone_msg_handler(int *msg)
 {
     struct key_event *key = (struct key_event *)msg;
 
-    if (app_in_mode(APP_MODE_IDLE)) {
+    if (!meter_settings_key_tone() || app_in_mode(APP_MODE_IDLE)) {
         return 0;
     }
 

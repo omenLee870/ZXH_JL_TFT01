@@ -92,43 +92,49 @@
      "type": 4,
      "fileName": "src\\音频流程\\系统模式.x6flow",
      "binName": "stream.bin",
-     "showName": "系统模式"
+     "showName": "系统模式",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\媒体.x6flow",
      "binName": "stream.bin",
-     "showName": "媒体"
+     "showName": "媒体",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\蓝牙通话.x6flow",
      "binName": "stream.bin",
-     "showName": "蓝牙通话"
+     "showName": "蓝牙通话",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\录音.x6flow",
      "binName": "stream.bin",
-     "showName": "录音"
+     "showName": "录音",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\视频.x6flow",
      "binName": "stream.bin",
-     "showName": "视频"
+     "showName": "视频",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\智能语音.x6flow",
      "binName": "stream.bin",
-     "showName": "智能语音"
+     "showName": "智能语音",
+     "data": ""
     }
    ]
   }
  ],
  "create_time": "2026-10-07T03:10:40.048Z",
- "update_time": "2026-10-07T03:11:14.929Z",
+ "update_time": "2026-10-17T03:08:44.546Z",
  "standardPatch": "1.0.0-beta.4",
  "lastOpenToolVersion": "4.11.5",
  "lastStencilFlowTime": "20260930153417",
@@ -136,6 +142,7 @@
  "proxyRepoid": "",
  "versionName": "1.0.0",
  "provider": "杰理",
+ "publishType": 1,
  "checkPatchTime": 0,
  "relateVersion": "",
  "variant": [],

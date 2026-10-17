@@ -179,6 +179,13 @@ c_SRC_FILES := \
 	apps/watch/call/call_common.c \
 	apps/watch/common/common_api.c \
 	apps/watch/common/common_music_ctrl.c \
+	apps/watch/common/app_vehicle.c \
+	apps/watch/common/app_vehicle_zxh.c \
+	apps/watch/common/app_meter_control.c \
+	apps/watch/common/meter_settings.c \
+	apps/watch/common/vehicle_controller.c \
+	apps/watch/common/vehicle_core.c \
+	apps/watch/common/vehicle_storage.c \
 	apps/watch/common/pet_dashboard_music.c \
 	apps/watch/common/pet_reverse_notice.c \
 	apps/watch/common/youyibao_sif.c \

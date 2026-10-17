@@ -12,9 +12,11 @@
 #include "lvgl.h"
 #include "lv_ui.h"
 #include "custom.h"
+#include "ui_meter_settings.h"
 #include "hardware_test.h"
 #include "ui_update_page.h"
 #include "youyibao_sif_ui.h"
+#include "app_meter_control.h"
 #include "chongwuyibiao_yinyue.h"
 #include <time.h>
 #include "playback/app_playback_mpi.h"
@@ -34,6 +36,7 @@ static lv_coord_t cont_b_base_y;   // 容器B的基准Y坐标
 static panel_state_t current_panel = PANEL_A_VISIBLE;
 static bool anim_running = false;  // 动画进行中标志
 static lv_timer_t *roll_anim_timer = NULL; //滚动动画定时器
+static lv_timer_t *screen_rotation_timer; /**< 自动切页任务归属本模块，关机与升级时暂停。 */
 
 // 卡片滑动动画结束回调：将隐藏容器复位到其基准位置，并隐藏
 static void hide_completed_cb(lv_anim_t *anim)
@@ -57,6 +60,8 @@ static int hardware_test_is_adkey_value(u8 key_value)
 /* OK 只在宠物仪表及其临时倒车页接管；一次短按只切换一次。 */
 bool lvgl_key_event_consumed(struct key_event *event)
 {
+    if (ui_meter_settings_key_activity()) return true;
+    if (!app_meter_control_media_allowed()) return true;
     if (event->value != KEY_AD_NUM1) return false;
     if (ui_update_page_is_active() || hardware_test_adkey_is_active()) {
         printf("[PET_KEY] OK blocked by update/test page\n");
@@ -69,6 +74,8 @@ bool lvgl_key_event_consumed(struct key_event *event)
 
 int ui_scr_key_event_handler_ext(struct key_event *event)
 {
+    if (ui_meter_settings_key_activity()) return 0;
+    if (!app_meter_control_media_allowed()) return 0;
 
     printf("key event: %d, value: %d, type: %d --- \n", event->event, event->value, event->type);
 
@@ -79,6 +86,10 @@ int ui_scr_key_event_handler_ext(struct key_event *event)
 
     /* 硬件测试界面: 拦截所有UI层按键(不切屏、不外发app)，只能通过 UI Effect 按钮退出 */
     gui_scr_t *act_scr = gui_scr_get_act();
+    if (act_scr != NULL && act_scr->id == GUI_SCREEN_METER_SETTINGS) {
+        if (event->event == KEY_ACTION_CLICK && (event->value == KEY_AD_NUM0 || event->value == KEY_IO_NUM0)) ui_meter_settings_close();
+        return 0;
+    }
     if (act_scr != NULL && act_scr->id == GUI_SCREEN_HARDWARE_TEST) {
         /* ADKEY 测试项激活(或尚无测试项在跑)时, AD 按键回显到弹窗 */
         if (event->event == KEY_ACTION_CLICK && hardware_test_is_adkey_value(event->value)) {
@@ -213,6 +224,7 @@ void ui_auto_vertical_switch_init(void)
 /* 升级窗口内: 暂停翻屏定时器, 停掉 app_select/meter 的 animimg(避免读 flash 图片) */
 void dashboard_ui_freeze_background(void)
 {
+    if (screen_rotation_timer) lv_timer_pause(screen_rotation_timer);
     if (roll_anim_timer != NULL) {
         lv_timer_pause(roll_anim_timer);
     }
@@ -239,17 +251,21 @@ void dashboard_ui_freeze_background(void)
 /* 升级失败/中止回退后，恢复后台自动翻屏与动画。 */
 void dashboard_ui_resume_background(void)
 {
-    if (roll_anim_timer != NULL) {
+    if (!app_meter_control_media_allowed()) return;
+    gui_scr_t *active = gui_scr_get_act();
+    if (!active) return;
+    if (screen_rotation_timer) lv_timer_resume(screen_rotation_timer);
+    if (roll_anim_timer != NULL && active->id == GUI_SCREEN_PAGE_APP_SELECT) {
         lv_timer_resume(roll_anim_timer);
     }
 
     lv_ui_page_app_select *app = (lv_ui_page_app_select *)ui_get_scr_ptr(&guider_ui, GUI_SCREEN_PAGE_APP_SELECT);
-    if (app != NULL && app->page_app_select_animimg_1 != NULL) {
+    if (active->id == GUI_SCREEN_PAGE_APP_SELECT && app != NULL && app->page_app_select_animimg_1 != NULL) {
         lv_animimg_start(app->page_app_select_animimg_1);
     }
 
     lv_ui_page_meter *meter = (lv_ui_page_meter *)ui_get_scr_ptr(&guider_ui, GUI_SCREEN_PAGE_METER);
-    if (meter != NULL) {
+    if (active->id == GUI_SCREEN_PAGE_METER && meter != NULL) {
         if (meter->page_meter_animimg_1 != NULL) {
             lv_animimg_start(meter->page_meter_animimg_1);
         }
@@ -427,7 +443,8 @@ static void screen_switch_timer_cb(lv_timer_t *timer)
 
 void start_screen_rotation(uint32_t period_ms)
 {
-    lv_timer_create(screen_switch_timer_cb, period_ms, NULL);
+    if (!screen_rotation_timer) screen_rotation_timer = lv_timer_create(screen_switch_timer_cb, period_ms, NULL);
+    if (screen_rotation_timer && !app_meter_control_media_allowed()) lv_timer_pause(screen_rotation_timer);
 }
 
 
@@ -440,6 +457,7 @@ static void mpi_vdec_demo_wrapper(void *dummy, ...)
 
 void bt_music_post_msg_to_lvgl_ui(const char *msg, ...)
 {
+    if (!app_meter_control_media_allowed()) return;
     va_list argptr;
 
     printf("[chili] %s %s   \n", __func__, msg);
@@ -492,6 +510,7 @@ void custom_init(lv_ui *ui)
     /* 注册双备份升级进度回调：升级开始写 flash 时自动切到内置字库的“升级进度页” */
     ui_update_page_init();
     youyibao_sif_ui_init();
+    ui_meter_settings_bind();
 
 #if !TCFG_DASHBOARD_HARDWARE_TEST_ENABLE
     /* 未开启硬件测试宏时，隐藏 app_select 上的 TEST 入口按钮 */
@@ -515,6 +534,7 @@ void hw_input_focus_release(void)
 }
 #else
 #include "custom.h"
+#include "ui_meter_settings.h"
 #include "../generated/gui_guider.h"
 #include "lvgl.h"
 void hw_input_focus_release(void)

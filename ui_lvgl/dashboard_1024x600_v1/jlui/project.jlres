@@ -138,6 +138,16 @@
         "range": "",
         "fs_type": "flash",
         "font_format": "file"
+      },
+      {
+        "id": "$9w2ZR9gyGG3pHsKw",
+        "name": "",
+        "font": 32,
+        "font_family": "MiSans_Medium",
+        "content": "清零小计里程？恢复默认设置保存失败备忙行驶中不能",
+        "range": "",
+        "fs_type": "default",
+        "font_format": "default"
       }
     ]
   },

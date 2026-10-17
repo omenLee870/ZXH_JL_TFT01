@@ -15,8 +15,9 @@ void events_init_page_app_select(lv_ui *ui);
 void events_init_page_meter(lv_ui *ui);
 void events_init_page_video(lv_ui *ui);
 void events_init_hardware_test(lv_ui *ui);
-void events_init_upgrade_page(lv_ui *ui);
 void events_init_chongwuyibiao(lv_ui *ui);
+void events_init_meter_settings(lv_ui *ui);
+void events_init_upgrade_page(lv_ui *ui);
 
 #ifdef __cplusplus
 }

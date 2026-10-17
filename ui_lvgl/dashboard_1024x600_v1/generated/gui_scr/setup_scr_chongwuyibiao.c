@@ -1273,6 +1273,21 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_lanyalianjietubiao, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->chongwuyibiao_lanyalianjietubiao, GUI_CTRL_IMG);
 
+	//Write codes chongwuyibiao_settings_entry
+	ui_scr->chongwuyibiao_settings_entry = lv_btn_create(ui_scr->chongwuyibiao);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_settings_entry, 866, 508);
+	lv_obj_set_size(ui_scr->chongwuyibiao_settings_entry, 110, 56);
+	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_settings_entry, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_settings_entry, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_settings_entry, GUI_CTRL_BUTTON);
+
+	//Set style for chongwuyibiao_settings_entry. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->chongwuyibiao_settings_entry, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	ui_scr->chongwuyibiao_settings_entry_label = lv_label_create(ui_scr->chongwuyibiao_settings_entry);
+	lv_label_set_text(ui_scr->chongwuyibiao_settings_entry_label, "设置");
+	lv_obj_set_style_pad_all(ui_scr->chongwuyibiao_settings_entry, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->chongwuyibiao_settings_entry_label, LV_ALIGN_CENTER, 0, 0);
+
 	lv_obj_update_layout(ui_scr->chongwuyibiao);
 	ui_scr->chongwuyibiao_del = false;
 

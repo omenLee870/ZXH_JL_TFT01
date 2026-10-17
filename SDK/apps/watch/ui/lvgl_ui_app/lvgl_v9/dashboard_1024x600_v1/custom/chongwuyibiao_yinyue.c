@@ -324,7 +324,8 @@ static void jiemian_shuaxin(const pet_dashboard_music_view_t *view)
 /** @brief 接收应用线程投递的值快照，不跨线程传控件指针。 */
 static void jiemian_rpc(void *snapshot, ...)
 {
-    jiemian_shuaxin(snapshot);
+    extern int app_meter_control_media_allowed(void);
+    if (app_meter_control_media_allowed()) jiemian_shuaxin(snapshot);
     free(snapshot);
 }
 #endif
@@ -380,6 +381,7 @@ static void pingmu_shijian(lv_event_t *shijian)
         break;
     case LV_EVENT_SCREEN_UNLOAD_START:
         shitu.loaded = false;
+        lyric_wait_cancel();
         chongwuyibiao_yinyue_donghua_yunxu(false);
         break;
     case LV_EVENT_DELETE:

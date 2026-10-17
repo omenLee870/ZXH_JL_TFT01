@@ -103,6 +103,32 @@ void set_default_group_cb()
 		gui_group_add_obj(guider_ui.default_group, ui_scr->hardware_test_btn_6, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->hardware_test_edit_2, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->hardware_test_edit_3, true);
+	} else if (act_scr_id == GUI_SCREEN_CHONGWUYIBIAO) {
+		lv_ui_chongwuyibiao * ui_scr = ui_get_scr_ptr(&guider_ui, GUI_SCREEN_CHONGWUYIBIAO);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->chongwuyibiao_settings_entry, true);
+	} else if (act_scr_id == GUI_SCREEN_METER_SETTINGS) {
+		lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(&guider_ui, GUI_SCREEN_METER_SETTINGS);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_0, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_1, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_2, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_3, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_4, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_5, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_back, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_brightness, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_music, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_tone, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_key_tone, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_unit_km, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_unit_mi, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_trip_clear, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_sleep_0, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_sleep_1, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_sleep_3, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_sleep_5, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_restore, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_confirm_cancel, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_confirm_ok, true);
 	}
 	lv_group_set_default(guider_ui.default_group);
 

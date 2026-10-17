@@ -1,0 +1,1278 @@
+{
+ "fields": [
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "VIDEO0配置",
+    "enableUuid": "TCFG_VIDEO0_ENABLE",
+    "showComponentName": true,
+    "dataType": [
+     "8",
+     "1"
+    ],
+    "template": "",
+    "span": 24,
+    "formId": 660,
+    "renderKey": "6601678622212458",
+    "children": [
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "CAMERA配置",
+       "enableUuid": "",
+       "showComponentName": true,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "status": "",
+       "gutter": 0,
+       "template": "",
+       "hideAddTemplate": false,
+       "span": 24,
+       "formId": 166,
+       "renderKey": "1661780128083131",
+       "children": [
+        {
+         "__config__": {
+          "label": "SPI",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 0,
+          "span": 6,
+          "showLabel": true,
+          "labelWidth": "60",
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "status": 0,
+          "dataType": [
+           "8",
+           "-1"
+          ],
+          "formId": 167,
+          "renderKey": "1671780128083131",
+          "eventField": [],
+          "originValue": 0,
+          "saveWay": "macro",
+          "uuid": "TCFG_CAMERA_SPI_ENABLE"
+         },
+         "style": {
+          "width": ""
+         },
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1780128083131_2",
+         "__vModel__": "field167"
+        },
+        {
+         "__config__": {
+          "label": "DVP",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 1,
+          "span": 6,
+          "showLabel": true,
+          "labelWidth": "60",
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "status": 0,
+          "dataType": [
+           "8",
+           "-1"
+          ],
+          "formId": 168,
+          "renderKey": "1681780128083131",
+          "eventField": [],
+          "saveWay": "macro",
+          "uuid": "TCFG_CAMERA_DVP_ENABLE"
+         },
+         "style": {
+          "width": ""
+         },
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1780128083131_3",
+         "__vModel__": "field168"
+        },
+        {
+         "__config__": {
+          "layout": "rowFormItem",
+          "tag": "group",
+          "tagIcon": "row",
+          "componentName": "SPI类型的CAMERA接口配置",
+          "enableUuid": "",
+          "showComponentName": true,
+          "dataType": [
+           "8",
+           "1"
+          ],
+          "status": "",
+          "gutter": 0,
+          "template": "",
+          "hideAddTemplate": true,
+          "span": 24,
+          "formId": 169,
+          "renderKey": "1691780128083131",
+          "children": [
+           {
+            "__config__": {
+             "label": "CAM_VCC",
+             "showLabel": true,
+             "labelWidth": "130",
+             "tag": "el-select",
+             "tagIcon": "select",
+             "layout": "colFormItem",
+             "span": 12,
+             "required": false,
+             "defaultValue": "IO_PORT_LDO28",
+             "regList": [],
+             "changeTag": true,
+             "status": "",
+             "dataType": [
+              "macro"
+             ],
+             "formId": 170,
+             "renderKey": "1701780128083131",
+             "eventField": [
+              "device",
+              "gpio"
+             ],
+             "saveWay": "macro",
+             "uuid": "TCFG_CAMERA_SPI_VCC",
+             "emptyValue": "NO_CONFIG_PORT",
+             "originValue": "IO_PORT_LDO28",
+             "formItemWidth": ""
+            },
+            "__slot__": {
+             "options": []
+            },
+            "placeholder": "请选择CAM_VCC",
+            "style": {
+             "width": "100%"
+            },
+            "searchSource": true,
+            "clearable": true,
+            "disabled": false,
+            "filterable": false,
+            "multiple": false,
+            "id": "id_1780128083131_5",
+            "__vModel__": "field170"
+           },
+           {
+            "__config__": {
+             "label": "PWDN",
+             "showLabel": true,
+             "labelWidth": "130",
+             "tag": "el-select",
+             "tagIcon": "select",
+             "layout": "colFormItem",
+             "span": 12,
+             "required": false,
+             "defaultValue": "IO_PORTH_06",
+             "regList": [],
+             "changeTag": true,
+             "status": "",
+             "dataType": [
+              "macro"
+             ],
+             "formId": 171,
+             "renderKey": "1711780128083131",
+             "eventField": [
+              "device",
+              "gpio"
+             ],
+             "saveWay": "macro",
+             "uuid": "TCFG_CAMERA_SPI_PWDN",
+             "emptyValue": "NO_CONFIG_PORT",
+             "originValue": "IO_PORTH_06",
+             "formItemWidth": ""
+            },
+            "__slot__": {
+             "options": []
+            },
+            "placeholder": "请选择PWDN",
+            "style": {
+             "width": "100%"
+            },
+            "searchSource": true,
+            "clearable": true,
+            "disabled": false,
+            "filterable": false,
+            "multiple": false,
+            "id": "id_1780128083131_6",
+            "__vModel__": "field171"
+           },
+           {
+            "__config__": {
+             "layout": "rowFormItem",
+             "tag": "group",
+             "tagIcon": "row",
+             "componentName": "row_345",
+             "enableUuid": "",
+             "showComponentName": false,
+             "dataType": [
+              "8",
+              "1"
+             ],
+             "template": "",
+             "span": 24,
+             "formId": 345,
+             "renderKey": "3451780922288933",
+             "children": [
+              {
+               "__config__": {
+                "label": "MCLK",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTH_00",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 172,
+                "renderKey": "1721780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_SPI_MCLK",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTH_00",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择MCLK",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_7",
+               "__vModel__": "field172"
+              },
+              {
+               "__config__": {
+                "label": "PCLK",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTH_01",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 173,
+                "renderKey": "1731780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_SPI_PCLK",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTH_01",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择PCLK",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_8",
+               "__vModel__": "field173"
+              },
+              {
+               "__config__": {
+                "label": "SCL",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTH_04",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 174,
+                "renderKey": "1741780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_SPI_SCL",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTH_04",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择SCL",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_9",
+               "__vModel__": "field174"
+              },
+              {
+               "__config__": {
+                "label": "SDA",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTH_05",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 175,
+                "renderKey": "1751780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_SPI_SDA",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTH_05",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择SDA",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_10",
+               "__vModel__": "field175"
+              }
+             ],
+             "eventField": []
+            },
+            "type": "default",
+            "justify": "start",
+            "align": "top",
+            "style": {
+             "height": "60px",
+             "paddingLeft": "0px"
+            },
+            "id": "id_1780922288933_0"
+           },
+           {
+            "__config__": {
+             "layout": "rowFormItem",
+             "tag": "group",
+             "tagIcon": "row",
+             "componentName": "row_350",
+             "enableUuid": "",
+             "showComponentName": false,
+             "dataType": [
+              "8",
+              "1"
+             ],
+             "template": "",
+             "span": 24,
+             "formId": 350,
+             "renderKey": "3501780922300231",
+             "children": [
+              {
+               "__config__": {
+                "label": "DATA0",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTH_03",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 176,
+                "renderKey": "1761780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_SPI_DATA0",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTH_03",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择DATA0",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_11",
+               "__vModel__": "field176"
+              },
+              {
+               "__config__": {
+                "label": "DATA1",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTH_02",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 177,
+                "renderKey": "1771780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_SPI_DATA1",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTH_02",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择DATA1",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_12",
+               "__vModel__": "field177"
+              }
+             ],
+             "eventField": []
+            },
+            "type": "default",
+            "justify": "start",
+            "align": "top",
+            "style": {
+             "height": "60px",
+             "paddingLeft": "0px"
+            },
+            "id": "id_1780922300231_5"
+           }
+          ],
+          "eventField": [],
+          "saveWay": "",
+          "tip": "请查看手册配置相关引脚",
+          "diabledGroupSw": false,
+          "showResetBtn": false,
+          "expand": 2
+         },
+         "type": "default",
+         "justify": "start",
+         "align": "top",
+         "style": {
+          "height": "",
+          "paddingLeft": "0px"
+         },
+         "id": "id_1780128083131_4",
+         "show-text": false
+        },
+        {
+         "__config__": {
+          "layout": "rowFormItem",
+          "tag": "group",
+          "tagIcon": "row",
+          "componentName": "DVP类型的CAMERA接口配置",
+          "enableUuid": "",
+          "showComponentName": true,
+          "dataType": [
+           "8",
+           "1"
+          ],
+          "status": 0,
+          "gutter": 0,
+          "template": "",
+          "hideAddTemplate": false,
+          "span": 24,
+          "formId": 178,
+          "renderKey": "1781780128083131",
+          "children": [
+           {
+            "__config__": {
+             "layout": "rowFormItem",
+             "tag": "group",
+             "tagIcon": "row",
+             "componentName": "row_355",
+             "enableUuid": "",
+             "showComponentName": false,
+             "dataType": [
+              "8",
+              "1"
+             ],
+             "template": "",
+             "span": 24,
+             "formId": 355,
+             "renderKey": "3551780922429312",
+             "children": [
+              {
+               "__config__": {
+                "label": "CAM_VCC",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORT_LDO28",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 102,
+                "renderKey": "1021788507065488",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_DVP_VCC",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORT_LDO28",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择CAM_VCC",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1788507065488_1",
+               "__vModel__": "field102"
+              },
+              {
+               "__config__": {
+                "label": "PWDN",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "NO_CONFIG_PORT",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 182,
+                "renderKey": "1821780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_DVP_PWDN",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTA_11",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择PWDN",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_17",
+               "__vModel__": "field182"
+              },
+              {
+               "__config__": {
+                "label": "RST",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTH_00",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 199,
+                "renderKey": "1991780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_DVP_RST",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTA_12",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择RST",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_34",
+               "__vModel__": "field199"
+              },
+              {
+               "__config__": {
+                "label": "XCLK",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "NO_CONFIG_PORT",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 195,
+                "renderKey": "1951780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_DVP_XCLK",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "NO_CONFIG_PORT",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择XCLK",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_30",
+               "__vModel__": "field195"
+              }
+             ],
+             "eventField": []
+            },
+            "type": "default",
+            "justify": "start",
+            "align": "top",
+            "style": {
+             "height": "60px",
+             "paddingLeft": "0px"
+            },
+            "id": "id_1780922429312_10"
+           },
+           {
+            "__config__": {
+             "layout": "rowFormItem",
+             "tag": "group",
+             "tagIcon": "row",
+             "componentName": "row_358",
+             "enableUuid": "",
+             "showComponentName": false,
+             "dataType": [
+              "8",
+              "1"
+             ],
+             "template": "",
+             "span": 24,
+             "formId": 358,
+             "renderKey": "3581780922853102",
+             "children": [
+              {
+               "__config__": {
+                "label": "SCL",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTD_11",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 194,
+                "renderKey": "1941780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_DVP_SCL",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTA_10",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择SCL",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_29",
+               "__vModel__": "field194"
+              },
+              {
+               "__config__": {
+                "label": "SDA",
+                "showLabel": true,
+                "labelWidth": "130",
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 12,
+                "required": false,
+                "defaultValue": "IO_PORTD_10",
+                "regList": [],
+                "changeTag": true,
+                "status": "",
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 193,
+                "renderKey": "1931780128083131",
+                "eventField": [
+                 "device",
+                 "gpio"
+                ],
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_DVP_SDA",
+                "emptyValue": "NO_CONFIG_PORT",
+                "originValue": "IO_PORTA_09",
+                "formItemWidth": ""
+               },
+               "__slot__": {
+                "options": []
+               },
+               "placeholder": "请选择SDA",
+               "style": {
+                "width": "100%"
+               },
+               "searchSource": true,
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780128083131_28",
+               "__vModel__": "field193"
+              }
+             ],
+             "eventField": []
+            },
+            "type": "default",
+            "justify": "start",
+            "align": "top",
+            "style": {
+             "height": "60px",
+             "paddingLeft": "0px"
+            },
+            "id": "id_1780922853102_13"
+           },
+           {
+            "__config__": {
+             "layout": "rowFormItem",
+             "tag": "group",
+             "tagIcon": "row",
+             "componentName": "row_362",
+             "enableUuid": "",
+             "showComponentName": false,
+             "dataType": [
+              "8",
+              "1"
+             ],
+             "template": "",
+             "span": 24,
+             "formId": 362,
+             "renderKey": "3621780922956638",
+             "children": [
+              {
+               "__config__": {
+                "label": "GROUP",
+                "showLabel": true,
+                "labelWidth": 130,
+                "tag": "el-select",
+                "tagIcon": "select",
+                "layout": "colFormItem",
+                "span": 24,
+                "required": false,
+                "regList": [],
+                "changeTag": true,
+                "searchSource": false,
+                "dataType": [
+                 "macro"
+                ],
+                "formId": 365,
+                "renderKey": "3651780922964977",
+                "saveWay": "macro",
+                "uuid": "TCFG_CAMERA_DVP_GROUP",
+                "eventField": [],
+                "emptyValue": "0",
+                "defaultValue": "DVP_GROUP_C",
+                "originValue": "DVP_GROUP_B",
+                "tip": "PCK、VSYNC、HSYNC、DATA的分组GPIO固定",
+                "tipAlways": true
+               },
+               "__slot__": {
+                "options": [
+                 {
+                  "label": "A组",
+                  "value": "DVP_GROUP_A",
+                  "hide": false,
+                  "disabled": false
+                 },
+                 {
+                  "label": "B组",
+                  "value": "DVP_GROUP_B",
+                  "hide": false,
+                  "disabled": false
+                 },
+                 {
+                  "label": "C组",
+                  "value": "DVP_GROUP_C",
+                  "hide": false,
+                  "disabled": false
+                 },
+                 {
+                  "label": "D组",
+                  "value": "DVP_GROUP_D",
+                  "hide": false,
+                  "disabled": false
+                 }
+                ]
+               },
+               "placeholder": "请选择GROUP",
+               "style": {
+                "width": "30%"
+               },
+               "clearable": true,
+               "disabled": false,
+               "filterable": false,
+               "multiple": false,
+               "id": "id_1780922964977_20",
+               "__vModel__": "field365",
+               "searchSource": false
+              }
+             ],
+             "eventField": []
+            },
+            "type": "default",
+            "justify": "start",
+            "align": "top",
+            "style": {
+             "height": "60px",
+             "paddingLeft": "0px"
+            },
+            "id": "id_1780922956638_17"
+           }
+          ],
+          "eventField": [],
+          "saveWay": "",
+          "tip": "请查看手册配置相关引脚",
+          "expand": 2
+         },
+         "type": "default",
+         "justify": "start",
+         "align": "top",
+         "style": {
+          "height": "",
+          "paddingLeft": "0px"
+         },
+         "id": "id_1780128083131_13"
+        }
+       ],
+       "tipAlways": false,
+       "tip": "",
+       "eventField": [],
+       "expand": 2
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "0px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1780128083131_1"
+     }
+    ],
+    "eventField": [],
+    "disable": false,
+    "expand": 2
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "70px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1678622212458_0",
+   "show-text": false
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "Gsensor配置",
+    "enableUuid": "TCFG_GSENSOR_ENABLE",
+    "showComponentName": true,
+    "dataType": [
+     "8",
+     "1"
+    ],
+    "template": "",
+    "span": 24,
+    "formId": 314,
+    "renderKey": "3141780023828601",
+    "children": [
+     {
+      "__config__": {
+       "label": "电源控制",
+       "showLabel": true,
+       "labelWidth": 130,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 12,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "macro"
+       ],
+       "formId": 314,
+       "renderKey": "3141780024282181",
+       "saveWay": "macro",
+       "uuid": "TCFG_GSENSOR_PIN_PWR",
+       "eventField": [
+        "device",
+        "gpio"
+       ],
+       "emptyValue": "NO_CONFIG_PORT",
+       "defaultValue": "NO_CONFIG_PORT",
+       "originValue": "NO_CONFIG_PORT"
+      },
+      "__slot__": {
+       "options": []
+      },
+      "placeholder": "请选择LCD BLCKLIGHT电源控制",
+      "style": {
+       "width": "100%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1780024282181_3",
+      "__vModel__": "field314",
+      "searchSource": true
+     },
+     {
+      "__config__": {
+       "label": "中断IO",
+       "showLabel": true,
+       "labelWidth": 130,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 12,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "macro"
+       ],
+       "formId": 314,
+       "renderKey": "3141780024297833",
+       "saveWay": "macro",
+       "uuid": "TCFG_GSENSOR_PIN_INT",
+       "eventField": [
+        "device",
+        "gpio"
+       ],
+       "emptyValue": "NO_CONFIG_PORT",
+       "defaultValue": "IO_PORTD_08",
+       "originValue": "IO_PORTD_08"
+      },
+      "__slot__": {
+       "options": []
+      },
+      "placeholder": "请选择中断IO",
+      "style": {
+       "width": "100%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1780024297833_4",
+      "__vModel__": "field314",
+      "searchSource": true
+     },
+     {
+      "__config__": {
+       "label": "IIC通道",
+       "showLabel": true,
+       "labelWidth": 130,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 12,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "8",
+        "1",
+        "o16"
+       ],
+       "formId": 314,
+       "renderKey": "3141780024239668",
+       "saveWay": "macro",
+       "uuid": "TCFG_GSENSOR_PIN_IIC_CH",
+       "eventField": [],
+       "emptyValue": "0",
+       "defaultValue": 6,
+       "originValue": 6,
+       "tip": "GPIO配置统一在IIC配置中"
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "IIC_HW_0",
+         "value": 0,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_HW_1",
+         "value": 1,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_HW_2",
+         "value": 2,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_HW_3",
+         "value": 3,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_HW_4",
+         "value": 4,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_HW_5",
+         "value": 5,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_PMC_0",
+         "value": 6,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_PMC_1",
+         "value": 7,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_SOFT_0",
+         "value": 16,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "IIC_SOFT_1",
+         "value": 17,
+         "hide": false,
+         "disabled": false
+        }
+       ]
+      },
+      "placeholder": "请选择IIC通道",
+      "style": {
+       "width": "80%"
+      },
+      "clearable": true,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1780024239668_1",
+      "__vModel__": "field314",
+      "searchSource": false
+     }
+    ],
+    "eventField": [],
+    "disable": true
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "70px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1780023828601_0"
+  }
+ ],
+ "size": "small",
+ "labelPosition": "right",
+ "labelWidth": 100,
+ "gutter": 15,
+ "disabled": false,
+ "span": 24,
+ "maxFormId": 472,
+ "version": {
+  "code": 1,
+  "tool": "4.4.0"
+ }
+}

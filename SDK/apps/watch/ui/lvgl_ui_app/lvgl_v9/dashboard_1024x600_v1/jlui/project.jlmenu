@@ -1,0 +1,808 @@
+[
+  {
+    "id": "h1SK0D2r4VuqzP1D",
+    "name": "appicon",
+    "label": "appicon",
+    "desc": "",
+    "data": [
+      {
+        "id": "LYUiaTvYJDtccfF3",
+        "type": "MenuItem",
+        "name": "item",
+        "text": "",
+        "text_use_i18n": false,
+        "visible": true,
+        "img_path": "..\\import\\image\\app_icon\\a_138shezhixitongshezhigongnengshezhishuxing.png",
+        "event": [
+          {
+            "trigger": "clicked",
+            "dst": "#gqLgoWaWzOhlm0KR",
+            "item_index": 0,
+            "key_type": [],
+            "gesture_dir": "LV_DIR_ALL",
+            "title": "event_1",
+            "action_ische": true,
+            "action": {
+              "bg_color": {
+                "ische": false,
+                "value": "#000000"
+              },
+              "grad_color": {
+                "ische": false,
+                "value": "#000000",
+                "dir": "LV_GRAD_DIR_NONE"
+              },
+              "bg_opa": {
+                "ische": false,
+                "value": 255
+              },
+              "width": {
+                "ische": false,
+                "value": 50,
+                "value_pct": 30,
+                "pct_en": false
+              },
+              "height": {
+                "ische": false,
+                "value": 50,
+                "value_pct": 30,
+                "pct_en": false
+              },
+              "set_text": {
+                "ische": false,
+                "value": "default",
+                "font": 12,
+                "font_family": "simsun"
+              },
+              "position": {
+                "ische": false,
+                "value_x": 0,
+                "value_y": 0,
+                "value_x_pct": 0,
+                "value_y_pct": 0,
+                "pct_en": false
+              },
+              "isVisible": {
+                "ische": false,
+                "flag": ""
+              },
+              "move": {
+                "ische": false,
+                "value_x": 0,
+                "value_y": 0,
+                "delay": 0,
+                "duration": 1000,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": "",
+                "path_type": "linear"
+              },
+              "scaleSize": {
+                "ische": false,
+                "width": 0,
+                "height": 0,
+                "delay": 0,
+                "duration": 1000,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": "",
+                "path_type": "linear"
+              },
+              "load_screen": {
+                "ische": true,
+                "duration": 0,
+                "delay": 0,
+                "anim_type": "LV_SCR_LOAD_ANIM_NONE",
+                "is_clean": true,
+                "is_del": true,
+                "push_stack": false
+              },
+              "load_top_screen": {
+                "ische": false,
+                "value": "show",
+                "is_clean": false,
+                "is_del": true
+              },
+              "timer_state": {
+                "ische": false,
+                "value": "restart",
+                "period": 1000,
+                "repeat_count": -1
+              },
+              "lottie_state": {
+                "ische": false,
+                "value": "play"
+              },
+              "video_state": {
+                "isChe": false,
+                "value": "LV_FFMPEG_PLAYER_CMD_START",
+                "ische": false
+              },
+              "add_state": {
+                "ische": false,
+                "value": "LV_STATE_DEFAULT"
+              },
+              "clear_state": {
+                "ische": false,
+                "value": "LV_STATE_DEFAULT"
+              },
+              "add_flag": {
+                "ische": false,
+                "value": []
+              },
+              "clear_flag": {
+                "ische": false,
+                "value": []
+              },
+              "effects": {
+                "ische": false,
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "timeline": {
+                "ische": false,
+                "state": "start",
+                "period": 0,
+                "repeat_count": -1
+              },
+              "animImg_state": {
+                "ische": false,
+                "value": "repeat",
+                "period": 300,
+                "repeat_count": -1
+              },
+              "anim_state": {
+                "ische": false,
+                "value": "start"
+              },
+              "use_i18n": {
+                "ische": false,
+                "value": "",
+                "is_re": false
+              },
+              "stack": {
+                "ische": false,
+                "duration": 100,
+                "delay": 100,
+                "anim_type": "LV_SCR_LOAD_ANIM_NONE",
+                "is_clean": false,
+                "is_del": true,
+                "pop_stack": false,
+                "push_stack": false
+              },
+              "event_func": {
+                "ische": false,
+                "value": ""
+              },
+              "theme": {
+                "ische": false,
+                "value": ""
+              },
+              "group": {
+                "ische": false,
+                "focus_first": false
+              },
+              "customer_code": {
+                "ische": false,
+                "is_inc": false,
+                "inc_c": "",
+                "code_c": "",
+                "inc_py": "",
+                "code_py": ""
+              }
+            }
+          }
+        ],
+        "bindMsg": {},
+        "page_id": "",
+        "user_data": "",
+        "bindStyle": {},
+        "fs_type": "default",
+        "image_format": "default",
+        "image_color_format": 3,
+        "image_rle_block": 0,
+        "image_rle_clut": 0,
+        "image_rle_yuv": 0,
+        "quality": 80,
+        "alpha_quality": 90,
+        "image_table": true,
+        "style": [
+          {
+            "part": "LV_MENU_IMAGE_ITEM",
+            "state": "LV_STATE_DEFAULT",
+            "disable": true,
+            "object": "extra_image",
+            "bg_color": "#2195f6",
+            "bg_grad_color": "#2195f6",
+            "bg_opa": 0,
+            "bg_grad_dir": "LV_GRAD_DIR_NONE",
+            "border_width": 0,
+            "border_opa": 255,
+            "border_color": "#e1e6ee",
+            "border_side": [
+              "LV_BORDER_SIDE_FULL"
+            ],
+            "radius": 0,
+            "padding_top": 0,
+            "padding_right": 0,
+            "padding_left": 0,
+            "padding_bottom": 0,
+            "image_recolor": "#ffffff",
+            "image_recolor_opa": 0,
+            "image_opa": 255
+          },
+          {
+            "part": "LV_MENU_TEXT_ITEM",
+            "state": "LV_STATE_DEFAULT",
+            "disable": true,
+            "object": "extra_text",
+            "bg_color": "#000000",
+            "bg_grad_color": "#000000",
+            "bg_opa": 0,
+            "bg_grad_dir": "LV_GRAD_DIR_NONE",
+            "border_width": 0,
+            "border_opa": 255,
+            "border_color": "#e1e6ee",
+            "border_side": [
+              "LV_BORDER_SIDE_FULL"
+            ],
+            "radius": 0,
+            "padding_top": 0,
+            "padding_right": 0,
+            "padding_left": 0,
+            "padding_bottom": 0
+          }
+        ],
+        "storage_medium": "default"
+      },
+      {
+        "id": "jwZ267h63biqWat2",
+        "type": "MenuItem",
+        "name": "item1",
+        "text": "",
+        "text_use_i18n": false,
+        "visible": true,
+        "img_path": "..\\import\\image\\app_icon\\yinle_1.png",
+        "event": [
+          {
+            "trigger": "clicked",
+            "dst": "#a7MGX3eJB9MyOrWO",
+            "item_index": 0,
+            "key_type": [],
+            "gesture_dir": "LV_DIR_ALL",
+            "title": "event_1",
+            "action_ische": true,
+            "action": {
+              "bg_color": {
+                "ische": false,
+                "value": "#000000"
+              },
+              "grad_color": {
+                "ische": false,
+                "value": "#000000",
+                "dir": "LV_GRAD_DIR_NONE"
+              },
+              "bg_opa": {
+                "ische": false,
+                "value": 255
+              },
+              "width": {
+                "ische": false,
+                "value": 50,
+                "value_pct": 30,
+                "pct_en": false
+              },
+              "height": {
+                "ische": false,
+                "value": 50,
+                "value_pct": 30,
+                "pct_en": false
+              },
+              "set_text": {
+                "ische": false,
+                "value": "default",
+                "font": 12,
+                "font_family": "simsun"
+              },
+              "position": {
+                "ische": false,
+                "value_x": 0,
+                "value_y": 0,
+                "value_x_pct": 0,
+                "value_y_pct": 0,
+                "pct_en": false
+              },
+              "isVisible": {
+                "ische": false,
+                "flag": ""
+              },
+              "move": {
+                "ische": false,
+                "value_x": 0,
+                "value_y": 0,
+                "delay": 0,
+                "duration": 1000,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": "",
+                "path_type": "linear"
+              },
+              "scaleSize": {
+                "ische": false,
+                "width": 0,
+                "height": 0,
+                "delay": 0,
+                "duration": 1000,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": "",
+                "path_type": "linear"
+              },
+              "load_screen": {
+                "ische": true,
+                "duration": 0,
+                "delay": 0,
+                "anim_type": "LV_SCR_LOAD_ANIM_NONE",
+                "is_clean": true,
+                "is_del": true,
+                "push_stack": false
+              },
+              "load_top_screen": {
+                "ische": false,
+                "value": "show",
+                "is_clean": false,
+                "is_del": true
+              },
+              "timer_state": {
+                "ische": false,
+                "value": "restart",
+                "period": 1000,
+                "repeat_count": -1
+              },
+              "lottie_state": {
+                "ische": false,
+                "value": "play"
+              },
+              "video_state": {
+                "isChe": false,
+                "value": "LV_FFMPEG_PLAYER_CMD_START",
+                "ische": false
+              },
+              "add_state": {
+                "ische": false,
+                "value": "LV_STATE_DEFAULT"
+              },
+              "clear_state": {
+                "ische": false,
+                "value": "LV_STATE_DEFAULT"
+              },
+              "add_flag": {
+                "ische": false,
+                "value": []
+              },
+              "clear_flag": {
+                "ische": false,
+                "value": []
+              },
+              "effects": {
+                "ische": false,
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "timeline": {
+                "ische": false,
+                "state": "start",
+                "period": 0,
+                "repeat_count": -1
+              },
+              "animImg_state": {
+                "ische": false,
+                "value": "repeat",
+                "period": 300,
+                "repeat_count": -1
+              },
+              "anim_state": {
+                "ische": false,
+                "value": "start"
+              },
+              "use_i18n": {
+                "ische": false,
+                "value": "",
+                "is_re": false
+              },
+              "stack": {
+                "ische": false,
+                "duration": 100,
+                "delay": 100,
+                "anim_type": "LV_SCR_LOAD_ANIM_NONE",
+                "is_clean": false,
+                "is_del": true,
+                "pop_stack": false,
+                "push_stack": false
+              },
+              "event_func": {
+                "ische": false,
+                "value": ""
+              },
+              "theme": {
+                "ische": false,
+                "value": ""
+              },
+              "group": {
+                "ische": false,
+                "focus_first": false
+              },
+              "customer_code": {
+                "ische": false,
+                "is_inc": false,
+                "inc_c": "",
+                "code_c": "",
+                "inc_py": "",
+                "code_py": ""
+              }
+            }
+          }
+        ],
+        "bindMsg": {},
+        "page_id": "",
+        "user_data": "",
+        "bindStyle": {},
+        "fs_type": "default",
+        "image_format": "default",
+        "image_color_format": 3,
+        "image_rle_block": 0,
+        "image_rle_clut": 0,
+        "image_rle_yuv": 0,
+        "quality": 80,
+        "alpha_quality": 90,
+        "image_table": true,
+        "style": [
+          {
+            "part": "LV_MENU_IMAGE_ITEM",
+            "state": "LV_STATE_DEFAULT",
+            "disable": true,
+            "object": "extra_image",
+            "bg_color": "#2195f6",
+            "bg_grad_color": "#2195f6",
+            "bg_opa": 0,
+            "bg_grad_dir": "LV_GRAD_DIR_NONE",
+            "border_width": 0,
+            "border_opa": 255,
+            "border_color": "#e1e6ee",
+            "border_side": [
+              "LV_BORDER_SIDE_FULL"
+            ],
+            "radius": 0,
+            "padding_top": 0,
+            "padding_right": 0,
+            "padding_left": 0,
+            "padding_bottom": 0,
+            "image_recolor": "#ffffff",
+            "image_recolor_opa": 0,
+            "image_opa": 255
+          },
+          {
+            "part": "LV_MENU_TEXT_ITEM",
+            "state": "LV_STATE_DEFAULT",
+            "disable": true,
+            "object": "extra_text",
+            "bg_color": "#000000",
+            "bg_grad_color": "#000000",
+            "bg_opa": 0,
+            "bg_grad_dir": "LV_GRAD_DIR_NONE",
+            "border_width": 0,
+            "border_opa": 255,
+            "border_color": "#e1e6ee",
+            "border_side": [
+              "LV_BORDER_SIDE_FULL"
+            ],
+            "radius": 0,
+            "padding_top": 0,
+            "padding_right": 0,
+            "padding_left": 0,
+            "padding_bottom": 0
+          }
+        ],
+        "storage_medium": "default"
+      },
+      {
+        "id": "u6PIRriAyQ9Xx5Gx",
+        "type": "MenuItem",
+        "name": "item2",
+        "text": "",
+        "text_use_i18n": false,
+        "visible": true,
+        "img_path": "..\\import\\image\\app_icon\\daohang_tianchong.png",
+        "event": [
+          {
+            "trigger": "clicked",
+            "dst": "#AG78pPElkrDCF9Nh",
+            "item_index": 0,
+            "key_type": [],
+            "gesture_dir": "LV_DIR_ALL",
+            "title": "event_1",
+            "action_ische": true,
+            "action": {
+              "bg_color": {
+                "ische": false,
+                "value": "#000000"
+              },
+              "grad_color": {
+                "ische": false,
+                "value": "#000000",
+                "dir": "LV_GRAD_DIR_NONE"
+              },
+              "bg_opa": {
+                "ische": false,
+                "value": 255
+              },
+              "width": {
+                "ische": false,
+                "value": 50,
+                "value_pct": 30,
+                "pct_en": false
+              },
+              "height": {
+                "ische": false,
+                "value": 50,
+                "value_pct": 30,
+                "pct_en": false
+              },
+              "set_text": {
+                "ische": false,
+                "value": "default",
+                "font": 12,
+                "font_family": "simsun"
+              },
+              "position": {
+                "ische": false,
+                "value_x": 0,
+                "value_y": 0,
+                "value_x_pct": 0,
+                "value_y_pct": 0,
+                "pct_en": false
+              },
+              "isVisible": {
+                "ische": false,
+                "flag": ""
+              },
+              "move": {
+                "ische": false,
+                "value_x": 0,
+                "value_y": 0,
+                "delay": 0,
+                "duration": 1000,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": "",
+                "path_type": "linear"
+              },
+              "scaleSize": {
+                "ische": false,
+                "width": 0,
+                "height": 0,
+                "delay": 0,
+                "duration": 1000,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": "",
+                "path_type": "linear"
+              },
+              "load_screen": {
+                "ische": true,
+                "duration": 0,
+                "delay": 0,
+                "anim_type": "LV_SCR_LOAD_ANIM_NONE",
+                "is_clean": true,
+                "is_del": true,
+                "push_stack": false
+              },
+              "load_top_screen": {
+                "ische": false,
+                "value": "show",
+                "is_clean": false,
+                "is_del": true
+              },
+              "timer_state": {
+                "ische": false,
+                "value": "restart",
+                "period": 1000,
+                "repeat_count": -1
+              },
+              "lottie_state": {
+                "ische": false,
+                "value": "play"
+              },
+              "video_state": {
+                "isChe": false,
+                "value": "LV_FFMPEG_PLAYER_CMD_START",
+                "ische": false
+              },
+              "add_state": {
+                "ische": false,
+                "value": "LV_STATE_DEFAULT"
+              },
+              "clear_state": {
+                "ische": false,
+                "value": "LV_STATE_DEFAULT"
+              },
+              "add_flag": {
+                "ische": false,
+                "value": []
+              },
+              "clear_flag": {
+                "ische": false,
+                "value": []
+              },
+              "effects": {
+                "ische": false,
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "timeline": {
+                "ische": false,
+                "state": "start",
+                "period": 0,
+                "repeat_count": -1
+              },
+              "animImg_state": {
+                "ische": false,
+                "value": "repeat",
+                "period": 300,
+                "repeat_count": -1
+              },
+              "anim_state": {
+                "ische": false,
+                "value": "start"
+              },
+              "use_i18n": {
+                "ische": false,
+                "value": "",
+                "is_re": false
+              },
+              "stack": {
+                "ische": false,
+                "duration": 100,
+                "delay": 100,
+                "anim_type": "LV_SCR_LOAD_ANIM_NONE",
+                "is_clean": false,
+                "is_del": true,
+                "pop_stack": false,
+                "push_stack": false
+              },
+              "event_func": {
+                "ische": false,
+                "value": ""
+              },
+              "theme": {
+                "ische": false,
+                "value": ""
+              },
+              "group": {
+                "ische": false,
+                "focus_first": false
+              },
+              "customer_code": {
+                "ische": false,
+                "is_inc": false,
+                "inc_c": "",
+                "code_c": "",
+                "inc_py": "",
+                "code_py": ""
+              }
+            }
+          }
+        ],
+        "bindMsg": {},
+        "page_id": "",
+        "user_data": "",
+        "bindStyle": {},
+        "fs_type": "default",
+        "image_format": "default",
+        "image_color_format": 3,
+        "image_rle_block": 0,
+        "image_rle_clut": 0,
+        "image_rle_yuv": 0,
+        "quality": 80,
+        "alpha_quality": 90,
+        "image_table": true,
+        "style": [
+          {
+            "part": "LV_MENU_IMAGE_ITEM",
+            "state": "LV_STATE_DEFAULT",
+            "disable": true,
+            "object": "extra_image",
+            "bg_color": "#2195f6",
+            "bg_grad_color": "#2195f6",
+            "bg_opa": 0,
+            "bg_grad_dir": "LV_GRAD_DIR_NONE",
+            "border_width": 0,
+            "border_opa": 255,
+            "border_color": "#e1e6ee",
+            "border_side": [
+              "LV_BORDER_SIDE_FULL"
+            ],
+            "radius": 0,
+            "padding_top": 0,
+            "padding_right": 0,
+            "padding_left": 0,
+            "padding_bottom": 0,
+            "image_recolor": "#ffffff",
+            "image_recolor_opa": 0,
+            "image_opa": 255
+          },
+          {
+            "part": "LV_MENU_TEXT_ITEM",
+            "state": "LV_STATE_DEFAULT",
+            "disable": true,
+            "object": "extra_text",
+            "bg_color": "#000000",
+            "bg_grad_color": "#000000",
+            "bg_opa": 0,
+            "bg_grad_dir": "LV_GRAD_DIR_NONE",
+            "border_width": 0,
+            "border_opa": 255,
+            "border_color": "#e1e6ee",
+            "border_side": [
+              "LV_BORDER_SIDE_FULL"
+            ],
+            "radius": 0,
+            "padding_top": 0,
+            "padding_right": 0,
+            "padding_left": 0,
+            "padding_bottom": 0
+          }
+        ],
+        "storage_medium": "default"
+      }
+    ]
+  }
+]

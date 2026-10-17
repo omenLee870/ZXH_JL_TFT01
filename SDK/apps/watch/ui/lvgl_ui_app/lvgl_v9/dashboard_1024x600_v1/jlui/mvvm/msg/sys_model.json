@@ -1,0 +1,27 @@
+{
+  "id": "OoudujEpre9mKKTg",
+  "name": "sys_model",
+  "model_id": "0xF000",
+  "type": "system",
+  "desc": "",
+  "attr": [],
+  "enable": true,
+  "properties": [
+    {
+      "id": "4V5t1yuBk9K5RZ2W",
+      "name": "sys_time",
+      "model_id": "0xF001",
+      "desc": "",
+      "type": "tm",
+      "attr": [
+        "readable",
+        "writable"
+      ],
+      "timer_enable": true,
+      "interval": 1000,
+      "default": "2024/01/01 00:00:00",
+      "use_system": true
+    }
+  ],
+  "methods": []
+}

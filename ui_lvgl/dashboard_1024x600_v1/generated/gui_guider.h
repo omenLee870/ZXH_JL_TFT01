@@ -337,7 +337,86 @@ typedef struct {
 	lv_obj_t *chongwuyibiao_gequmingcheng;
 	lv_obj_t *chongwuyibiao_geciwenzi;
 	lv_obj_t *chongwuyibiao_lanyalianjietubiao;
+	lv_obj_t *chongwuyibiao_settings_entry;
+	lv_obj_t *chongwuyibiao_settings_entry_label;
 } lv_ui_chongwuyibiao;
+
+typedef struct {
+	// Screen meter_settings
+	lv_obj_t *meter_settings;
+	bool      meter_settings_del;
+	lv_obj_t *meter_settings_menu_0;
+	lv_obj_t *meter_settings_menu_0_label;
+	lv_obj_t *meter_settings_menu_1;
+	lv_obj_t *meter_settings_menu_1_label;
+	lv_obj_t *meter_settings_menu_2;
+	lv_obj_t *meter_settings_menu_2_label;
+	lv_obj_t *meter_settings_menu_3;
+	lv_obj_t *meter_settings_menu_3_label;
+	lv_obj_t *meter_settings_menu_4;
+	lv_obj_t *meter_settings_menu_4_label;
+	lv_obj_t *meter_settings_menu_5;
+	lv_obj_t *meter_settings_menu_5_label;
+	lv_obj_t *meter_settings_back;
+	lv_obj_t *meter_settings_back_label;
+	lv_obj_t *meter_settings_panel_0;
+	lv_obj_t *meter_settings_title_0;
+	lv_obj_t *meter_settings_brightness_title;
+	lv_obj_t *meter_settings_brightness_value;
+	lv_obj_t *meter_settings_brightness;
+	lv_obj_t *meter_settings_result;
+	lv_obj_t *meter_settings_panel_1;
+	lv_obj_t *meter_settings_title_1;
+	lv_obj_t *meter_settings_music_title;
+	lv_obj_t *meter_settings_music_value;
+	lv_obj_t *meter_settings_music;
+	lv_obj_t *meter_settings_tone_title;
+	lv_obj_t *meter_settings_tone_value;
+	lv_obj_t *meter_settings_tone;
+	lv_obj_t *meter_settings_key_label;
+	lv_obj_t *meter_settings_key_tone;
+	lv_obj_t *meter_settings_panel_2;
+	lv_obj_t *meter_settings_title_2;
+	lv_obj_t *meter_settings_unit_title;
+	lv_obj_t *meter_settings_unit_km;
+	lv_obj_t *meter_settings_unit_km_label;
+	lv_obj_t *meter_settings_unit_mi;
+	lv_obj_t *meter_settings_unit_mi_label;
+	lv_obj_t *meter_settings_trip_title;
+	lv_obj_t *meter_settings_trip;
+	lv_obj_t *meter_settings_trip_clear;
+	lv_obj_t *meter_settings_trip_clear_label;
+	lv_obj_t *meter_settings_odo_title;
+	lv_obj_t *meter_settings_odo;
+	lv_obj_t *meter_settings_panel_3;
+	lv_obj_t *meter_settings_title_3;
+	lv_obj_t *meter_settings_sleep_0;
+	lv_obj_t *meter_settings_sleep_0_label;
+	lv_obj_t *meter_settings_sleep_1;
+	lv_obj_t *meter_settings_sleep_1_label;
+	lv_obj_t *meter_settings_sleep_3;
+	lv_obj_t *meter_settings_sleep_3_label;
+	lv_obj_t *meter_settings_sleep_5;
+	lv_obj_t *meter_settings_sleep_5_label;
+	lv_obj_t *meter_settings_panel_4;
+	lv_obj_t *meter_settings_title_4;
+	lv_obj_t *meter_settings_device_title;
+	lv_obj_t *meter_settings_device;
+	lv_obj_t *meter_settings_model_title;
+	lv_obj_t *meter_settings_model;
+	lv_obj_t *meter_settings_firmware_title;
+	lv_obj_t *meter_settings_firmware;
+	lv_obj_t *meter_settings_panel_5;
+	lv_obj_t *meter_settings_title_5;
+	lv_obj_t *meter_settings_restore;
+	lv_obj_t *meter_settings_restore_label;
+	lv_obj_t *meter_settings_confirm;
+	lv_obj_t *meter_settings_confirm_title;
+	lv_obj_t *meter_settings_confirm_cancel;
+	lv_obj_t *meter_settings_confirm_cancel_label;
+	lv_obj_t *meter_settings_confirm_ok;
+	lv_obj_t *meter_settings_confirm_ok_label;
+} lv_ui_meter_settings;
 
 // generate lv_ui gui_guider
 typedef struct {
@@ -349,6 +428,7 @@ typedef struct {
 	lv_ui_upgrade_page *upgrade_page;
 	lv_ui_hardware_test *hardware_test;
 	lv_ui_chongwuyibiao *chongwuyibiao;
+	lv_ui_meter_settings *meter_settings;
 	
 	lv_group_t *default_group;
 } lv_ui;
@@ -420,6 +500,9 @@ void unload_scr_hardware_test(lv_ui *ui);
 // Screen chongwuyibiao
 lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui);
 void unload_scr_chongwuyibiao(lv_ui *ui);
+// Screen meter_settings
+lv_obj_t * setup_scr_meter_settings(lv_ui *ui);
+void unload_scr_meter_settings(lv_ui *ui);
 #ifdef __cplusplus
 }
 #endif

@@ -35,6 +35,8 @@ struct __NET_SCR_CFG {
 u8 get_net_scr_status(void);
 int net_scr_init(struct __NET_SCR_CFG *cfg);
 int net_scr_uninit(struct __NET_SCR_CFG *cfg);
+/** @brief 由 app_core 关闭当前投屏接收线程及 socket，保留 Wi-Fi 基础连接。 */
+int net_scr_shutdown(void);
 void map_video_enter(void);
 void map_video_leave(void);
 void screen_map_request_display(int active);

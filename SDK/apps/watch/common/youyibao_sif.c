@@ -1,15 +1,18 @@
-#include "app_config.h"
 #include "youyibao_sif.h"
+#include "vehicle_storage.h"
+#ifndef YOUYIBAO_RUNTIME_TEST
+#include "app_config.h"
 #include "system/includes.h"
 #include "system/spinlock.h"
 #include "gptimer.h"
 #include "gpio.h"
 #include "utils/syscfg_id.h"
 #include "user_cfg_id.h"
+#include "device/vm.h"
+#endif
 #include <string.h>
 
 struct saved_settings { u32 magic; struct yyb_config config; u32 checksum; };
-struct saved_odometer { u32 magic; u32 low, high; u32 checksum; };
 
 static DEFINE_SPINLOCK(sif_lock);
 static struct yyb_decoder decoder;
@@ -24,12 +27,54 @@ static struct yyb_config settings = {
 static u32 capture_id;
 static u16 check_timer;
 static volatile u8 running;
-static uint64_t stored_odometer;
-static u32 last_save_ms;
-static unsigned was_moving;
+static struct vehicle_storage odometer_storage; /**< app_core 维护的持久化状态。 */
+static unsigned storage_ready; /**< VM 恢复完成后才允许保存。 */
 
 static void lock(void) { local_irq_disable(); spin_lock(&sif_lock); }
 static void unlock(void) { spin_unlock(&sif_lock); local_irq_enable(); }
+
+/**
+ * @brief 读取总里程的指定记录。
+ * @param[in] slot 0 对应原 VM 58，1 对应备用 VM 57。
+ * @param[out] buffer 输出缓冲。
+ * @param[in] length 最大读取长度。
+ * @return 实际读取字节数或 SDK 错误码。
+ */
+static int odometer_read(unsigned slot, void *buffer, unsigned length)
+{
+    return syscfg_read(slot ? CFG_YYB_ODOMETER_BACKUP : CFG_YYB_ODOMETER, buffer, length);
+}
+
+/**
+ * @brief 向非当前槽位写入一份总里程记录。
+ * @param[in] slot 目标槽位。
+ * @param[in] buffer 记录内容。
+ * @param[in] length 记录长度。
+ * @return 实际写入字节数或 SDK 错误码。
+ * @note 仅从普通任务调用，不得持有捕获自旋锁。
+ */
+static int odometer_write(unsigned slot, const void *buffer, unsigned length)
+{
+    return syscfg_write(slot ? CFG_YYB_ODOMETER_BACKUP : CFG_YYB_ODOMETER, buffer, length);
+}
+
+/**
+ * @brief 将可能启用的 VM RAM 缓存刷新到 Flash。
+ * @return 0 表示已落盘或无需刷新，-1 表示落盘失败。
+ * @note 参数 0 保留 VM 的后续写入能力，避免提前关闭其他模块的关机保存。
+ */
+static int odometer_flush(void)
+{
+    if (get_vm_ram_storage_enable() || get_vm_ram_storage_in_irq_enable()) {
+        int result = vm_flush2flash(0);
+        if (result != VM_ERR_NONE && result != VM_RAM_FLUSH_NONE) return -1;
+    }
+    return 0;
+}
+
+static const struct vehicle_storage_io odometer_io = {
+    odometer_read, odometer_write, odometer_flush
+}; /**< 存储读写均在捕获锁外执行。 */
 
 #if TCFG_YYB_SIF_ENABLE
 #define YYB_DIAG_PULSES 20
@@ -115,23 +160,13 @@ static void link_check(void *priv)
     u32 now = sys_timer_get_ms();
     (void)priv;
     lock();
-    if (running) yyb_decoder_poll(&decoder, now);
+    if (!running) { unlock(); return; }
+    yyb_decoder_poll(&decoder, now);
     v = decoder.view;
     unlock();
-    /* Persist on stopping (30s write spacing), or every five minutes offline. */
-    if ((!v.online || v.speed_dkph == 0) && v.odometer_mm != stored_odometer &&
-        ((u32)(now - last_save_ms) >= 300000 ||
-         (was_moving && (!last_save_ms || (u32)(now - last_save_ms) >= 30000)))) {
-        struct saved_odometer saved;
-        saved.magic = 0x594f4401;
-        saved.low = v.odometer_mm;
-        saved.high = v.odometer_mm >> 32;
-        saved.checksum = saved.magic ^ saved.low ^ saved.high;
-        last_save_ms = now;
-        if (syscfg_write(CFG_YYB_ODOMETER, &saved, sizeof(saved)) == sizeof(saved))
-            stored_odometer = v.odometer_mm;
-    }
-    was_moving = v.online && v.speed_dkph > 0;
+    if (storage_ready && vehicle_storage_poll(&odometer_storage, &odometer_io, v.odometer_mm,
+        v.online && v.speed_dkph > 0, now) < 0)
+        printf("[YYB] odometer save failed\n");
     diagnostic_log(now);
 }
 #endif
@@ -152,7 +187,7 @@ int youyibao_sif_start(void)
     lock();
     uint64_t odo = decoder.view.odometer_mm, trip = decoder.view.trip_mm;
     yyb_decoder_init(&decoder, &settings);
-    decoder.view.odometer_mm = odo > stored_odometer ? odo : stored_odometer;
+    decoder.view.odometer_mm = odo > odometer_storage.odometer_mm ? odo : odometer_storage.odometer_mm;
     decoder.view.trip_mm = trip;
     memset(&capture_diag, 0, sizeof(capture_diag));
     diag_at_ms = sys_timer_get_ms();
@@ -188,12 +223,17 @@ void youyibao_sif_stop(void)
 #if TCFG_YYB_SIF_ENABLE
     if (!running) return;
     lock();
+    /* 在关闭捕获前结算最后一段有效时间，不能漏掉最后一个周期的里程。 */
+    yyb_decoder_poll(&decoder, sys_timer_get_ms());
     running = 0;
     unlock();
     sys_timer_del(check_timer);
     check_timer = 0;
+    printf("[YYB_POWER] capture=%u pause begin\n", capture_id);
     gptimer_pause(capture_id);
+    printf("[YYB_POWER] capture=%u deinit begin\n", capture_id);
     gptimer_deinit(capture_id);
+    printf("[YYB_POWER] capture released\n");
     gpio_set_mode(IO_PORT_SPILT(TCFG_YYB_SIF_IO), PORT_HIGHZ);
 #endif
     lock();
@@ -202,6 +242,21 @@ void youyibao_sif_stop(void)
     decoder.view.odometer_mm = odo;
     decoder.view.trip_mm = trip;
     unlock();
+}
+
+/**
+ * @brief 停止接收后保存冻结的最终总里程。
+ * @return 0 成功或无需保存，-1 保存失败。
+ * @note 调用方必须是 app_core；停止和保存允许重复调用，没有变化时不重复写入。
+ */
+int youyibao_sif_shutdown(void)
+{
+    struct yyb_view view;
+    youyibao_sif_stop();
+    if (!storage_ready) return 0;
+    youyibao_sif_snapshot(&view);
+    return vehicle_storage_save(&odometer_storage, &odometer_io, view.odometer_mm,
+        sys_timer_get_ms()) < 0 ? -1 : 0;
 }
 
 int youyibao_sif_configure(const struct yyb_config *cfg)
@@ -247,7 +302,7 @@ int youyibao_sif_save_config(const struct yyb_config *cfg)
     saved.magic = 0x59594202;
     saved.config = *cfg;
     saved.checksum = settings_checksum(cfg);
-    if (syscfg_write(CFG_YYB_CALIBRATION, &saved, sizeof(saved)) != sizeof(saved)) {
+    if (syscfg_write(CFG_YYB_CALIBRATION, &saved, sizeof(saved)) != (int)sizeof(saved)) {
         youyibao_sif_configure(&before);
         return -2;
     }
@@ -276,13 +331,11 @@ static int sif_boot(void)
 {
 #if TCFG_YYB_SIF_ENABLE
     struct saved_settings saved;
-    if (syscfg_read(CFG_YYB_CALIBRATION, &saved, sizeof(saved)) == sizeof(saved) &&
+    if (syscfg_read(CFG_YYB_CALIBRATION, &saved, sizeof(saved)) == (int)sizeof(saved) &&
         saved.magic == 0x59594202 && saved.checksum == settings_checksum(&saved.config))
         youyibao_sif_configure(&saved.config);
-    struct saved_odometer odo;
-    if (syscfg_read(CFG_YYB_ODOMETER, &odo, sizeof(odo)) == sizeof(odo) &&
-        odo.magic == 0x594f4401 && odo.checksum == (odo.magic ^ odo.low ^ odo.high))
-        stored_odometer = ((uint64_t)odo.high << 32) | odo.low;
+    vehicle_storage_load(&odometer_storage, &odometer_io, sys_timer_get_ms());
+    storage_ready = 1;
     return youyibao_sif_start();
 #else
     return 0;

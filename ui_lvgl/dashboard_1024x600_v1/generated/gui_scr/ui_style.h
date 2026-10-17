@@ -27,6 +27,11 @@ extern lv_style_t gui_imgbtn_main_default_style;
 extern lv_style_t gui_imgbtn_main_pressed_style;
 extern lv_style_t gui_imgbtn_main_checked_style;
 
+// sw
+extern lv_style_t gui_sw_main_default_style;
+extern lv_style_t gui_sw_indicator_checked_style;
+extern lv_style_t gui_sw_knob_default_style;
+
 // line
 extern lv_style_t gui_line_main_default_style;
 
@@ -69,6 +74,7 @@ enum {
 	GUI_CTRL_IMG,
 	GUI_CTRL_SCR,
 	GUI_CTRL_IMGBTN,
+	GUI_CTRL_SWITCH,
 	GUI_CTRL_LINE,
 	GUI_CTRL_LABEL,
 	GUI_CTRL_IMGLIST,

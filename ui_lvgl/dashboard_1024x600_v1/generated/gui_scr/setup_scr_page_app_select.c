@@ -406,9 +406,6 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	lv_obj_set_scrollbar_mode(ui_scr->page_app_select_lbl_17, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->page_app_select_lbl_17, GUI_CTRL_LABEL);
 
-	//Set style for page_app_select_lbl_17. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_17, &lv_font_MiSans_Medium_26, LV_PART_MAIN|LV_STATE_DEFAULT);
-
 	//Write codes page_app_select_lbl_16
 	ui_scr->page_app_select_lbl_16 = lv_label_create(ui_scr->page_app_select_view_select_app_map);
 	lv_label_set_text(ui_scr->page_app_select_lbl_16, "5.6km");
@@ -418,9 +415,6 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	lv_obj_set_scrollbar_mode(ui_scr->page_app_select_lbl_16, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->page_app_select_lbl_16, GUI_CTRL_LABEL);
 
-	//Set style for page_app_select_lbl_16. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_16, &lv_font_MiSans_Medium_26, LV_PART_MAIN|LV_STATE_DEFAULT);
-
 	//Write codes page_app_select_slider_2
 	ui_scr->page_app_select_slider_2 = lv_slider_create(ui_scr->page_app_select_view_select_app_map);
 	lv_obj_set_pos(ui_scr->page_app_select_slider_2, 12, 218);
@@ -429,9 +423,13 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	ui_style_set(ui_scr->page_app_select_slider_2, GUI_CTRL_SLIDER);
 
 	//Set style for page_app_select_slider_2. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_radius(ui_scr->page_app_select_slider_2, 20, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_bg_color(ui_scr->page_app_select_slider_2, lv_color_make(0x50, 0x50, 0x50), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_bg_opa(ui_scr->page_app_select_slider_2, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for page_app_select_slider_2. Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->page_app_select_slider_2, 20, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+
+	//Set style for page_app_select_slider_2. Part: LV_PART_KNOB, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->page_app_select_slider_2, 20, LV_PART_KNOB|LV_STATE_DEFAULT);
 	lv_slider_set_range(ui_scr->page_app_select_slider_2, 0, 100);
 	lv_slider_set_mode(ui_scr->page_app_select_slider_2, LV_SLIDER_MODE_NORMAL);
 	lv_slider_set_value(ui_scr->page_app_select_slider_2, 30, LV_ANIM_OFF);
@@ -494,6 +492,17 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	lv_obj_set_size(ui_scr->page_app_select_slider_1, 264, 10);
 	lv_obj_set_scrollbar_mode(ui_scr->page_app_select_slider_1, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->page_app_select_slider_1, GUI_CTRL_SLIDER);
+
+	//Set style for page_app_select_slider_1. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->page_app_select_slider_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->page_app_select_slider_1, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(ui_scr->page_app_select_slider_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for page_app_select_slider_1. Part: LV_PART_INDICATOR, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->page_app_select_slider_1, 20, LV_PART_INDICATOR|LV_STATE_DEFAULT);
+
+	//Set style for page_app_select_slider_1. Part: LV_PART_KNOB, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->page_app_select_slider_1, 20, LV_PART_KNOB|LV_STATE_DEFAULT);
 	lv_slider_set_range(ui_scr->page_app_select_slider_1, 0, 100);
 	lv_slider_set_mode(ui_scr->page_app_select_slider_1, LV_SLIDER_MODE_NORMAL);
 	lv_slider_set_value(ui_scr->page_app_select_slider_1, 60, LV_ANIM_OFF);
@@ -530,10 +539,10 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	ui_style_set(ui_scr->page_app_select_btn_back, GUI_CTRL_BUTTON);
 
 	//Set style for page_app_select_btn_back. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->page_app_select_btn_back, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->page_app_select_btn_back, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->page_app_select_btn_back, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_app_select_btn_back, &lv_font_MiSans_Medium_24, LV_PART_MAIN|LV_STATE_DEFAULT);
-
-	//Delete extra default style for page_app_select_btn_back
-	lv_obj_remove_style(ui_scr->page_app_select_btn_back, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->page_app_select_btn_back_label = lv_label_create(ui_scr->page_app_select_btn_back);
 	lv_label_set_text(ui_scr->page_app_select_btn_back_label, "hardware test");
 	lv_obj_set_style_pad_all(ui_scr->page_app_select_btn_back, 0, LV_PART_MAIN | LV_STATE_DEFAULT);

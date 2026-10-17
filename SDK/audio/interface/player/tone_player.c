@@ -475,6 +475,13 @@ static struct tone_player *tone_player_create(const char *file_name)
 
 int tone_player_add(struct tone_player *player)
 {
+    /* 统一拦截关机后的普通提示音；应用按需寻车及 SDK 最终断电提示由策略放行。 */
+    extern int app_meter_control_tone_allowed(void *, void *) __attribute__((weak));
+    if (app_meter_control_tone_allowed && !app_meter_control_tone_allowed(player->priv, (void *)player->callback)) {
+        /* 拦截后也遵守播放器所有权：关闭已打开的文件并回调 STOP，不能泄漏资源。 */
+        tone_player_free(player);
+        return -EACCES;
+    }
 #if !TCFG_TONE_PLAYER_ENABLE
     return -ENOMEM;
 #endif

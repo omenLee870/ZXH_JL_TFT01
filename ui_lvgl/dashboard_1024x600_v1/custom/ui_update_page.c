@@ -22,6 +22,7 @@
 #if !LV_USE_GUIBUILDER_SIMULATOR
 #include "app_config.h"
 #include "lv_ui.h"
+#include "app_meter_control.h"
 #endif
 #include "lvgl.h"
 #include "../generated/gui_guider.h"
@@ -121,6 +122,7 @@ static void ui_update_page_enter_on_ui(void *arg, ...)
         return;
     }
 
+    app_meter_control_ui_wake_for_update();
     /* 把升级页设为唯一 activity screen(auto_del=false 保留旧屏对象但不绘制)；
      * 首次进入会经 setup_scr_upgrade_page 建页(只含内置字库 + bar/label)。 */
     ui_load_scr_anim(&guider_ui, up, LV_SCR_LOAD_ANIM_NONE, 0, 0, false, false, false);

@@ -3123,6 +3123,19 @@
 <Unit filename="apps/watch/common/common_music_ctrl.h" />
 <Unit filename="apps/watch/common/pet_dashboard_music.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/common/pet_dashboard_music.h" />
+<Unit filename="apps/watch/common/app_vehicle.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/app_vehicle.h" />
+<Unit filename="apps/watch/common/vehicle_storage.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/vehicle_storage.h" />
+<Unit filename="apps/watch/common/app_vehicle_zxh.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/app_meter_control.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/app_meter_control.h" />
+<Unit filename="apps/watch/common/meter_settings.h" />
+<Unit filename="apps/watch/common/meter_settings.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/vehicle_controller.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/vehicle_controller.h" />
+<Unit filename="apps/watch/common/vehicle_core.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/vehicle_core.h" />
 <Unit filename="apps/watch/common/youyibao_sif.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/common/youyibao_sif_protocol.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/common/youyibao_sif.h" />
@@ -4806,5 +4819,9 @@
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_yinyue.h" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_yinyue_donghua.c" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/chongwuyibiao_yinyue_donghua.h" />
+<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_meter_settings.c" />
+<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_meter_settings.h" />
+<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_meter_settings.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_cast_page.c" />
 </Project>
 </CodeBlocks_project_file>

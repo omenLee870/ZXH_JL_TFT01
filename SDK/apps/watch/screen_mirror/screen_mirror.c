@@ -62,6 +62,15 @@ struct net_scr_runtime {
 };
 
 static struct net_scr_runtime g_net_scr;
+static OS_SEM net_scr_gate;
+static int net_scr_gate_ready;
+/** @brief 上电时创建接收生命周期锁，避免 APP 关机与网络端启停同时释放资源。 */
+static int net_scr_lifecycle_init(void)
+{
+    net_scr_gate_ready = !os_sem_create(&net_scr_gate, 1);
+    return net_scr_gate_ready ? 0 : -1;
+}
+early_initcall(net_scr_lifecycle_init);
 static u8 g_udp_recv_buf[UDP_MAX_RECV];
 static app_playback_handle_t scr_hdl;
 #define __ALIGN_16(a)   (((a) + 15) / 16 * 16)
@@ -81,6 +90,7 @@ __attribute__((weak)) void screen_map_request_display(int active)
 {
     (void)active;
 }
+__attribute__((weak)) int screen_cast_pet_active(void) { return 0; }
 
 static u32 min_u32(u32 a, u32 b)
 {
@@ -457,6 +467,7 @@ typedef enum {
 } map_video_state_t;
 
 static volatile int g_map_video_active = 0;  //是否在map界面
+static volatile u32 map_display_epoch; /**< 显示生命周期代次，拒绝退出后迟到的 UI 创建请求。 */
 static map_video_state_t g_map_video_state = MAP_VIDEO_CLOSED; //解码器状态
 static map_video_source_t g_map_video_source = MAP_VIDEO_SOURCE_NONE; //视频源
 static OS_MUTEX g_map_video_mutex;
@@ -530,6 +541,9 @@ int map_video_page_active(void)
 
 void map_video_enter(void)
 {
+    /* 延迟到达的投屏命令不得绕过仪表关机状态重新打开显示链路。 */
+    extern int app_meter_control_media_allowed(void);
+    if (!app_meter_control_media_allowed()) return;
     map_video_ctrl_init_once();
     os_mutex_pend(&g_map_video_mutex, 0);
 
@@ -574,6 +588,8 @@ static void map_video_stream_exit(void)
     }
 
     os_mutex_post(&g_map_video_mutex);
+    /* 包括 APP 结束导航、连接断开及接收任务退出，均恢复宠物页原有画面。 */
+    screen_map_request_display(0);
 }
 
 void map_video_leave(void)
@@ -730,8 +746,10 @@ static void scr_recv_task(void *priv)
 }
 
 
-int net_scr_init(struct __NET_SCR_CFG *cfg)
+static int net_scr_start_locked(struct __NET_SCR_CFG *cfg)
 {
+    extern int app_meter_control_media_allowed(void);
+    if (!app_meter_control_media_allowed()) return -1;
     int ret;
 
     if (!cfg) {
@@ -779,7 +797,7 @@ int net_scr_init(struct __NET_SCR_CFG *cfg)
 }
 
 
-int net_scr_uninit(struct __NET_SCR_CFG *cfg)
+static int net_scr_stop_locked(struct __NET_SCR_CFG *cfg)
 {
     if (!cfg) {
         return -1;
@@ -799,7 +817,7 @@ int net_scr_uninit(struct __NET_SCR_CFG *cfg)
     request_sock_quit(__this->cli_sock_hdl);
     request_sock_quit(__this->sock_hdl);
 
-    thread_kill(&__this->recv_task_pid, KILL_WAIT);
+    if (__this->recv_task_pid) thread_kill(&__this->recv_task_pid, KILL_WAIT);
 
     close_sock(&__this->cli_sock_hdl);
     close_sock(&__this->sock_hdl);
@@ -808,9 +826,43 @@ int net_scr_uninit(struct __NET_SCR_CFG *cfg)
     return 0;
 }
 
-void lvgl_create_map_disp(int32_t width, int32_t height, int32_t x, int32_t y)
+int net_scr_init(struct __NET_SCR_CFG *cfg)
+{
+    int result;
+    if (!net_scr_gate_ready || os_sem_pend(&net_scr_gate, 0)) return -1;
+    result = net_scr_start_locked(cfg);
+    os_sem_post(&net_scr_gate);
+    return result;
+}
+
+int net_scr_uninit(struct __NET_SCR_CFG *cfg)
+{
+    int result;
+    if (!net_scr_gate_ready || os_sem_pend(&net_scr_gate, 0)) return -1;
+    result = net_scr_stop_locked(cfg);
+    os_sem_post(&net_scr_gate);
+    return result;
+}
+
+int net_scr_shutdown(void)
+{
+    struct __NET_SCR_CFG cfg;
+    int result = 0;
+    if (!net_scr_gate_ready || os_sem_pend(&net_scr_gate, 0)) return -1;
+    if (__this->state) {
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.cli_addr = __this->cli_addr;
+        result = net_scr_stop_locked(&cfg);
+    }
+    os_sem_post(&net_scr_gate);
+    return result;
+}
+
+void lvgl_create_map_disp(int32_t width, int32_t height, int32_t x, int32_t y, u32 epoch)
 {
 #if (defined LV_USE_VIDEO_DISP && LV_USE_VIDEO_DISP)
+    extern int app_meter_control_media_allowed(void);
+    if (epoch != map_display_epoch || !g_map_video_active || !app_meter_control_media_allowed()) return;
     if (map_disp_handle == NULL) {
         map_disp_handle = lv_port_video_disp_create(lv_screen_active(), width, height, x, y, LV_COLOR_FORMAT_NV12, "fb5");
     }
@@ -818,7 +870,9 @@ void lvgl_create_map_disp(int32_t width, int32_t height, int32_t x, int32_t y)
         printf("lv_port_video_disp_create fail \n");
         return;
     }
-    lv_obj_move_background(lv_port_video_disp_get_img_obj(map_disp_handle));  //MAP img置于UI底层
+    extern int screen_cast_pet_active(void);
+    if (screen_cast_pet_active()) lv_obj_move_foreground(lv_port_video_disp_get_img_obj(map_disp_handle));
+    else lv_obj_move_background(lv_port_video_disp_get_img_obj(map_disp_handle));
 
 #else
     printf("error LV_USE_VIDEO_DISP \n");
@@ -840,11 +894,12 @@ void lvgl_destroy_map_disp(void *disp_handle)
 void lvgl_map_init(int32_t width, int32_t height, int32_t x, int32_t y)
 {
     log_info("lvgl_map_init");
-    lvgl_rpc_post_func((void *)lvgl_create_map_disp, 4, width, height, x, y);
+    lvgl_rpc_post_func((void *)lvgl_create_map_disp, 5, width, height, x, y, ++map_display_epoch);
 }
 
 void lvgl_map_exit(void)
 {
+    ++map_display_epoch;
     if (map_disp_handle) {
         /* 同步退出: 删视频 img + 排空双链表(LIST==2)异步渲染, 返回后再由
          * screen_mpi_close() 释放 playback buffer 才安全。 */

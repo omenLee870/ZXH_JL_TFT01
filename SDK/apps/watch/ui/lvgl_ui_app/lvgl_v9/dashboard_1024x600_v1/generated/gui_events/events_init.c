@@ -36,6 +36,7 @@ void set_in_ui_navi_flag(int val)
 extern int map_jpeg_disp_frame_uninit(void);
 #endif
 
+#include "ui_meter_settings.h"
 void scr_loaded_handler(lv_event_t *e)
 {
 	lv_obj_t * src = lv_event_get_target(e);
@@ -721,14 +722,504 @@ void events_init_hardware_test(lv_ui *ui)
 	lv_obj_add_event_cb(ui_scr->hardware_test_btn_6, hardware_test_btn_6_event_handler, LV_EVENT_ALL, ui);
 }
 
-void events_init_upgrade_page(lv_ui *ui)
+static void chongwuyibiao_settings_entry_event_handler(lv_event_t *e)
 {
-	lv_ui_upgrade_page * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_UPGRADE_PAGE);
-	lv_obj_add_event_cb(ui_scr->upgrade_page, scr_loaded_handler, LV_EVENT_SCREEN_LOADED, ui);
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_chongwuyibiao * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_CHONGWUYIBIAO);
+			ui_meter_settings_open();
+		}
+	}
+	break;
+	default:
+		break;
+	}
 }
 
 void events_init_chongwuyibiao(lv_ui *ui)
 {
 	lv_ui_chongwuyibiao * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_CHONGWUYIBIAO);
 	lv_obj_add_event_cb(ui_scr->chongwuyibiao, scr_loaded_handler, LV_EVENT_SCREEN_LOADED, ui);
+	lv_obj_add_event_cb(ui_scr->chongwuyibiao_settings_entry, chongwuyibiao_settings_entry_event_handler, LV_EVENT_ALL, ui);
+}
+
+static void meter_settings_menu_0_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_select(0);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_menu_1_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_select(1);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_menu_2_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_select(2);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_menu_3_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_select(3);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_menu_4_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_select(4);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_menu_5_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_select(5);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_back_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_close();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_brightness_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_RELEASED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(0, lv_slider_get_value(src));
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_music_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_RELEASED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(1, lv_slider_get_value(src));
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_tone_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_RELEASED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(2, lv_slider_get_value(src));
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_key_tone_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_VALUE_CHANGED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(3, lv_obj_has_state(src, LV_STATE_CHECKED));
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_unit_km_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(4,0);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_unit_mi_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(4,1);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_trip_clear_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_confirm(6);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_sleep_0_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(5,0);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_sleep_1_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(5,1);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_sleep_3_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(5,3);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_sleep_5_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_change(5,5);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_restore_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_confirm(7);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_confirm_cancel_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_cancel();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_confirm_ok_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_commit();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+void events_init_meter_settings(lv_ui *ui)
+{
+	lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+	lv_obj_add_event_cb(ui_scr->meter_settings, scr_loaded_handler, LV_EVENT_SCREEN_LOADED, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_menu_0, meter_settings_menu_0_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_menu_1, meter_settings_menu_1_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_menu_2, meter_settings_menu_2_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_menu_3, meter_settings_menu_3_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_menu_4, meter_settings_menu_4_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_menu_5, meter_settings_menu_5_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_back, meter_settings_back_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_brightness, meter_settings_brightness_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_music, meter_settings_music_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_tone, meter_settings_tone_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_key_tone, meter_settings_key_tone_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_unit_km, meter_settings_unit_km_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_unit_mi, meter_settings_unit_mi_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_trip_clear, meter_settings_trip_clear_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_sleep_0, meter_settings_sleep_0_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_sleep_1, meter_settings_sleep_1_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_sleep_3, meter_settings_sleep_3_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_sleep_5, meter_settings_sleep_5_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_restore, meter_settings_restore_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_confirm_cancel, meter_settings_confirm_cancel_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_confirm_ok, meter_settings_confirm_ok_event_handler, LV_EVENT_ALL, ui);
+}
+
+void events_init_upgrade_page(lv_ui *ui)
+{
+	lv_ui_upgrade_page * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_UPGRADE_PAGE);
+	lv_obj_add_event_cb(ui_scr->upgrade_page, scr_loaded_handler, LV_EVENT_SCREEN_LOADED, ui);
 }

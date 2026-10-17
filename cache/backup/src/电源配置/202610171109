@@ -1,0 +1,3072 @@
+{
+ "fields": [
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "时钟&电源",
+    "showComponentName": true,
+    "dataType": [],
+    "template": "",
+    "span": 24,
+    "formId": 166,
+    "renderKey": "1661654068165621",
+    "children": [
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_173",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 173,
+       "renderKey": "1731654071670980",
+       "children": [
+        {
+         "__config__": {
+          "label": "晶振频率",
+          "showLabel": true,
+          "labelWidth": 80,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "32"
+          ],
+          "formId": 138,
+          "renderKey": "1381646372957244",
+          "defaultValue": 24000000,
+          "saveWay": "macro",
+          "uuid": "TCFG_CLOCK_OSC_HZ",
+          "eventField": []
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "24M",
+            "value": 24000000
+           }
+          ]
+         },
+         "placeholder": "请选择晶振频率",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field138",
+         "id": "id_1647484466450_33"
+        },
+        {
+         "__config__": {
+          "label": "电源模式",
+          "showLabel": true,
+          "labelWidth": 80,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 7,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 167,
+          "renderKey": "1671654068165621",
+          "defaultValue": "PWR_LDO15",
+          "saveWay": "macro",
+          "uuid": "TCFG_LOWPOWER_POWER_SEL",
+          "originValue": "PWR_DCDC15",
+          "eventField": [],
+          "tipAlways": true,
+          "tip": ""
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "DCDC",
+            "value": "PWR_DCDC15"
+           },
+           {
+            "label": "LDO",
+            "value": "PWR_LDO15"
+           }
+          ]
+         },
+         "placeholder": "",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field167",
+         "id": "id_1654068165621_18"
+        },
+        {
+         "__config__": {
+          "label": "DCDC类型",
+          "showLabel": true,
+          "labelWidth": 80,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 7,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 141,
+          "renderKey": "1411779527770219",
+          "defaultValue": "PWR_DCDC18_DCDC12",
+          "saveWay": "macro",
+          "uuid": "TCFG_DCDC_TYPE",
+          "originValue": "PWR_DCDC18_DCDC12",
+          "eventField": [],
+          "tipAlways": true,
+          "tip": ""
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "DCDC12",
+            "value": "PWR_DCDC12"
+           },
+           {
+            "label": "DCDC18_DCDC12",
+            "value": "PWR_DCDC18_DCDC12"
+           }
+          ]
+         },
+         "placeholder": "",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field141",
+         "id": "id_1779527770219_0"
+        },
+        {
+         "__config__": {
+          "label": "低功耗时钟源",
+          "showLabel": true,
+          "labelWidth": 120,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 6,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 172,
+          "renderKey": "1721654071360228",
+          "saveWay": "macro",
+          "uuid": "TCFG_LOWPOWER_OSC_TYPE",
+          "defaultValue": "OSC_TYPE_LRC"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "LRC",
+            "value": "OSC_TYPE_LRC"
+           },
+           {
+            "label": "BT_OSC",
+            "value": "OSC_TYPE_BT_OSC"
+           }
+          ]
+         },
+         "placeholder": "请选择低功耗时钟源",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field172",
+         "id": "id_1654071360228_1"
+        },
+        {
+         "__config__": {
+          "label": "时钟模式",
+          "showLabel": true,
+          "labelWidth": 120,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 6,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 659,
+          "renderKey": "6591677159707061",
+          "saveWay": "macro",
+          "uuid": "TCFG_CLOCK_MODE",
+          "defaultValue": "CLOCK_MODE_ADAPTIVE",
+          "originValue": "CLOCK_MODE_ADAPTIVE"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "ADAPTIVE",
+            "value": "CLOCK_MODE_ADAPTIVE"
+           },
+           {
+            "label": "USR",
+            "value": "CLOCK_MODE_USR"
+           }
+          ]
+         },
+         "placeholder": "请选择时钟模式",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field659",
+         "id": "id_1677159707061_0"
+        }
+       ],
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1654071670980_2"
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_174",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 174,
+       "renderKey": "1741654071695906",
+       "children": [
+        {
+         "__config__": {
+          "label": "IOVDD",
+          "showLabel": true,
+          "labelWidth": 80,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 7,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 168,
+          "renderKey": "1681654068165621",
+          "saveWay": "macro",
+          "uuid": "TCFG_LOWPOWER_VDDIOM_LEVEL",
+          "defaultValue": "VDDIOM_VOL_3P3V",
+          "eventField": [],
+          "originValue": "VDDIOM_VOL_3P3V",
+          "tip": "IOVDD配置小于3.3V会影响设备兼容性",
+          "tipAlways": true
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "2.1V",
+            "value": "VDDIOM_VOL_2P1V"
+           },
+           {
+            "label": "2.2V",
+            "value": "VDDIOM_VOL_2P2V"
+           },
+           {
+            "label": "2.3V",
+            "value": "VDDIOM_VOL_2P3V"
+           },
+           {
+            "label": "2.4V",
+            "value": "VDDIOM_VOL_2P4V"
+           },
+           {
+            "label": "2.5V",
+            "value": "VDDIOM_VOL_2P5V"
+           },
+           {
+            "label": "2.6V",
+            "value": "VDDIOM_VOL_2P6V"
+           },
+           {
+            "label": "2.7V",
+            "value": "VDDIOM_VOL_2P7V"
+           },
+           {
+            "label": "2.8V",
+            "value": "VDDIOM_VOL_2P8V"
+           },
+           {
+            "label": "2.9V",
+            "value": "VDDIOM_VOL_2P9V"
+           },
+           {
+            "label": "3.0V",
+            "value": "VDDIOM_VOL_3P0V"
+           },
+           {
+            "label": "3.1V",
+            "value": "VDDIOM_VOL_3P1V"
+           },
+           {
+            "label": "3.2V",
+            "value": "VDDIOM_VOL_3P2V"
+           },
+           {
+            "label": "3.3V",
+            "value": "VDDIOM_VOL_3P3V"
+           },
+           {
+            "label": "3.4V",
+            "value": "VDDIOM_VOL_3P4V"
+           },
+           {
+            "label": "3.5V",
+            "value": "VDDIOM_VOL_3P5V"
+           },
+           {
+            "label": "3.6V",
+            "value": "VDDIOM_VOL_3P6V"
+           }
+          ]
+         },
+         "placeholder": "IOVDD",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field168",
+         "id": "id_1654068165621_19"
+        },
+        {
+         "__config__": {
+          "label": "弱IOVDD",
+          "showLabel": true,
+          "labelWidth": 80,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 792,
+          "renderKey": "7921678844947727",
+          "saveWay": "macro",
+          "uuid": "TCFG_LOWPOWER_VDDIOW_LEVEL",
+          "defaultValue": "VDDIOW_VOL_2P6V",
+          "eventField": [],
+          "originValue": "VDDIOW_VOL_2P6V"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "2.1V",
+            "value": "VDDIOW_VOL_2P1V"
+           },
+           {
+            "label": "2.2V",
+            "value": "VDDIOW_VOL_2P2V"
+           },
+           {
+            "label": "2.3V",
+            "value": "VDDIOW_VOL_2P3V"
+           },
+           {
+            "label": "2.4V",
+            "value": "VDDIOW_VOL_2P4V"
+           },
+           {
+            "label": "2.5V",
+            "value": "VDDIOW_VOL_2P5V"
+           },
+           {
+            "label": "2.6V",
+            "value": "VDDIOW_VOL_2P6V"
+           },
+           {
+            "label": "2.7V",
+            "value": "VDDIOW_VOL_2P7V"
+           },
+           {
+            "label": "2.8V",
+            "value": "VDDIOW_VOL_2P8V"
+           },
+           {
+            "label": "2.9V",
+            "value": "VDDIOW_VOL_2P9V"
+           },
+           {
+            "label": "3.0V",
+            "value": "VDDIOW_VOL_3P0V"
+           },
+           {
+            "label": "3.1V",
+            "value": "VDDIOW_VOL_3P1V"
+           },
+           {
+            "label": "3.2V",
+            "value": "VDDIOW_VOL_3P2V"
+           },
+           {
+            "label": "3.3V",
+            "value": "VDDIOW_VOL_3P3V"
+           },
+           {
+            "label": "3.4V",
+            "value": "VDDIOW_VOL_3P4V"
+           },
+           {
+            "label": "3.5V",
+            "value": "VDDIOW_VOL_3P5V"
+           },
+           {
+            "label": "3.6V",
+            "value": "VDDIOW_VOL_3P6V"
+           }
+          ]
+         },
+         "placeholder": "弱IOVDD",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field792",
+         "id": "id_1678844947727_0"
+        },
+        {
+         "__config__": {
+          "label": "LVD档位",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 7,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 136,
+          "renderKey": "1361679724418892",
+          "eventField": [],
+          "defaultValue": "2.5v",
+          "originValue": "2.5v",
+          "emptyValue": "2.5v",
+          "saveWay": "macro",
+          "uuid": "CONFIG_LVD_LEVEL"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "1.8V",
+            "value": "1.8v"
+           },
+           {
+            "label": "1.9V",
+            "value": "1.9v"
+           },
+           {
+            "label": "2.0V",
+            "value": "2.0v",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "2.1V",
+            "value": "2.1v",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "2.2V",
+            "value": "2.2v",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "2.3V",
+            "value": "2.3v",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "2.4V",
+            "value": "2.4v",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "2.5V",
+            "value": "2.5v",
+            "hide": false,
+            "disabled": false
+           }
+          ]
+         },
+         "placeholder": "请选择LVD档位",
+         "style": {
+          "width": "100%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "id": "id_1679724418892_0",
+         "__vModel__": "field136"
+        }
+       ],
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1654071695906_3"
+     },
+     {
+      "__config__": {
+       "label": "低功耗模式",
+       "showLabel": true,
+       "labelWidth": null,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 7,
+       "required": false,
+       "defaultValue": 0,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "status": 0,
+       "dataType": [
+        "32",
+        "1"
+       ],
+       "formId": 101,
+       "renderKey": "1011721030711722",
+       "eventField": [],
+       "uuid": "TCFG_LOWPOWER_LOWPOWER_SEL",
+       "saveWay": "macro",
+       "originValue": "0x2",
+       "tip": "注意打开之后系统也可能无法进入低功耗，目前已知打开UI、IRKEY会限制进入低功耗，其他的需要通过代码添加调试信息分析",
+       "tipAlways": false
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "NO_SLEEP",
+         "value": 0,
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "SLEEP",
+         "value": "0x1",
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "DEEP_SLEEP",
+         "value": "0x2",
+         "hide": false,
+         "disabled": false
+        }
+       ]
+      },
+      "placeholder": "请选择低功耗模式",
+      "style": {
+       "width": "80%"
+      },
+      "clearable": false,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1721030711722_27",
+      "__vModel__": "field101"
+     },
+     {
+      "__config__": {
+       "label": "上电自动开机",
+       "tag": "el-switch",
+       "tagIcon": "switch",
+       "defaultValue": 1,
+       "span": 5,
+       "showLabel": true,
+       "labelWidth": "",
+       "layout": "colFormItem",
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "dataType": [
+        "8"
+       ],
+       "formId": 111,
+       "renderKey": "1111665459905865",
+       "saveWay": "macro",
+       "uuid": "TCFG_AUTO_POWERON_ENABLE",
+       "eventField": [],
+       "tip": "第一次上电是否需要自动开机，关闭后需要长按按键开机"
+      },
+      "style": {},
+      "disabled": false,
+      "active-text": "",
+      "inactive-text": "",
+      "active-color": null,
+      "inactive-color": null,
+      "active-value": 1,
+      "inactive-value": 0,
+      "__vModel__": "field111",
+      "id": "id_1665459905865_1"
+     },
+     {
+      "__config__": {
+       "label": "DVDD供电模式",
+       "showLabel": true,
+       "labelWidth": 120,
+       "tag": "el-select",
+       "tagIcon": "select",
+       "layout": "colFormItem",
+       "span": 7,
+       "required": false,
+       "defaultValue": "CLOCK_DVDD_POWER_SELF",
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "status": 0,
+       "dataType": [
+        "macro"
+       ],
+       "formId": 405,
+       "renderKey": "4051787640654531",
+       "eventField": [],
+       "uuid": "TCFG_DVDD_POWER_MODE",
+       "saveWay": "macro",
+       "originValue": "CLOCK_DVDD_POWER_SELF",
+       "tip": "短接DCVDD12方式进不了DEEP_SLEEP模式低功耗",
+       "tipAlways": false
+      },
+      "__slot__": {
+       "options": [
+        {
+         "label": "内部供电",
+         "value": "CLOCK_DVDD_POWER_SELF",
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "外接电源",
+         "value": "CLOCK_DVDD_POWER_EXT",
+         "hide": false,
+         "disabled": false
+        },
+        {
+         "label": "短接DCVDD12",
+         "value": "CLOCK_DVDD_POWER_SHORT",
+         "hide": false,
+         "disabled": false
+        }
+       ]
+      },
+      "placeholder": "请选择DVDD供电模式",
+      "style": {
+       "width": "80%"
+      },
+      "clearable": false,
+      "disabled": false,
+      "filterable": false,
+      "multiple": false,
+      "id": "id_1787640654531_0",
+      "__vModel__": "field405"
+     }
+    ],
+    "eventField": []
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "300px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1654068165621_17"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "电池电量检测",
+    "showComponentName": true,
+    "dataType": [],
+    "template": "",
+    "span": 24,
+    "formId": 107,
+    "renderKey": "1071652442788268",
+    "children": [
+     {
+      "__config__": {
+       "label": "关机电压(mV)",
+       "showLabel": true,
+       "labelWidth": 130,
+       "tag": "el-input-number",
+       "tagIcon": "number",
+       "layout": "colFormItem",
+       "span": 6,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "32",
+        "-1"
+       ],
+       "formId": 132,
+       "renderKey": "1321652520757196",
+       "saveWay": "macro",
+       "defaultValue": 3500,
+       "uuid": "TCFG_POWER_OFF_VOLTAGE",
+       "formItemWidth": "320px",
+       "paddingLeft": "10px",
+       "originValue": 3500,
+       "eventField": []
+      },
+      "placeholder": "请选择关机电压",
+      "min": 1500,
+      "max": 4200,
+      "step": 10,
+      "step-strictly": false,
+      "controls-position": "",
+      "disabled": false,
+      "id": "id_1652520757196_1",
+      "__vModel__": "field132"
+     },
+     {
+      "__config__": {
+       "label": "低电电压(mV)",
+       "showLabel": true,
+       "labelWidth": 130,
+       "tag": "el-input-number",
+       "tagIcon": "number",
+       "layout": "colFormItem",
+       "span": 6,
+       "required": false,
+       "regList": [],
+       "changeTag": true,
+       "searchSource": false,
+       "dataType": [
+        "32",
+        "-1"
+       ],
+       "formId": 113,
+       "renderKey": "1131652442788268",
+       "saveWay": "macro",
+       "defaultValue": 3600,
+       "uuid": "TCFG_POWER_WARN_VOLTAGE",
+       "formItemWidth": "320px",
+       "paddingLeft": "10px",
+       "originValue": 3600
+      },
+      "placeholder": "请选择低电电压",
+      "min": 1500,
+      "max": 4200,
+      "step": 10,
+      "step-strictly": false,
+      "controls-position": "",
+      "disabled": false,
+      "id": "id_1652442788268_8",
+      "__vModel__": "field113"
+     }
+    ],
+    "saveWay": "",
+    "uuid": "",
+    "eventField": [],
+    "enableUuid": "TCFG_SYS_LVD_EN",
+    "disable": true
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "60px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1652442788268_2"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "充电配置",
+    "showComponentName": true,
+    "dataType": [],
+    "template": "",
+    "span": 24,
+    "formId": 102,
+    "renderKey": "1021646287760262",
+    "children": [
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_102",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 102,
+       "renderKey": "1021652952528963",
+       "children": [
+        {
+         "__config__": {
+          "label": "涓流电流",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 139,
+          "renderKey": "1391646373066401",
+          "defaultValue": "CHARGE_TC_mA_20",
+          "saveWay": "macro",
+          "uuid": "TCFG_CHARGE_TRICKLE_MA",
+          "tip": "",
+          "originValue": "CHARGE_TC_mA_20",
+          "eventField": [],
+          "formItemWidth": "250px"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "4mA",
+            "value": "CHARGE_TC_mA_4"
+           },
+           {
+            "label": "6mA",
+            "value": "CHARGE_TC_mA_6"
+           },
+           {
+            "label": "8mA",
+            "value": "CHARGE_TC_mA_8"
+           },
+           {
+            "label": "10mA",
+            "value": "CHARGE_TC_mA_10"
+           },
+           {
+            "label": "12mA",
+            "value": "CHARGE_TC_mA_12"
+           },
+           {
+            "label": "14mA",
+            "value": "CHARGE_TC_mA_14"
+           },
+           {
+            "label": "16mA",
+            "value": "CHARGE_TC_mA_16"
+           },
+           {
+            "label": "18mA",
+            "value": "CHARGE_TC_mA_18"
+           },
+           {
+            "label": "20mA",
+            "value": "CHARGE_TC_mA_20"
+           },
+           {
+            "label": "22mA",
+            "value": "CHARGE_TC_mA_22"
+           },
+           {
+            "label": "24mA",
+            "value": "CHARGE_TC_mA_24"
+           },
+           {
+            "label": "26mA",
+            "value": "CHARGE_TC_mA_26"
+           },
+           {
+            "label": "28mA",
+            "value": "CHARGE_TC_mA_28"
+           },
+           {
+            "label": "30mA",
+            "value": "CHARGE_TC_mA_30"
+           },
+           {
+            "label": "32mA",
+            "value": "CHARGE_TC_mA_32"
+           },
+           {
+            "label": "34mA",
+            "value": "CHARGE_TC_mA_34"
+           },
+           {
+            "label": "36mA",
+            "value": "CHARGE_TC_mA_36",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "38mA",
+            "value": "CHARGE_TC_mA_38",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "40mA",
+            "value": "CHARGE_TC_mA_40",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "42mA",
+            "value": "CHARGE_TC_mA_42",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "44mA",
+            "value": "CHARGE_TC_mA_44",
+            "hide": false,
+            "disabled": false
+           },
+           {
+            "label": "46mA",
+            "value": "CHARGE_TC_mA_46",
+            "hide": false,
+            "disabled": false
+           }
+          ]
+         },
+         "placeholder": "请选择涓流电流",
+         "style": {
+          "width": "80%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field139",
+         "id": "id_1647484466450_45"
+        },
+        {
+         "__config__": {
+          "label": "恒流电流",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 135,
+          "renderKey": "1351646372710118",
+          "defaultValue": "CHARGE_mA_200",
+          "saveWay": "macro",
+          "uuid": "TCFG_CHARGE_MA",
+          "originValue": "CHARGE_mA_200",
+          "eventField": [],
+          "formItemWidth": "250px"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "40mA",
+            "value": "CHARGE_mA_40"
+           },
+           {
+            "label": "60mA",
+            "value": "CHARGE_mA_60"
+           },
+           {
+            "label": "80mA",
+            "value": "CHARGE_mA_80"
+           },
+           {
+            "label": "100mA",
+            "value": "CHARGE_mA_100"
+           },
+           {
+            "label": "120mA",
+            "value": "CHARGE_mA_120"
+           },
+           {
+            "label": "140mA",
+            "value": "CHARGE_mA_140"
+           },
+           {
+            "label": "160mA",
+            "value": "CHARGE_mA_160"
+           },
+           {
+            "label": "180mA",
+            "value": "CHARGE_mA_180"
+           },
+           {
+            "label": "200mA",
+            "value": "CHARGE_mA_200"
+           },
+           {
+            "label": "220mA",
+            "value": "CHARGE_mA_220"
+           },
+           {
+            "label": "240mA",
+            "value": "CHARGE_mA_240"
+           },
+           {
+            "label": "260mA",
+            "value": "CHARGE_mA_260"
+           },
+           {
+            "label": "280mA",
+            "value": "CHARGE_mA_280"
+           },
+           {
+            "label": "300mA",
+            "value": "CHARGE_mA_300"
+           },
+           {
+            "label": "320mA",
+            "value": "CHARGE_mA_320"
+           },
+           {
+            "label": "340mA",
+            "value": "CHARGE_mA_340"
+           },
+           {
+            "label": "360mA",
+            "value": "CHARGE_mA_360",
+            "hide": false,
+            "disabled": false
+           }
+          ]
+         },
+         "placeholder": "请选择恒流电流",
+         "style": {
+          "width": "80%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field135",
+         "id": "id_1647484466450_44"
+        },
+        {
+         "__config__": {
+          "label": "截止电流(mA)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": null,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 20,
+          "span": 4,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "status": 0,
+          "dataType": [
+           "32",
+           "1"
+          ],
+          "formId": 113,
+          "renderKey": "1131781659698588",
+          "originValue": 20,
+          "eventField": [],
+          "uuid": "TCFG_CHARGE_FULL_MA",
+          "saveWay": "macro",
+          "formItemWidth": "250px"
+         },
+         "placeholder": "请选择截止电流(mA)",
+         "min": 0,
+         "max": 100,
+         "step": 1,
+         "step-strictly": true,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1781659698588_0",
+         "__vModel__": "field113"
+        },
+        {
+         "__config__": {
+          "label": "截止电压",
+          "showLabel": true,
+          "labelWidth": "",
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 7,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 112,
+          "renderKey": "1121781592768021",
+          "saveWay": "macro",
+          "defaultValue": "CHARGE_FULL_V_4200",
+          "uuid": "TCFG_CHARGE_FULL_V",
+          "tip": "",
+          "eventField": [],
+          "tipAlways": false,
+          "formItemWidth": "250px",
+          "originValue": "CHARGE_FULL_V_4200"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "4.04V",
+            "value": "CHARGE_FULL_V_4040"
+           },
+           {
+            "label": "4.06V",
+            "value": "CHARGE_FULL_V_4060"
+           },
+           {
+            "label": "4.08V",
+            "value": "CHARGE_FULL_V_4080"
+           },
+           {
+            "label": "4.10V",
+            "value": "CHARGE_FULL_V_4100"
+           },
+           {
+            "label": "4.12V",
+            "value": "CHARGE_FULL_V_4120"
+           },
+           {
+            "label": "4.14V",
+            "value": "CHARGE_FULL_V_4140"
+           },
+           {
+            "label": "4.16V",
+            "value": "CHARGE_FULL_V_4160"
+           },
+           {
+            "label": "4.18V",
+            "value": "CHARGE_FULL_V_4180"
+           },
+           {
+            "label": "4.20V",
+            "value": "CHARGE_FULL_V_4200"
+           },
+           {
+            "label": "4.22V",
+            "value": "CHARGE_FULL_V_4220"
+           },
+           {
+            "label": "4.24V",
+            "value": "CHARGE_FULL_V_4240"
+           },
+           {
+            "label": "4.26V",
+            "value": "CHARGE_FULL_V_4260"
+           },
+           {
+            "label": "4.28V",
+            "value": "CHARGE_FULL_V_4280"
+           },
+           {
+            "label": "4.30V",
+            "value": "CHARGE_FULL_V_4300"
+           },
+           {
+            "label": "4.32V",
+            "value": "CHARGE_FULL_V_4320"
+           },
+           {
+            "label": "4.34V",
+            "value": "CHARGE_FULL_V_4340"
+           },
+           {
+            "label": "4.36V",
+            "value": "CHARGE_FULL_V_4360"
+           },
+           {
+            "label": "4.38V",
+            "value": "CHARGE_FULL_V_4380"
+           },
+           {
+            "label": "4.40V",
+            "value": "CHARGE_FULL_V_4400"
+           },
+           {
+            "label": "4.42V",
+            "value": "CHARGE_FULL_V_4420"
+           },
+           {
+            "label": "4.44V",
+            "value": "CHARGE_FULL_V_4440"
+           },
+           {
+            "label": "4.46V",
+            "value": "CHARGE_FULL_V_4460"
+           },
+           {
+            "label": "4.48V",
+            "value": "CHARGE_FULL_V_4480"
+           },
+           {
+            "label": "4.50V",
+            "value": "CHARGE_FULL_V_4500"
+           },
+           {
+            "label": "4.52V",
+            "value": "CHARGE_FULL_V_4520"
+           },
+           {
+            "label": "4.54V",
+            "value": "CHARGE_FULL_V_4540"
+           },
+           {
+            "label": "4.56V",
+            "value": "CHARGE_FULL_V_4560"
+           },
+           {
+            "label": "4.58V",
+            "value": "CHARGE_FULL_V_4580"
+           },
+           {
+            "label": "4.60V",
+            "value": "CHARGE_FULL_V_4600"
+           },
+           {
+            "label": "4.62V",
+            "value": "CHARGE_FULL_V_4620"
+           },
+           {
+            "label": "4.64V",
+            "value": "CHARGE_FULL_V_4640"
+           },
+           {
+            "label": "4.66V",
+            "value": "CHARGE_FULL_V_4660"
+           }
+          ]
+         },
+         "placeholder": "请选择截止电压",
+         "style": {
+          "width": "80%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field112",
+         "id": "id_1781592768021_0"
+        }
+       ],
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652952528963_0"
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_103",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 103,
+       "renderKey": "1031652952553745",
+       "children": [
+        {
+         "__config__": {
+          "label": "开机充电",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 1,
+          "span": 4,
+          "showLabel": true,
+          "labelWidth": "100",
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "dataType": [
+           "8",
+           "-1"
+          ],
+          "formId": 115,
+          "renderKey": "1151652429521410",
+          "uuid": "TCFG_CHARGE_POWERON_ENABLE",
+          "saveWay": "macro",
+          "formItemWidth": "250px",
+          "eventField": [],
+          "originValue": 1
+         },
+         "style": {},
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1652429521410_10",
+         "__vModel__": "field115"
+        },
+        {
+         "__config__": {
+          "label": "拔出开机",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 1,
+          "span": 4,
+          "showLabel": true,
+          "labelWidth": "100",
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "dataType": [
+           "8",
+           "-1"
+          ],
+          "formId": 116,
+          "renderKey": "1161652429608051",
+          "uuid": "TCFG_CHARGE_OFF_POWERON_EN",
+          "tipAlways": false,
+          "saveWay": "macro",
+          "formItemWidth": "250px",
+          "originValue": 1
+         },
+         "style": {},
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1652429608051_11",
+         "__vModel__": "field116"
+        },
+        {
+         "__config__": {
+          "label": "NVDC架构使能",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 1,
+          "span": 4,
+          "showLabel": true,
+          "labelWidth": "120",
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "dataType": [
+           "8",
+           "-1"
+          ],
+          "formId": 113,
+          "renderKey": "1131722926265881",
+          "uuid": "TCFG_CHARGE_NVDC_EN",
+          "tipAlways": false,
+          "saveWay": "macro",
+          "formItemWidth": "250px",
+          "originValue": 1,
+          "eventField": []
+         },
+         "style": {},
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1722926265881_1",
+         "__vModel__": "field113"
+        },
+        {
+         "__config__": {
+          "label": "复充使能",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 0,
+          "span": 4,
+          "showLabel": true,
+          "labelWidth": 120,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "dataType": [
+           "8",
+           "-1"
+          ],
+          "formId": 160,
+          "renderKey": "1601724381620692",
+          "uuid": "TCFG_RECHARGE_ENABLE",
+          "tipAlways": false,
+          "saveWay": "macro",
+          "formItemWidth": "250px",
+          "originValue": 0,
+          "eventField": []
+         },
+         "style": {},
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1724381620692_1",
+         "__vModel__": "field160"
+        },
+        {
+         "__config__": {
+          "label": "复充电压(mV)",
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 4000,
+          "span": 4,
+          "showLabel": true,
+          "labelWidth": 120,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "dataType": [
+           "16",
+           "1"
+          ],
+          "formId": 161,
+          "renderKey": "1611724381764353",
+          "uuid": "TCFG_RECHARGE_VOLTAGE",
+          "tipAlways": false,
+          "saveWay": "macro",
+          "formItemWidth": "250px",
+          "originValue": 4000,
+          "eventField": [],
+          "tip": ""
+         },
+         "placeholder": "计数器",
+         "min": 0,
+         "max": 65535,
+         "step": 100,
+         "step-strictly": true,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1724381764353_2",
+         "__vModel__": "field161"
+        }
+       ],
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652952553745_1"
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_104",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 104,
+       "renderKey": "1041652952585197",
+       "children": [
+        {
+         "__config__": {
+          "label": "下拉电阻开关",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 1,
+          "span": 4,
+          "showLabel": true,
+          "labelWidth": 100,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "dataType": [
+           "8",
+           "-1"
+          ],
+          "formId": 116,
+          "renderKey": "1161652443281105",
+          "uuid": "TCFG_LDOIN_PULLDOWN_EN",
+          "tipAlways": false,
+          "saveWay": "macro",
+          "tip": "",
+          "formItemWidth": "250px"
+         },
+         "style": {},
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1652443281105_11",
+         "__vModel__": "field116"
+        },
+        {
+         "__config__": {
+          "label": "下拉电阻档位",
+          "showLabel": true,
+          "labelWidth": null,
+          "tag": "el-select",
+          "tagIcon": "select",
+          "layout": "colFormItem",
+          "span": 5,
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "searchSource": false,
+          "dataType": [
+           "macro"
+          ],
+          "formId": 118,
+          "renderKey": "1181652443451045",
+          "saveWay": "macro",
+          "defaultValue": "CHARGE_PULLDOWN_200K",
+          "uuid": "TCFG_LDOIN_PULLDOWN_LEV",
+          "tip": "",
+          "formItemWidth": "250px",
+          "eventField": [],
+          "originValue": "CHARGE_PULLDOWN_200K"
+         },
+         "__slot__": {
+          "options": [
+           {
+            "label": "50K",
+            "value": "CHARGE_PULLDOWN_50K"
+           },
+           {
+            "label": "100K",
+            "value": "CHARGE_PULLDOWN_100K"
+           },
+           {
+            "label": "150K",
+            "value": "CHARGE_PULLDOWN_150K"
+           },
+           {
+            "label": "200K",
+            "value": "CHARGE_PULLDOWN_200K"
+           }
+          ]
+         },
+         "placeholder": "请选择下拉电阻档位",
+         "style": {
+          "width": "80%"
+         },
+         "clearable": true,
+         "disabled": false,
+         "filterable": false,
+         "multiple": false,
+         "__vModel__": "field118",
+         "id": "id_1652443451045_13"
+        },
+        {
+         "__config__": {
+          "label": "下拉电阻保持开关",
+          "tag": "el-switch",
+          "tagIcon": "switch",
+          "defaultValue": 0,
+          "span": 6,
+          "showLabel": true,
+          "labelWidth": "140",
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "changeTag": true,
+          "dataType": [
+           "8",
+           "-1"
+          ],
+          "formId": 117,
+          "renderKey": "1171652443281833",
+          "uuid": "TCFG_LDOIN_PULLDOWN_KEEP",
+          "tipAlways": false,
+          "saveWay": "macro",
+          "tip": "在仓关机是否保持下拉电阻，下拉电阻使能开启才有效",
+          "formItemWidth": "250px"
+         },
+         "style": {},
+         "disabled": false,
+         "active-text": "",
+         "inactive-text": "",
+         "active-color": null,
+         "inactive-color": null,
+         "active-value": 1,
+         "inactive-value": 0,
+         "id": "id_1652443281833_12",
+         "__vModel__": "field117"
+        }
+       ],
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652952585197_2"
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_107",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 24,
+       "formId": 107,
+       "renderKey": "1071652952735686",
+       "children": [
+        {
+         "__config__": {
+          "label": "入舱滤波时间(ms)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 130,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 100,
+          "span": 8,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "16"
+          ],
+          "formId": 124,
+          "renderKey": "1241652444817648",
+          "saveWay": "macro",
+          "uuid": "TCFG_LDOIN_ON_FILTER_TIME",
+          "tip": "VPWR电压大于VBAT电压",
+          "formItemWidth": "340px",
+          "eventField": []
+         },
+         "placeholder": "入舱滤波时间(ms)",
+         "min": 10,
+         "max": 65535,
+         "step": 2,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652444817648_0",
+         "__vModel__": "field124"
+        },
+        {
+         "__config__": {
+          "label": "出舱滤波时间(ms)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 130,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 200,
+          "span": 8,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "16"
+          ],
+          "formId": 126,
+          "renderKey": "1261652445140553",
+          "saveWay": "macro",
+          "uuid": "TCFG_LDOIN_OFF_FILTER_TIME",
+          "formItemWidth": "340px",
+          "tip": "VPWR电压小于出舱电压(约0.65V)",
+          "eventField": []
+         },
+         "placeholder": "出舱滤波时间出舱滤波时间(ms)",
+         "min": 0,
+         "max": 65535,
+         "step": 2,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652445140553_2",
+         "__vModel__": "field126"
+        },
+        {
+         "__config__": {
+          "label": "维持电压滤波时间(ms)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 160,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 440,
+          "span": 8,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "16"
+          ],
+          "formId": 127,
+          "renderKey": "1271652445141161",
+          "saveWay": "macro",
+          "uuid": "TCFG_LDOIN_KEEP_FILTER_TIME",
+          "tip": "VPWR电压处于入舱电压与VBAT电压之间",
+          "formItemWidth": "340px",
+          "eventField": []
+         },
+         "placeholder": "维持电压滤波时间(ms)",
+         "min": 10,
+         "max": 65535,
+         "step": 2,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652445141161_3",
+         "__vModel__": "field127"
+        }
+       ],
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652952735686_5"
+     }
+    ],
+    "saveWay": "",
+    "uuid": "",
+    "enableUuid": "TCFG_CHARGE_ENABLE",
+    "disable": true,
+    "eventField": []
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "60px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1647484466450_48"
+  },
+  {
+   "__config__": {
+    "layout": "rowFormItem",
+    "tag": "group",
+    "tagIcon": "row",
+    "componentName": "电池曲线配置",
+    "showComponentName": true,
+    "dataType": [],
+    "template": "{\n    \"__config__\": {\n      \"layout\": \"rowFormItem\",\n      \"tag\": \"group\",\n      \"tagIcon\": \"row\",\n      \"layoutTree\": true,\n      \"componentName\": \"row_101\",\n      \"showComponentName\": false,\n      \"dataType\": [\"8\", \"1\"],\n      \"document\": \"https://element.eleme.cn/#/zh-CN/component/layout#row-attributes\",\n      \"template\": \"\",\n      \"span\": 12,\n      \"formId\": 101,\n      \"renderKey\": \"1011652164555929\",\n      \"children\": [{\n        \"__config__\": {\n          \"label\": \"电压(mv)\",\n          \"showLabel\": true,\n          \"changeTag\": true,\n          \"labelWidth\": 80,\n          \"tag\": \"el-input-number\",\n          \"tagIcon\": \"number\",\n          \"span\": 6,\n          \"layout\": \"colFormItem\",\n          \"required\": false,\n          \"regList\": [],\n          \"dataType\": [\"1\", \"16\"],\n          \"document\": \"https://element.eleme.cn/#/zh-CN/component/input-number\",\n          \"formId\": 116,\n          \"renderKey\": \"1161652165952481\",\n          \"defaultValue\": 3700,\n          \"formItemWidth\": \"240px\",\n          \"eventField\": []\n        },\n        \"placeholder\": \"电压(mv)\",\n        \"min\": 3000,\n        \"max\": 4500,\n        \"step\": 10,\n        \"step-strictly\": false,\n        \"controls-position\": \"\",\n        \"disabled\": false,\n        \"id\": \"id_1652165952481_22\",\n        \"__vModel__\": \"field116\"\n      }, {\n        \"__config__\": {\n          \"label\": \"电量\",\n          \"showLabel\": true,\n          \"changeTag\": true,\n          \"labelWidth\": 80,\n          \"tag\": \"el-input-number\",\n          \"tagIcon\": \"number\",\n          \"defaultValue\": 50,\n          \"span\": 6,\n          \"layout\": \"colFormItem\",\n          \"required\": false,\n          \"regList\": [],\n          \"dataType\": [\"1\", \"8\"],\n          \"document\": \"https://element.eleme.cn/#/zh-CN/component/input-number\",\n          \"formId\": 104,\n          \"renderKey\": \"1041652164637025\",\n          \"formItemWidth\": \"240px\",\n          \"paddingLeft\": \"\"\n        },\n        \"placeholder\": \"电量\",\n        \"min\": 0,\n        \"max\": 100,\n        \"step\": 5,\n        \"step-strictly\": false,\n        \"controls-position\": \"\",\n        \"disabled\": false,\n        \"id\": \"id_1652164637025_10\",\n        \"__vModel__\": \"field104\"\n      }],\n      \"paddingLeft\": \"\"\n    },\n    \"type\": \"default\",\n    \"justify\": \"start\",\n    \"align\": \"top\",\n    \"style\": {\n      \"height\": \"60px\",\n      \"paddingLeft\": \"0px\"\n    },\n    \"id\": \"id_1652164555929_7\"\n  }",
+    "span": 24,
+    "formId": 112,
+    "renderKey": "1121652164485588",
+    "children": [
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_307",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 307,
+       "renderKey": "3071652251710063",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 308,
+          "renderKey": "3081652251710063",
+          "defaultValue": 3300,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251710063_12",
+         "__vModel__": "field308"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 0,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 309,
+          "renderKey": "3091652251710063",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251710063_13",
+         "__vModel__": "field309"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin",
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251710063_11",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_310",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 310,
+       "renderKey": "3101652251723156",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 311,
+          "renderKey": "3111652251723156",
+          "defaultValue": 3450,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251723156_15",
+         "__vModel__": "field311"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 5,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 312,
+          "renderKey": "3121652251723156",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251723156_16",
+         "__vModel__": "field312"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251723156_14",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_313",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 313,
+       "renderKey": "3131652251733176",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 314,
+          "renderKey": "3141652251733176",
+          "defaultValue": 3680,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251733176_18",
+         "__vModel__": "field314"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 10,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 315,
+          "renderKey": "3151652251733177",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251733176_19",
+         "__vModel__": "field315"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin",
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251733176_17",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_316",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 316,
+       "renderKey": "3161652251746981",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 317,
+          "renderKey": "3171652251746981",
+          "defaultValue": 3740,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251746981_21",
+         "__vModel__": "field317"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 20,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 318,
+          "renderKey": "3181652251746981",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251746981_22",
+         "__vModel__": "field318"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251746981_20",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_319",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 319,
+       "renderKey": "3191652251765456",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 320,
+          "renderKey": "3201652251765456",
+          "defaultValue": 3770,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251765456_24",
+         "__vModel__": "field320"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 30,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 321,
+          "renderKey": "3211652251765456",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251765456_25",
+         "__vModel__": "field321"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251765456_23",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_322",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 322,
+       "renderKey": "3221652251777803",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 323,
+          "renderKey": "3231652251777803",
+          "defaultValue": 3790,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251777803_27",
+         "__vModel__": "field323"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 40,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 324,
+          "renderKey": "3241652251777803",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251777803_28",
+         "__vModel__": "field324"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251777803_26",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_325",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 325,
+       "renderKey": "3251652251787844",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 326,
+          "renderKey": "3261652251787844",
+          "defaultValue": 3820,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251787844_30",
+         "__vModel__": "field326"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 50,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 327,
+          "renderKey": "3271652251787844",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251787844_31",
+         "__vModel__": "field327"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin",
+       "eventField": []
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251787844_29",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_328",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 328,
+       "renderKey": "3281652251802294",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 329,
+          "renderKey": "3291652251802294",
+          "defaultValue": 3870,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251802294_33",
+         "__vModel__": "field329"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 60,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 330,
+          "renderKey": "3301652251802294",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251802294_34",
+         "__vModel__": "field330"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251802294_32",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_331",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 331,
+       "renderKey": "3311652251811460",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 332,
+          "renderKey": "3321652251811460",
+          "defaultValue": 3920,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251811460_36",
+         "__vModel__": "field332"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 70,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 333,
+          "renderKey": "3331652251811460",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251811460_37",
+         "__vModel__": "field333"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251811460_35",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_334",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 334,
+       "renderKey": "3341652251822981",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 335,
+          "renderKey": "3351652251822981",
+          "defaultValue": 3980,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251822981_39",
+         "__vModel__": "field335"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 80,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 336,
+          "renderKey": "3361652251822981",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251822981_40",
+         "__vModel__": "field336"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251822981_38",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_337",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 337,
+       "renderKey": "3371652251838785",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 338,
+          "renderKey": "3381652251838785",
+          "defaultValue": 4060,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251838785_42",
+         "__vModel__": "field338"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 90,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 339,
+          "renderKey": "3391652251838785",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251838785_43",
+         "__vModel__": "field339"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251838785_41",
+      "fromTemplate": true
+     },
+     {
+      "__config__": {
+       "layout": "rowFormItem",
+       "tag": "group",
+       "tagIcon": "row",
+       "componentName": "row_340",
+       "showComponentName": false,
+       "dataType": [
+        "8",
+        "1"
+       ],
+       "template": "",
+       "span": 12,
+       "formId": 340,
+       "renderKey": "3401652251839215",
+       "children": [
+        {
+         "__config__": {
+          "label": "电压(mv)",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "16"
+          ],
+          "formId": 341,
+          "renderKey": "3411652251839215",
+          "defaultValue": 4120,
+          "formItemWidth": "240px",
+          "eventField": [],
+          "saveWay": "bin"
+         },
+         "placeholder": "电压(mv)",
+         "min": 3000,
+         "max": 4500,
+         "step": 10,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251839215_45",
+         "__vModel__": "field341"
+        },
+        {
+         "__config__": {
+          "label": "电量",
+          "showLabel": true,
+          "changeTag": true,
+          "labelWidth": 80,
+          "tag": "el-input-number",
+          "tagIcon": "number",
+          "defaultValue": 100,
+          "span": 6,
+          "layout": "colFormItem",
+          "required": false,
+          "regList": [],
+          "dataType": [
+           "1",
+           "8"
+          ],
+          "formId": 342,
+          "renderKey": "3421652251839215",
+          "formItemWidth": "240px",
+          "paddingLeft": "",
+          "saveWay": "bin"
+         },
+         "placeholder": "电量",
+         "min": 0,
+         "max": 100,
+         "step": 5,
+         "step-strictly": false,
+         "controls-position": "",
+         "disabled": false,
+         "id": "id_1652251839215_46",
+         "__vModel__": "field342"
+        }
+       ],
+       "paddingLeft": "",
+       "saveWay": "bin"
+      },
+      "type": "default",
+      "justify": "start",
+      "align": "top",
+      "style": {
+       "height": "60px",
+       "paddingLeft": "0px"
+      },
+      "id": "id_1652251839215_44",
+      "fromTemplate": true
+     }
+    ],
+    "saveWay": "bin",
+    "uuid": "529",
+    "disable": false,
+    "enableUuid": "TCFG_BATTERY_CURVE_ENABLE",
+    "eventField": []
+   },
+   "type": "default",
+   "justify": "start",
+   "align": "top",
+   "style": {
+    "height": "100px",
+    "paddingLeft": "0px"
+   },
+   "id": "id_1652164485588_6"
+  }
+ ],
+ "size": "small",
+ "labelPosition": "right",
+ "labelWidth": 100,
+ "gutter": 15,
+ "disabled": false,
+ "span": 7,
+ "maxFormId": 342,
+ "version": {
+  "code": 1,
+  "tool": "4.4.0"
+ }
+}

@@ -42,6 +42,7 @@ typedef enum {
 	GUI_SCREEN_UPGRADE_PAGE,
 	GUI_SCREEN_HARDWARE_TEST,
 	GUI_SCREEN_CHONGWUYIBIAO,
+	GUI_SCREEN_METER_SETTINGS,
 } gui_screen_id_t;
 
 static const int32_t gui_screen_ids[] = {
@@ -53,6 +54,7 @@ static const int32_t gui_screen_ids[] = {
 	GUI_SCREEN_UPGRADE_PAGE,
 	GUI_SCREEN_HARDWARE_TEST,
 	GUI_SCREEN_CHONGWUYIBIAO,
+	GUI_SCREEN_METER_SETTINGS,
 };
 
 #define GUI_KEY_F1 1

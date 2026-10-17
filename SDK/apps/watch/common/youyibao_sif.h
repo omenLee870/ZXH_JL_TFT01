@@ -32,6 +32,7 @@ struct yyb_view {
     uint8_t raw[YYB_FRAME_SIZE];
     uint32_t flags, faults;
     uint32_t last_frame_ms, short_pulse_us;
+    uint32_t timeout_ms; /**< 当前报文有效期，单位 ms，包含慢速帧所需的扩展时间。 */
     uint32_t good_frames, checksum_errors, header_errors, timing_errors;
     int32_t speed_dkph; /* -1 if no calibration/divisor, or the link is lost. */
     int16_t current_a;
@@ -66,6 +67,12 @@ uint8_t yyb_checksum(const uint8_t *frame);
  * Configuration changes reset synchronization and invalidate old telemetry. */
 int youyibao_sif_start(void);
 void youyibao_sif_stop(void);
+/**
+ * @brief 在 app_core 中冻结最终里程、停止接收并保存总里程。
+ * @return 0 成功或没有变化，-1 保存失败。
+ * @note 写存储在捕获锁外执行；不保存小计，不修改协议设置。
+ */
+int youyibao_sif_shutdown(void);
 int youyibao_sif_configure(const struct yyb_config *config);
 int youyibao_sif_save_config(const struct yyb_config *config);
 void youyibao_sif_get_config(struct yyb_config *config);

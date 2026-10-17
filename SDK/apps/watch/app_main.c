@@ -48,6 +48,8 @@
 #include "clock_manager/clock_manager.h"
 #include "product_test.h"
 #include "pet_dashboard_music.h"
+#include "app_vehicle.h"
+#include "app_meter_control.h"
 #include "chgbox_ctrl.h"
 #include "mix_record_api.h"
 #include "rcsp_mix_record.h"
@@ -483,6 +485,12 @@ static struct app_mode *app_task_init()
     do_initcall();
     do_module_initcall();
     do_late_initcall();
+
+    /* 在 app_core 中、UI 创建前启动统一车辆状态服务，保证数据更新线程一致。 */
+    if (app_vehicle_start() != 0) {
+        printf("[VEHICLE] state service start failed\n");
+    }
+    if (app_meter_control_start() != 0) printf("[METER] control service start failed\n");
 
     dev_manager_init();
 

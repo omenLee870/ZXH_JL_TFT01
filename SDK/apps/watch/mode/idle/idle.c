@@ -23,6 +23,7 @@
 #include "linein_dev.h"
 #include "asm/wdt.h"
 #include "audio_config.h"
+#include "app_vehicle.h"
 #if TCFG_SMART_VOICE_ENABLE
 #include "smart_voice.h"
 #endif
@@ -433,6 +434,8 @@ void power_off_instantly()
 
 static void app_idle_enter_softoff(void)
 {
+    /* 正常入口已在 app_core 收尾；这里覆盖直接进入软关机的收尾路径。 */
+    if (app_vehicle_prepare_shutdown()) log_warn("vehicle save before softoff incomplete\n");
     //power off前的ui处理
     power_off_wait_ui();
     //ui_update_status(STATUS_POWEROFF);
@@ -520,6 +523,8 @@ static int app_idle_init(int param)
     idle_sub_mode_set(param);
     switch (param) {
     case IDLE_MODE_PLAY_POWEROFF:
+        /* 必须先于下方 vm_flush2flash(1)，否则 VM 已关闭 RAM 写入。 */
+        if (app_vehicle_prepare_shutdown()) log_warn("vehicle save in idle incomplete\n");
 #if TCFG_UI_ENABLE
         power_off_ui_enter();
 #endif
@@ -542,6 +547,7 @@ static int app_idle_init(int param)
         }
         break;
     case IDLE_MODE_WAIT_POWEROFF:
+        if (app_vehicle_prepare_shutdown()) log_warn("vehicle save in idle wait incomplete\n");
         os_taskq_flush();
         syscfg_write(CFG_MUSIC_VOL, &app_var.music_volume, 2);
         break;

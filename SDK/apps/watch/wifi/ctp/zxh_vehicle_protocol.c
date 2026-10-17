@@ -9,6 +9,7 @@
 #include "json_c/json_tokener.h"
 #include "ctp_cmd.h"
 #include "zxh_ble.h"
+#include "app_meter_control.h"
 #endif
 #include "zxh_vehicle_protocol.h"
 #include <stdlib.h>
@@ -29,11 +30,20 @@ static struct operation {
 } cache[CACHE_SIZE];
 
 #ifndef ZXH_PROTOCOL_TEST
+/**
+ * @brief 默认车辆后端未接通任何 APP 控制操作。
+ * @return 0；接入实际控制后端后可覆盖此弱符号。
+ */
+__attribute__((weak)) uint32_t zxh_vehicle_supported_actions(void)
+{ return 0; }
+__attribute__((weak)) const char *zxh_vehicle_control_scope(void)
+{ return "NONE"; }
+
 __attribute__((weak)) int zxh_vehicle_authorize(void *client, const struct zxh_request *request)
 { return ZXH_EXECUTION_FAILED; }
 __attribute__((weak)) int zxh_vehicle_authorize_read(void *client, const char *topic)
 { return ZXH_EXECUTION_FAILED; }
-__attribute__((weak)) int zxh_vehicle_submit(uint32_t token, const struct zxh_request *request, int *confirmed)
+__attribute__((weak)) int zxh_vehicle_submit(void *client, uint32_t token, const struct zxh_request *request, int *confirmed)
 { return ZXH_EXECUTION_FAILED; }
 __attribute__((weak)) int zxh_vehicle_read_state(struct zxh_state *state)
 { return ZXH_EXECUTION_FAILED; }
@@ -45,6 +55,32 @@ static void field(struct json_object *object, const char *key, const char *value
 { json_object_object_add(object, key, json_object_new_string(value)); }
 static void number(struct json_object *object, const char *key, int value)
 { char text[24]; snprintf(text, sizeof(text), "%d", value); field(object, key, text); }
+
+/**
+ * @brief 将后端实际支持的操作位图转换为 APP 能力列表。
+ * @param[in,out] reply 能力查询回复对象，不能为空。
+ * @retval 无。
+ * @note 未接通的操作不列出；高于 zxh_action 范围的位不会暴露给 APP。
+ */
+static void supported_actions_field(struct json_object *reply)
+{
+    char supported[ZXH_ACTION_COUNT * 25];
+    uint32_t mask = zxh_vehicle_supported_actions();
+    unsigned i;
+    size_t used = 0;
+    supported[0] = '\0';
+    for (i = 0; i < ZXH_ACTION_COUNT; ++i) {
+        size_t length;
+        if (!(mask & (1u << i))) continue;
+        length = strlen(actions[i]);
+        if (used + !!used + length >= sizeof(supported)) break;
+        if (used) supported[used++] = '|';
+        memcpy(supported + used, actions[i], length + 1);
+        used += length;
+    }
+    field(reply, "actions", supported);
+}
+
 static struct json_object *result(const char *id, const char *action, const char *phase, int code, int confirmed)
 {
     struct json_object *p = json_object_new_object();
@@ -143,6 +179,9 @@ void zxh_vehicle_disconnect(void *client)
     /* Preserve deduplication across reconnects; never dereference a freed client. */
     for (i = 0; i < CACHE_SIZE; ++i) if (cache[i].client == client) cache[i].client = NULL;
     os_mutex_post(&mutex);
+#ifndef ZXH_PROTOCOL_TEST
+    app_meter_control_disconnect(client);
+#endif
 }
 static void protocol_poll(void *unused)
 {
@@ -162,7 +201,9 @@ static int receive(void *client, char *content, const char *topic)
 {
     struct json_object *root = json_tokener_parse(content), *p;
     const char *id = "", *action = "";
-    int code = ZXH_PARAMETER_ERROR, value = 0, a, i, free_slot = -1;
+    int code = ZXH_PARAMETER_ERROR, value = 0, a, i, free_slot = -1, completed_slot = -1;
+    uint32_t completed_age = 0;
+    int instrument = !strcmp(zxh_vehicle_control_scope(), "INSTRUMENT");
     struct operation *op;
     if (!root || !json_object_is_type(root, json_type_object)) goto reject;
     p = json_object_object_get(root, "param");
@@ -180,8 +221,12 @@ static int receive(void *client, char *content, const char *topic)
         struct json_object *reply = result(id, "", "result", ZXH_OK, 0);
         os_mutex_pend(&mutex, 0);
         if (!strcmp(topic, "ZXH_CAPS")) {
-            field(reply, "actions", "LOCK|UNLOCK|OPEN_SEAT|CLOSE_SEAT|LIGHT_SET|FIND|MODE_SET|CHARGE_TARGET_SET|PROXIMITY_SET");
-            field(reply, "execution_ms", "8000"); field(reply, "dedup_ms", "60000");
+            supported_actions_field(reply);
+            field(reply, "control_scope", zxh_vehicle_control_scope());
+            field(reply, "execution_ms", "8000");
+            /* 本机控制只承诺最近记录去重，不承诺缓存满后仍保留完整一分钟。 */
+            field(reply, "dedup_ms", instrument ? "0" : "60000");
+            number(reply, "dedup_entries", CACHE_SIZE);
         } else if (!strcmp(topic, "ZXH_STATE")) {
             struct zxh_state s;
             memset(&s, 0xff, sizeof(s)); code = zxh_vehicle_authorize_read(client, topic);
@@ -191,6 +236,12 @@ static int receive(void *client, char *content, const char *topic)
                 number(reply,"light_on",s.light_on); number(reply,"mode",s.mode);
                 number(reply,"proximity",s.proximity); number(reply,"charge_target",s.charge_target);
                 number(reply,"speed_dkph",s.speed_dkph); number(reply,"odometer_m",s.odometer_m); number(reply,"range_m",s.range_m);
+                number(reply,"gear",s.gear); number(reply,"link",s.link);
+                number(reply,"trip_m",s.trip_m); number(reply,"ride_time_s",s.ride_time_s);
+                number(reply,"status",s.status); number(reply,"faults",s.faults);
+                number(reply,"known_status",s.known_status);
+                number(reply,"power_on",s.power_on); number(reply,"finding",s.finding);
+                number(reply,"power_state",s.power_state);
             }
         } else {
             struct zxh_bms b;
@@ -215,6 +266,10 @@ static int receive(void *client, char *content, const char *topic)
         op = &cache[i];
         if (op->used && !op->pending && !op->running && (uint32_t)(sys_timer_get_ms() - op->finished) >= CACHE_MS) op->used = 0;
         if (!op->used) { free_slot = i; continue; }
+        if (instrument && !op->pending && !op->running) {
+            uint32_t age = (uint32_t)(sys_timer_get_ms() - op->finished);
+            if (completed_slot < 0 || age > completed_age) { completed_slot = i; completed_age = age; }
+        }
         if (!strcmp(op->request.id, id)) {
             code = op->request.action != a || op->request.value != value ? ZXH_ID_CONFLICT : op->code;
             /* A pending replay only acknowledges, and never submits the action twice. */
@@ -225,7 +280,9 @@ static int receive(void *client, char *content, const char *topic)
             os_mutex_post(&mutex); json_object_put(root); return 0;
         }
     }
-    /* Serialize physical mutations and retain all terminal IDs for the full TTL. */
+    /* 仪表本机操作满 8 条后回收最早完成记录，不能把历史结果当作仍在执行。
+     * 正在执行的记录不回收；其他控制范围继续保留原来的完整 TTL 规则。 */
+    if (free_slot < 0 && instrument) free_slot = completed_slot;
     code = free_slot < 0 ? ZXH_BUSY : ZXH_OK;
     for (i = 0; i < CACHE_SIZE; ++i) if (cache[i].used && (cache[i].pending || cache[i].running)) code = ZXH_BUSY;
     if (code) {
@@ -237,8 +294,10 @@ static int receive(void *client, char *content, const char *topic)
     op->token = ++next_token; if (!op->token) op->token = ++next_token;
     strcpy(op->request.id, id); op->request.action = (enum zxh_action)a; op->request.value = value;
     send_reply(client, topic, result(id, action, "ack", ZXH_OK, 0));
-    code = zxh_vehicle_authorize(client, &op->request);
-    if (code == ZXH_OK) code = zxh_vehicle_submit(op->token, &op->request, &op->confirmed);
+    /* 未接通的操作明确返回不支持，不能仅凭协议认识名称就宣称能够控制车辆。 */
+    code = (zxh_vehicle_supported_actions() & (1u << a)) ?
+        zxh_vehicle_authorize(client, &op->request) : ZXH_ACTION_ERROR;
+    if (code == ZXH_OK) code = zxh_vehicle_submit(client, op->token, &op->request, &op->confirmed);
     else if (code < 0) code = ZXH_EXECUTION_FAILED;
     if (code == ZXH_PENDING) op->running = 1;
     else finish(op, code, op->confirmed);

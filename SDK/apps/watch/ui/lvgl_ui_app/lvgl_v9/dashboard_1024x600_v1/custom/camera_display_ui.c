@@ -61,6 +61,8 @@ static void _cam_event_handler(void *priv, int argc, int *argv)
 
 int camera_display_ui_init(int width, int height, int x, int y)
 {
+    extern int app_meter_control_media_allowed(void);
+    if (!app_meter_control_media_allowed()) return -1;
     app_camera_ret_t ret;
 
     if (g_cam_active) {

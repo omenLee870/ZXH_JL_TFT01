@@ -619,7 +619,9 @@ static void screen_mirror_bt_h264_lvgl_create(int32_t width, int32_t height,
     lv_obj_set_size(obj, BT_H264_DISPLAY_WIDTH, BT_H264_DISPLAY_HEIGHT);
     // lv_image_set_inner_align(obj, LV_IMAGE_ALIGN_STRETCH);
     lv_image_set_inner_align(obj, LV_IMAGE_ALIGN_COVER);
-    lv_obj_move_background(obj);
+    extern int screen_cast_pet_active(void);
+    if (screen_cast_pet_active()) lv_obj_move_foreground(obj);
+    else lv_obj_move_background(obj);
 
     g_bt_h264_disp.obj = obj;
     g_bt_h264_disp.lv_disp = disp;
@@ -1117,6 +1119,8 @@ static void screen_mirror_bt_h264_receiver_stop(void)
 
 static void screen_mirror_bt_h264_start_cb(const stream_media_stream_cfg_t *cfg)
 {
+    extern int app_meter_control_media_allowed(void);
+    if (!app_meter_control_media_allowed()) return;
     if (!cfg || cfg->format != STREAM_FORMAT_H264) {
         log_error("unsupported stream format");
         return;

@@ -1,5 +1,8 @@
 #include "chongwuyibiao_donghua.h"
 #include "neicun_zhuizong.h"
+#if !LV_USE_GUIBUILDER_SIMULATOR || defined(YOUYIBAO_UI_TEST)
+#include "youyibao_sif_ui.h"
+#endif
 
 #define YUN_SHULIANG 4
 #define YUN_BUJIN_MS 50U
@@ -251,6 +254,12 @@ void chongwuyibiao_donghua_yunxu(bool yunxu)
     else if (zhuangtai.pingmu != NULL && lv_screen_active() == zhuangtai.pingmu) donghua_kaishi();
 }
 
+/**
+ * @brief 绑定宠物页动画与页面生命周期。
+ * @param[in] jiemian 已创建的宠物页控件，允许为空。
+ * @retval 无。
+ * @note 硬件构建先更新车辆显示，再按有效车速启动动画；工具仿真保留预览数据。
+ */
 void chongwuyibiao_donghua_bangding(lv_ui_chongwuyibiao *jiemian)
 {
     if (jiemian == NULL || jiemian->chongwuyibiao == NULL) return;
@@ -266,5 +275,9 @@ void chongwuyibiao_donghua_bangding(lv_ui_chongwuyibiao *jiemian)
     zhuangtai.yun[3].tupian = jiemian->chongwuyibiao_yun4;
     lv_obj_add_event_cb(zhuangtai.pingmu, pingmu_shijian, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(zhuangtai.xiaogou, xiaogou_shijian, LV_EVENT_ALL, NULL);
+#if !LV_USE_GUIBUILDER_SIMULATOR || defined(YOUYIBAO_UI_TEST)
+    /* 首次启动动画前写入真实车速，避免把工具预览的 46 km/h 当作运行状态。 */
+    youyibao_sif_ui_bind_pet(jiemian);
+#endif
     if (lv_screen_active() == zhuangtai.pingmu) donghua_kaishi();
 }

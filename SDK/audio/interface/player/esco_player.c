@@ -49,6 +49,9 @@ int esco_player_open(u8 *bt_addr)
 
 int esco_player_open_extended(u8 *bt_addr, int ext_type, void *ext_param)
 {
+    /* 保留电话信令连接时，仪表逻辑关机不能因来电事件重新打开音频。 */
+    extern int app_meter_control_media_allowed(void) __attribute__((weak));
+    if (app_meter_control_media_allowed && !app_meter_control_media_allowed()) return -EACCES;
     int err;
     struct esco_player *player;
 

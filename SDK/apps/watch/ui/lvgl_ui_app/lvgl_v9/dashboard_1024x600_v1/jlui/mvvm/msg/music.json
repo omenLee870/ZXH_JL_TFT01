@@ -1,0 +1,102 @@
+{
+  "id": "pefVnhuulrfOyyfT",
+  "name": "music",
+  "model_id": "0x0003",
+  "type": "custom",
+  "desc": "",
+  "attr": [],
+  "enable": true,
+  "properties": [
+    {
+      "id": "AhDF2CtrVsAW8Um1",
+      "name": "player_state",
+      "model_id": "0x0004",
+      "desc": "",
+      "type": "int32_t",
+      "attr": [
+        "readable",
+        "writable"
+      ],
+      "timer_enable": false,
+      "interval": 1000,
+      "default": 0,
+      "use_system": false
+    },
+    {
+      "id": "yPqERChjmiERqWE4",
+      "name": "tol_time",
+      "model_id": "0x0005",
+      "desc": "",
+      "type": "char *",
+      "attr": [
+        "readable",
+        "writable"
+      ],
+      "timer_enable": false,
+      "interval": 1000,
+      "default": "03:54",
+      "use_system": false
+    },
+    {
+      "id": "u2ayutfhsTBUUzAF",
+      "name": "cur_time",
+      "model_id": "0x0006",
+      "desc": "",
+      "type": "char *",
+      "attr": [
+        "readable",
+        "writable"
+      ],
+      "timer_enable": false,
+      "interval": 1000,
+      "default": "00:00",
+      "use_system": false
+    },
+    {
+      "id": "fkKq2VElrFxtw7rB",
+      "name": "music_state",
+      "model_id": "0x0007",
+      "desc": "",
+      "type": "lv_state_t",
+      "attr": [
+        "readable",
+        "writable"
+      ],
+      "timer_enable": false,
+      "interval": 1000,
+      "default": "LV_STATE_DEFAULT",
+      "use_system": false
+    },
+    {
+      "id": "lKfLAKu3hxCDwJIr",
+      "name": "music_process",
+      "model_id": "0x0008",
+      "desc": "",
+      "type": "int32_t",
+      "attr": [
+        "readable",
+        "writable"
+      ],
+      "timer_enable": false,
+      "interval": 1000,
+      "default": 1,
+      "use_system": false
+    },
+    {
+      "id": "JSfgHmNFqOOAVUvG",
+      "name": "music_lyrics",
+      "model_id": "0x0009",
+      "desc": "",
+      "type": "char *",
+      "attr": [
+        "readable",
+        "writable"
+      ],
+      "timer_enable": false,
+      "interval": 1000,
+      "default": "周杰伦-青花瓷",
+      "use_system": false
+    }
+  ],
+  "methods": []
+}

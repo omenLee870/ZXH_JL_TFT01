@@ -1,3 +1,4 @@
+#include "meter_settings.h"
 #include "app_config.h"
 #if TCFG_USER_BLE_ENABLE && (BT_AI_SEL_PROTOCOL & RCSP_MODE_EN)
 #include "system/includes.h"
@@ -21,6 +22,7 @@ static struct client_state {
     void *hdl, *token;
     uint16_t connection;
     uint8_t subscribed, next_frame, tx_head, tx_count;
+    uint32_t tx_epoch; /**< 取消订阅时递增，锁外发送返回后禁止提交旧队列进度。 */
     struct zxh_ble_decoder rx;
     char *requests[RX_DEPTH];
     uint8_t rx_head, rx_count;
@@ -61,7 +63,10 @@ void zxh_ble_disconnected(void *hdl)
     }
     os_mutex_post(&ble_mutex);
     /* Protocol sends acquire BLE second; disconnect must not invert that order. */
-    for (i = 0; i < CLIENTS; ++i) if (old[i]) zxh_vehicle_disconnect(old[i]);
+    for (i = 0; i < CLIENTS; ++i) if (old[i]) {
+        printf("[ZXH_BLE] disconnected token=%x\n", (unsigned)(uintptr_t)old[i]);
+        zxh_vehicle_disconnect(old[i]);
+    }
 }
 int zxh_ble_send(void *client, const char *json)
 {
@@ -91,6 +96,7 @@ int zxh_ble_write(void *hdl, uint16_t connection, uint16_t handle, uint16_t mode
                   uint16_t offset, const uint8_t *data, uint16_t size)
 {
     struct client_state *s;
+    void *unsubscribed = NULL;
     if (handle != ZXH_BLE_RX_HANDLE && handle != ZXH_BLE_CCC_HANDLE) return 0;
     if (!initialized || !connection || mode || offset || !data ||
         (hdl != rcsp_server_ble_hdl && hdl != rcsp_server_ble_hdl1)) return 1;
@@ -99,6 +105,8 @@ int zxh_ble_write(void *hdl, uint16_t connection, uint16_t handle, uint16_t mode
         s->subscribed = data[0]; multi_att_set_ccc_config(connection, ZXH_BLE_CCC_HANDLE, data[0]);
         printf("[ZXH_BLE] subscribe con=%u enabled=%u\n", connection, data[0]);
         if (!s->subscribed) {
+            ++s->tx_epoch;
+            unsubscribed = s->token;
             int j; s->rx.receiving = 0;
             for (j = 0; j < RX_DEPTH; ++j) { free(s->requests[j]); s->requests[j] = NULL; }
             for (j = 0; j < TX_DEPTH; ++j) { free(s->tx[j].data); memset(&s->tx[j], 0, sizeof(s->tx[j])); }
@@ -112,7 +120,9 @@ int zxh_ble_write(void *hdl, uint16_t connection, uint16_t handle, uint16_t mode
             if (s->requests[slot]) { memcpy(s->requests[slot], s->rx.data, s->rx.total + 1); s->rx_count++; }
         }
     }
-    os_mutex_post(&ble_mutex); return 1;
+    os_mutex_post(&ble_mutex);
+    if (unsubscribed) zxh_vehicle_disconnect(unsubscribed);
+    return 1;
 }
 uint16_t zxh_ble_read(uint16_t connection, uint16_t offset, uint8_t *data, uint16_t size)
 {
@@ -141,16 +151,36 @@ static void ble_poll(void *unused)
             struct json_object *r = json_tokener_parse(request), *t;
             if (r && json_object_is_type(r, json_type_object)) {
                 t = json_object_object_get(r, "topic");
-                if (t && json_object_is_type(t, json_type_string)) zxh_vehicle_receive(token, json_object_get_string(t), request);
+                if (t && json_object_is_type(t, json_type_string)) {
+                    const char *topic = json_object_get_string(t);
+                    if (!meter_settings_receive(token, topic, request)) zxh_vehicle_receive(token, topic, request);
+                }
             }
             if (r) json_object_put(r);
             free(request);
         }
+        uint8_t packet[ZXH_BLE_PACKET_MAX];
+        unsigned int n = 0;
+        void *send_hdl = NULL, *send_token = NULL;
+        uint32_t send_epoch = 0;
+        uint16_t send_offset = 0;
         os_mutex_pend(&ble_mutex, 0);
         if (s->connection && s->subscribed && s->tx_count) {
-            struct tx_message *m = &s->tx[s->tx_head]; uint8_t packet[ZXH_BLE_PACKET_MAX];
-            unsigned int n = zxh_ble_frame_make(m->data, m->length, m->offset, m->frame, m->index, packet);
-            int ret = app_ble_att_send_data(s->hdl, ZXH_BLE_TX_HANDLE, packet, n, ATT_OP_NOTIFY);
+            struct tx_message *m = &s->tx[s->tx_head];
+            n = zxh_ble_frame_make(m->data, m->length, m->offset, m->frame, m->index, packet);
+            send_hdl = s->hdl; send_token = s->token; send_epoch = s->tx_epoch; send_offset = m->offset;
+        }
+        os_mutex_post(&ble_mutex);
+        if (!n) continue;
+        /* SDK 发包可能等待蓝牙线程，而断线/订阅回调也需要 ble_mutex。
+         * 锁内只复制数据，严禁持锁调用发送接口，避免通信与断线清理互相等待。
+         * 发送期间允许回调释放原消息；返回后通过会话及队列代次确认归属。 */
+        int ret = app_ble_att_send_data(send_hdl, ZXH_BLE_TX_HANDLE, packet, n, ATT_OP_NOTIFY);
+        os_mutex_pend(&ble_mutex, 0);
+        s = find_token(send_token);
+        if (s && s->subscribed && s->tx_epoch == send_epoch && s->tx_count &&
+            s->tx[s->tx_head].offset == send_offset) {
+            struct tx_message *m = &s->tx[s->tx_head];
             if (!ret) { m->offset += n - ZXH_BLE_HEADER_SIZE; m->index++; }
             if (m->offset == m->length || (uint32_t)(sys_timer_get_ms() - m->started) > 5000u) {
                 free(m->data); memset(m, 0, sizeof(*m)); s->tx_head = (s->tx_head + 1) % TX_DEPTH; s->tx_count--;

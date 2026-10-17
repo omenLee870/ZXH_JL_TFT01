@@ -1,3 +1,4 @@
+#include "meter_settings.h"
 #include "app_config.h"
 #include "system/includes.h"
 #include "jlui_app/ui_sys_param.h"
@@ -422,7 +423,9 @@ void ui_backlight_restore(void)
 /* 覆盖 lcd_drive.c 的 weak 定义：返回用户设定亮度百分比(0~100)，供 lcd_sleep_ctrl() 唤醒与 lcd_bl_open() 取用 */
 u8 lcd_user_brightness_percent(void)
 {
-    return ui_light_level_clamp(get_ui_sys_param(LightLevel) * 2) * 10;
+    struct meter_preferences preferences;
+    meter_settings_snapshot(&preferences);
+    return preferences.brightness;
 }
 
 void ui_set_voice(int percent)

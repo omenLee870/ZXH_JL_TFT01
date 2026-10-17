@@ -62,6 +62,8 @@ void yyb_decoder_init(struct yyb_decoder *d, const struct yyb_config *c)
     memset(d, 0, sizeof(*d));
     if (c) d->config = *c;
     if (!d->config.timeout_ms) d->config.timeout_ms = 1000;
+    /* 初始化时向车辆业务层发布默认有效期，首次收帧后再按实际帧速更新。 */
+    d->view.timeout_ms = d->config.timeout_ms;
     d->view.speed_dkph = -1;
 }
 
@@ -149,6 +151,8 @@ int yyb_decoder_pulse(struct yyb_decoder *d, unsigned level, uint32_t us, uint32
     }
     d->view.bit_order = rm == 0 ? YYB_MSB_FIRST : YYB_LSB_FIRST;
     d->view.short_pulse_us = d->unit_us;
+    /* 同步发布本帧有效期，避免业务层将正常慢速报文提前判为掉线。 */
+    d->view.timeout_ms = link_timeout(d);
     d->view.last_frame_ms = now;
     d->view.good_frames++;
     d->view.online = 1;

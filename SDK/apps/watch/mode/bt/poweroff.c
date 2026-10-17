@@ -19,6 +19,7 @@
 #include "poweroff.h"
 #include "bt_background.h"
 #include "audio_config.h"
+#include "app_vehicle.h"
 
 #if(TCFG_USER_TWS_ENABLE == 0)
 
@@ -155,6 +156,9 @@ void sys_enter_soft_poweroff(enum poweroff_reason reason)
     if (app_var.goto_poweroff_flag) {
         return;
     }
+
+    /* 在蓝牙退出、提示音及 VM 关闭写入之前，先冻结并保存车辆总里程。 */
+    if (app_vehicle_prepare_shutdown()) log_warn("vehicle save on poweroff incomplete\n");
 
     app_var.goto_poweroff_flag = 1;
     app_var.goto_poweroff_cnt = 0;

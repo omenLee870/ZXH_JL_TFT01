@@ -263,6 +263,9 @@ static void retry_start_a2dp_player(void *p)
 
 int a2dp_player_open(u8 *btaddr)
 {
+    /* 应用可选择关闭业务但保留 BLE；迟到的媒体事件不能重新建立播放器。 */
+    extern int app_meter_control_media_allowed(void) __attribute__((weak));
+    if (app_meter_control_media_allowed && !app_meter_control_media_allowed()) return -EACCES;
     int err;
 
 #if (defined TCFG_AUDIO_SPEAK_TO_CHAT_ENABLE) && TCFG_AUDIO_SPEAK_TO_CHAT_ENABLE

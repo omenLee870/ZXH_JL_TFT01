@@ -60,6 +60,7 @@ gui_scr_t * ui_get_scr(int32_t scr_id)
 	if (scr_id == GUI_SCREEN_UPGRADE_PAGE) return gui_scr_create(GUI_SCREEN_UPGRADE_PAGE, "upgrade_page", NULL, (gui_scr_setup_cb_t)setup_scr_upgrade_page, (gui_scr_unload_cb_t)unload_scr_upgrade_page);
 	if (scr_id == GUI_SCREEN_HARDWARE_TEST) return gui_scr_create(GUI_SCREEN_HARDWARE_TEST, "hardware_test", NULL, (gui_scr_setup_cb_t)setup_scr_hardware_test, (gui_scr_unload_cb_t)unload_scr_hardware_test);
 	if (scr_id == GUI_SCREEN_CHONGWUYIBIAO) return gui_scr_create(GUI_SCREEN_CHONGWUYIBIAO, "chongwuyibiao", NULL, (gui_scr_setup_cb_t)setup_scr_chongwuyibiao, (gui_scr_unload_cb_t)unload_scr_chongwuyibiao);
+	if (scr_id == GUI_SCREEN_METER_SETTINGS) return gui_scr_create(GUI_SCREEN_METER_SETTINGS, "meter_settings", NULL, (gui_scr_setup_cb_t)setup_scr_meter_settings, (gui_scr_unload_cb_t)unload_scr_meter_settings);
 	return NULL;
 }
 
@@ -102,6 +103,7 @@ void * ui_get_scr_ptr(lv_ui *ui, int32_t scr_id)
 	if (scr_id == GUI_SCREEN_UPGRADE_PAGE) return ui->upgrade_page;
 	if (scr_id == GUI_SCREEN_HARDWARE_TEST) return ui->hardware_test;
 	if (scr_id == GUI_SCREEN_CHONGWUYIBIAO) return ui->chongwuyibiao;
+	if (scr_id == GUI_SCREEN_METER_SETTINGS) return ui->meter_settings;
 	return NULL;
 }
 
@@ -133,6 +135,9 @@ void ui_free_scr_ptr(lv_ui *ui, int32_t scr_id)
 	} else if (scr_id == GUI_SCREEN_CHONGWUYIBIAO) {
 		if (ui->chongwuyibiao != NULL) lv_free(ui->chongwuyibiao);
 		ui->chongwuyibiao = NULL;
+	} else if (scr_id == GUI_SCREEN_METER_SETTINGS) {
+		if (ui->meter_settings != NULL) lv_free(ui->meter_settings);
+		ui->meter_settings = NULL;
 	}
 }
 

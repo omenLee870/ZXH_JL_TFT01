@@ -8,8 +8,10 @@ if (!(Test-Path -LiteralPath $Compiler)) { throw 'Use -Compiler to specify a nat
 $env:Path = "$(Split-Path -Parent $Compiler);$env:Path"
 New-Item -ItemType Directory -Force -Path (Join-Path $taskRoot 'output') | Out-Null
 $exe = Join-Path $taskRoot 'output/youyibao_protocol_test.exe'
-& $Compiler -std=c11 -Wall -Wextra -Werror -I "$taskRoot/SDK/apps/watch/common" `
+& $Compiler -std=gnu11 -Wall -Wextra -Werror -I "$taskRoot/SDK/apps/watch/common" `
     "$taskRoot/SDK/apps/watch/common/youyibao_sif_protocol.c" `
+    "$taskRoot/SDK/apps/watch/common/vehicle_core.c" `
+    "$taskRoot/SDK/apps/watch/common/vehicle_storage.c" `
     "$taskRoot/tests/youyibao_sif/protocol_test.c" -o $exe
 if ($LASTEXITCODE) { throw 'SIF protocol test compilation failed.' }
 & $exe
@@ -23,10 +25,12 @@ Push-Location $taskRoot
 try {
     & $Compiler -std=gnu11 -Wno-attributes -DLV_CONF_INCLUDE_SIMPLE `
         -DLV_USE_GUIBUILDER_SIMULATOR=1 -DTCFG_YYB_SIF_ENABLE=1 `
-        -DPET_REVERSE_NOTICE_TEST=1 `
+        -DPET_REVERSE_NOTICE_TEST=1 -DVEHICLE_CONTROLLER_TEST=1 `
         -I "$uiRoot/lvgl" -I "$uiRoot/lvgl-simulator" -I "$uiRoot/generated" `
         -I "$uiRoot/custom" -I "$taskRoot/SDK/apps/watch/common" `
-        "$taskRoot/tests/youyibao_sif/ui_test.c" "@$link" -o $uiExe
+        -I "$taskRoot/SDK/apps/watch/wifi/ctp" `
+        "$taskRoot/tests/youyibao_sif/ui_test.c" "$taskRoot/SDK/apps/watch/common/vehicle_core.c" `
+        "$taskRoot/SDK/apps/watch/common/vehicle_controller.c" "@$link" -o $uiExe
     if ($LASTEXITCODE) { throw 'SIF UI test compilation failed.' }
     & $uiExe
     if ($LASTEXITCODE) { throw 'SIF UI tests failed.' }

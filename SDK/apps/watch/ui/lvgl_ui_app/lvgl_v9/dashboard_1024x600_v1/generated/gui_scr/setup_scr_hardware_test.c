@@ -36,6 +36,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_lte_4g, 239, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_lte_4g, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_lte_4g, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_lte_4g. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_lte_4g, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_lte_4g, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_lte_4g, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_lte_4g, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_lte_4g. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_lte_4g, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_lte_4g_label = lv_label_create(ui_scr->hardware_test_lte_4g);
 	lv_label_set_text(ui_scr->hardware_test_lte_4g_label, "4G");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_lte_4g, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -60,6 +69,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_btn_5, 239, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_btn_5, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_btn_5, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_btn_5. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_btn_5, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_btn_5, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_btn_5, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_btn_5, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_btn_5. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_btn_5, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_btn_5_label = lv_label_create(ui_scr->hardware_test_btn_5);
 	lv_label_set_text(ui_scr->hardware_test_btn_5_label, "WIFI");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_btn_5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -71,6 +89,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_btn_bt, 239, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_btn_bt, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_btn_bt, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_btn_bt. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_btn_bt, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_btn_bt, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_btn_bt, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_btn_bt, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_btn_bt. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_btn_bt, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_btn_bt_label = lv_label_create(ui_scr->hardware_test_btn_bt);
 	lv_label_set_text(ui_scr->hardware_test_btn_bt_label, "BT");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_btn_bt, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -82,6 +109,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_btn_gsensor, 239, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_btn_gsensor, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_btn_gsensor, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_btn_gsensor. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_btn_gsensor, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_btn_gsensor, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_btn_gsensor, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_btn_gsensor, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_btn_gsensor. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_btn_gsensor, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_btn_gsensor_label = lv_label_create(ui_scr->hardware_test_btn_gsensor);
 	lv_label_set_text(ui_scr->hardware_test_btn_gsensor_label, "Gsensor");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_btn_gsensor, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -93,6 +129,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_btn_7, 239, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_btn_7, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_btn_7, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_btn_7. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_btn_7, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_btn_7, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_btn_7, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_btn_7, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_btn_7. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_btn_7, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_btn_7_label = lv_label_create(ui_scr->hardware_test_btn_7);
 	lv_label_set_text(ui_scr->hardware_test_btn_7_label, "ADKEY");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_btn_7, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -104,6 +149,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_btn_ui_effect, 239, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_btn_ui_effect, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_btn_ui_effect, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_btn_ui_effect. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_btn_ui_effect, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_btn_ui_effect, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_btn_ui_effect, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_btn_ui_effect, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_btn_ui_effect. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_btn_ui_effect, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_btn_ui_effect_label = lv_label_create(ui_scr->hardware_test_btn_ui_effect);
 	lv_label_set_text(ui_scr->hardware_test_btn_ui_effect_label, "UI Effect");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_btn_ui_effect, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -115,6 +169,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_can, 239, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_can, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_can, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_can. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_can, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_can, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_can, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_can, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_can. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_can, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_can_label = lv_label_create(ui_scr->hardware_test_can);
 	lv_label_set_text(ui_scr->hardware_test_can_label, "CAN");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_can, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -126,6 +189,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_btn_4, 239, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_btn_4, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_btn_4, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_btn_4. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_btn_4, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_btn_4, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_btn_4, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_btn_4, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_btn_4. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_btn_4, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_btn_4_label = lv_label_create(ui_scr->hardware_test_btn_4);
 	lv_label_set_text(ui_scr->hardware_test_btn_4_label, "GPS");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_btn_4, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -137,6 +209,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_mic0, 102, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_mic0, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_mic0, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_mic0. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_mic0, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_mic0, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_mic0, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_mic0, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_mic0. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_mic0, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_mic0_label = lv_label_create(ui_scr->hardware_test_mic0);
 	lv_label_set_text(ui_scr->hardware_test_mic0_label, "MIC1");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_mic0, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -148,6 +229,15 @@ lv_obj_t * setup_scr_hardware_test(lv_ui *ui)
 	lv_obj_set_size(ui_scr->hardware_test_btn_6, 102, 84);
 	lv_obj_set_scrollbar_mode(ui_scr->hardware_test_btn_6, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->hardware_test_btn_6, GUI_CTRL_BUTTON);
+
+	//Set style for hardware_test_btn_6. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->hardware_test_btn_6, 10, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->hardware_test_btn_6, lv_color_make(0x21, 0x95, 0xf6), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->hardware_test_btn_6, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->hardware_test_btn_6, &lv_font_MiSans_Medium_30, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Set style for hardware_test_btn_6. Part: LV_PART_MAIN, State: LV_STATE_FOCUS_KEY
+	lv_obj_add_style(ui_scr->hardware_test_btn_6, &gui_btn_main_focus_key_style, LV_PART_MAIN|LV_STATE_FOCUS_KEY);
 	ui_scr->hardware_test_btn_6_label = lv_label_create(ui_scr->hardware_test_btn_6);
 	lv_label_set_text(ui_scr->hardware_test_btn_6_label, "MIC2");
 	lv_obj_set_style_pad_all(ui_scr->hardware_test_btn_6, 0, LV_PART_MAIN | LV_STATE_DEFAULT);

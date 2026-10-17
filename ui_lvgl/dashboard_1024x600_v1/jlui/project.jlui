@@ -15,7 +15,7 @@
   "entry": "chongwuyibiao",
   "config": {},
   "createTime": 1783579888227,
-  "updateTime": 1791432239129,
+  "updateTime": 1792216497053,
   "version": "1.0.0",
   "description": "",
   "core": {
@@ -180,6 +180,10 @@
     },
     {
       "name": "chongwuyibiao",
+      "type": "Standard"
+    },
+    {
+      "name": "meter_settings",
       "type": "Standard"
     }
   ],
