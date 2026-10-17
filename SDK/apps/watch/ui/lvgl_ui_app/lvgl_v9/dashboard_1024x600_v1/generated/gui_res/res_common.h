@@ -481,13 +481,14 @@ typedef enum {
 	GUI_RES__8_PNG = 0x4B0001CC,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\music\music_note_left.png
 	GUI_RES__9_PNG = 0x4B0001CD,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\music\dog_headphones_clean.png
 	GUI_RES__10_PNG = 0x4B0001CE,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\music\bluetooth_connected.png
+	GUI_RES__11_PNG = 0x4B0001CF,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\settings_gear.png
 } GUI_RES_ID;
 
 typedef enum {
-	xiaogou_biyan = 0x740001CF,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_blink.png 230x230
-	xiaogou_paobu_1 = 0x740001D0,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_1.png 230x230
-	xiaogou_paobu_2 = 0x740001D1,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_2.png 230x230
-	xiaogou_paobu_3 = 0x740001D2,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_3.png 230x230
+	xiaogou_biyan = 0x740001D0,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_blink.png 230x230
+	xiaogou_paobu_1 = 0x740001D1,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_1.png 230x230
+	xiaogou_paobu_2 = 0x740001D2,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_2.png 230x230
+	xiaogou_paobu_3 = 0x740001D3,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_3.png 230x230
 } RES_ID;
 
 typedef enum {

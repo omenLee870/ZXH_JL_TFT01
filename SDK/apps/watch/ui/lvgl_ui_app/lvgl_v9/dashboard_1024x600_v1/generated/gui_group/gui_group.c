@@ -108,12 +108,6 @@ void set_default_group_cb()
 		gui_group_add_obj(guider_ui.default_group, ui_scr->chongwuyibiao_settings_entry, true);
 	} else if (act_scr_id == GUI_SCREEN_METER_SETTINGS) {
 		lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(&guider_ui, GUI_SCREEN_METER_SETTINGS);
-		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_0, true);
-		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_1, true);
-		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_2, true);
-		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_3, true);
-		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_4, true);
-		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_5, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_back, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_brightness, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_music, true);
@@ -129,6 +123,12 @@ void set_default_group_cb()
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_restore, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_confirm_cancel, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_confirm_ok, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_0, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_1, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_2, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_3, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_4, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_5, true);
 	}
 	lv_group_set_default(guider_ui.default_group);
 

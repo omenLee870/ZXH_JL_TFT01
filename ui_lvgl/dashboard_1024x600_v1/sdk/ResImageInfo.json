@@ -1,7 +1,7 @@
 {
-  "size": 23093998,
-  "compressSize": 4690590,
-  "compressRate": "79.69%",
+  "size": 23095520,
+  "compressSize": 4692258,
+  "compressRate": "79.68%",
   "data": [
     {
       "name": "GUI_RES_SPORT_PNG",
@@ -6077,9 +6077,19 @@
       "colorFormat": "ARGB8888"
     },
     {
+      "name": "GUI_RES__11_PNG",
+      "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\settings_gear.png",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\4b0001cf.zip",
+      "size": 1522,
+      "compressSize": 1668,
+      "compressRate": "-9.59%",
+      "compressType": "压缩等级2",
+      "colorFormat": "ARGB8888"
+    },
+    {
       "name": "xiaogou_biyan",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001cf.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d0.zip",
       "size": 31835,
       "compressSize": 33259,
       "compressRate": "-4.47%",
@@ -6091,7 +6101,7 @@
     {
       "name": "xiaogou_paobu_1",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d0.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d1.zip",
       "size": 19477,
       "compressSize": 32126,
       "compressRate": "-64.94%",
@@ -6103,7 +6113,7 @@
     {
       "name": "xiaogou_paobu_2",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d1.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d2.zip",
       "size": 22868,
       "compressSize": 35399,
       "compressRate": "-54.80%",
@@ -6115,7 +6125,7 @@
     {
       "name": "xiaogou_paobu_3",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_3.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d2.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d3.zip",
       "size": 23718,
       "compressSize": 37729,
       "compressRate": "-59.07%",

@@ -69,7 +69,8 @@ void ui_meter_settings_select(unsigned index)
 }
 static void slider(lv_obj_t *obj, lv_obj_t *label, unsigned value)
 {
-    if (!lv_obj_has_state(obj, LV_STATE_PRESSED))
+    /* 拖动期间及等待保存结果时保持手指选定值，避免 100ms 轮询把滑块拉回旧位置。 */
+    if (!local_pending && !lv_slider_is_dragged(obj) && !lv_obj_has_state(obj, LV_STATE_PRESSED))
         lv_slider_set_value(obj, value, LV_ANIM_OFF);
     lv_label_set_text_fmt(label, "%u%%", (unsigned)lv_slider_get_value(obj));
 }
@@ -99,10 +100,13 @@ static void refresh_page(void)
     slider(W(brightness), W(brightness_value), p.brightness);
     slider(W(music), W(music_value), p.music);
     slider(W(tone), W(tone_value), p.tone);
-    if (p.key_tone)
-        lv_obj_add_state(W(key_tone), LV_STATE_CHECKED);
-    else
-        lv_obj_remove_state(W(key_tone), LV_STATE_CHECKED);
+    if (!local_pending)
+    {
+        if (p.key_tone)
+            lv_obj_add_state(W(key_tone), LV_STATE_CHECKED);
+        else
+            lv_obj_remove_state(W(key_tone), LV_STATE_CHECKED);
+    }
     highlight(W(unit_km), !p.unit);
     highlight(W(unit_mi), p.unit);
     highlight(W(sleep_0), !p.sleep_minutes);
@@ -121,6 +125,21 @@ static void refresh_page(void)
     lv_label_set_text(W(firmware), "SIMULATOR");
 #endif
 }
+/** @brief 仅失败时显示简短原因，不能把关机、忙等状态统称为保存失败。 */
+static void show_error(int code)
+{
+    lv_ui_meter_settings *ui = page();
+    if (!ui || lv_screen_active() != ui->meter_settings)
+        return;
+    const char *message = code == 2003 ? "行驶中不能清零" :
+                          code == 2006 ? "请先启动仪表" :
+                          code == 1004 ? "稍后重试" : "保存失败";
+    lv_label_set_text(W(confirm_title), message);
+    hidden(W(confirm_cancel), 1);
+    hidden(W(confirm), 0);
+    lv_obj_move_foreground(W(confirm));
+    confirm_key = -1;
+}
 void ui_meter_settings_change(unsigned key, int value)
 {
     if (local_pending)
@@ -129,7 +148,11 @@ void ui_meter_settings_change(unsigned key, int value)
     int code;
     result_seen = meter_settings_result(&code);
     if (meter_settings_post(key, value))
+    {
+        show_error(1004);
+        refresh_page();
         return;
+    }
     local_pending = 1;
 #else
     uint32_t *fields[] = {&simulated.brightness, &simulated.music, &simulated.tone, &simulated.key_tone, &simulated.unit, &simulated.sleep_minutes};
@@ -210,16 +233,7 @@ void ui_meter_settings_poll(void)
         local_pending = 0;
         result_seen = result;
         if (code)
-        {
-            lv_ui_meter_settings *ui = page();
-            if (ui && lv_screen_active() == ui->meter_settings)
-            {
-                lv_label_set_text(W(confirm_title), code == 2003 ? "行驶中不能清零" : "保存失败");
-                hidden(W(confirm_cancel), 1);
-                hidden(W(confirm), 0);
-                confirm_key = -1;
-            }
-        }
+            show_error(code);
     }
     if (!app_meter_control_media_allowed())
     {
@@ -257,6 +271,18 @@ static void settings_poll_timer(lv_timer_t *t)
 }
 void ui_meter_settings_bind(void)
 {
+    lv_ui_meter_settings *ui = page();
+    if (ui)
+    {
+        /* 菜单与详情仅允许上下滚动；滑条的触摸区扩大，细线外侧也可按住拖动。 */
+        lv_obj_t *panels[] = {W(settings_menu), W(panel_0), W(panel_1), W(panel_2), W(panel_3), W(panel_4), W(panel_5)};
+        for (unsigned i = 0; i < sizeof(panels) / sizeof(panels[0]); i++)
+            lv_obj_set_scroll_dir(panels[i], LV_DIR_VER);
+        lv_obj_t *sliders[] = {W(brightness), W(music), W(tone)};
+        for (unsigned i = 0; i < sizeof(sliders) / sizeof(sliders[0]); i++)
+            lv_obj_set_ext_click_area(sliders[i], 24);
+        lv_obj_remove_flag(ui->meter_settings, LV_OBJ_FLAG_SCROLLABLE);
+    }
     ui_meter_settings_select(selected);
     refresh_page();
     if (!settings_timer)

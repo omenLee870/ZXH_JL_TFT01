@@ -31,81 +31,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 
-	//Write codes meter_settings_menu_0
-	ui_scr->meter_settings_menu_0 = lv_btn_create(ui_scr->meter_settings);
-	lv_obj_set_pos(ui_scr->meter_settings_menu_0, 772, 28);
-	lv_obj_set_size(ui_scr->meter_settings_menu_0, 220, 76);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_0, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->meter_settings_menu_0, LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->meter_settings_menu_0, GUI_CTRL_BUTTON);
-
-	//Set style for meter_settings_menu_0. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_bg_color(ui_scr->meter_settings_menu_0, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	ui_scr->meter_settings_menu_0_label = lv_label_create(ui_scr->meter_settings_menu_0);
-	lv_label_set_text(ui_scr->meter_settings_menu_0_label, "屏幕亮度");
-	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_0, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_align(ui_scr->meter_settings_menu_0_label, LV_ALIGN_CENTER, 0, 0);
-
-	//Write codes meter_settings_menu_1
-	ui_scr->meter_settings_menu_1 = lv_btn_create(ui_scr->meter_settings);
-	lv_obj_set_pos(ui_scr->meter_settings_menu_1, 772, 112);
-	lv_obj_set_size(ui_scr->meter_settings_menu_1, 220, 76);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_1, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->meter_settings_menu_1, LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->meter_settings_menu_1, GUI_CTRL_BUTTON);
-	ui_scr->meter_settings_menu_1_label = lv_label_create(ui_scr->meter_settings_menu_1);
-	lv_label_set_text(ui_scr->meter_settings_menu_1_label, "声音");
-	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_align(ui_scr->meter_settings_menu_1_label, LV_ALIGN_CENTER, 0, 0);
-
-	//Write codes meter_settings_menu_2
-	ui_scr->meter_settings_menu_2 = lv_btn_create(ui_scr->meter_settings);
-	lv_obj_set_pos(ui_scr->meter_settings_menu_2, 772, 196);
-	lv_obj_set_size(ui_scr->meter_settings_menu_2, 220, 76);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_2, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->meter_settings_menu_2, LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->meter_settings_menu_2, GUI_CTRL_BUTTON);
-	ui_scr->meter_settings_menu_2_label = lv_label_create(ui_scr->meter_settings_menu_2);
-	lv_label_set_text(ui_scr->meter_settings_menu_2_label, "里程管理");
-	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_2, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_align(ui_scr->meter_settings_menu_2_label, LV_ALIGN_CENTER, 0, 0);
-
-	//Write codes meter_settings_menu_3
-	ui_scr->meter_settings_menu_3 = lv_btn_create(ui_scr->meter_settings);
-	lv_obj_set_pos(ui_scr->meter_settings_menu_3, 772, 280);
-	lv_obj_set_size(ui_scr->meter_settings_menu_3, 220, 76);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_3, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->meter_settings_menu_3, LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->meter_settings_menu_3, GUI_CTRL_BUTTON);
-	ui_scr->meter_settings_menu_3_label = lv_label_create(ui_scr->meter_settings_menu_3);
-	lv_label_set_text(ui_scr->meter_settings_menu_3_label, "自动熄屏");
-	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_3, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_align(ui_scr->meter_settings_menu_3_label, LV_ALIGN_CENTER, 0, 0);
-
-	//Write codes meter_settings_menu_4
-	ui_scr->meter_settings_menu_4 = lv_btn_create(ui_scr->meter_settings);
-	lv_obj_set_pos(ui_scr->meter_settings_menu_4, 772, 364);
-	lv_obj_set_size(ui_scr->meter_settings_menu_4, 220, 76);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_4, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->meter_settings_menu_4, LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->meter_settings_menu_4, GUI_CTRL_BUTTON);
-	ui_scr->meter_settings_menu_4_label = lv_label_create(ui_scr->meter_settings_menu_4);
-	lv_label_set_text(ui_scr->meter_settings_menu_4_label, "设备信息");
-	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_4, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_align(ui_scr->meter_settings_menu_4_label, LV_ALIGN_CENTER, 0, 0);
-
-	//Write codes meter_settings_menu_5
-	ui_scr->meter_settings_menu_5 = lv_btn_create(ui_scr->meter_settings);
-	lv_obj_set_pos(ui_scr->meter_settings_menu_5, 772, 448);
-	lv_obj_set_size(ui_scr->meter_settings_menu_5, 220, 76);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_5, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->meter_settings_menu_5, LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->meter_settings_menu_5, GUI_CTRL_BUTTON);
-	ui_scr->meter_settings_menu_5_label = lv_label_create(ui_scr->meter_settings_menu_5);
-	lv_label_set_text(ui_scr->meter_settings_menu_5_label, "恢复默认");
-	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_align(ui_scr->meter_settings_menu_5_label, LV_ALIGN_CENTER, 0, 0);
-
 	//Write codes meter_settings_back
 	ui_scr->meter_settings_back = lv_btn_create(ui_scr->meter_settings);
 	lv_obj_set_pos(ui_scr->meter_settings_back, 772, 540);
@@ -122,8 +47,9 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	ui_scr->meter_settings_panel_0 = lv_obj_create(ui_scr->meter_settings);
 	lv_obj_set_pos(ui_scr->meter_settings_panel_0, 28, 28);
 	lv_obj_set_size(ui_scr->meter_settings_panel_0, 716, 544);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_0, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->meter_settings_panel_0, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_0, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_add_flag(ui_scr->meter_settings_panel_0, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_remove_flag(ui_scr->meter_settings_panel_0, LV_OBJ_FLAG_SCROLL_CHAIN_HOR | LV_OBJ_FLAG_SCROLL_CHAIN_VER);
 	ui_style_set(ui_scr->meter_settings_panel_0, GUI_CTRL_CONT);
 
 	//Set style for meter_settings_panel_0. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
@@ -183,8 +109,9 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Write codes meter_settings_brightness
 	ui_scr->meter_settings_brightness = lv_slider_create(ui_scr->meter_settings_panel_0);
 	lv_obj_set_pos(ui_scr->meter_settings_brightness, 48, 244);
-	lv_obj_set_size(ui_scr->meter_settings_brightness, 604, 18);
+	lv_obj_set_size(ui_scr->meter_settings_brightness, 604, 24);
 	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_brightness, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_add_flag(ui_scr->meter_settings_brightness, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK);
 	lv_obj_remove_flag(ui_scr->meter_settings_brightness, LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->meter_settings_brightness, GUI_CTRL_SLIDER);
 
@@ -201,29 +128,13 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_slider_set_value(ui_scr->meter_settings_brightness, 70, LV_ANIM_OFF);
 	lv_slider_set_start_value(ui_scr->meter_settings_brightness, 0, LV_ANIM_OFF);
 
-	//Write codes meter_settings_result
-	ui_scr->meter_settings_result = lv_label_create(ui_scr->meter_settings_panel_0);
-	lv_label_set_text(ui_scr->meter_settings_result, "");
-	lv_label_set_long_mode(ui_scr->meter_settings_result, LV_LABEL_LONG_MODE_WRAP);
-	lv_obj_set_pos(ui_scr->meter_settings_result, 52, 516);
-	lv_obj_set_size(ui_scr->meter_settings_result, 640, 40);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_result, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_remove_flag(ui_scr->meter_settings_result, LV_OBJ_FLAG_SCROLLABLE);
-	ui_style_set(ui_scr->meter_settings_result, GUI_CTRL_LABEL);
-
-	//Set style for meter_settings_result. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
-	lv_obj_set_style_bg_color(ui_scr->meter_settings_result, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_color(ui_scr->meter_settings_result, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_result, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_result, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-
 	//Write codes meter_settings_panel_1
 	ui_scr->meter_settings_panel_1 = lv_obj_create(ui_scr->meter_settings);
 	lv_obj_set_pos(ui_scr->meter_settings_panel_1, 28, 28);
 	lv_obj_set_size(ui_scr->meter_settings_panel_1, 716, 544);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_1, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_add_flag(ui_scr->meter_settings_panel_1, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_remove_flag(ui_scr->meter_settings_panel_1, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_1, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_add_flag(ui_scr->meter_settings_panel_1, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_HIDDEN);
+	lv_obj_remove_flag(ui_scr->meter_settings_panel_1, LV_OBJ_FLAG_SCROLL_CHAIN_HOR | LV_OBJ_FLAG_SCROLL_CHAIN_VER);
 
 	//Hidden for widget meter_settings_panel_1
 	lv_obj_add_flag(ui_scr->meter_settings_panel_1, LV_OBJ_FLAG_HIDDEN);
@@ -286,8 +197,9 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Write codes meter_settings_music
 	ui_scr->meter_settings_music = lv_slider_create(ui_scr->meter_settings_panel_1);
 	lv_obj_set_pos(ui_scr->meter_settings_music, 48, 180);
-	lv_obj_set_size(ui_scr->meter_settings_music, 604, 18);
+	lv_obj_set_size(ui_scr->meter_settings_music, 604, 24);
 	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_music, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_add_flag(ui_scr->meter_settings_music, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK);
 	lv_obj_remove_flag(ui_scr->meter_settings_music, LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->meter_settings_music, GUI_CTRL_SLIDER);
 
@@ -340,8 +252,9 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Write codes meter_settings_tone
 	ui_scr->meter_settings_tone = lv_slider_create(ui_scr->meter_settings_panel_1);
 	lv_obj_set_pos(ui_scr->meter_settings_tone, 48, 324);
-	lv_obj_set_size(ui_scr->meter_settings_tone, 604, 18);
+	lv_obj_set_size(ui_scr->meter_settings_tone, 604, 24);
 	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_tone, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_add_flag(ui_scr->meter_settings_tone, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_PRESS_LOCK);
 	lv_obj_remove_flag(ui_scr->meter_settings_tone, LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->meter_settings_tone, GUI_CTRL_SLIDER);
 
@@ -387,9 +300,9 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	ui_scr->meter_settings_panel_2 = lv_obj_create(ui_scr->meter_settings);
 	lv_obj_set_pos(ui_scr->meter_settings_panel_2, 28, 28);
 	lv_obj_set_size(ui_scr->meter_settings_panel_2, 716, 544);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_2, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_add_flag(ui_scr->meter_settings_panel_2, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_remove_flag(ui_scr->meter_settings_panel_2, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_2, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_add_flag(ui_scr->meter_settings_panel_2, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_HIDDEN);
+	lv_obj_remove_flag(ui_scr->meter_settings_panel_2, LV_OBJ_FLAG_SCROLL_CHAIN_HOR | LV_OBJ_FLAG_SCROLL_CHAIN_VER);
 
 	//Hidden for widget meter_settings_panel_2
 	lv_obj_add_flag(ui_scr->meter_settings_panel_2, LV_OBJ_FLAG_HIDDEN);
@@ -541,9 +454,9 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	ui_scr->meter_settings_panel_3 = lv_obj_create(ui_scr->meter_settings);
 	lv_obj_set_pos(ui_scr->meter_settings_panel_3, 28, 28);
 	lv_obj_set_size(ui_scr->meter_settings_panel_3, 716, 544);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_3, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_add_flag(ui_scr->meter_settings_panel_3, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_remove_flag(ui_scr->meter_settings_panel_3, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_3, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_add_flag(ui_scr->meter_settings_panel_3, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_HIDDEN);
+	lv_obj_remove_flag(ui_scr->meter_settings_panel_3, LV_OBJ_FLAG_SCROLL_CHAIN_HOR | LV_OBJ_FLAG_SCROLL_CHAIN_VER);
 
 	//Hidden for widget meter_settings_panel_3
 	lv_obj_add_flag(ui_scr->meter_settings_panel_3, LV_OBJ_FLAG_HIDDEN);
@@ -625,9 +538,9 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	ui_scr->meter_settings_panel_4 = lv_obj_create(ui_scr->meter_settings);
 	lv_obj_set_pos(ui_scr->meter_settings_panel_4, 28, 28);
 	lv_obj_set_size(ui_scr->meter_settings_panel_4, 716, 544);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_4, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_add_flag(ui_scr->meter_settings_panel_4, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_remove_flag(ui_scr->meter_settings_panel_4, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_4, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_add_flag(ui_scr->meter_settings_panel_4, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_HIDDEN);
+	lv_obj_remove_flag(ui_scr->meter_settings_panel_4, LV_OBJ_FLAG_SCROLL_CHAIN_HOR | LV_OBJ_FLAG_SCROLL_CHAIN_VER);
 
 	//Hidden for widget meter_settings_panel_4
 	lv_obj_add_flag(ui_scr->meter_settings_panel_4, LV_OBJ_FLAG_HIDDEN);
@@ -754,9 +667,9 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	ui_scr->meter_settings_panel_5 = lv_obj_create(ui_scr->meter_settings);
 	lv_obj_set_pos(ui_scr->meter_settings_panel_5, 28, 28);
 	lv_obj_set_size(ui_scr->meter_settings_panel_5, 716, 544);
-	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_5, LV_SCROLLBAR_MODE_OFF);
-	lv_obj_add_flag(ui_scr->meter_settings_panel_5, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_remove_flag(ui_scr->meter_settings_panel_5, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_5, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_add_flag(ui_scr->meter_settings_panel_5, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_HIDDEN);
+	lv_obj_remove_flag(ui_scr->meter_settings_panel_5, LV_OBJ_FLAG_SCROLL_CHAIN_HOR | LV_OBJ_FLAG_SCROLL_CHAIN_VER);
 
 	//Hidden for widget meter_settings_panel_5
 	lv_obj_add_flag(ui_scr->meter_settings_panel_5, LV_OBJ_FLAG_HIDDEN);
@@ -854,6 +767,94 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_label_set_text(ui_scr->meter_settings_confirm_ok_label, "确认");
 	lv_obj_set_style_pad_all(ui_scr->meter_settings_confirm_ok, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_align(ui_scr->meter_settings_confirm_ok_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes meter_settings_settings_menu
+	ui_scr->meter_settings_settings_menu = lv_obj_create(ui_scr->meter_settings);
+	lv_obj_set_pos(ui_scr->meter_settings_settings_menu, 764, 28);
+	lv_obj_set_size(ui_scr->meter_settings_settings_menu, 236, 492);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_settings_menu, LV_SCROLLBAR_MODE_AUTO);
+	lv_obj_add_flag(ui_scr->meter_settings_settings_menu, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_remove_flag(ui_scr->meter_settings_settings_menu, LV_OBJ_FLAG_SCROLL_CHAIN_HOR | LV_OBJ_FLAG_SCROLL_CHAIN_VER);
+	ui_style_set(ui_scr->meter_settings_settings_menu, GUI_CTRL_CONT);
+
+	//Set style for meter_settings_settings_menu. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_settings_menu, lv_color_make(0xff, 0xff, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(ui_scr->meter_settings_settings_menu, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes meter_settings_menu_0
+	ui_scr->meter_settings_menu_0 = lv_btn_create(ui_scr->meter_settings_settings_menu);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_0, 8, 0);
+	lv_obj_set_size(ui_scr->meter_settings_menu_0, 220, 88);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_0, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_menu_0, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_menu_0, GUI_CTRL_BUTTON);
+
+	//Set style for meter_settings_menu_0. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_menu_0, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	ui_scr->meter_settings_menu_0_label = lv_label_create(ui_scr->meter_settings_menu_0);
+	lv_label_set_text(ui_scr->meter_settings_menu_0_label, "屏幕亮度");
+	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_0, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->meter_settings_menu_0_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes meter_settings_menu_1
+	ui_scr->meter_settings_menu_1 = lv_btn_create(ui_scr->meter_settings_settings_menu);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_1, 8, 100);
+	lv_obj_set_size(ui_scr->meter_settings_menu_1, 220, 88);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_1, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_menu_1, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_menu_1, GUI_CTRL_BUTTON);
+	ui_scr->meter_settings_menu_1_label = lv_label_create(ui_scr->meter_settings_menu_1);
+	lv_label_set_text(ui_scr->meter_settings_menu_1_label, "声音");
+	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_1, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->meter_settings_menu_1_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes meter_settings_menu_2
+	ui_scr->meter_settings_menu_2 = lv_btn_create(ui_scr->meter_settings_settings_menu);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_2, 8, 200);
+	lv_obj_set_size(ui_scr->meter_settings_menu_2, 220, 88);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_2, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_menu_2, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_menu_2, GUI_CTRL_BUTTON);
+	ui_scr->meter_settings_menu_2_label = lv_label_create(ui_scr->meter_settings_menu_2);
+	lv_label_set_text(ui_scr->meter_settings_menu_2_label, "里程管理");
+	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_2, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->meter_settings_menu_2_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes meter_settings_menu_3
+	ui_scr->meter_settings_menu_3 = lv_btn_create(ui_scr->meter_settings_settings_menu);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_3, 8, 300);
+	lv_obj_set_size(ui_scr->meter_settings_menu_3, 220, 88);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_3, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_menu_3, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_menu_3, GUI_CTRL_BUTTON);
+	ui_scr->meter_settings_menu_3_label = lv_label_create(ui_scr->meter_settings_menu_3);
+	lv_label_set_text(ui_scr->meter_settings_menu_3_label, "自动熄屏");
+	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_3, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->meter_settings_menu_3_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes meter_settings_menu_4
+	ui_scr->meter_settings_menu_4 = lv_btn_create(ui_scr->meter_settings_settings_menu);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_4, 8, 400);
+	lv_obj_set_size(ui_scr->meter_settings_menu_4, 220, 88);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_4, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_menu_4, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_menu_4, GUI_CTRL_BUTTON);
+	ui_scr->meter_settings_menu_4_label = lv_label_create(ui_scr->meter_settings_menu_4);
+	lv_label_set_text(ui_scr->meter_settings_menu_4_label, "设备信息");
+	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_4, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->meter_settings_menu_4_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes meter_settings_menu_5
+	ui_scr->meter_settings_menu_5 = lv_btn_create(ui_scr->meter_settings_settings_menu);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_5, 8, 500);
+	lv_obj_set_size(ui_scr->meter_settings_menu_5, 220, 88);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_5, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_menu_5, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_menu_5, GUI_CTRL_BUTTON);
+	ui_scr->meter_settings_menu_5_label = lv_label_create(ui_scr->meter_settings_menu_5);
+	lv_label_set_text(ui_scr->meter_settings_menu_5_label, "恢复默认");
+	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->meter_settings_menu_5_label, LV_ALIGN_CENTER, 0, 0);
 
 	lv_obj_update_layout(ui_scr->meter_settings);
 	ui_scr->meter_settings_del = false;

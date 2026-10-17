@@ -175,13 +175,23 @@ static int apply(enum meter_setting_key key, int value)
     record.value = next;
     record.value.revision = 0;
     record.crc = checksum(&next);
-    if (syscfg_write(PREF_VM, &record, sizeof(record)) != (int)sizeof(record) || vm_flush2flash(0))
+    int written = syscfg_write(PREF_VM, &record, sizeof(record));
+    int flushed = VM_ERR_NONE;
+    /* 普通任务可能直接写 Flash；仅启用 RAM 缓存时刷新，空缓存不是写入失败。
+     * 当前平台只缓存中断中的写入，app_core 保存后通常返回 VM_RAM_FLUSH_NONE。
+     * 参数 0 保持后续写入能力，不得在设置保存时关闭 VM。
+     */
+    if (written == (int)sizeof(record) &&
+            (get_vm_ram_storage_enable() || get_vm_ram_storage_in_irq_enable()))
+        flushed = vm_flush2flash(0);
+    if (written != (int)sizeof(record) || (flushed != VM_ERR_NONE && flushed != VM_RAM_FLUSH_NONE))
     {
         /* VM 写入缓存后仍可能落盘失败；恢复旧记录，避免别的模块稍后 flush 时提交失败操作。 */
         record.value = before;
         record.value.revision = 0;
         record.crc = checksum(&before);
-        syscfg_write(PREF_VM, &record, sizeof(record));
+        int restored = syscfg_write(PREF_VM, &record, sizeof(record));
+        printf("[METER_SETTINGS] save key=%u write=%d flush=%d rollback=%d\n", (unsigned)key, written, flushed, restored);
         return ZXH_EXECUTION_FAILED;
     }
     os_sem_pend(&gate, 0);

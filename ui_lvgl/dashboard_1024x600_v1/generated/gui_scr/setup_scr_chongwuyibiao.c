@@ -660,7 +660,7 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Write codes chongwuyibiao_xinhaozhu_1
 	ui_scr->chongwuyibiao_xinhaozhu_1 = lv_obj_create(ui_scr->chongwuyibiao);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_xinhaozhu_1, 820, 130);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_xinhaozhu_1, 764, 130);
 	lv_obj_set_size(ui_scr->chongwuyibiao_xinhaozhu_1, 5, 8);
 	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_xinhaozhu_1, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_xinhaozhu_1, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
@@ -672,7 +672,7 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Write codes chongwuyibiao_xinhaozhu_2
 	ui_scr->chongwuyibiao_xinhaozhu_2 = lv_obj_create(ui_scr->chongwuyibiao);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_xinhaozhu_2, 828, 126);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_xinhaozhu_2, 772, 126);
 	lv_obj_set_size(ui_scr->chongwuyibiao_xinhaozhu_2, 5, 12);
 	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_xinhaozhu_2, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_xinhaozhu_2, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
@@ -684,7 +684,7 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Write codes chongwuyibiao_xinhaozhu_3
 	ui_scr->chongwuyibiao_xinhaozhu_3 = lv_obj_create(ui_scr->chongwuyibiao);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_xinhaozhu_3, 836, 122);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_xinhaozhu_3, 780, 122);
 	lv_obj_set_size(ui_scr->chongwuyibiao_xinhaozhu_3, 5, 16);
 	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_xinhaozhu_3, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_xinhaozhu_3, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
@@ -696,7 +696,7 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Write codes chongwuyibiao_xinhaozhu_4
 	ui_scr->chongwuyibiao_xinhaozhu_4 = lv_obj_create(ui_scr->chongwuyibiao);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_xinhaozhu_4, 844, 118);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_xinhaozhu_4, 788, 118);
 	lv_obj_set_size(ui_scr->chongwuyibiao_xinhaozhu_4, 5, 20);
 	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_xinhaozhu_4, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_xinhaozhu_4, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
@@ -1268,23 +1268,30 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	lv_image_set_rotation(ui_scr->chongwuyibiao_lanyalianjietubiao, 0);
 	lv_image_set_scale(ui_scr->chongwuyibiao_lanyalianjietubiao, 256);
 	lv_image_set_inner_align(ui_scr->chongwuyibiao_lanyalianjietubiao, LV_IMAGE_ALIGN_TOP_LEFT);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_lanyalianjietubiao, 768, 110);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_lanyalianjietubiao, 712, 110);
 	lv_obj_set_size(ui_scr->chongwuyibiao_lanyalianjietubiao, 28, 36);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_lanyalianjietubiao, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->chongwuyibiao_lanyalianjietubiao, GUI_CTRL_IMG);
 
 	//Write codes chongwuyibiao_settings_entry
 	ui_scr->chongwuyibiao_settings_entry = lv_btn_create(ui_scr->chongwuyibiao);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_settings_entry, 866, 508);
-	lv_obj_set_size(ui_scr->chongwuyibiao_settings_entry, 110, 56);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_settings_entry, 810, 104);
+	lv_obj_set_size(ui_scr->chongwuyibiao_settings_entry, 60, 48);
 	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_settings_entry, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_settings_entry, LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->chongwuyibiao_settings_entry, GUI_CTRL_BUTTON);
 
 	//Set style for chongwuyibiao_settings_entry. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->chongwuyibiao_settings_entry, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_bg_color(ui_scr->chongwuyibiao_settings_entry, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(ui_scr->chongwuyibiao_settings_entry, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+#if LV_USE_GUIBUILDER_SIMULATOR
+	lv_obj_set_style_bg_image_src(ui_scr->chongwuyibiao_settings_entry, gui_get_res_path(0x4b0001cf), LV_PART_MAIN|LV_STATE_DEFAULT);
+#else
+	lv_obj_set_style_bg_image_src(ui_scr->chongwuyibiao_settings_entry, "storage/res_nor_mode/C/lvgl/4b0001cf.zip", LV_PART_MAIN|LV_STATE_DEFAULT);
+#endif
 	ui_scr->chongwuyibiao_settings_entry_label = lv_label_create(ui_scr->chongwuyibiao_settings_entry);
-	lv_label_set_text(ui_scr->chongwuyibiao_settings_entry_label, "设置");
+	lv_label_set_text(ui_scr->chongwuyibiao_settings_entry_label, "");
 	lv_obj_set_style_pad_all(ui_scr->chongwuyibiao_settings_entry, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_align(ui_scr->chongwuyibiao_settings_entry_label, LV_ALIGN_CENTER, 0, 0);
 

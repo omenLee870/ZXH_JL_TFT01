@@ -345,18 +345,6 @@ typedef struct {
 	// Screen meter_settings
 	lv_obj_t *meter_settings;
 	bool      meter_settings_del;
-	lv_obj_t *meter_settings_menu_0;
-	lv_obj_t *meter_settings_menu_0_label;
-	lv_obj_t *meter_settings_menu_1;
-	lv_obj_t *meter_settings_menu_1_label;
-	lv_obj_t *meter_settings_menu_2;
-	lv_obj_t *meter_settings_menu_2_label;
-	lv_obj_t *meter_settings_menu_3;
-	lv_obj_t *meter_settings_menu_3_label;
-	lv_obj_t *meter_settings_menu_4;
-	lv_obj_t *meter_settings_menu_4_label;
-	lv_obj_t *meter_settings_menu_5;
-	lv_obj_t *meter_settings_menu_5_label;
 	lv_obj_t *meter_settings_back;
 	lv_obj_t *meter_settings_back_label;
 	lv_obj_t *meter_settings_panel_0;
@@ -364,7 +352,6 @@ typedef struct {
 	lv_obj_t *meter_settings_brightness_title;
 	lv_obj_t *meter_settings_brightness_value;
 	lv_obj_t *meter_settings_brightness;
-	lv_obj_t *meter_settings_result;
 	lv_obj_t *meter_settings_panel_1;
 	lv_obj_t *meter_settings_title_1;
 	lv_obj_t *meter_settings_music_title;
@@ -416,6 +403,19 @@ typedef struct {
 	lv_obj_t *meter_settings_confirm_cancel_label;
 	lv_obj_t *meter_settings_confirm_ok;
 	lv_obj_t *meter_settings_confirm_ok_label;
+	lv_obj_t *meter_settings_settings_menu;
+	lv_obj_t *meter_settings_menu_0;
+	lv_obj_t *meter_settings_menu_0_label;
+	lv_obj_t *meter_settings_menu_1;
+	lv_obj_t *meter_settings_menu_1_label;
+	lv_obj_t *meter_settings_menu_2;
+	lv_obj_t *meter_settings_menu_2_label;
+	lv_obj_t *meter_settings_menu_3;
+	lv_obj_t *meter_settings_menu_3_label;
+	lv_obj_t *meter_settings_menu_4;
+	lv_obj_t *meter_settings_menu_4_label;
+	lv_obj_t *meter_settings_menu_5;
+	lv_obj_t *meter_settings_menu_5_label;
 } lv_ui_meter_settings;
 
 // generate lv_ui gui_guider

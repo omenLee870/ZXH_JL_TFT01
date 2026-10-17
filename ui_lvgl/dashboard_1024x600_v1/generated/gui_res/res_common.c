@@ -487,6 +487,7 @@ char * gui_get_res_path(int32_t id)
 		case GUI_RES__8_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\music_note_left.png";
 		case GUI_RES__9_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\dog_headphones_clean.png";
 		case GUI_RES__10_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\bluetooth_connected.png";
+		case GUI_RES__11_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\settings_gear.png";
 		case xiaogou_biyan: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png";
 		case xiaogou_paobu_1: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png";
 		case xiaogou_paobu_2: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png";

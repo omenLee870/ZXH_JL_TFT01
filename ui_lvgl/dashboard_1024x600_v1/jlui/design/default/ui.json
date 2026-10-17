@@ -16686,7 +16686,7 @@
           "type": "cont",
           "name": "chongwuyibiao_xinhaozhu_1",
           "pos": [
-            820,
+            764,
             130
           ],
           "size": [
@@ -16754,7 +16754,7 @@
           "type": "cont",
           "name": "chongwuyibiao_xinhaozhu_2",
           "pos": [
-            828,
+            772,
             126
           ],
           "size": [
@@ -16822,7 +16822,7 @@
           "type": "cont",
           "name": "chongwuyibiao_xinhaozhu_3",
           "pos": [
-            836,
+            780,
             122
           ],
           "size": [
@@ -16890,7 +16890,7 @@
           "type": "cont",
           "name": "chongwuyibiao_xinhaozhu_4",
           "pos": [
-            844,
+            788,
             118
           ],
           "size": [
@@ -20593,7 +20593,7 @@
           "type": "img",
           "name": "chongwuyibiao_lanyalianjietubiao",
           "pos": [
-            768,
+            712,
             110
           ],
           "size": [
@@ -20693,12 +20693,12 @@
           "type": "btn",
           "name": "chongwuyibiao_settings_entry",
           "pos": [
-            866,
-            508
+            810,
+            104
           ],
           "size": [
-            110,
-            56
+            60,
+            48
           ],
           "user_data": "",
           "guibuilder": "all",
@@ -20747,14 +20747,17 @@
               "state": "LV_STATE_DEFAULT",
               "disable": false,
               "bg_color": "#268bff",
+              "bg_opa": 0,
+              "bg_img_src": "4b0001cf",
+              "radius": 0,
               "name": "gui_btn_main_default_style"
             }
           ],
-          "text": "设置",
+          "text": "",
           "toggle": false,
           "long_mode": "LV_LABEL_LONG_MODE_WRAP",
-          "text_height": "38",
-          "text_width": "100",
+          "text_height": "0",
+          "text_width": "0",
           "mode": false,
           "text_use_i18n": false,
           "bindMsg": {
@@ -20812,481 +20815,6 @@
         }
       ],
       "widgets": [
-        {
-          "id": "#SXwLCJrNhwVmlTi3",
-          "type": "btn",
-          "name": "meter_settings_menu_0",
-          "pos": [
-            772,
-            28
-          ],
-          "size": [
-            220,
-            76
-          ],
-          "user_data": "",
-          "guibuilder": "all",
-          "state": "LV_STATE_DEFAULT",
-          "flag_enable": false,
-          "flag": [],
-          "clear_flag_enable": true,
-          "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
-          ],
-          "visible": true,
-          "focus": true,
-          "is_move_animation": false,
-          "path_type": "linear",
-          "move_animation": {
-            "des_pos": [
-              0,
-              0
-            ],
-            "duration": 1000,
-            "delay": 0,
-            "repeat_count": 0,
-            "repeat_delay": 0,
-            "playback_time": 0,
-            "playback_delay": 0,
-            "start_cb_inc": "",
-            "start_cb_code": "",
-            "ready_cb_inc": "",
-            "ready_cb_code": "",
-            "deleted_cb_inc": "",
-            "deleted_cb_code": ""
-          },
-          "scrollbar_mode": "OFF",
-          "is_effects": false,
-          "effects": {
-            "type": "attention",
-            "value": "attention_flash",
-            "duration": 1500,
-            "delay": 0
-          },
-          "default_style": false,
-          "text_align": "center",
-          "style": [
-            {
-              "part": "LV_PART_MAIN",
-              "state": "LV_STATE_DEFAULT",
-              "disable": false,
-              "bg_color": "#268bff",
-              "name": "gui_btn_main_default_style"
-            }
-          ],
-          "text": "屏幕亮度",
-          "toggle": false,
-          "long_mode": "LV_LABEL_LONG_MODE_WRAP",
-          "text_height": "38",
-          "text_width": "200",
-          "mode": false,
-          "text_use_i18n": false,
-          "bindMsg": {
-            "pos": [
-              {},
-              {}
-            ],
-            "size": [
-              {},
-              {}
-            ]
-          }
-        },
-        {
-          "id": "#cbzT1XTT7M7VGiBb",
-          "type": "btn",
-          "name": "meter_settings_menu_1",
-          "pos": [
-            772,
-            112
-          ],
-          "size": [
-            220,
-            76
-          ],
-          "user_data": "",
-          "guibuilder": "all",
-          "state": "LV_STATE_DEFAULT",
-          "flag_enable": false,
-          "flag": [],
-          "clear_flag_enable": true,
-          "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
-          ],
-          "visible": true,
-          "focus": true,
-          "is_move_animation": false,
-          "path_type": "linear",
-          "move_animation": {
-            "des_pos": [
-              0,
-              0
-            ],
-            "duration": 1000,
-            "delay": 0,
-            "repeat_count": 0,
-            "repeat_delay": 0,
-            "playback_time": 0,
-            "playback_delay": 0,
-            "start_cb_inc": "",
-            "start_cb_code": "",
-            "ready_cb_inc": "",
-            "ready_cb_code": "",
-            "deleted_cb_inc": "",
-            "deleted_cb_code": ""
-          },
-          "scrollbar_mode": "OFF",
-          "is_effects": false,
-          "effects": {
-            "type": "attention",
-            "value": "attention_flash",
-            "duration": 1500,
-            "delay": 0
-          },
-          "default_style": false,
-          "text_align": "center",
-          "style": [
-            {
-              "part": "LV_PART_MAIN",
-              "state": "LV_STATE_DEFAULT",
-              "disable": false,
-              "name": "gui_btn_main_default_style"
-            }
-          ],
-          "text": "声音",
-          "toggle": false,
-          "long_mode": "LV_LABEL_LONG_MODE_WRAP",
-          "text_height": "38",
-          "text_width": "200",
-          "mode": false,
-          "text_use_i18n": false,
-          "bindMsg": {
-            "pos": [
-              {},
-              {}
-            ],
-            "size": [
-              {},
-              {}
-            ]
-          }
-        },
-        {
-          "id": "#nOp6nuvABRO9232E",
-          "type": "btn",
-          "name": "meter_settings_menu_2",
-          "pos": [
-            772,
-            196
-          ],
-          "size": [
-            220,
-            76
-          ],
-          "user_data": "",
-          "guibuilder": "all",
-          "state": "LV_STATE_DEFAULT",
-          "flag_enable": false,
-          "flag": [],
-          "clear_flag_enable": true,
-          "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
-          ],
-          "visible": true,
-          "focus": true,
-          "is_move_animation": false,
-          "path_type": "linear",
-          "move_animation": {
-            "des_pos": [
-              0,
-              0
-            ],
-            "duration": 1000,
-            "delay": 0,
-            "repeat_count": 0,
-            "repeat_delay": 0,
-            "playback_time": 0,
-            "playback_delay": 0,
-            "start_cb_inc": "",
-            "start_cb_code": "",
-            "ready_cb_inc": "",
-            "ready_cb_code": "",
-            "deleted_cb_inc": "",
-            "deleted_cb_code": ""
-          },
-          "scrollbar_mode": "OFF",
-          "is_effects": false,
-          "effects": {
-            "type": "attention",
-            "value": "attention_flash",
-            "duration": 1500,
-            "delay": 0
-          },
-          "default_style": false,
-          "text_align": "center",
-          "style": [
-            {
-              "part": "LV_PART_MAIN",
-              "state": "LV_STATE_DEFAULT",
-              "disable": false,
-              "name": "gui_btn_main_default_style"
-            }
-          ],
-          "text": "里程管理",
-          "toggle": false,
-          "long_mode": "LV_LABEL_LONG_MODE_WRAP",
-          "text_height": "38",
-          "text_width": "200",
-          "mode": false,
-          "text_use_i18n": false,
-          "bindMsg": {
-            "pos": [
-              {},
-              {}
-            ],
-            "size": [
-              {},
-              {}
-            ]
-          }
-        },
-        {
-          "id": "#JSRXBD5YVbv3bOJV",
-          "type": "btn",
-          "name": "meter_settings_menu_3",
-          "pos": [
-            772,
-            280
-          ],
-          "size": [
-            220,
-            76
-          ],
-          "user_data": "",
-          "guibuilder": "all",
-          "state": "LV_STATE_DEFAULT",
-          "flag_enable": false,
-          "flag": [],
-          "clear_flag_enable": true,
-          "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
-          ],
-          "visible": true,
-          "focus": true,
-          "is_move_animation": false,
-          "path_type": "linear",
-          "move_animation": {
-            "des_pos": [
-              0,
-              0
-            ],
-            "duration": 1000,
-            "delay": 0,
-            "repeat_count": 0,
-            "repeat_delay": 0,
-            "playback_time": 0,
-            "playback_delay": 0,
-            "start_cb_inc": "",
-            "start_cb_code": "",
-            "ready_cb_inc": "",
-            "ready_cb_code": "",
-            "deleted_cb_inc": "",
-            "deleted_cb_code": ""
-          },
-          "scrollbar_mode": "OFF",
-          "is_effects": false,
-          "effects": {
-            "type": "attention",
-            "value": "attention_flash",
-            "duration": 1500,
-            "delay": 0
-          },
-          "default_style": false,
-          "text_align": "center",
-          "style": [
-            {
-              "part": "LV_PART_MAIN",
-              "state": "LV_STATE_DEFAULT",
-              "disable": false,
-              "name": "gui_btn_main_default_style"
-            }
-          ],
-          "text": "自动熄屏",
-          "toggle": false,
-          "long_mode": "LV_LABEL_LONG_MODE_WRAP",
-          "text_height": "38",
-          "text_width": "200",
-          "mode": false,
-          "text_use_i18n": false,
-          "bindMsg": {
-            "pos": [
-              {},
-              {}
-            ],
-            "size": [
-              {},
-              {}
-            ]
-          }
-        },
-        {
-          "id": "#RJDPGeXLtF1sUYjm",
-          "type": "btn",
-          "name": "meter_settings_menu_4",
-          "pos": [
-            772,
-            364
-          ],
-          "size": [
-            220,
-            76
-          ],
-          "user_data": "",
-          "guibuilder": "all",
-          "state": "LV_STATE_DEFAULT",
-          "flag_enable": false,
-          "flag": [],
-          "clear_flag_enable": true,
-          "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
-          ],
-          "visible": true,
-          "focus": true,
-          "is_move_animation": false,
-          "path_type": "linear",
-          "move_animation": {
-            "des_pos": [
-              0,
-              0
-            ],
-            "duration": 1000,
-            "delay": 0,
-            "repeat_count": 0,
-            "repeat_delay": 0,
-            "playback_time": 0,
-            "playback_delay": 0,
-            "start_cb_inc": "",
-            "start_cb_code": "",
-            "ready_cb_inc": "",
-            "ready_cb_code": "",
-            "deleted_cb_inc": "",
-            "deleted_cb_code": ""
-          },
-          "scrollbar_mode": "OFF",
-          "is_effects": false,
-          "effects": {
-            "type": "attention",
-            "value": "attention_flash",
-            "duration": 1500,
-            "delay": 0
-          },
-          "default_style": false,
-          "text_align": "center",
-          "style": [
-            {
-              "part": "LV_PART_MAIN",
-              "state": "LV_STATE_DEFAULT",
-              "disable": false,
-              "name": "gui_btn_main_default_style"
-            }
-          ],
-          "text": "设备信息",
-          "toggle": false,
-          "long_mode": "LV_LABEL_LONG_MODE_WRAP",
-          "text_height": "38",
-          "text_width": "200",
-          "mode": false,
-          "text_use_i18n": false,
-          "bindMsg": {
-            "pos": [
-              {},
-              {}
-            ],
-            "size": [
-              {},
-              {}
-            ]
-          }
-        },
-        {
-          "id": "#WEOKfSt78zIb1KQn",
-          "type": "btn",
-          "name": "meter_settings_menu_5",
-          "pos": [
-            772,
-            448
-          ],
-          "size": [
-            220,
-            76
-          ],
-          "user_data": "",
-          "guibuilder": "all",
-          "state": "LV_STATE_DEFAULT",
-          "flag_enable": false,
-          "flag": [],
-          "clear_flag_enable": true,
-          "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
-          ],
-          "visible": true,
-          "focus": true,
-          "is_move_animation": false,
-          "path_type": "linear",
-          "move_animation": {
-            "des_pos": [
-              0,
-              0
-            ],
-            "duration": 1000,
-            "delay": 0,
-            "repeat_count": 0,
-            "repeat_delay": 0,
-            "playback_time": 0,
-            "playback_delay": 0,
-            "start_cb_inc": "",
-            "start_cb_code": "",
-            "ready_cb_inc": "",
-            "ready_cb_code": "",
-            "deleted_cb_inc": "",
-            "deleted_cb_code": ""
-          },
-          "scrollbar_mode": "OFF",
-          "is_effects": false,
-          "effects": {
-            "type": "attention",
-            "value": "attention_flash",
-            "duration": 1500,
-            "delay": 0
-          },
-          "default_style": false,
-          "text_align": "center",
-          "style": [
-            {
-              "part": "LV_PART_MAIN",
-              "state": "LV_STATE_DEFAULT",
-              "disable": false,
-              "name": "gui_btn_main_default_style"
-            }
-          ],
-          "text": "恢复默认",
-          "toggle": false,
-          "long_mode": "LV_LABEL_LONG_MODE_WRAP",
-          "text_height": "38",
-          "text_width": "200",
-          "mode": false,
-          "text_use_i18n": false,
-          "bindMsg": {
-            "pos": [
-              {},
-              {}
-            ],
-            "size": [
-              {},
-              {}
-            ]
-          }
-        },
         {
           "id": "#ARHNnxGrS3JmO335",
           "type": "btn",
@@ -21381,11 +20909,14 @@
           "user_data": "",
           "guibuilder": "all",
           "state": "LV_STATE_DEFAULT",
-          "flag_enable": false,
-          "flag": [],
+          "flag_enable": true,
+          "flag": [
+            "LV_OBJ_FLAG_SCROLLABLE"
+          ],
           "clear_flag_enable": true,
           "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
+            "LV_OBJ_FLAG_SCROLL_CHAIN_HOR",
+            "LV_OBJ_FLAG_SCROLL_CHAIN_VER"
           ],
           "visible": true,
           "focus": false,
@@ -21409,7 +20940,7 @@
             "deleted_cb_inc": "",
             "deleted_cb_code": ""
           },
-          "scrollbar_mode": "OFF",
+          "scrollbar_mode": "AUTO",
           "default_style": false,
           "child": [
             {
@@ -21660,13 +21191,16 @@
               ],
               "size": [
                 604,
-                18
+                24
               ],
               "user_data": "",
               "guibuilder": "all",
               "state": "LV_STATE_DEFAULT",
-              "flag_enable": false,
-              "flag": [],
+              "flag_enable": true,
+              "flag": [
+                "LV_OBJ_FLAG_CLICKABLE",
+                "LV_OBJ_FLAG_PRESS_LOCK"
+              ],
               "clear_flag_enable": true,
               "clear_flag": [
                 "LV_OBJ_FLAG_SCROLLABLE"
@@ -21746,84 +21280,6 @@
                   }
                 ]
               }
-            },
-            {
-              "id": "#aA7PSa9UkelsYHDp",
-              "type": "label",
-              "name": "meter_settings_result",
-              "pos": [
-                52,
-                516
-              ],
-              "size": [
-                640,
-                40
-              ],
-              "user_data": "",
-              "guibuilder": "all",
-              "state": "LV_STATE_DEFAULT",
-              "flag_enable": false,
-              "flag": [],
-              "clear_flag_enable": true,
-              "clear_flag": [
-                "LV_OBJ_FLAG_SCROLLABLE"
-              ],
-              "visible": true,
-              "focus": false,
-              "is_move_animation": false,
-              "path_type": "linear",
-              "move_animation": {
-                "des_pos": [
-                  0,
-                  0
-                ],
-                "duration": 1000,
-                "delay": 0,
-                "repeat_count": 0,
-                "repeat_delay": 0,
-                "playback_time": 0,
-                "playback_delay": 0,
-                "start_cb_inc": "",
-                "start_cb_code": "",
-                "ready_cb_inc": "",
-                "ready_cb_code": "",
-                "deleted_cb_inc": "",
-                "deleted_cb_code": ""
-              },
-              "scrollbar_mode": "OFF",
-              "is_effects": false,
-              "effects": {
-                "type": "attention",
-                "value": "attention_flash",
-                "duration": 1500,
-                "delay": 0
-              },
-              "default_style": false,
-              "text": "",
-              "long_mode": "LV_LABEL_LONG_MODE_WRAP",
-              "text_use_i18n": false,
-              "style": [
-                {
-                  "part": "LV_PART_MAIN",
-                  "state": "LV_STATE_DEFAULT",
-                  "disable": false,
-                  "text_color": "#268bff",
-                  "letter_space": 0,
-                  "bg_color": "#06090e",
-                  "padding_top": 0,
-                  "name": "gui_label_main_default_style"
-                }
-              ],
-              "bindMsg": {
-                "pos": [
-                  {},
-                  {}
-                ],
-                "size": [
-                  {},
-                  {}
-                ]
-              }
             }
           ],
           "style": [
@@ -21864,11 +21320,13 @@
           "state": "LV_STATE_DEFAULT",
           "flag_enable": true,
           "flag": [
+            "LV_OBJ_FLAG_SCROLLABLE",
             "LV_OBJ_FLAG_HIDDEN"
           ],
           "clear_flag_enable": true,
           "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
+            "LV_OBJ_FLAG_SCROLL_CHAIN_HOR",
+            "LV_OBJ_FLAG_SCROLL_CHAIN_VER"
           ],
           "visible": false,
           "focus": false,
@@ -21892,7 +21350,7 @@
             "deleted_cb_inc": "",
             "deleted_cb_code": ""
           },
-          "scrollbar_mode": "OFF",
+          "scrollbar_mode": "AUTO",
           "default_style": false,
           "child": [
             {
@@ -22143,13 +21601,16 @@
               ],
               "size": [
                 604,
-                18
+                24
               ],
               "user_data": "",
               "guibuilder": "all",
               "state": "LV_STATE_DEFAULT",
-              "flag_enable": false,
-              "flag": [],
+              "flag_enable": true,
+              "flag": [
+                "LV_OBJ_FLAG_CLICKABLE",
+                "LV_OBJ_FLAG_PRESS_LOCK"
+              ],
               "clear_flag_enable": true,
               "clear_flag": [
                 "LV_OBJ_FLAG_SCROLLABLE"
@@ -22398,13 +21859,16 @@
               ],
               "size": [
                 604,
-                18
+                24
               ],
               "user_data": "",
               "guibuilder": "all",
               "state": "LV_STATE_DEFAULT",
-              "flag_enable": false,
-              "flag": [],
+              "flag_enable": true,
+              "flag": [
+                "LV_OBJ_FLAG_CLICKABLE",
+                "LV_OBJ_FLAG_PRESS_LOCK"
+              ],
               "clear_flag_enable": true,
               "clear_flag": [
                 "LV_OBJ_FLAG_SCROLLABLE"
@@ -22678,11 +22142,13 @@
           "state": "LV_STATE_DEFAULT",
           "flag_enable": true,
           "flag": [
+            "LV_OBJ_FLAG_SCROLLABLE",
             "LV_OBJ_FLAG_HIDDEN"
           ],
           "clear_flag_enable": true,
           "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
+            "LV_OBJ_FLAG_SCROLL_CHAIN_HOR",
+            "LV_OBJ_FLAG_SCROLL_CHAIN_VER"
           ],
           "visible": false,
           "focus": false,
@@ -22706,7 +22172,7 @@
             "deleted_cb_inc": "",
             "deleted_cb_code": ""
           },
-          "scrollbar_mode": "OFF",
+          "scrollbar_mode": "AUTO",
           "default_style": false,
           "child": [
             {
@@ -23460,11 +22926,13 @@
           "state": "LV_STATE_DEFAULT",
           "flag_enable": true,
           "flag": [
+            "LV_OBJ_FLAG_SCROLLABLE",
             "LV_OBJ_FLAG_HIDDEN"
           ],
           "clear_flag_enable": true,
           "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
+            "LV_OBJ_FLAG_SCROLL_CHAIN_HOR",
+            "LV_OBJ_FLAG_SCROLL_CHAIN_VER"
           ],
           "visible": false,
           "focus": false,
@@ -23488,7 +22956,7 @@
             "deleted_cb_inc": "",
             "deleted_cb_code": ""
           },
-          "scrollbar_mode": "OFF",
+          "scrollbar_mode": "AUTO",
           "default_style": false,
           "child": [
             {
@@ -23927,11 +23395,13 @@
           "state": "LV_STATE_DEFAULT",
           "flag_enable": true,
           "flag": [
+            "LV_OBJ_FLAG_SCROLLABLE",
             "LV_OBJ_FLAG_HIDDEN"
           ],
           "clear_flag_enable": true,
           "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
+            "LV_OBJ_FLAG_SCROLL_CHAIN_HOR",
+            "LV_OBJ_FLAG_SCROLL_CHAIN_VER"
           ],
           "visible": false,
           "focus": false,
@@ -23955,7 +23425,7 @@
             "deleted_cb_inc": "",
             "deleted_cb_code": ""
           },
-          "scrollbar_mode": "OFF",
+          "scrollbar_mode": "AUTO",
           "default_style": false,
           "child": [
             {
@@ -24545,11 +24015,13 @@
           "state": "LV_STATE_DEFAULT",
           "flag_enable": true,
           "flag": [
+            "LV_OBJ_FLAG_SCROLLABLE",
             "LV_OBJ_FLAG_HIDDEN"
           ],
           "clear_flag_enable": true,
           "clear_flag": [
-            "LV_OBJ_FLAG_SCROLLABLE"
+            "LV_OBJ_FLAG_SCROLL_CHAIN_HOR",
+            "LV_OBJ_FLAG_SCROLL_CHAIN_VER"
           ],
           "visible": false,
           "focus": false,
@@ -24573,7 +24045,7 @@
             "deleted_cb_inc": "",
             "deleted_cb_code": ""
           },
-          "scrollbar_mode": "OFF",
+          "scrollbar_mode": "AUTO",
           "default_style": false,
           "child": [
             {
@@ -25065,6 +24537,552 @@
               {}
             ]
           }
+        },
+        {
+          "id": "#RNHB1VTFYaCfNJD1",
+          "type": "cont",
+          "name": "meter_settings_settings_menu",
+          "pos": [
+            764,
+            28
+          ],
+          "size": [
+            236,
+            492
+          ],
+          "user_data": "",
+          "guibuilder": "all",
+          "state": "LV_STATE_DEFAULT",
+          "flag_enable": true,
+          "flag": [
+            "LV_OBJ_FLAG_SCROLLABLE"
+          ],
+          "clear_flag_enable": true,
+          "clear_flag": [
+            "LV_OBJ_FLAG_SCROLL_CHAIN_HOR",
+            "LV_OBJ_FLAG_SCROLL_CHAIN_VER"
+          ],
+          "visible": true,
+          "focus": false,
+          "is_move_animation": false,
+          "path_type": "linear",
+          "move_animation": {
+            "des_pos": [
+              0,
+              0
+            ],
+            "duration": 1000,
+            "delay": 0,
+            "repeat_count": 0,
+            "repeat_delay": 0,
+            "playback_time": 0,
+            "playback_delay": 0,
+            "start_cb_inc": "",
+            "start_cb_code": "",
+            "ready_cb_inc": "",
+            "ready_cb_code": "",
+            "deleted_cb_inc": "",
+            "deleted_cb_code": ""
+          },
+          "scrollbar_mode": "AUTO",
+          "default_style": false,
+          "child": [
+            {
+              "id": "#SXwLCJrNhwVmlTi3",
+              "type": "btn",
+              "name": "meter_settings_menu_0",
+              "pos": [
+                8,
+                0
+              ],
+              "size": [
+                220,
+                88
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": false,
+              "flag": [],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_SCROLLABLE"
+              ],
+              "visible": true,
+              "focus": true,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "is_effects": false,
+              "effects": {
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "default_style": false,
+              "text_align": "center",
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "bg_color": "#268bff",
+                  "name": "gui_btn_main_default_style"
+                }
+              ],
+              "text": "屏幕亮度",
+              "toggle": false,
+              "long_mode": "LV_LABEL_LONG_MODE_WRAP",
+              "text_height": "38",
+              "text_width": "200",
+              "mode": false,
+              "text_use_i18n": false,
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ]
+              }
+            },
+            {
+              "id": "#cbzT1XTT7M7VGiBb",
+              "type": "btn",
+              "name": "meter_settings_menu_1",
+              "pos": [
+                8,
+                100
+              ],
+              "size": [
+                220,
+                88
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": false,
+              "flag": [],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_SCROLLABLE"
+              ],
+              "visible": true,
+              "focus": true,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "is_effects": false,
+              "effects": {
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "default_style": false,
+              "text_align": "center",
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "name": "gui_btn_main_default_style"
+                }
+              ],
+              "text": "声音",
+              "toggle": false,
+              "long_mode": "LV_LABEL_LONG_MODE_WRAP",
+              "text_height": "38",
+              "text_width": "200",
+              "mode": false,
+              "text_use_i18n": false,
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ]
+              }
+            },
+            {
+              "id": "#nOp6nuvABRO9232E",
+              "type": "btn",
+              "name": "meter_settings_menu_2",
+              "pos": [
+                8,
+                200
+              ],
+              "size": [
+                220,
+                88
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": false,
+              "flag": [],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_SCROLLABLE"
+              ],
+              "visible": true,
+              "focus": true,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "is_effects": false,
+              "effects": {
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "default_style": false,
+              "text_align": "center",
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "name": "gui_btn_main_default_style"
+                }
+              ],
+              "text": "里程管理",
+              "toggle": false,
+              "long_mode": "LV_LABEL_LONG_MODE_WRAP",
+              "text_height": "38",
+              "text_width": "200",
+              "mode": false,
+              "text_use_i18n": false,
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ]
+              }
+            },
+            {
+              "id": "#JSRXBD5YVbv3bOJV",
+              "type": "btn",
+              "name": "meter_settings_menu_3",
+              "pos": [
+                8,
+                300
+              ],
+              "size": [
+                220,
+                88
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": false,
+              "flag": [],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_SCROLLABLE"
+              ],
+              "visible": true,
+              "focus": true,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "is_effects": false,
+              "effects": {
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "default_style": false,
+              "text_align": "center",
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "name": "gui_btn_main_default_style"
+                }
+              ],
+              "text": "自动熄屏",
+              "toggle": false,
+              "long_mode": "LV_LABEL_LONG_MODE_WRAP",
+              "text_height": "38",
+              "text_width": "200",
+              "mode": false,
+              "text_use_i18n": false,
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ]
+              }
+            },
+            {
+              "id": "#RJDPGeXLtF1sUYjm",
+              "type": "btn",
+              "name": "meter_settings_menu_4",
+              "pos": [
+                8,
+                400
+              ],
+              "size": [
+                220,
+                88
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": false,
+              "flag": [],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_SCROLLABLE"
+              ],
+              "visible": true,
+              "focus": true,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "is_effects": false,
+              "effects": {
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "default_style": false,
+              "text_align": "center",
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "name": "gui_btn_main_default_style"
+                }
+              ],
+              "text": "设备信息",
+              "toggle": false,
+              "long_mode": "LV_LABEL_LONG_MODE_WRAP",
+              "text_height": "38",
+              "text_width": "200",
+              "mode": false,
+              "text_use_i18n": false,
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ]
+              }
+            },
+            {
+              "id": "#WEOKfSt78zIb1KQn",
+              "type": "btn",
+              "name": "meter_settings_menu_5",
+              "pos": [
+                8,
+                500
+              ],
+              "size": [
+                220,
+                88
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": false,
+              "flag": [],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_SCROLLABLE"
+              ],
+              "visible": true,
+              "focus": true,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "is_effects": false,
+              "effects": {
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "default_style": false,
+              "text_align": "center",
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "name": "gui_btn_main_default_style"
+                }
+              ],
+              "text": "恢复默认",
+              "toggle": false,
+              "long_mode": "LV_LABEL_LONG_MODE_WRAP",
+              "text_height": "38",
+              "text_width": "200",
+              "mode": false,
+              "text_use_i18n": false,
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ]
+              }
+            }
+          ],
+          "style": [
+            {
+              "part": "LV_PART_MAIN",
+              "state": "LV_STATE_DEFAULT",
+              "disable": false,
+              "bg_color": "#ffffff",
+              "bg_opa": 0,
+              "name": "gui_cont_main_default_style"
+            }
+          ],
+          "bindMsg": {
+            "pos": [
+              {},
+              {}
+            ],
+            "size": [
+              {},
+              {}
+            ]
+          }
         }
       ],
       "bindMsg": {},
@@ -25439,84 +25457,6 @@
       "code_py": ""
     },
     {
-      "src": "meter_settings_menu_0",
-      "title": "settings_action",
-      "trigger": "clicked",
-      "key_type": [],
-      "dst": "",
-      "action": "customer_code",
-      "is_inc": true,
-      "inc_c": "#include \"ui_meter_settings.h\"",
-      "code_c": "ui_meter_settings_select(0);",
-      "inc_py": "",
-      "code_py": ""
-    },
-    {
-      "src": "meter_settings_menu_1",
-      "title": "settings_action",
-      "trigger": "clicked",
-      "key_type": [],
-      "dst": "",
-      "action": "customer_code",
-      "is_inc": true,
-      "inc_c": "#include \"ui_meter_settings.h\"",
-      "code_c": "ui_meter_settings_select(1);",
-      "inc_py": "",
-      "code_py": ""
-    },
-    {
-      "src": "meter_settings_menu_2",
-      "title": "settings_action",
-      "trigger": "clicked",
-      "key_type": [],
-      "dst": "",
-      "action": "customer_code",
-      "is_inc": true,
-      "inc_c": "#include \"ui_meter_settings.h\"",
-      "code_c": "ui_meter_settings_select(2);",
-      "inc_py": "",
-      "code_py": ""
-    },
-    {
-      "src": "meter_settings_menu_3",
-      "title": "settings_action",
-      "trigger": "clicked",
-      "key_type": [],
-      "dst": "",
-      "action": "customer_code",
-      "is_inc": true,
-      "inc_c": "#include \"ui_meter_settings.h\"",
-      "code_c": "ui_meter_settings_select(3);",
-      "inc_py": "",
-      "code_py": ""
-    },
-    {
-      "src": "meter_settings_menu_4",
-      "title": "settings_action",
-      "trigger": "clicked",
-      "key_type": [],
-      "dst": "",
-      "action": "customer_code",
-      "is_inc": true,
-      "inc_c": "#include \"ui_meter_settings.h\"",
-      "code_c": "ui_meter_settings_select(4);",
-      "inc_py": "",
-      "code_py": ""
-    },
-    {
-      "src": "meter_settings_menu_5",
-      "title": "settings_action",
-      "trigger": "clicked",
-      "key_type": [],
-      "dst": "",
-      "action": "customer_code",
-      "is_inc": true,
-      "inc_c": "#include \"ui_meter_settings.h\"",
-      "code_c": "ui_meter_settings_select(5);",
-      "inc_py": "",
-      "code_py": ""
-    },
-    {
       "src": "meter_settings_back",
       "title": "settings_action",
       "trigger": "clicked",
@@ -25708,6 +25648,84 @@
       "is_inc": true,
       "inc_c": "#include \"ui_meter_settings.h\"",
       "code_c": "ui_meter_settings_commit();",
+      "inc_py": "",
+      "code_py": ""
+    },
+    {
+      "src": "meter_settings_menu_0",
+      "title": "settings_action",
+      "trigger": "clicked",
+      "key_type": [],
+      "dst": "",
+      "action": "customer_code",
+      "is_inc": true,
+      "inc_c": "#include \"ui_meter_settings.h\"",
+      "code_c": "ui_meter_settings_select(0);",
+      "inc_py": "",
+      "code_py": ""
+    },
+    {
+      "src": "meter_settings_menu_1",
+      "title": "settings_action",
+      "trigger": "clicked",
+      "key_type": [],
+      "dst": "",
+      "action": "customer_code",
+      "is_inc": true,
+      "inc_c": "#include \"ui_meter_settings.h\"",
+      "code_c": "ui_meter_settings_select(1);",
+      "inc_py": "",
+      "code_py": ""
+    },
+    {
+      "src": "meter_settings_menu_2",
+      "title": "settings_action",
+      "trigger": "clicked",
+      "key_type": [],
+      "dst": "",
+      "action": "customer_code",
+      "is_inc": true,
+      "inc_c": "#include \"ui_meter_settings.h\"",
+      "code_c": "ui_meter_settings_select(2);",
+      "inc_py": "",
+      "code_py": ""
+    },
+    {
+      "src": "meter_settings_menu_3",
+      "title": "settings_action",
+      "trigger": "clicked",
+      "key_type": [],
+      "dst": "",
+      "action": "customer_code",
+      "is_inc": true,
+      "inc_c": "#include \"ui_meter_settings.h\"",
+      "code_c": "ui_meter_settings_select(3);",
+      "inc_py": "",
+      "code_py": ""
+    },
+    {
+      "src": "meter_settings_menu_4",
+      "title": "settings_action",
+      "trigger": "clicked",
+      "key_type": [],
+      "dst": "",
+      "action": "customer_code",
+      "is_inc": true,
+      "inc_c": "#include \"ui_meter_settings.h\"",
+      "code_c": "ui_meter_settings_select(4);",
+      "inc_py": "",
+      "code_py": ""
+    },
+    {
+      "src": "meter_settings_menu_5",
+      "title": "settings_action",
+      "trigger": "clicked",
+      "key_type": [],
+      "dst": "",
+      "action": "customer_code",
+      "is_inc": true,
+      "inc_c": "#include \"ui_meter_settings.h\"",
+      "code_c": "ui_meter_settings_select(5);",
       "inc_py": "",
       "code_py": ""
     }
@@ -26074,20 +26092,8 @@
       "data": [
         {
           "name": "xiaogou_biyan",
-          "id": 1946157519,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png",
-          "dstPath": ".\\flash\\best_space_size\\image\\740001cf.zip",
-          "type": "zip",
-          "width": 230,
-          "height": 230,
-          "is_copy": false,
-          "fs_type": "flash",
-          "storage_medium": "default"
-        },
-        {
-          "name": "xiaogou_paobu_1",
           "id": 1946157520,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d0.zip",
           "type": "zip",
           "width": 230,
@@ -26097,9 +26103,9 @@
           "storage_medium": "default"
         },
         {
-          "name": "xiaogou_paobu_2",
+          "name": "xiaogou_paobu_1",
           "id": 1946157521,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d1.zip",
           "type": "zip",
           "width": 230,
@@ -26109,10 +26115,22 @@
           "storage_medium": "default"
         },
         {
-          "name": "xiaogou_paobu_3",
+          "name": "xiaogou_paobu_2",
           "id": 1946157522,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_3.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d2.zip",
+          "type": "zip",
+          "width": 230,
+          "height": 230,
+          "is_copy": false,
+          "fs_type": "flash",
+          "storage_medium": "default"
+        },
+        {
+          "name": "xiaogou_paobu_3",
+          "id": 1946157523,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_3.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\740001d3.zip",
           "type": "zip",
           "width": 230,
           "height": 230,
@@ -30988,6 +31006,16 @@
           "dstPath": ".\\flash\\best_space_size\\image\\4b0001ce.zip",
           "type": "zip",
           "is_copy": false
+        },
+        {
+          "fs_type": "flash",
+          "storage_medium": "default",
+          "name": "GUI_RES__11_PNG",
+          "id": 1258291663,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\settings_gear.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\4b0001cf.zip",
+          "type": "zip",
+          "is_copy": false
         }
       ],
       "range": [
@@ -31336,42 +31364,6 @@
           "id": "#YOPwbYzNGtjBQgz6",
           "data": [
             {
-              "id": "#SXwLCJrNhwVmlTi3",
-              "focus": true,
-              "focus_child": false,
-              "name": "meter_settings_menu_0"
-            },
-            {
-              "id": "#cbzT1XTT7M7VGiBb",
-              "focus": true,
-              "focus_child": false,
-              "name": "meter_settings_menu_1"
-            },
-            {
-              "id": "#nOp6nuvABRO9232E",
-              "focus": true,
-              "focus_child": false,
-              "name": "meter_settings_menu_2"
-            },
-            {
-              "id": "#JSRXBD5YVbv3bOJV",
-              "focus": true,
-              "focus_child": false,
-              "name": "meter_settings_menu_3"
-            },
-            {
-              "id": "#RJDPGeXLtF1sUYjm",
-              "focus": true,
-              "focus_child": false,
-              "name": "meter_settings_menu_4"
-            },
-            {
-              "id": "#WEOKfSt78zIb1KQn",
-              "focus": true,
-              "focus_child": false,
-              "name": "meter_settings_menu_5"
-            },
-            {
               "id": "#ARHNnxGrS3JmO335",
               "focus": true,
               "focus_child": false,
@@ -31460,6 +31452,42 @@
               "focus": true,
               "focus_child": false,
               "name": "meter_settings_confirm_ok"
+            },
+            {
+              "id": "#SXwLCJrNhwVmlTi3",
+              "focus": true,
+              "focus_child": false,
+              "name": "meter_settings_menu_0"
+            },
+            {
+              "id": "#cbzT1XTT7M7VGiBb",
+              "focus": true,
+              "focus_child": false,
+              "name": "meter_settings_menu_1"
+            },
+            {
+              "id": "#nOp6nuvABRO9232E",
+              "focus": true,
+              "focus_child": false,
+              "name": "meter_settings_menu_2"
+            },
+            {
+              "id": "#JSRXBD5YVbv3bOJV",
+              "focus": true,
+              "focus_child": false,
+              "name": "meter_settings_menu_3"
+            },
+            {
+              "id": "#RJDPGeXLtF1sUYjm",
+              "focus": true,
+              "focus_child": false,
+              "name": "meter_settings_menu_4"
+            },
+            {
+              "id": "#WEOKfSt78zIb1KQn",
+              "focus": true,
+              "focus_child": false,
+              "name": "meter_settings_menu_5"
             }
           ],
           "name": "meter_settings"
