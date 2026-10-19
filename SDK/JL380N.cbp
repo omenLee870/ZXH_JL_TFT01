@@ -3132,6 +3132,8 @@
 <Unit filename="apps/watch/common/app_meter_control.h" />
 <Unit filename="apps/watch/common/meter_settings.h" />
 <Unit filename="apps/watch/common/meter_settings.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/meter_environment.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/meter_environment.h" />
 <Unit filename="apps/watch/common/vehicle_controller.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/common/vehicle_controller.h" />
 <Unit filename="apps/watch/common/vehicle_core.c"><Option compilerVer="CC"/></Unit>
@@ -4823,5 +4825,7 @@
 <Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_meter_settings.h" />
 <Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/generated/gui_scr/setup_scr_meter_settings.c" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_cast_page.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_environment.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_environment.h" />
 </Project>
 </CodeBlocks_project_file>

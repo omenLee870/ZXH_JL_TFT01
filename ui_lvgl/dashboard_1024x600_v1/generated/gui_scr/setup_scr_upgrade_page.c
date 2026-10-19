@@ -38,7 +38,9 @@ lv_obj_t * setup_scr_upgrade_page(lv_ui *ui)
 
 	//Set style for upgrade_page_lbl_upgrade_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->upgrade_page_lbl_upgrade_title, &lv_font_simsun_32, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->upgrade_page_lbl_upgrade_title, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->upgrade_page_lbl_upgrade_title, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->upgrade_page_lbl_upgrade_title, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes upgrade_page_bar_upgrade
 	ui_scr->upgrade_page_bar_upgrade = lv_bar_create(ui_scr->upgrade_page);
@@ -62,7 +64,9 @@ lv_obj_t * setup_scr_upgrade_page(lv_ui *ui)
 
 	//Set style for upgrade_page_lbl_upgrade_percent. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->upgrade_page_lbl_upgrade_percent, &lv_font_simsun_32, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->upgrade_page_lbl_upgrade_percent, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->upgrade_page_lbl_upgrade_percent, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->upgrade_page_lbl_upgrade_percent, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	lv_obj_update_layout(ui_scr->upgrade_page);
 	ui_scr->upgrade_page_del = false;

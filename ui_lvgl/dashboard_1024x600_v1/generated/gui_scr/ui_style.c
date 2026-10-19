@@ -59,6 +59,10 @@ lv_style_t gui_cont_main_default_style;
 lv_style_t gui_btn_main_default_style;
 lv_style_t gui_btn_main_focus_key_style;
 
+// roller
+lv_style_t gui_roller_main_default_style;
+lv_style_t gui_roller_selected_default_style;
+
 // animimg
 lv_style_t gui_animimg_main_default_style;
 
@@ -342,12 +346,12 @@ void ui_style_init(void)
 	lv_style_set_outline_pad(&gui_label_main_default_style, 0);
 	lv_style_set_text_color(&gui_label_main_default_style, lv_color_make(0xff, 0xff, 0xff));
 	lv_style_set_text_font(&gui_label_main_default_style, &lv_font_MiSans_Medium_26);
-	lv_style_set_text_letter_space(&gui_label_main_default_style, 2);
+	lv_style_set_text_letter_space(&gui_label_main_default_style, 0);
 	lv_style_set_text_line_space(&gui_label_main_default_style, 0);
 	lv_style_set_text_align(&gui_label_main_default_style, LV_TEXT_ALIGN_LEFT);
 	lv_style_set_pad_left(&gui_label_main_default_style, 0);
 	lv_style_set_pad_right(&gui_label_main_default_style, 0);
-	lv_style_set_pad_top(&gui_label_main_default_style, 8);
+	lv_style_set_pad_top(&gui_label_main_default_style, 0);
 	lv_style_set_pad_bottom(&gui_label_main_default_style, 0);
 
 	// imglist
@@ -616,6 +620,57 @@ void ui_style_init(void)
 	lv_style_set_text_color(&gui_btn_main_focus_key_style, lv_color_make(0xff, 0xff, 0xff));
 	lv_style_set_text_font(&gui_btn_main_focus_key_style, &lv_font_MiSans_Medium_30);
 
+	// roller
+	lv_style_init(&gui_roller_main_default_style);
+	lv_style_set_radius(&gui_roller_main_default_style, 12);
+	lv_style_set_bg_color(&gui_roller_main_default_style, lv_color_make(0x06, 0x09, 0x0e));
+	lv_style_set_bg_grad_color(&gui_roller_main_default_style, lv_color_make(0xff, 0xff, 0xff));
+	lv_style_set_bg_grad_dir(&gui_roller_main_default_style, LV_GRAD_DIR_NONE);
+	lv_style_set_bg_grad_stop(&gui_roller_main_default_style, 255);
+	lv_style_set_bg_main_stop(&gui_roller_main_default_style, 0);
+	lv_style_set_bg_opa(&gui_roller_main_default_style, 255);
+	lv_style_set_shadow_width(&gui_roller_main_default_style, 0);
+	lv_style_set_shadow_color(&gui_roller_main_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_shadow_opa(&gui_roller_main_default_style, 255);
+	lv_style_set_shadow_spread(&gui_roller_main_default_style, 0);
+	lv_style_set_shadow_offset_x(&gui_roller_main_default_style, 0);
+	lv_style_set_shadow_offset_y(&gui_roller_main_default_style, 0);
+	lv_style_set_border_color(&gui_roller_main_default_style, lv_color_make(0xe6, 0xe6, 0xe6));
+	lv_style_set_border_width(&gui_roller_main_default_style, 0);
+	lv_style_set_border_opa(&gui_roller_main_default_style, 255);
+	lv_style_set_border_side(&gui_roller_main_default_style, LV_BORDER_SIDE_FULL);
+	lv_style_set_outline_color(&gui_roller_main_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_outline_width(&gui_roller_main_default_style, 0);
+	lv_style_set_outline_opa(&gui_roller_main_default_style, 128);
+	lv_style_set_outline_pad(&gui_roller_main_default_style, 0);
+	lv_style_set_text_color(&gui_roller_main_default_style, lv_color_make(0x7b, 0x8c, 0xa3));
+	lv_style_set_text_font(&gui_roller_main_default_style, &lv_font_MiSans_Medium_32);
+	lv_style_set_text_letter_space(&gui_roller_main_default_style, 0);
+	lv_style_set_text_line_space(&gui_roller_main_default_style, 20);
+	lv_style_set_text_align(&gui_roller_main_default_style, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_pad_left(&gui_roller_main_default_style, 0);
+	lv_style_set_pad_right(&gui_roller_main_default_style, 0);
+	lv_style_set_pad_top(&gui_roller_main_default_style, 0);
+	lv_style_set_pad_bottom(&gui_roller_main_default_style, 0);
+	lv_style_init(&gui_roller_selected_default_style);
+	lv_style_set_radius(&gui_roller_selected_default_style, 12);
+	lv_style_set_bg_color(&gui_roller_selected_default_style, lv_color_make(0x26, 0x8b, 0xff));
+	lv_style_set_bg_grad_color(&gui_roller_selected_default_style, lv_color_make(0x21, 0x95, 0xf6));
+	lv_style_set_bg_grad_dir(&gui_roller_selected_default_style, LV_GRAD_DIR_NONE);
+	lv_style_set_bg_grad_stop(&gui_roller_selected_default_style, 255);
+	lv_style_set_bg_main_stop(&gui_roller_selected_default_style, 0);
+	lv_style_set_bg_opa(&gui_roller_selected_default_style, 255);
+	lv_style_set_border_width(&gui_roller_selected_default_style, 0);
+	lv_style_set_text_color(&gui_roller_selected_default_style, lv_color_make(0xff, 0xff, 0xff));
+	lv_style_set_text_font(&gui_roller_selected_default_style, &lv_font_MiSans_Medium_32);
+	lv_style_set_text_letter_space(&gui_roller_selected_default_style, 0);
+	lv_style_set_text_line_space(&gui_roller_selected_default_style, 20);
+	lv_style_set_text_align(&gui_roller_selected_default_style, LV_TEXT_ALIGN_CENTER);
+	lv_style_set_pad_left(&gui_roller_selected_default_style, 0);
+	lv_style_set_pad_right(&gui_roller_selected_default_style, 0);
+	lv_style_set_pad_top(&gui_roller_selected_default_style, 0);
+	lv_style_set_pad_bottom(&gui_roller_selected_default_style, 0);
+
 	// animimg
 	lv_style_init(&gui_animimg_main_default_style);
 	lv_style_set_radius(&gui_animimg_main_default_style, 0);
@@ -681,6 +736,10 @@ void ui_style_set(lv_obj_t * obj, gui_ctrl_type_t type)
 	break;
 	case GUI_CTRL_BUTTON:
 		lv_obj_add_style(obj, &gui_btn_main_default_style, LV_PART_MAIN|LV_STATE_DEFAULT);
+	break;
+	case GUI_CTRL_ROLLER:
+		lv_obj_add_style(obj, &gui_roller_main_default_style, LV_PART_MAIN|LV_STATE_DEFAULT);
+		lv_obj_add_style(obj, &gui_roller_selected_default_style, LV_PART_SELECTED|LV_STATE_DEFAULT);
 	break;
 	case GUI_CTRL_ANIMIMG:
 		lv_obj_add_style(obj, &gui_animimg_main_default_style, LV_PART_MAIN|LV_STATE_DEFAULT);

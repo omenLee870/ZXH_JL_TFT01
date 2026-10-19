@@ -70,8 +70,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_title_0, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_title_0, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_title_0, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_title_0, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_title_0, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_brightness_title
 	ui_scr->meter_settings_brightness_title = lv_label_create(ui_scr->meter_settings_panel_0);
@@ -86,8 +84,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_brightness_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_brightness_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_brightness_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_brightness_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_brightness_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_brightness_value
 	ui_scr->meter_settings_brightness_value = lv_label_create(ui_scr->meter_settings_panel_0);
@@ -103,8 +99,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_brightness_value, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_brightness_value, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_brightness_value, &lv_font_MiSans_Medium_32, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_brightness_value, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_brightness_value, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_brightness
 	ui_scr->meter_settings_brightness = lv_slider_create(ui_scr->meter_settings_panel_0);
@@ -158,8 +152,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_title_1, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_title_1, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_title_1, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_title_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_title_1, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_music_title
 	ui_scr->meter_settings_music_title = lv_label_create(ui_scr->meter_settings_panel_1);
@@ -174,8 +166,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_music_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_music_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_music_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_music_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_music_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_music_value
 	ui_scr->meter_settings_music_value = lv_label_create(ui_scr->meter_settings_panel_1);
@@ -191,8 +181,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_music_value, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_music_value, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_music_value, &lv_font_MiSans_Medium_32, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_music_value, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_music_value, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_music
 	ui_scr->meter_settings_music = lv_slider_create(ui_scr->meter_settings_panel_1);
@@ -229,8 +217,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_tone_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_tone_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_tone_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_tone_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_tone_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_tone_value
 	ui_scr->meter_settings_tone_value = lv_label_create(ui_scr->meter_settings_panel_1);
@@ -246,8 +232,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_tone_value, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_tone_value, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_tone_value, &lv_font_MiSans_Medium_32, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_tone_value, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_tone_value, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_tone
 	ui_scr->meter_settings_tone = lv_slider_create(ui_scr->meter_settings_panel_1);
@@ -284,8 +268,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_key_label. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_key_label, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_key_label, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_key_label, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_key_label, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_key_tone
 	ui_scr->meter_settings_key_tone = lv_switch_create(ui_scr->meter_settings_panel_1);
@@ -326,8 +308,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_title_2, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_title_2, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_title_2, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_title_2, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_title_2, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_unit_title
 	ui_scr->meter_settings_unit_title = lv_label_create(ui_scr->meter_settings_panel_2);
@@ -342,8 +322,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_unit_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_unit_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_unit_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_unit_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_unit_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_unit_km
 	ui_scr->meter_settings_unit_km = lv_btn_create(ui_scr->meter_settings_panel_2);
@@ -385,8 +363,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_trip_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_trip_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_trip_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_trip_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_trip_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_trip
 	ui_scr->meter_settings_trip = lv_label_create(ui_scr->meter_settings_panel_2);
@@ -402,8 +378,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_trip, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_trip, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_trip, &lv_font_MiSans_Medium_32, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_trip, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_trip, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_trip_clear
 	ui_scr->meter_settings_trip_clear = lv_btn_create(ui_scr->meter_settings_panel_2);
@@ -430,8 +404,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_odo_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_odo_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_odo_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_odo_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_odo_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_odo
 	ui_scr->meter_settings_odo = lv_label_create(ui_scr->meter_settings_panel_2);
@@ -447,8 +419,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_odo, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_odo, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_odo, &lv_font_MiSans_Medium_32, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_odo, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_odo, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_panel_3
 	ui_scr->meter_settings_panel_3 = lv_obj_create(ui_scr->meter_settings);
@@ -480,8 +450,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_title_3, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_title_3, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_title_3, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_title_3, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_title_3, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_sleep_0
 	ui_scr->meter_settings_sleep_0 = lv_btn_create(ui_scr->meter_settings_panel_3);
@@ -564,8 +532,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_title_4, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_title_4, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_title_4, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_title_4, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_title_4, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_device_title
 	ui_scr->meter_settings_device_title = lv_label_create(ui_scr->meter_settings_panel_4);
@@ -580,8 +546,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_device_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_device_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_device_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_device_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_device_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_device
 	ui_scr->meter_settings_device = lv_label_create(ui_scr->meter_settings_panel_4);
@@ -596,8 +560,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_device. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_device, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_device, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_device, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_device, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_model_title
 	ui_scr->meter_settings_model_title = lv_label_create(ui_scr->meter_settings_panel_4);
@@ -612,8 +574,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_model_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_model_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_model_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_model_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_model_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_model
 	ui_scr->meter_settings_model = lv_label_create(ui_scr->meter_settings_panel_4);
@@ -628,8 +588,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_model. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_model, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_model, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_model, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_model, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_firmware_title
 	ui_scr->meter_settings_firmware_title = lv_label_create(ui_scr->meter_settings_panel_4);
@@ -644,8 +602,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_firmware_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_firmware_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_firmware_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_firmware_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_firmware_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_firmware
 	ui_scr->meter_settings_firmware = lv_label_create(ui_scr->meter_settings_panel_4);
@@ -660,8 +616,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	//Set style for meter_settings_firmware. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_firmware, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_firmware, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_firmware, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_firmware, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_panel_5
 	ui_scr->meter_settings_panel_5 = lv_obj_create(ui_scr->meter_settings);
@@ -693,8 +647,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_title_5, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_title_5, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_title_5, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_title_5, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_title_5, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_restore
 	ui_scr->meter_settings_restore = lv_btn_create(ui_scr->meter_settings_panel_5);
@@ -738,8 +690,6 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->meter_settings_confirm_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->meter_settings_confirm_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->meter_settings_confirm_title, &lv_font_MiSans_Medium_32, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->meter_settings_confirm_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->meter_settings_confirm_title, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes meter_settings_confirm_cancel
 	ui_scr->meter_settings_confirm_cancel = lv_btn_create(ui_scr->meter_settings_confirm);
@@ -834,7 +784,7 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 
 	//Write codes meter_settings_menu_4
 	ui_scr->meter_settings_menu_4 = lv_btn_create(ui_scr->meter_settings_settings_menu);
-	lv_obj_set_pos(ui_scr->meter_settings_menu_4, 8, 400);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_4, 8, 500);
 	lv_obj_set_size(ui_scr->meter_settings_menu_4, 220, 88);
 	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_4, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->meter_settings_menu_4, LV_OBJ_FLAG_SCROLLABLE);
@@ -846,7 +796,7 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 
 	//Write codes meter_settings_menu_5
 	ui_scr->meter_settings_menu_5 = lv_btn_create(ui_scr->meter_settings_settings_menu);
-	lv_obj_set_pos(ui_scr->meter_settings_menu_5, 8, 500);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_5, 8, 600);
 	lv_obj_set_size(ui_scr->meter_settings_menu_5, 220, 88);
 	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_5, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->meter_settings_menu_5, LV_OBJ_FLAG_SCROLLABLE);
@@ -855,6 +805,183 @@ lv_obj_t * setup_scr_meter_settings(lv_ui *ui)
 	lv_label_set_text(ui_scr->meter_settings_menu_5_label, "恢复默认");
 	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_5, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_align(ui_scr->meter_settings_menu_5_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes meter_settings_menu_6
+	ui_scr->meter_settings_menu_6 = lv_btn_create(ui_scr->meter_settings_settings_menu);
+	lv_obj_set_pos(ui_scr->meter_settings_menu_6, 8, 400);
+	lv_obj_set_size(ui_scr->meter_settings_menu_6, 220, 88);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_menu_6, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_menu_6, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_menu_6, GUI_CTRL_BUTTON);
+	ui_scr->meter_settings_menu_6_label = lv_label_create(ui_scr->meter_settings_menu_6);
+	lv_label_set_text(ui_scr->meter_settings_menu_6_label, "时间");
+	lv_obj_set_style_pad_all(ui_scr->meter_settings_menu_6, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->meter_settings_menu_6_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes meter_settings_panel_6
+	ui_scr->meter_settings_panel_6 = lv_obj_create(ui_scr->meter_settings);
+	lv_obj_set_pos(ui_scr->meter_settings_panel_6, 28, 28);
+	lv_obj_set_size(ui_scr->meter_settings_panel_6, 716, 544);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_panel_6, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_panel_6, LV_OBJ_FLAG_SCROLLABLE);
+
+	//Hidden for widget meter_settings_panel_6
+	lv_obj_add_flag(ui_scr->meter_settings_panel_6, LV_OBJ_FLAG_HIDDEN);
+	ui_style_set(ui_scr->meter_settings_panel_6, GUI_CTRL_CONT);
+
+	//Set style for meter_settings_panel_6. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_radius(ui_scr->meter_settings_panel_6, 22, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_panel_6, lv_color_make(0x0d, 0x15, 0x22), LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes meter_settings_title_6
+	ui_scr->meter_settings_title_6 = lv_label_create(ui_scr->meter_settings_panel_6);
+	lv_label_set_text(ui_scr->meter_settings_title_6, "时间");
+	lv_label_set_long_mode(ui_scr->meter_settings_title_6, LV_LABEL_LONG_MODE_WRAP);
+	lv_obj_set_pos(ui_scr->meter_settings_title_6, 32, 24);
+	lv_obj_set_size(ui_scr->meter_settings_title_6, 630, 56);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_title_6, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_title_6, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_title_6, GUI_CTRL_LABEL);
+
+	//Set style for meter_settings_title_6. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_title_6, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->meter_settings_title_6, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->meter_settings_title_6, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes meter_settings_time_year_title
+	ui_scr->meter_settings_time_year_title = lv_label_create(ui_scr->meter_settings_panel_6);
+	lv_label_set_text(ui_scr->meter_settings_time_year_title, "年");
+	lv_label_set_long_mode(ui_scr->meter_settings_time_year_title, LV_LABEL_LONG_MODE_WRAP);
+	lv_obj_set_pos(ui_scr->meter_settings_time_year_title, 32, 140);
+	lv_obj_set_size(ui_scr->meter_settings_time_year_title, 132, 42);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_year_title, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_time_year_title, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_time_year_title, GUI_CTRL_LABEL);
+
+	//Set style for meter_settings_time_year_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_time_year_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->meter_settings_time_year_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_align(ui_scr->meter_settings_time_year_title, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes meter_settings_time_year
+	ui_scr->meter_settings_time_year = lv_roller_create(ui_scr->meter_settings_panel_6);
+	lv_obj_set_pos(ui_scr->meter_settings_time_year, 32, 196);
+	lv_obj_set_size(ui_scr->meter_settings_time_year, 132, 196);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_year, LV_SCROLLBAR_MODE_OFF);
+	ui_style_set(ui_scr->meter_settings_time_year, GUI_CTRL_ROLLER);
+	lv_roller_set_options(ui_scr->meter_settings_time_year, "2020\n2021\n2022\n2023\n2024\n2025\n2026\n2027\n2028\n2029\n2030\n2031\n2032\n2033\n2034\n2035\n2036\n2037\n2038\n2039\n2040\n2041\n2042\n2043\n2044\n2045\n2046\n2047\n2048\n2049\n2050\n2051\n2052\n2053\n2054\n2055\n2056\n2057\n2058\n2059\n2060\n2061\n2062\n2063\n2064\n2065\n2066\n2067\n2068\n2069\n2070\n2071\n2072\n2073\n2074\n2075\n2076\n2077\n2078\n2079\n2080\n2081\n2082\n2083\n2084\n2085\n2086\n2087\n2088\n2089\n2090\n2091\n2092\n2093\n2094\n2095\n2096\n2097\n2098\n2099", LV_ROLLER_MODE_NORMAL);
+	lv_roller_set_visible_row_count(ui_scr->meter_settings_time_year, 3);
+
+	//Write codes meter_settings_time_month_title
+	ui_scr->meter_settings_time_month_title = lv_label_create(ui_scr->meter_settings_panel_6);
+	lv_label_set_text(ui_scr->meter_settings_time_month_title, "月");
+	lv_label_set_long_mode(ui_scr->meter_settings_time_month_title, LV_LABEL_LONG_MODE_WRAP);
+	lv_obj_set_pos(ui_scr->meter_settings_time_month_title, 180, 140);
+	lv_obj_set_size(ui_scr->meter_settings_time_month_title, 100, 42);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_month_title, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_time_month_title, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_time_month_title, GUI_CTRL_LABEL);
+
+	//Set style for meter_settings_time_month_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_time_month_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->meter_settings_time_month_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_align(ui_scr->meter_settings_time_month_title, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes meter_settings_time_month
+	ui_scr->meter_settings_time_month = lv_roller_create(ui_scr->meter_settings_panel_6);
+	lv_obj_set_pos(ui_scr->meter_settings_time_month, 180, 196);
+	lv_obj_set_size(ui_scr->meter_settings_time_month, 100, 196);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_month, LV_SCROLLBAR_MODE_OFF);
+	ui_style_set(ui_scr->meter_settings_time_month, GUI_CTRL_ROLLER);
+	lv_roller_set_options(ui_scr->meter_settings_time_month, "01\n02\n03\n04\n05\n06\n07\n08\n09\n10\n11\n12", LV_ROLLER_MODE_NORMAL);
+	lv_roller_set_visible_row_count(ui_scr->meter_settings_time_month, 3);
+
+	//Write codes meter_settings_time_day_title
+	ui_scr->meter_settings_time_day_title = lv_label_create(ui_scr->meter_settings_panel_6);
+	lv_label_set_text(ui_scr->meter_settings_time_day_title, "日");
+	lv_label_set_long_mode(ui_scr->meter_settings_time_day_title, LV_LABEL_LONG_MODE_WRAP);
+	lv_obj_set_pos(ui_scr->meter_settings_time_day_title, 296, 140);
+	lv_obj_set_size(ui_scr->meter_settings_time_day_title, 100, 42);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_day_title, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_time_day_title, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_time_day_title, GUI_CTRL_LABEL);
+
+	//Set style for meter_settings_time_day_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_time_day_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->meter_settings_time_day_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_align(ui_scr->meter_settings_time_day_title, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes meter_settings_time_day
+	ui_scr->meter_settings_time_day = lv_roller_create(ui_scr->meter_settings_panel_6);
+	lv_obj_set_pos(ui_scr->meter_settings_time_day, 296, 196);
+	lv_obj_set_size(ui_scr->meter_settings_time_day, 100, 196);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_day, LV_SCROLLBAR_MODE_OFF);
+	ui_style_set(ui_scr->meter_settings_time_day, GUI_CTRL_ROLLER);
+	lv_roller_set_options(ui_scr->meter_settings_time_day, "01\n02\n03\n04\n05\n06\n07\n08\n09\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31", LV_ROLLER_MODE_NORMAL);
+	lv_roller_set_visible_row_count(ui_scr->meter_settings_time_day, 3);
+
+	//Write codes meter_settings_time_hour_title
+	ui_scr->meter_settings_time_hour_title = lv_label_create(ui_scr->meter_settings_panel_6);
+	lv_label_set_text(ui_scr->meter_settings_time_hour_title, "时");
+	lv_label_set_long_mode(ui_scr->meter_settings_time_hour_title, LV_LABEL_LONG_MODE_WRAP);
+	lv_obj_set_pos(ui_scr->meter_settings_time_hour_title, 412, 140);
+	lv_obj_set_size(ui_scr->meter_settings_time_hour_title, 100, 42);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_hour_title, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_time_hour_title, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_time_hour_title, GUI_CTRL_LABEL);
+
+	//Set style for meter_settings_time_hour_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_time_hour_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->meter_settings_time_hour_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_align(ui_scr->meter_settings_time_hour_title, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes meter_settings_time_hour
+	ui_scr->meter_settings_time_hour = lv_roller_create(ui_scr->meter_settings_panel_6);
+	lv_obj_set_pos(ui_scr->meter_settings_time_hour, 412, 196);
+	lv_obj_set_size(ui_scr->meter_settings_time_hour, 100, 196);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_hour, LV_SCROLLBAR_MODE_OFF);
+	ui_style_set(ui_scr->meter_settings_time_hour, GUI_CTRL_ROLLER);
+	lv_roller_set_options(ui_scr->meter_settings_time_hour, "00\n01\n02\n03\n04\n05\n06\n07\n08\n09\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23", LV_ROLLER_MODE_NORMAL);
+	lv_roller_set_visible_row_count(ui_scr->meter_settings_time_hour, 3);
+
+	//Write codes meter_settings_time_minute_title
+	ui_scr->meter_settings_time_minute_title = lv_label_create(ui_scr->meter_settings_panel_6);
+	lv_label_set_text(ui_scr->meter_settings_time_minute_title, "分");
+	lv_label_set_long_mode(ui_scr->meter_settings_time_minute_title, LV_LABEL_LONG_MODE_WRAP);
+	lv_obj_set_pos(ui_scr->meter_settings_time_minute_title, 528, 140);
+	lv_obj_set_size(ui_scr->meter_settings_time_minute_title, 100, 42);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_minute_title, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_time_minute_title, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_time_minute_title, GUI_CTRL_LABEL);
+
+	//Set style for meter_settings_time_minute_title. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_time_minute_title, lv_color_make(0x06, 0x09, 0x0e), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_scr->meter_settings_time_minute_title, lv_color_make(0xed, 0xf4, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_align(ui_scr->meter_settings_time_minute_title, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes meter_settings_time_minute
+	ui_scr->meter_settings_time_minute = lv_roller_create(ui_scr->meter_settings_panel_6);
+	lv_obj_set_pos(ui_scr->meter_settings_time_minute, 528, 196);
+	lv_obj_set_size(ui_scr->meter_settings_time_minute, 100, 196);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_minute, LV_SCROLLBAR_MODE_OFF);
+	ui_style_set(ui_scr->meter_settings_time_minute, GUI_CTRL_ROLLER);
+	lv_roller_set_options(ui_scr->meter_settings_time_minute, "00\n01\n02\n03\n04\n05\n06\n07\n08\n09\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n41\n42\n43\n44\n45\n46\n47\n48\n49\n50\n51\n52\n53\n54\n55\n56\n57\n58\n59", LV_ROLLER_MODE_NORMAL);
+	lv_roller_set_visible_row_count(ui_scr->meter_settings_time_minute, 3);
+
+	//Write codes meter_settings_time_save
+	ui_scr->meter_settings_time_save = lv_btn_create(ui_scr->meter_settings_panel_6);
+	lv_obj_set_pos(ui_scr->meter_settings_time_save, 244, 436);
+	lv_obj_set_size(ui_scr->meter_settings_time_save, 220, 64);
+	lv_obj_set_scrollbar_mode(ui_scr->meter_settings_time_save, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->meter_settings_time_save, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->meter_settings_time_save, GUI_CTRL_BUTTON);
+
+	//Set style for meter_settings_time_save. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_color(ui_scr->meter_settings_time_save, lv_color_make(0x26, 0x8b, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
+	ui_scr->meter_settings_time_save_label = lv_label_create(ui_scr->meter_settings_time_save);
+	lv_label_set_text(ui_scr->meter_settings_time_save_label, "保存");
+	lv_obj_set_style_pad_all(ui_scr->meter_settings_time_save, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_align(ui_scr->meter_settings_time_save_label, LV_ALIGN_CENTER, 0, 0);
 
 	lv_obj_update_layout(ui_scr->meter_settings);
 	ui_scr->meter_settings_del = false;

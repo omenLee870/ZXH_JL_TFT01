@@ -10,6 +10,8 @@
 #include "lvgl.h"
 #include "../generated/gui_guider.h"
 #include "ui_meter_settings.h"
+#include <stdlib.h>
+#include <string.h>
 #if LV_USE_GUIBUILDER_SIMULATOR
 #include <stdio.h>
 #endif
@@ -19,6 +21,7 @@
 #include "app_vehicle.h"
 #include "app_meter_control.h"
 #include "screen_mirror.h"
+#include "meter_environment.h"
 #else
 #include <stdint.h>
 struct meter_preferences
@@ -33,10 +36,12 @@ static void meter_settings_snapshot(struct meter_preferences *p)
 #endif
 #define W(name) ui->meter_settings_##name
 static unsigned selected, local_pending, result_seen;
+static unsigned time_pending, time_result_seen, time_loading;
 static int confirm_key = -1, last_brightness = -1;
 static volatile unsigned asleep, wake_requested;
 static unsigned last_revision;
 static lv_timer_t *settings_timer;
+static void time_load(void);
 static lv_ui_meter_settings *page(void)
 {
     return ui_get_scr_ptr(&guider_ui, GUI_SCREEN_METER_SETTINGS);
@@ -55,17 +60,59 @@ static void highlight(lv_obj_t *obj, int active)
 void ui_meter_settings_select(unsigned index)
 {
     lv_ui_meter_settings *ui = page();
-    if (!ui || index > 5)
+    if (!ui || index > 6)
         return;
     selected = index;
-    lv_obj_t *panels[] = {W(panel_0), W(panel_1), W(panel_2), W(panel_3), W(panel_4), W(panel_5)};
-    lv_obj_t *menus[] = {W(menu_0), W(menu_1), W(menu_2), W(menu_3), W(menu_4), W(menu_5)};
-    for (unsigned i = 0; i < 6; i++)
+    lv_obj_t *panels[] = {W(panel_0), W(panel_1), W(panel_2), W(panel_3), W(panel_4), W(panel_5), W(panel_6)};
+    lv_obj_t *menus[] = {W(menu_0), W(menu_1), W(menu_2), W(menu_3), W(menu_4), W(menu_5), W(menu_6)};
+    for (unsigned i = 0; i < 7; i++)
     {
         hidden(panels[i], i != index);
         highlight(menus[i], i == index);
     }
     ui_meter_settings_cancel();
+    if (index == 6) time_load();
+}
+/** @brief 滚轮只编辑草稿；闰年和小月同步调整日期项，不能产生无效公历日期。 */
+void ui_meter_settings_time_edit(void)
+{
+    lv_ui_meter_settings *ui=page();
+    if (!ui || time_loading) return;
+    unsigned year=2020+lv_roller_get_selected(W(time_year));
+    unsigned month=1+lv_roller_get_selected(W(time_month));
+    static const unsigned char lengths[]={31,28,31,30,31,30,31,31,30,31,30,31};
+    unsigned count=lengths[month-1]+(month==2 && !(year%4) && (year%100 || !(year%400)));
+    if (lv_roller_get_option_count(W(time_day)) != count) {
+        unsigned day=lv_roller_get_selected(W(time_day)); char options[96]; unsigned used=0;
+        for (unsigned i=1;i<=count;i++) used+=snprintf(options+used,sizeof(options)-used,i==count?"%02u":"%02u\n",i);
+        time_loading=1;
+        lv_roller_set_options(W(time_day),options,LV_ROLLER_MODE_NORMAL);
+        lv_roller_set_selected(W(time_day),day<count?day:count-1,LV_ANIM_OFF);
+        time_loading=0;
+    }
+}
+static void time_load(void)
+{
+    lv_ui_meter_settings *ui=page();
+    if (!ui) return;
+    unsigned year=atoi(__DATE__+7),month=1,day=atoi(__DATE__+4),hour=0,minute=0;
+    const char *months="JanFebMarAprMayJunJulAugSepOctNovDec";
+    for (unsigned i=0;i<12;i++) if (!strncmp(__DATE__,months+i*3,3)) month=i+1;
+#if !LV_USE_GUIBUILDER_SIMULATOR
+    struct meter_local_time value;
+    if (!meter_environment_local_time(&value)) {
+        year=value.year;month=value.month;day=value.day;hour=value.hour;minute=value.minute;
+    }
+#endif
+    if (year<2020 || year>2099) year=2026;
+    time_loading=1;
+    lv_roller_set_selected(W(time_year),year-2020,LV_ANIM_OFF);
+    lv_roller_set_selected(W(time_month),month-1,LV_ANIM_OFF);
+    lv_roller_set_selected(W(time_hour),hour,LV_ANIM_OFF);
+    lv_roller_set_selected(W(time_minute),minute,LV_ANIM_OFF);
+    time_loading=0;
+    ui_meter_settings_time_edit();
+    lv_roller_set_selected(W(time_day),day-1,LV_ANIM_OFF);
 }
 static void slider(lv_obj_t *obj, lv_obj_t *label, unsigned value)
 {
@@ -113,6 +160,11 @@ static void refresh_page(void)
     highlight(W(sleep_1), p.sleep_minutes == 1);
     highlight(W(sleep_3), p.sleep_minutes == 3);
     highlight(W(sleep_5), p.sleep_minutes == 5);
+    lv_obj_t *time_controls[]={W(time_year),W(time_month),W(time_day),W(time_hour),W(time_minute),W(time_save)};
+    for (unsigned i=0;i<sizeof(time_controls)/sizeof(time_controls[0]);i++) {
+        if (time_pending) lv_obj_add_state(time_controls[i],LV_STATE_DISABLED);
+        else lv_obj_remove_state(time_controls[i],LV_STATE_DISABLED);
+    }
 #if !LV_USE_GUIBUILDER_SIMULATOR
     struct vehicle_state v;
     app_vehicle_snapshot(&v);
@@ -140,9 +192,25 @@ static void show_error(int code)
     lv_obj_move_foreground(W(confirm));
     confirm_key = -1;
 }
+/** @brief 保存请求由 app_core 写 RTC，UI 只等待执行结果，不在触摸回调里访问 Flash。 */
+void ui_meter_settings_time_save(void)
+{
+    lv_ui_meter_settings *ui=page();
+    if (!ui || selected!=6 || time_pending || local_pending) return;
+    ui_meter_settings_time_edit();
+#if !LV_USE_GUIBUILDER_SIMULATOR
+    struct meter_local_time value={2020+lv_roller_get_selected(W(time_year)),
+        1+lv_roller_get_selected(W(time_month)),1+lv_roller_get_selected(W(time_day)),
+        lv_roller_get_selected(W(time_hour)),lv_roller_get_selected(W(time_minute))};
+    int code;time_result_seen=meter_environment_time_result(&code);
+    if (meter_environment_time_post(&value)) {show_error(1004);return;}
+    time_pending=1;
+#endif
+    lv_display_trigger_activity(NULL);refresh_page();
+}
 void ui_meter_settings_change(unsigned key, int value)
 {
-    if (local_pending)
+    if (local_pending || time_pending)
         return;
 #if !LV_USE_GUIBUILDER_SIMULATOR
     int code;
@@ -235,6 +303,11 @@ void ui_meter_settings_poll(void)
         if (code)
             show_error(code);
     }
+    result=meter_environment_time_result(&code);
+    if (time_pending && result!=time_result_seen) {
+        time_pending=0;time_result_seen=result;
+        if (code) show_error(code);
+    }
     if (!app_meter_control_media_allowed())
     {
         last_brightness = -1;
@@ -275,7 +348,7 @@ void ui_meter_settings_bind(void)
     if (ui)
     {
         /* 菜单与详情仅允许上下滚动；滑条的触摸区扩大，细线外侧也可按住拖动。 */
-        lv_obj_t *panels[] = {W(settings_menu), W(panel_0), W(panel_1), W(panel_2), W(panel_3), W(panel_4), W(panel_5)};
+        lv_obj_t *panels[] = {W(settings_menu), W(panel_0), W(panel_1), W(panel_2), W(panel_3), W(panel_4), W(panel_5), W(panel_6)};
         for (unsigned i = 0; i < sizeof(panels) / sizeof(panels[0]); i++)
             lv_obj_set_scroll_dir(panels[i], LV_DIR_VER);
         lv_obj_t *sliders[] = {W(brightness), W(music), W(tone)};

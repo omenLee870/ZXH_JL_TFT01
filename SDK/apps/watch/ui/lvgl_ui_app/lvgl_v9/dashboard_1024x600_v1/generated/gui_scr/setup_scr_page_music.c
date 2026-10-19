@@ -118,7 +118,9 @@ lv_obj_t * setup_scr_page_music(lv_ui *ui)
 
 	//Set style for page_music_lbl_1. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_music_lbl_1, &lv_font_lyrics_38, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_music_lbl_1, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->page_music_lbl_1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_music_lbl_1, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_music_img_5
 	ui_scr->page_music_img_5 = lv_image_create(ui_scr->page_music);
@@ -171,6 +173,8 @@ lv_obj_t * setup_scr_page_music(lv_ui *ui)
 
 	//Set style for page_music_lbl_3. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_music_lbl_3, &lv_font_MiSans_Medium_38, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_music_lbl_3, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_music_lbl_3, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_music_lbl_4
 	ui_scr->page_music_lbl_4 = lv_label_create(ui_scr->page_music);
@@ -183,6 +187,8 @@ lv_obj_t * setup_scr_page_music(lv_ui *ui)
 
 	//Set style for page_music_lbl_4. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_music_lbl_4, &lv_font_MiSans_Medium_38, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_music_lbl_4, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_music_lbl_4, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	lv_obj_update_layout(ui_scr->page_music);
 	ui_scr->page_music_del = false;

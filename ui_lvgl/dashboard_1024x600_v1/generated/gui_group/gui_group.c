@@ -129,6 +129,13 @@ void set_default_group_cb()
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_3, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_4, true);
 		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_5, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_menu_6, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_time_year, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_time_month, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_time_day, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_time_hour, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_time_minute, true);
+		gui_group_add_obj(guider_ui.default_group, ui_scr->meter_settings_time_save, true);
 	}
 	lv_group_set_default(guider_ui.default_group);
 

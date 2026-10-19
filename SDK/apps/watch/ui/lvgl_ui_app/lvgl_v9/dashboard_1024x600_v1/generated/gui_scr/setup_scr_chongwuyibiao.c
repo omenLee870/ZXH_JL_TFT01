@@ -226,7 +226,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	//Set style for chongwuyibiao_dianliangshuzi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_dianliangshuzi, lv_color_make(0x10, 0x18, 0x20), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_dianliangshuzi, &lv_font_Lato_Regular_20, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_dianliangshuzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->chongwuyibiao_dianliangshuzi, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_dianliangshuzi, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 
@@ -254,9 +253,7 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Set style for chongwuyibiao_chesushuzi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_chesushuzi, &lv_font_Lato_Regular_88, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_chesushuzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->chongwuyibiao_chesushuzi, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_chesushuzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_chesudanwei
 	ui_scr->chongwuyibiao_chesudanwei = lv_label_create(ui_scr->chongwuyibiao);
@@ -271,12 +268,10 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	//Set style for chongwuyibiao_chesudanwei. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_chesudanwei, lv_color_make(0x9f, 0xb0, 0xb8), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_chesudanwei, &lv_font_Lato_Regular_20, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_chesudanwei, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_chesudanwei, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_shijian
 	ui_scr->chongwuyibiao_shijian = lv_label_create(ui_scr->chongwuyibiao);
-	lv_label_set_text(ui_scr->chongwuyibiao_shijian, "01:19");
+	lv_label_set_text(ui_scr->chongwuyibiao_shijian, "--:--");
 	lv_label_set_long_mode(ui_scr->chongwuyibiao_shijian, LV_LABEL_LONG_MODE_CLIP);
 	lv_obj_set_pos(ui_scr->chongwuyibiao_shijian, 715, 213);
 	lv_obj_set_size(ui_scr->chongwuyibiao_shijian, 150, 50);
@@ -286,29 +281,25 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Set style for chongwuyibiao_shijian. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_shijian, &lv_font_Lato_Regular_44, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_shijian, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_shijian, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_wendu
 	ui_scr->chongwuyibiao_wendu = lv_label_create(ui_scr->chongwuyibiao);
-	lv_label_set_text(ui_scr->chongwuyibiao_wendu, "25°C");
+	lv_label_set_text(ui_scr->chongwuyibiao_wendu, "--");
 	lv_label_set_long_mode(ui_scr->chongwuyibiao_wendu, LV_LABEL_LONG_MODE_CLIP);
-	lv_obj_set_pos(ui_scr->chongwuyibiao_wendu, 650, 253);
-	lv_obj_set_size(ui_scr->chongwuyibiao_wendu, 50, 26);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_wendu, 632, 253);
+	lv_obj_set_size(ui_scr->chongwuyibiao_wendu, 86, 28);
 	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_wendu, LV_SCROLLBAR_MODE_OFF);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_wendu, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
 	ui_style_set(ui_scr->chongwuyibiao_wendu, GUI_CTRL_LABEL);
 
 	//Set style for chongwuyibiao_wendu. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_wendu, lv_color_make(0xaa, 0xb8, 0xbf), LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_wendu, &lv_font_Lato_Regular_20, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_wendu, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_wendu, &lv_font_NotoSansSC_Medium_20, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->chongwuyibiao_wendu, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_wendu, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_riqixingqi
 	ui_scr->chongwuyibiao_riqixingqi = lv_label_create(ui_scr->chongwuyibiao);
-	lv_label_set_text(ui_scr->chongwuyibiao_riqixingqi, "05-08 周六");
+	lv_label_set_text(ui_scr->chongwuyibiao_riqixingqi, "-- --");
 	lv_label_set_long_mode(ui_scr->chongwuyibiao_riqixingqi, LV_LABEL_LONG_MODE_CLIP);
 	lv_obj_set_pos(ui_scr->chongwuyibiao_riqixingqi, 715, 253);
 	lv_obj_set_size(ui_scr->chongwuyibiao_riqixingqi, 150, 28);
@@ -319,8 +310,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	//Set style for chongwuyibiao_riqixingqi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_riqixingqi, lv_color_make(0xaa, 0xb8, 0xbf), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_riqixingqi, &lv_font_NotoSansSC_Medium_20, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_riqixingqi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_riqixingqi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_lichengbiaoti
 	ui_scr->chongwuyibiao_lichengbiaoti = lv_label_create(ui_scr->chongwuyibiao);
@@ -335,8 +324,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	//Set style for chongwuyibiao_lichengbiaoti. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_lichengbiaoti, lv_color_make(0xaa, 0xb8, 0xbf), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_lichengbiaoti, &lv_font_Lato_Regular_24, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_lichengbiaoti, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_lichengbiaoti, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_lichengshuzi
 	ui_scr->chongwuyibiao_lichengshuzi = lv_label_create(ui_scr->chongwuyibiao);
@@ -350,9 +337,7 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Set style for chongwuyibiao_lichengshuzi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_lichengshuzi, &lv_font_Lato_Regular_24, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_lichengshuzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->chongwuyibiao_lichengshuzi, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_lichengshuzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_lichengdanwei
 	ui_scr->chongwuyibiao_lichengdanwei = lv_label_create(ui_scr->chongwuyibiao);
@@ -367,8 +352,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	//Set style for chongwuyibiao_lichengdanwei. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_lichengdanwei, lv_color_make(0xaa, 0xb8, 0xbf), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_lichengdanwei, &lv_font_Lato_Regular_24, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_lichengdanwei, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_lichengdanwei, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_jiashimoshi
 	ui_scr->chongwuyibiao_jiashimoshi = lv_label_create(ui_scr->chongwuyibiao);
@@ -383,8 +366,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	//Set style for chongwuyibiao_jiashimoshi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_jiashimoshi, lv_color_make(0x36, 0xa9, 0xff), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_jiashimoshi, &lv_font_Lato_Regular_24, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_jiashimoshi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_jiashimoshi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_guzhangxinxi
 	ui_scr->chongwuyibiao_guzhangxinxi = lv_label_create(ui_scr->chongwuyibiao);
@@ -402,15 +383,17 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	//Set style for chongwuyibiao_guzhangxinxi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_guzhangxinxi, lv_color_make(0xff, 0x3b, 0x30), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_guzhangxinxi, &lv_font_Lato_Regular_24, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_guzhangxinxi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_guzhangxinxi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_tianqitubiao
 	ui_scr->chongwuyibiao_tianqitubiao = lv_obj_create(ui_scr->chongwuyibiao);
 	lv_obj_set_pos(ui_scr->chongwuyibiao_tianqitubiao, 657, 207);
 	lv_obj_set_size(ui_scr->chongwuyibiao_tianqitubiao, 36, 36);
 	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_tianqitubiao, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_add_flag(ui_scr->chongwuyibiao_tianqitubiao, LV_OBJ_FLAG_HIDDEN);
 	lv_obj_remove_flag(ui_scr->chongwuyibiao_tianqitubiao, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+
+	//Hidden for widget chongwuyibiao_tianqitubiao
+	lv_obj_add_flag(ui_scr->chongwuyibiao_tianqitubiao, LV_OBJ_FLAG_HIDDEN);
 	ui_style_set(ui_scr->chongwuyibiao_tianqitubiao, GUI_CTRL_CONT);
 
 	//Set style for chongwuyibiao_tianqitubiao. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
@@ -772,9 +755,7 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	//Set style for chongwuyibiao_shachegantanhao. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->chongwuyibiao_shachegantanhao, lv_color_make(0xff, 0xc9, 0x28), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_shachegantanhao, &lv_font_montserratMedium_16, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_shachegantanhao, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->chongwuyibiao_shachegantanhao, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_shachegantanhao, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_jinguangdengtubiao
 	ui_scr->chongwuyibiao_jinguangdengtubiao = lv_obj_create(ui_scr->chongwuyibiao);
@@ -1243,8 +1224,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Set style for chongwuyibiao_gequmingcheng. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_gequmingcheng, &lv_font_lyrics_26, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_gequmingcheng, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_gequmingcheng, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_geciwenzi
 	ui_scr->chongwuyibiao_geciwenzi = lv_label_create(ui_scr->chongwuyibiao_yinyuerongqi);
@@ -1258,8 +1237,6 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 
 	//Set style for chongwuyibiao_geciwenzi. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->chongwuyibiao_geciwenzi, &lv_font_lyrics_20, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_text_letter_space(ui_scr->chongwuyibiao_geciwenzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
-	lv_obj_set_style_pad_top(ui_scr->chongwuyibiao_geciwenzi, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes chongwuyibiao_lanyalianjietubiao
 	ui_scr->chongwuyibiao_lanyalianjietubiao = lv_image_create(ui_scr->chongwuyibiao);
@@ -1294,6 +1271,21 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	lv_label_set_text(ui_scr->chongwuyibiao_settings_entry_label, "");
 	lv_obj_set_style_pad_all(ui_scr->chongwuyibiao_settings_entry, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_align(ui_scr->chongwuyibiao_settings_entry_label, LV_ALIGN_CENTER, 0, 0);
+
+	//Write codes chongwuyibiao_weather_icon
+	ui_scr->chongwuyibiao_weather_icon = lv_image_create(ui_scr->chongwuyibiao);
+	lv_image_set_src(ui_scr->chongwuyibiao_weather_icon, gui_get_res_path(GUI_RES__12_PNG));
+	lv_image_set_pivot(ui_scr->chongwuyibiao_weather_icon, 0, 0);
+	lv_image_set_rotation(ui_scr->chongwuyibiao_weather_icon, 0);
+	lv_image_set_scale(ui_scr->chongwuyibiao_weather_icon, 256);
+	lv_image_set_inner_align(ui_scr->chongwuyibiao_weather_icon, LV_IMAGE_ALIGN_TOP_LEFT);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_weather_icon, 657, 220);
+	lv_obj_set_size(ui_scr->chongwuyibiao_weather_icon, 36, 36);
+	lv_obj_add_flag(ui_scr->chongwuyibiao_weather_icon, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_CLICKABLE);
+
+	//Hidden for widget chongwuyibiao_weather_icon
+	lv_obj_add_flag(ui_scr->chongwuyibiao_weather_icon, LV_OBJ_FLAG_HIDDEN);
+	ui_style_set(ui_scr->chongwuyibiao_weather_icon, GUI_CTRL_IMG);
 
 	lv_obj_update_layout(ui_scr->chongwuyibiao);
 	ui_scr->chongwuyibiao_del = false;

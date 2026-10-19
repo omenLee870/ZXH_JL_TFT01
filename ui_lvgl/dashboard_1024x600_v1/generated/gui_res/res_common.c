@@ -488,10 +488,20 @@ char * gui_get_res_path(int32_t id)
 		case GUI_RES__9_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\dog_headphones_clean.png";
 		case GUI_RES__10_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\bluetooth_connected.png";
 		case GUI_RES__11_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\settings_gear.png";
+		case GUI_RES__12_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_clear.png";
 		case xiaogou_biyan: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png";
 		case xiaogou_paobu_1: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png";
 		case xiaogou_paobu_2: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png";
 		case xiaogou_paobu_3: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_3.png";
+		case ENV_WEATHER_CLEAR: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_clear.png";
+		case ENV_WEATHER_CLOUD: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_cloud.png";
+		case ENV_WEATHER_OVERCAST: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_overcast.png";
+		case ENV_WEATHER_RAIN: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_rain.png";
+		case ENV_WEATHER_SNOW: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_snow.png";
+		case ENV_WEATHER_STORM: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_storm.png";
+		case ENV_WEATHER_FOG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_fog.png";
+		case ENV_WEATHER_DUST: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_dust.png";
+		case ENV_WEATHER_MOON: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_moon.png";
 		default: return NULL;
 	}
 #else

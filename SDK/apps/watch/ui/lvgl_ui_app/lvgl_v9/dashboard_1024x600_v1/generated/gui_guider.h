@@ -339,6 +339,7 @@ typedef struct {
 	lv_obj_t *chongwuyibiao_lanyalianjietubiao;
 	lv_obj_t *chongwuyibiao_settings_entry;
 	lv_obj_t *chongwuyibiao_settings_entry_label;
+	lv_obj_t *chongwuyibiao_weather_icon;
 } lv_ui_chongwuyibiao;
 
 typedef struct {
@@ -416,6 +417,22 @@ typedef struct {
 	lv_obj_t *meter_settings_menu_4_label;
 	lv_obj_t *meter_settings_menu_5;
 	lv_obj_t *meter_settings_menu_5_label;
+	lv_obj_t *meter_settings_menu_6;
+	lv_obj_t *meter_settings_menu_6_label;
+	lv_obj_t *meter_settings_panel_6;
+	lv_obj_t *meter_settings_title_6;
+	lv_obj_t *meter_settings_time_year_title;
+	lv_obj_t *meter_settings_time_year;
+	lv_obj_t *meter_settings_time_month_title;
+	lv_obj_t *meter_settings_time_month;
+	lv_obj_t *meter_settings_time_day_title;
+	lv_obj_t *meter_settings_time_day;
+	lv_obj_t *meter_settings_time_hour_title;
+	lv_obj_t *meter_settings_time_hour;
+	lv_obj_t *meter_settings_time_minute_title;
+	lv_obj_t *meter_settings_time_minute;
+	lv_obj_t *meter_settings_time_save;
+	lv_obj_t *meter_settings_time_save_label;
 } lv_ui_meter_settings;
 
 // generate lv_ui gui_guider

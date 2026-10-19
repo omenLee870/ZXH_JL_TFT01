@@ -9,6 +9,9 @@
 #endif
 #include "lvgl.h"
 #include "youyibao_sif_ui.h"
+#ifndef YOUYIBAO_UI_TEST
+#include "ui_environment.h"
+#endif
 #if !LV_USE_GUIBUILDER_SIMULATOR || defined(YOUYIBAO_UI_TEST)
 #include "app_vehicle.h"
 #ifndef YOUYIBAO_UI_TEST
@@ -315,6 +318,9 @@ static void pet_refresh(lv_ui_chongwuyibiao *ui)
     visible(ui->chongwuyibiao_xunhangtubiao, pet_status(VEHICLE_CRUISE));
     pet_distance_refresh(ui);
     pet_meter_refresh(ui);
+#ifndef YOUYIBAO_UI_TEST
+    ui_environment_refresh(ui);
+#endif
 }
 
 /**
@@ -500,12 +506,15 @@ void youyibao_sif_ui_bind_pet(lv_ui_chongwuyibiao *ui)
         lv_obj_set_ext_click_area(distance[i], 10);
         lv_obj_add_event_cb(distance[i], pet_distance_clicked, LV_EVENT_CLICKED, NULL);
     }
-    /* 时间、日期和温度尚未接入真实来源，不能沿用工具中的固定示例值。 */
+    /* 无校时或天气过期时显示未知值；数据就绪后由环境快照自动刷新。 */
     if (ui->chongwuyibiao_shijian) lv_label_set_text(ui->chongwuyibiao_shijian, "--:--");
     if (ui->chongwuyibiao_riqixingqi) lv_label_set_text(ui->chongwuyibiao_riqixingqi, "-- --");
     if (ui->chongwuyibiao_wendu) lv_label_set_text(ui->chongwuyibiao_wendu, "--");
     if (ui->chongwuyibiao_lichengdanwei) lv_obj_set_width(ui->chongwuyibiao_lichengdanwei, 48);
     app_vehicle_snapshot(&latest);
+#ifndef YOUYIBAO_UI_TEST
+    ui_environment_bind(ui);
+#endif
     pet_refresh(ui);
 #else
     (void)ui;

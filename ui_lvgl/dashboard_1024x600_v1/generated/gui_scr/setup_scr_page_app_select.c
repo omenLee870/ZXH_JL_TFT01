@@ -172,6 +172,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_1. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_1, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_1, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_1, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_imgList_bluetooth
 	ui_scr->page_app_select_imgList_bluetooth = lv_imglist_create(ui_scr->page_app_select);
@@ -223,6 +225,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_mode. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_mode, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_mode, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_mode, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_2
 	ui_scr->page_app_select_lbl_2 = lv_label_create(ui_scr->page_app_select);
@@ -235,6 +239,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_2. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_2, &lv_font_MiSans_Medium_34, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_2, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_2, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_3
 	ui_scr->page_app_select_lbl_3 = lv_label_create(ui_scr->page_app_select);
@@ -247,6 +253,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_3. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_3, &lv_font_MiSans_Medium_120, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_3, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_3, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_4
 	ui_scr->page_app_select_lbl_4 = lv_label_create(ui_scr->page_app_select);
@@ -260,6 +268,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	//Set style for page_app_select_lbl_4. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_color(ui_scr->page_app_select_lbl_4, lv_color_make(0xF0, 0xF0, 0xF0), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_4, &lv_font_MiSans_Medium_29, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_4, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_4, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_5
 	ui_scr->page_app_select_lbl_5 = lv_label_create(ui_scr->page_app_select);
@@ -272,6 +282,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_5. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_5, &lv_font_MiSans_Medium_31, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_5, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_5, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_6
 	ui_scr->page_app_select_lbl_6 = lv_label_create(ui_scr->page_app_select);
@@ -284,6 +296,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_6. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_6, &lv_font_MiSans_Medium_38, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_6, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_6, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_7
 	ui_scr->page_app_select_lbl_7 = lv_label_create(ui_scr->page_app_select);
@@ -296,6 +310,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_7. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_7, &lv_font_MiSans_Medium_31, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_7, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_7, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_8
 	ui_scr->page_app_select_lbl_8 = lv_label_create(ui_scr->page_app_select);
@@ -308,6 +324,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_8. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_8, &lv_font_MiSans_Medium_31, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_8, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_8, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_9
 	ui_scr->page_app_select_lbl_9 = lv_label_create(ui_scr->page_app_select);
@@ -320,6 +338,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_9. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_9, &lv_font_MiSans_Medium_38, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_9, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_9, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_10
 	ui_scr->page_app_select_lbl_10 = lv_label_create(ui_scr->page_app_select);
@@ -332,6 +352,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_10. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_10, &lv_font_MiSans_Medium_31, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_10, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_10, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_11
 	ui_scr->page_app_select_lbl_11 = lv_label_create(ui_scr->page_app_select);
@@ -344,6 +366,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_11. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_11, &lv_font_MiSans_Medium_38, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_11, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_11, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_12
 	ui_scr->page_app_select_lbl_12 = lv_label_create(ui_scr->page_app_select);
@@ -356,6 +380,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_12. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_12, &lv_font_MiSans_Medium_31, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_12, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_12, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_arcmenu_1
 	ui_scr->page_app_select_arcmenu_1 = lv_arcmenu_create(ui_scr->page_app_select);
@@ -406,6 +432,10 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	lv_obj_set_scrollbar_mode(ui_scr->page_app_select_lbl_17, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->page_app_select_lbl_17, GUI_CTRL_LABEL);
 
+	//Set style for page_app_select_lbl_17. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_17, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_17, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
+
 	//Write codes page_app_select_lbl_16
 	ui_scr->page_app_select_lbl_16 = lv_label_create(ui_scr->page_app_select_view_select_app_map);
 	lv_label_set_text(ui_scr->page_app_select_lbl_16, "5.6km");
@@ -414,6 +444,10 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 	lv_obj_set_size(ui_scr->page_app_select_lbl_16, 206, 61);
 	lv_obj_set_scrollbar_mode(ui_scr->page_app_select_lbl_16, LV_SCROLLBAR_MODE_OFF);
 	ui_style_set(ui_scr->page_app_select_lbl_16, GUI_CTRL_LABEL);
+
+	//Set style for page_app_select_lbl_16. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_16, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_16, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_slider_2
 	ui_scr->page_app_select_slider_2 = lv_slider_create(ui_scr->page_app_select_view_select_app_map);
@@ -446,6 +480,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_15. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_15, &lv_font_MiSans_Medium_34, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_15, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_15, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_lbl_14
 	ui_scr->page_app_select_lbl_14 = lv_label_create(ui_scr->page_app_select_view_select_app_map);
@@ -458,6 +494,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_14. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_14, &lv_font_MiSans_Medium_34, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_14, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_14, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_img_1
 	ui_scr->page_app_select_img_1 = lv_image_create(ui_scr->page_app_select_view_select_app_map);
@@ -530,6 +568,8 @@ lv_obj_t * setup_scr_page_app_select(lv_ui *ui)
 
 	//Set style for page_app_select_lbl_13. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_app_select_lbl_13, &lv_font_lyrics_38, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_app_select_lbl_13, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_app_select_lbl_13, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_app_select_btn_back
 	ui_scr->page_app_select_btn_back = lv_btn_create(ui_scr->page_app_select);

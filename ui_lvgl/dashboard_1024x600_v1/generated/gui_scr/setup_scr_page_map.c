@@ -335,6 +335,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_outline_color(ui_scr->page_map_lbl_time, lv_color_make(0xFF, 0xFF, 0xFF), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_outline_opa(ui_scr->page_map_lbl_time, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_time, &lv_font_MiSans_Medium_34, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_time, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_time, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_img_weather
 	ui_scr->page_map_img_weather = lv_image_create(ui_scr->page_map_view_1);
@@ -367,6 +369,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_outline_color(ui_scr->page_map_lbl_temp, lv_color_make(0xFF, 0xFF, 0xFF), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_outline_opa(ui_scr->page_map_lbl_temp, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_temp, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_temp, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_temp, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_imgList_bluetooth
 	ui_scr->page_map_imgList_bluetooth = lv_imglist_create(ui_scr->page_map_view_1);
@@ -445,6 +449,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_outline_color(ui_scr->page_map_lbl_endurance, lv_color_make(0xFF, 0xFF, 0xFF), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_outline_opa(ui_scr->page_map_lbl_endurance, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_endurance, &lv_font_MiSans_Medium_32, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_endurance, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_endurance, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_img_charge
 	ui_scr->page_map_img_charge = lv_image_create(ui_scr->page_map_view_2);
@@ -489,6 +495,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_outline_color(ui_scr->page_map_lbl_bat, lv_color_make(0xFF, 0xFF, 0xFF), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_outline_opa(ui_scr->page_map_lbl_bat, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_bat, &lv_font_MiSans_Medium_32, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_bat, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_bat, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_odo_num
 	ui_scr->page_map_lbl_odo_num = lv_label_create(ui_scr->page_map_view_2);
@@ -506,7 +514,9 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_outline_color(ui_scr->page_map_lbl_odo_num, lv_color_make(0xFF, 0xFF, 0xFF), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_outline_opa(ui_scr->page_map_lbl_odo_num, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_odo_num, &lv_font_MiSans_Medium_34, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_odo_num, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->page_map_lbl_odo_num, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_odo_num, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_imglist_bat
 	ui_scr->page_map_imglist_bat = lv_imglist_create(ui_scr->page_map_view_2);
@@ -545,7 +555,9 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	//Set style for page_map_lbl_1. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_1, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_1, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_1, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->page_map_lbl_1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_1, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_2
 	ui_scr->page_map_lbl_2 = lv_label_create(ui_scr->page_map_view_3);
@@ -559,7 +571,9 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	//Set style for page_map_lbl_2. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_2, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_2, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_2, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->page_map_lbl_2, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_2, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_3
 	ui_scr->page_map_lbl_3 = lv_label_create(ui_scr->page_map_view_3);
@@ -573,7 +587,9 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	//Set style for page_map_lbl_3. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_3, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_3, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_3, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->page_map_lbl_3, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_3, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_4
 	ui_scr->page_map_lbl_4 = lv_label_create(ui_scr->page_map_view_3);
@@ -587,7 +603,9 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	//Set style for page_map_lbl_4. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_4, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_4, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_4, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_align(ui_scr->page_map_lbl_4, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_4, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_img_1
 	ui_scr->page_map_img_1 = lv_image_create(ui_scr->page_map_view_3);
@@ -665,6 +683,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_5, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->page_map_lbl_5, lv_color_make(0x00, 0x00, 0x00), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_5, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_5, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_5, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_6
 	ui_scr->page_map_lbl_6 = lv_label_create(ui_scr->page_map_view_4);
@@ -679,6 +699,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_6, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->page_map_lbl_6, lv_color_make(0x00, 0x00, 0x00), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_6, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_6, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_6, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_7
 	ui_scr->page_map_lbl_7 = lv_label_create(ui_scr->page_map_view_4);
@@ -693,6 +715,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_7, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->page_map_lbl_7, lv_color_make(0x00, 0x00, 0x00), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_7, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_7, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_7, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_8
 	ui_scr->page_map_lbl_8 = lv_label_create(ui_scr->page_map_view_4);
@@ -707,6 +731,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_8, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->page_map_lbl_8, lv_color_make(0x00, 0x00, 0x00), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_8, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_8, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_8, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_9
 	ui_scr->page_map_lbl_9 = lv_label_create(ui_scr->page_map_view_4);
@@ -721,6 +747,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_9, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->page_map_lbl_9, lv_color_make(0x00, 0x00, 0x00), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_9, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_9, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_9, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_lbl_10
 	ui_scr->page_map_lbl_10 = lv_label_create(ui_scr->page_map_view_4);
@@ -735,6 +763,8 @@ lv_obj_t * setup_scr_page_map(lv_ui *ui)
 	lv_obj_set_style_bg_color(ui_scr->page_map_lbl_10, lv_color_make(0x21, 0x95, 0xF6), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_color(ui_scr->page_map_lbl_10, lv_color_make(0x00, 0x00, 0x00), LV_PART_MAIN|LV_STATE_DEFAULT);
 	lv_obj_set_style_text_font(ui_scr->page_map_lbl_10, &lv_font_MiSans_Medium_18, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_map_lbl_10, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_map_lbl_10, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_map_img_2
 	ui_scr->page_map_img_2 = lv_image_create(ui_scr->page_map);

@@ -65,6 +65,10 @@ extern lv_style_t gui_cont_main_default_style;
 extern lv_style_t gui_btn_main_default_style;
 extern lv_style_t gui_btn_main_focus_key_style;
 
+// roller
+extern lv_style_t gui_roller_main_default_style;
+extern lv_style_t gui_roller_selected_default_style;
+
 // animimg
 extern lv_style_t gui_animimg_main_default_style;
 
@@ -84,6 +88,7 @@ enum {
 	GUI_CTRL_ARCMENU,
 	GUI_CTRL_CONT,
 	GUI_CTRL_BUTTON,
+	GUI_CTRL_ROLLER,
 	GUI_CTRL_ANIMIMG,
 };
 typedef uint8_t gui_ctrl_type_t;

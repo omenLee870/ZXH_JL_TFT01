@@ -1,4 +1,5 @@
 #include "meter_settings.h"
+#include "meter_environment.h"
 #include "app_config.h"
 #if TCFG_USER_BLE_ENABLE && (BT_AI_SEL_PROTOCOL & RCSP_MODE_EN)
 #include "system/includes.h"
@@ -153,7 +154,8 @@ static void ble_poll(void *unused)
                 t = json_object_object_get(r, "topic");
                 if (t && json_object_is_type(t, json_type_string)) {
                     const char *topic = json_object_get_string(t);
-                    if (!meter_settings_receive(token, topic, request)) zxh_vehicle_receive(token, topic, request);
+                    if (!meter_environment_receive(token, topic, request) &&
+                        !meter_settings_receive(token, topic, request)) zxh_vehicle_receive(token, topic, request);
                 }
             }
             if (r) json_object_put(r);

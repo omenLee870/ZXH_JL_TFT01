@@ -183,6 +183,7 @@ c_SRC_FILES := \
 	apps/watch/common/app_vehicle_zxh.c \
 	apps/watch/common/app_meter_control.c \
 	apps/watch/common/meter_settings.c \
+	apps/watch/common/meter_environment.c \
 	apps/watch/common/vehicle_controller.c \
 	apps/watch/common/vehicle_core.c \
 	apps/watch/common/vehicle_storage.c \

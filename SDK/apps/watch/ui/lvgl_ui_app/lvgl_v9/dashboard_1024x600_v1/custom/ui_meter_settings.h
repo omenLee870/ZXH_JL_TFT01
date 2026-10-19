@@ -13,6 +13,9 @@ void ui_meter_settings_confirm(unsigned key);
 void ui_meter_settings_cancel(void);
 void ui_meter_settings_commit(void);
 void ui_meter_settings_poll(void);
+/** @brief 年月变化时修正日期范围；草稿只在按保存后提交。 */
+void ui_meter_settings_time_edit(void);
+void ui_meter_settings_time_save(void);
 /** @brief 按键任务只登记唤醒请求；返回非零时吞掉本次唤醒按键。 */
 int ui_meter_settings_key_activity(void);
 #endif

@@ -20,6 +20,7 @@
 #include "app_meter_control.h"
 #ifndef APP_METER_CONTROL_TEST
 #include "meter_settings.h"
+#include "meter_environment.h"
 #endif
 #include "app_vehicle.h"
 #include <string.h>
@@ -245,6 +246,7 @@ int app_meter_control_start(void)
     }
     #ifndef APP_METER_CONTROL_TEST
     if (meter_settings_init()) return -1;
+    if (meter_environment_init()) return -1;
     #endif
     if (!meter_timer) meter_timer = sys_timer_add(NULL, meter_control_tick, 50);
     return meter_timer ? 0 : -1;

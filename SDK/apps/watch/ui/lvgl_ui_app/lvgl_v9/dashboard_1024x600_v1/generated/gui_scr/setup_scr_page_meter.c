@@ -1067,6 +1067,8 @@ lv_obj_t * setup_scr_page_meter(lv_ui *ui)
 
 	//Set style for page_meter_lbl_1. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_meter_lbl_1, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_meter_lbl_1, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_meter_lbl_1, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_meter_imgList_gear_mode
 	ui_scr->page_meter_imgList_gear_mode = lv_imglist_create(ui_scr->page_meter);
@@ -1277,6 +1279,8 @@ lv_obj_t * setup_scr_page_meter(lv_ui *ui)
 
 	//Set style for page_meter_lbl_2. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_meter_lbl_2, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_meter_lbl_2, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_meter_lbl_2, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_meter_lbl_3
 	ui_scr->page_meter_lbl_3 = lv_label_create(ui_scr->page_meter);
@@ -1289,6 +1293,8 @@ lv_obj_t * setup_scr_page_meter(lv_ui *ui)
 
 	//Set style for page_meter_lbl_3. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_meter_lbl_3, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_meter_lbl_3, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_meter_lbl_3, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_meter_lbl_4
 	ui_scr->page_meter_lbl_4 = lv_label_create(ui_scr->page_meter);
@@ -1301,6 +1307,8 @@ lv_obj_t * setup_scr_page_meter(lv_ui *ui)
 
 	//Set style for page_meter_lbl_4. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_meter_lbl_4, &lv_font_MiSans_Medium_29, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_meter_lbl_4, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_meter_lbl_4, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_meter_lbl_5
 	ui_scr->page_meter_lbl_5 = lv_label_create(ui_scr->page_meter);
@@ -1313,6 +1321,8 @@ lv_obj_t * setup_scr_page_meter(lv_ui *ui)
 
 	//Set style for page_meter_lbl_5. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
 	lv_obj_set_style_text_font(ui_scr->page_meter_lbl_5, &lv_font_MiSans_Medium_36, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_text_letter_space(ui_scr->page_meter_lbl_5, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+	lv_obj_set_style_pad_top(ui_scr->page_meter_lbl_5, 8, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 	//Write codes page_meter_digitclock_1
 	ui_scr->page_meter_digitclock_1 = lv_label_create(ui_scr->page_meter);

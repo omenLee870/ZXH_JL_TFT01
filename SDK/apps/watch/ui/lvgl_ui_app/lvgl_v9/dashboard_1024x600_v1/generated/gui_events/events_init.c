@@ -1191,6 +1191,153 @@ static void meter_settings_menu_5_event_handler(lv_event_t *e)
 	}
 }
 
+static void meter_settings_menu_6_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_select(6);
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_time_year_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_VALUE_CHANGED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_time_edit();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_time_month_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_VALUE_CHANGED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_time_edit();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_time_day_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_VALUE_CHANGED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_time_edit();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_time_hour_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_VALUE_CHANGED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_time_edit();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_time_minute_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_VALUE_CHANGED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_time_edit();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
+static void meter_settings_time_save_event_handler(lv_event_t *e)
+{
+	lv_event_code_t code = lv_event_get_code(e);
+	switch (code)
+	{
+	case LV_EVENT_CLICKED:
+	{
+		//custom code 
+		{
+			lv_obj_t * src = lv_event_get_target(e);
+			lv_ui * ui = lv_event_get_user_data(e);
+			lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
+			ui_meter_settings_time_save();
+		}
+	}
+	break;
+	default:
+		break;
+	}
+}
+
 void events_init_meter_settings(lv_ui *ui)
 {
 	lv_ui_meter_settings * ui_scr = ui_get_scr_ptr(ui, GUI_SCREEN_METER_SETTINGS);
@@ -1216,6 +1363,13 @@ void events_init_meter_settings(lv_ui *ui)
 	lv_obj_add_event_cb(ui_scr->meter_settings_menu_3, meter_settings_menu_3_event_handler, LV_EVENT_ALL, ui);
 	lv_obj_add_event_cb(ui_scr->meter_settings_menu_4, meter_settings_menu_4_event_handler, LV_EVENT_ALL, ui);
 	lv_obj_add_event_cb(ui_scr->meter_settings_menu_5, meter_settings_menu_5_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_menu_6, meter_settings_menu_6_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_time_year, meter_settings_time_year_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_time_month, meter_settings_time_month_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_time_day, meter_settings_time_day_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_time_hour, meter_settings_time_hour_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_time_minute, meter_settings_time_minute_event_handler, LV_EVENT_ALL, ui);
+	lv_obj_add_event_cb(ui_scr->meter_settings_time_save, meter_settings_time_save_event_handler, LV_EVENT_ALL, ui);
 }
 
 void events_init_upgrade_page(lv_ui *ui)
