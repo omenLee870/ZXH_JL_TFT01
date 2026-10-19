@@ -18,6 +18,7 @@
 #define BOOL_DEFINE_CONFLICT
 #include "lv_port_video_disp.h"
 #include "lv_video_diag.h"
+#include "lv_video_luma_probe.h"
 #include "jlgpu_image_filters.h"
 #if  LV_USE_VIDEO_DISP
 #include "src/draw/lv_draw_buf.h"
@@ -53,6 +54,7 @@ typedef struct {
     volatile uint8_t need_update;
     volatile uint8_t async_flushing;
     uint8_t first_frame_shown;  /* 首帧是否已显示: create 默认隐藏, 首帧到达时显示一次 */
+    uint32_t probe_at;
 
     /* === 特效 === */
     jlgpu_filter_mode_t effect_type;
@@ -1115,6 +1117,34 @@ static void video_disp_render_start_event_cb(lv_event_t *e)
             }
             ctx->need_update = 0;
             lv_video_diag_mark(LV_VIDEO_DIAG_FRAME, "image_src_ready", ctx->fb_index, 0);
+#if LV_VIDEO_DIAG_ENABLE
+            /* Sample while this UI frame owns fb5; never retain a borrowed pixel pointer.
+             * A successful ioctl / set_src alone does not prove that pixels were drawn. */
+            uint32_t probe_now = lv_tick_get();
+            if (ctx->fb_index == 5 && (uint32_t)(probe_now - ctx->probe_at) >= 2000u &&
+                ctx->video_format == LV_COLOR_FORMAT_NV12 && ctx->video_width && ctx->video_height) {
+                struct lv_video_luma_sample sample;
+                lv_area_t area;
+                unsigned w = ctx->video_width, h = ctx->video_height;
+                const uint8_t *y = ctx->video_frame_buf;
+                /* VI/VPSS owns these pixels. Invalidate only the eight sampled rows so
+                 * CPU statistics do not report an old cached frame from this DMA buffer. */
+                for (unsigned row = 0; row < 8; ++row)
+                    DcuInvalidRegion((unsigned int *)(y + (size_t)(h - 1) * row / 7 * w), w);
+                if (!lv_video_luma_probe(y, (size_t)w * h, w, h, w, &sample)) {
+                    lv_obj_t *img = ctx->img_obj[0];
+                    lv_obj_get_coords(img, &area);
+                    printf("[VIDEO_IMAGE] fb=5 y_min=%u y_max=%u hash=%x image=%d,%d,%d,%d hidden=%u opa=%u src=%u map=%u,%u fmt=%u\n",
+                        sample.minimum, sample.maximum, sample.hash,
+                        (int)area.x1, (int)area.y1, (int)area.x2, (int)area.y2,
+                        (unsigned)lv_obj_has_flag(img, LV_OBJ_FLAG_HIDDEN),
+                        (unsigned)lv_obj_get_style_image_opa(img, LV_PART_MAIN),
+                        (unsigned)(lv_image_get_src(img) == ctx->video_dsc),
+                        (unsigned)ctx->fb_map.width, (unsigned)ctx->fb_map.height, (unsigned)ctx->fb_map.format);
+                }
+                ctx->probe_at = probe_now;
+            }
+#endif
         }
     }
     lv_video_diag_mark(LV_VIDEO_DIAG_UI, "render_draw", 0, 1);

@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "youyibao_sif.h"
+#include "shenlong_protocol.h"
+#include "vehicle_test_control.h"
 
 typedef struct { unsigned short nesting; unsigned available; const char *owner; } OS_MUTEX,OS_SEM;
 static uint32_t mock_now;
@@ -296,6 +298,7 @@ static void vehicle_shutdown_test(void)
 lv_ui guider_ui;
 lv_font_t lv_font_Lato_Regular_24;
 static unsigned notice_active;
+static unsigned ui_switch_count;
 static bool ota_active;
 static lv_ui_chongwuyibiao pet;
 static unsigned char pixels[1024 * 600 * 2] __attribute__((aligned(32)));
@@ -310,6 +313,7 @@ gui_scr_t *ui_get_setup_scr(int32_t id) { return gui_scr_get(id); }
 void ui_load_scr_anim(lv_ui *ui, gui_scr_t *s, lv_screen_load_anim_t anim,
                       uint32_t time, uint32_t delay, bool clean, bool del, bool push)
 {
+    ++ui_switch_count;
     gui_scr_set_act_anim(s, ui, anim, time, delay, clean, del);
     (void)push;
 }
@@ -342,6 +346,9 @@ static void create_pet_widgets(void)
     pet.chongwuyibiao_jiashimoshi=label(pet.chongwuyibiao,715,466);
     pet.chongwuyibiao_dianliangshuzi=label(pet.chongwuyibiao,160,120);
     pet.chongwuyibiao_dianliangtiao=lv_bar_create(pet.chongwuyibiao);
+    pet.chongwuyibiao_dianchirongqi=lv_obj_create(pet.chongwuyibiao);
+    lv_obj_set_pos(pet.chongwuyibiao_dianchirongqi,350,116);
+    lv_obj_set_size(pet.chongwuyibiao_dianchirongqi,50,24);
     pet.chongwuyibiao_guzhangxinxi=label(pet.chongwuyibiao,390,466);
     pet.chongwuyibiao_shachetubiao=lv_obj_create(pet.chongwuyibiao);
     pet.chongwuyibiao_xunhangtubiao=lv_obj_create(pet.chongwuyibiao);
@@ -520,7 +527,7 @@ int main(void)
     assert(lv_obj_has_flag(pet.chongwuyibiao_yuanguangdengtubiao,LV_OBJ_FLAG_HIDDEN));
     assert(lv_obj_has_flag(pet.chongwuyibiao_shikuodengtubiao,LV_OBJ_FLAG_HIDDEN));
     assert(lv_obj_has_flag(pet.chongwuyibiao_tianqitubiao,LV_OBJ_FLAG_HIDDEN));
-    assert(lv_obj_has_flag(pet.chongwuyibiao_xinhaozhu_4,LV_OBJ_FLAG_HIDDEN));
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_xinhaozhu_4,LV_OBJ_FLAG_HIDDEN));
     gui_scr_t *pet_scr=gui_scr_create(GUI_SCREEN_CHONGWUYIBIAO,"pet",pet.chongwuyibiao,NULL,NULL);
     gui_scr_t *video=gui_scr_create(GUI_SCREEN_PAGE_VIDEO,"camera",lv_obj_create(NULL),NULL,NULL);
     gui_scr_set_act_anim(pet_scr,&guider_ui,LV_SCR_LOAD_ANIM_NONE,0,0,false,false);
@@ -592,6 +599,7 @@ int main(void)
     gui_scr_set_act_anim(video,&guider_ui,LV_SCR_LOAD_ANIM_NONE,0,0,false,false);
     lv_obj_delete(pet.chongwuyibiao);
     assert(pet_root==NULL);
+    assert(pet_charge_badge==NULL);
     update_ui();
     create_pet_widgets();
     chongwuyibiao_donghua_bangding(&pet);
@@ -603,7 +611,117 @@ int main(void)
     assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_chesushuzi),"--"));
     assert(!lv_obj_has_flag(pet.chongwuyibiao_jinguangdengtubiao,LV_OBJ_FLAG_HIDDEN));
     assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_jiashimoshi),"SPORT / --"));
-    puts("Youyibao UI: telemetry, reverse lifecycle, offline, OTA, deletion PASS");
+    /* Actual serial bytes -> decoder -> vehicle core -> real LVGL lamp widgets. */
+    struct sl_decoder sl;
+    uint8_t lamps_frame[]={2,18,1,0,0x80,0x40,0,0,15,160,80,0,45,'Z','X',1,15,0};
+    lamps_frame[17]=sl_xor(lamps_frame,17);
+    sl_decoder_init(&sl,160);assert(!sl_parse_feedback(&sl,lamps_frame,18,mock_now));
+    vehicle_core_update(&vehicle,&sl.input,mock_now);
+    lv_tick_inc((1000-lv_tick_get()%1000)%1000);refresh(NULL);
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_jinguangdengtubiao,LV_OBJ_FLAG_HIDDEN));
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_shikuodengtubiao,LV_OBJ_FLAG_HIDDEN));
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_zuozhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_youzhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    lv_tick_inc(500);refresh(NULL);
+    assert(lv_obj_has_flag(pet.chongwuyibiao_zuozhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    assert(lv_obj_has_flag(pet.chongwuyibiao_youzhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    lamps_frame[16]=0;lamps_frame[17]=sl_xor(lamps_frame,17);
+    assert(!sl_parse_feedback(&sl,lamps_frame,18,mock_now));vehicle_core_update(&vehicle,&sl.input,mock_now);refresh(NULL);
+    assert(lv_obj_has_flag(pet.chongwuyibiao_jinguangdengtubiao,LV_OBJ_FLAG_HIDDEN));
+    assert(lv_obj_has_flag(pet.chongwuyibiao_shikuodengtubiao,LV_OBJ_FLAG_HIDDEN));
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_xinhaozhu_4,LV_OBJ_FLAG_HIDDEN));
+    mock_now+=1001;refresh(NULL);
+    assert(lv_obj_has_flag(pet.chongwuyibiao_shikuodengtubiao,LV_OBJ_FLAG_HIDDEN));
+    puts("Youyibao/serial UI: telemetry, reverse, offline, OTA, deletion, ZXH lamp decode/display, turn blink and signal bars PASS");
+    /* Independent test commands and future physical inputs share the same UI path,
+     * including when the controller telemetry itself is offline. */
+    mock_view.online=0;update_ui();
+    struct vehicle_test_control at;vehicle_test_init(&at);
+    const char *request="AT+ZXHSET=101,15,3\r\n";
+    vehicle_test_feed(&at,&sl,(const uint8_t *)request,strlen(request),mock_now);
+    assert(strstr(vehicle_test_reply(&at),"+ZXH:101,OK,3,15,3,127,0"));vehicle_test_reply_sent(&at);
+    lv_tick_inc((1000-lv_tick_get()%1000)%1000);refresh(NULL);
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_zuozhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_youzhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_jiashimoshi),"SPORT / GEAR 3"));
+    assert(latest.link==VEHICLE_LINK_LOST); /* AT must not fake UART/SIF online. */
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_PHYSICAL,VEHICLE_LEFT_TURN,0,1,500));refresh(NULL);
+    assert(lv_obj_has_flag(pet.chongwuyibiao_zuozhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    assert(!lv_obj_has_flag(pet.chongwuyibiao_youzhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_jiashimoshi),"SPORT / GEAR 1"));
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_PHYSICAL,0,0,-1,0));
+    request="AT+ZXHSET=102,16,2\r\n";
+    vehicle_test_feed(&at,&sl,(const uint8_t *)request,strlen(request),mock_now);refresh(NULL);
+    assert(gui_scr_get_act()==video&&notice_active);
+    vehicle_test_reply_sent(&at);
+    unsigned reverse_switches=ui_switch_count;
+    for(unsigned cycle=0;cycle<3;cycle++) {
+        for(unsigned pause=0;pause<9;pause++) {
+            mock_now+=100;lv_tick_inc(100);refresh(NULL);
+            assert(gui_scr_get_act()==video&&notice_active&&latest.values.gear==2);
+            assert(ui_switch_count==reverse_switches);
+        }
+        char renewal[48];snprintf(renewal,sizeof(renewal),"AT+ZXHSET=%u,16,2\r\n",104+cycle);
+        vehicle_test_feed(&at,&sl,(const uint8_t *)renewal,strlen(renewal),mock_now);
+        vehicle_test_reply_sent(&at);
+    }
+    request="AT+ZXHCLEAR=103\r\n";
+    vehicle_test_feed(&at,&sl,(const uint8_t *)request,strlen(request),mock_now);refresh(NULL);
+    assert(gui_scr_get_act()==pet_scr&&!notice_active);
+    assert(lv_obj_has_flag(pet.chongwuyibiao_shikuodengtubiao,LV_OBJ_FLAG_HIDDEN));
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_TEST,VEHICLE_LEFT_TURN,VEHICLE_LEFT_TURN,2,1500));
+    mock_now+=1500;refresh(NULL);
+    assert(lv_obj_has_flag(pet.chongwuyibiao_zuozhuanxiang,LV_OBJ_FLAG_HIDDEN));
+    puts("AT/physical -> common vehicle state -> actual LVGL: lamp OFF priority, gear, offline independence, reverse page, CLEAR and expiry PASS");
+    /* Original charging feedback, independent AT and physical OFF/ON share one badge. */
+    while(vehicle_test_reply(&at))vehicle_test_reply_sent(&at);
+    assert(pet_charge_badge&&lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    request="AT+ZXHSET=200,64,2\r\n";
+    vehicle_test_feed(&at,&sl,(const uint8_t *)request,strlen(request),mock_now);refresh(NULL);
+    vehicle_test_reply_sent(&at);
+    assert(!lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_PHYSICAL,VEHICLE_CHARGING,0,-1,1000));refresh(NULL);
+    assert(lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_PHYSICAL,0,0,-1,0));refresh(NULL);
+    assert(!lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    request="AT+ZXHCLEAR=201\r\n";
+    vehicle_test_feed(&at,&sl,(const uint8_t *)request,strlen(request),mock_now);refresh(NULL);vehicle_test_reply_sent(&at);
+    assert(lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    lamps_frame[4]|=8;lamps_frame[17]=sl_xor(lamps_frame,17);
+    assert(!sl_parse_feedback(&sl,lamps_frame,18,mock_now));vehicle_core_update(&vehicle,&sl.input,mock_now);refresh(NULL);
+    assert(!lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_dianliangshuzi),"80%"));
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_TEST,VEHICLE_CHARGING,0,2,1500));refresh(NULL);
+    assert(lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_TEST,0,0,-1,0));refresh(NULL);
+    assert(!lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    mock_now+=1001;refresh(NULL);assert(lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_PHYSICAL,VEHICLE_CHARGING,VEHICLE_CHARGING,-1,1000));refresh(NULL);
+    assert(!lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    mock_now+=1000;refresh(NULL);assert(lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    puts("Reverse continuity: three 900ms renewal gaps, stable GEAR/video without repeated switches PASS");
+    puts("Charging LVGL: AT ON, physical OFF priority, CLEAR, OEM feedback, timeout, physical ON/expiry and unchanged SOC PASS");
+    for(unsigned mode=0;mode<3;++mode) {
+        static const char *names[]={"ECO / GEAR 2","CITY / GEAR 2","SPORT / GEAR 2"};
+        char line[64];snprintf(line,sizeof(line),"AT+ZXHSET=%u,64,2,%u\r\n",300+mode,mode);
+        vehicle_test_feed(&at,&sl,(const uint8_t *)line,strlen(line),mock_now);vehicle_test_reply_sent(&at);refresh(NULL);
+        assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_jiashimoshi),names[mode]));
+        static const uint32_t expected_colors[]={0x31c48d,0x36a9ff,0xff9f43};
+        assert(lv_color_eq(lv_obj_get_style_text_color(pet.chongwuyibiao_jiashimoshi,0),lv_color_hex(expected_colors[mode])));
+        assert(lv_obj_get_child_count(pet_charge_badge)==0);
+        assert(lv_obj_get_style_bg_opa(pet_charge_badge,0)==LV_OPA_TRANSP);
+        lv_obj_update_layout(pet.chongwuyibiao);
+        assert(lv_obj_get_x(pet_charge_badge)==406&&lv_obj_get_y(pet_charge_badge)==115);
+    }
+    assert(!app_vehicle_aux_publish(VEHICLE_AUX_PHYSICAL,VEHICLE_RIDE_MODE_MASK,VEHICLE_MODE_ECO,-1,500));refresh(NULL);
+    assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_jiashimoshi),"ECO / GEAR 2"));
+    mock_now+=500;refresh(NULL);assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_jiashimoshi),"SPORT / GEAR 2"));
+    export_ppm("output/vehicle-v36-mode-charge.ppm",display);
+    request="AT+ZXHCLEAR=399\r\n";vehicle_test_feed(&at,&sl,(const uint8_t *)request,strlen(request),mock_now);
+    vehicle_test_reply_sent(&at);refresh(NULL);
+    assert(!strcmp(lv_label_get_text(pet.chongwuyibiao_jiashimoshi),"SPORT / --"));
+    assert(lv_obj_has_flag(pet_charge_badge,LV_OBJ_FLAG_HIDDEN));
+    puts("AT -> actual LVGL ECO/CITY/SPORT, physical mode priority, CLEAR fallback and battery-side lightning without text/background PASS");
     vehicle_power_cycle_test();
     vehicle_shutdown_test();
     return 0;

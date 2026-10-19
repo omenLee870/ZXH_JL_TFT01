@@ -136,7 +136,7 @@ void lv_port_indev_init(void)
     lv_indev_set_type(indev_touchpad, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(indev_touchpad, touchpad_read);
 
-#if !TOUCHPAD_USE_TIEMR
+#if !TOUCHPAD_USE_TIEMR && !(TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE)
     lv_timer_del(indev_touchpad->read_timer);
     indev_touchpad->read_timer = NULL;
 #endif
@@ -308,6 +308,19 @@ static void touchpad_read(lv_indev_t *indev_drv, lv_indev_data_t *data)
     uint8_t status;
     static uint32_t touch_time = 0; //记录滑动抬起后的时刻
     static uint8_t g_prev_touch_status = 0; //上一轮触摸状态
+
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    /* 此屏触摸任务会上报每个边沿。一次读取可连续消费多次短按，绘图慢也不会覆盖掉按下。 */
+    extern void lv_port_read_queued_touch(int32_t *,int32_t *,uint8_t *,uint8_t *,uint32_t *);
+    uint8_t more;
+    lv_port_read_queued_touch(&data->point.x,&data->point.y,&status,&more,&data->timestamp);
+    data->state=status?LV_INDEV_STATE_PRESSED:LV_INDEV_STATE_RELEASED;
+    data->continue_reading=more;
+    if (status && !g_prev_touch_status) {g_first_touch_x=data->point.x;g_first_touch_y=data->point.y;}
+    g_prev_touch_status=status;
+    if (status) touch_time=timer_get_ms();
+    return;
+#endif
 
 #if LV_USE_SIM_INERTIAL_SLIDE
     lv_indev_data_t touch_data;

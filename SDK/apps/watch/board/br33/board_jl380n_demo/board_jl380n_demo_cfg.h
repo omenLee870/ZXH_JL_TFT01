@@ -7,7 +7,14 @@
  * PC05 is unused by the enabled MIPI panel and DVP group C camera.
  * A 5V/high-voltage vehicle line needs a receiver/level shifter to 3.3V.
  * Keep custom settings here so sdk_config.h regeneration preserves them. */
-#define TCFG_YYB_SIF_ENABLE                 1
+#ifndef TCFG_SHENLONG_UART_ENABLE
+#define TCFG_SHENLONG_UART_ENABLE           1 /* 0 restores the existing one-wire build. */
+#endif
+#define TCFG_SHENLONG_TX_IO                 IO_PORTC_04
+#define TCFG_SHENLONG_RX_IO                 IO_PORTC_05
+#define TCFG_SHENLONG_UART_ID               1 /* UART0 remains PA12 debug log. */
+#define TCFG_SHENLONG_DIAMETER_TENTH_INCH    160
+#define TCFG_YYB_SIF_ENABLE                 (!TCFG_SHENLONG_UART_ENABLE)
 #define TCFG_YYB_SIF_IO                     IO_PORTC_05
 #define TCFG_YYB_TIMEOUT_MS                 1000
 #define TCFG_YYB_WHEEL_CIRCUMFERENCE_MM      0

@@ -8,6 +8,43 @@
 #include <limits.h>
 #include <string.h>
 
+int vehicle_core_aux_publish(struct vehicle_core *core, enum vehicle_aux_source source,
+    uint32_t known, uint32_t status, int gear, uint32_t now, uint32_t timeout)
+{
+    if (!core || (unsigned)source >= VEHICLE_AUX_COUNT || (known & ~VEHICLE_AUX_STATUS_MASK) ||
+        (status & ~known) || gear < -1 || gear > 15 || timeout > 60000u) return -1;
+    uint32_t mode_known = known & VEHICLE_RIDE_MODE_MASK, mode_status = status & VEHICLE_RIDE_MODE_MASK;
+    if (mode_known && (mode_known != VEHICLE_RIDE_MODE_MASK ||
+        !mode_status || (mode_status & (mode_status - 1u)))) return -1;
+    struct vehicle_aux_input *p = &core->auxiliary[source];
+    p->known = known; p->status = status; p->gear = gear;
+    p->received_at_ms = now; p->timeout_ms = timeout;
+    return 0;
+}
+
+void vehicle_core_aux_apply(const struct vehicle_core *core, struct vehicle_state *out, uint32_t now)
+{
+    unsigned i;
+    out->auxiliary_status = out->physical_status = 0;
+    out->auxiliary_gear = out->physical_gear = 0;
+    for (i = 0; i < VEHICLE_AUX_COUNT; ++i) {
+        const struct vehicle_aux_input *p = &core->auxiliary[i];
+        if (!p->timeout_ms || (uint32_t)(now - p->received_at_ms) >= p->timeout_ms) continue;
+        if (p->known) {
+            out->values.valid |= VEHICLE_STATUS_VALID;
+            out->values.status = (out->values.status & ~p->known) | p->status;
+            out->values.known_status |= p->known;
+            out->auxiliary_status |= p->known;
+            if (i == VEHICLE_AUX_PHYSICAL) out->physical_status |= p->known;
+        }
+        if (p->gear >= 0) {
+            out->values.valid |= VEHICLE_GEAR_VALID; out->values.gear = p->gear;
+            out->auxiliary_gear = 1;
+            if (i == VEHICLE_AUX_PHYSICAL) out->physical_gear = 1;
+        }
+    }
+}
+
 /**
  * @brief 将过期实时数据标为未知，保留已有里程。
  * @param[in,out] core 核心上下文，不能为空。

@@ -7,6 +7,10 @@
 #define APP_VEHICLE_H
 #include "vehicle_core.h"
 
+/** @brief app_core统一输入入口；测试/物理适配共用。IRQ先投递app_core，不在IRQ/UI直接调用。 */
+int app_vehicle_aux_publish(enum vehicle_aux_source source, uint32_t known, uint32_t status,
+    int gear, uint32_t timeout_ms);
+
 /** @brief 交给 app_core 执行的车辆操作；只列出已经接通的操作。 */
 enum app_vehicle_command {
     APP_VEHICLE_CMD_RESET_TRIP = 1 /**< 清除小计里程，保留总里程和骑行时间。 */

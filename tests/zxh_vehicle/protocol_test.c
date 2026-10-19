@@ -121,9 +121,31 @@ int main(void) {
     check(!strcmp(reply_value("odometer_m"),"12345")&&!strcmp(reply_value("faults"),"512"));
     request("lost_bms","","0","ZXH_BMS","1",(void *)0xb1000001u);
     check(!strcmp(reply_value("soc"),"-1")&&!strcmp(reply_value("current_ma"),"-2147483648"));
+    read_fixture.values.valid|=VEHICLE_STATUS_VALID;
+    read_fixture.values.known_status=read_fixture.values.status=VEHICLE_CHARGING;
+    read_fixture.auxiliary_status=VEHICLE_CHARGING;
+    request("aux_charge","","0","ZXH_BMS","1",(void *)0xb1000001u);
+    check(!strcmp(reply_value("charging"),"1")&&!strcmp(reply_value("soc"),"-1"));
+    request("aux_charge_state","","0","ZXH_STATE","1",(void *)0xb1000001u);
+    check(!strcmp(reply_value("status"),"131072")&&!strcmp(reply_value("link"),"2"));
+    read_fixture.values.status=0;
+    request("aux_charge_off","","0","ZXH_BMS","1",(void *)0xb1000001u);
+    check(!strcmp(reply_value("charging"),"0"));
+    read_fixture.auxiliary_status=0;
+    request("aux_charge_expired","","0","ZXH_BMS","1",(void *)0xb1000001u);
+    check(!strcmp(reply_value("charging"),"-1"));
     read_fixture.values.odometer_mm=UINT64_MAX;read_fixture.ride_time_ms=UINT64_MAX;
     request("large_counts","","0","ZXH_STATE","1",(void *)0xb1000001u);
     check(!strcmp(reply_value("odometer_m"),"-1")&&!strcmp(reply_value("ride_time_s"),"-1"));
+    read_fixture.values.known_status=VEHICLE_RIDE_MODE_MASK;
+    read_fixture.auxiliary_status=VEHICLE_RIDE_MODE_MASK;
+    for(unsigned mode=0;mode<3;++mode) {
+        char id[24], expected[2]={(char)('0'+mode),0};
+        read_fixture.values.status=VEHICLE_MODE_ECO<<mode;
+        snprintf(id,sizeof(id),"aux_mode_%u",mode);
+        request(id,"","0","ZXH_STATE","1",(void *)0xb1000001u);
+        check(!strcmp(reply_value("mode"),expected));
+    }
     read_result=APP_VEHICLE_BUSY;
     request("read_busy","","0","ZXH_STATE","1",(void *)0xb1000001u);
     check(last_code==ZXH_BUSY&&!strlen(reply_value("speed_dkph")));

@@ -1,8 +1,9 @@
 /**
  * @file meter_environment.c
- * @brief 经 BLE 接收手机时间、时区和天气，维护 RTC 校时与两小时天气有效期。
- * @note 不把天气写入 Flash；时钟有效标记最多每日保存一次，避免频繁擦写。
+ * @brief 经 BLE 接收手机时间、时区和天气；超时保留上次显示，首次启动提供默认内容。
+ * @note 实时有效性与显示缓存分开；时钟标记每日、天气缓存最多每小时保存一次。
  */
+#ifndef METER_ENVIRONMENT_TEST
 #include "app_config.h"
 #include "system/includes.h"
 #include "rtc.h"
@@ -11,6 +12,7 @@
 #include "zxh_vehicle_protocol.h"
 #include "json_c/json.h"
 #include "json_c/json_tokener.h"
+#endif
 #include "meter_environment.h"
 #include <string.h>
 #include <stdlib.h>
@@ -18,11 +20,15 @@
 #define MIN_UTC 1577836800u
 #define MAX_UTC 4102444799u
 #define WEATHER_TTL 7200u
+#define WEATHER_MAGIC 0x57454131u
 static OS_SEM gate;
 static volatile unsigned ready; /**< app_core 初始化完成后向 UI 线程发布。 */
 static uint32_t tick_ms, weather_age_ms;
 static struct meter_environment state;
 static struct clock_record { uint32_t magic, utc; int32_t zone; uint32_t crc; } saved;
+static struct weather_record { uint32_t magic, utc; int32_t temperature; uint32_t weather, crc; } saved_weather;
+static uint32_t weather_saved_ms;
+static unsigned weather_saved_this_boot;
 static struct { char id[33]; int64_t a, b, c; char action; int code; } replies[8];
 static unsigned reply_next;
 static unsigned local_result_sequence;
@@ -52,10 +58,20 @@ static int rtc_epoch(const struct sys_time *t, int zone, uint32_t *utc) {
     if (value < MIN_UTC || value > MAX_UTC) return -1;
     *utc = (uint32_t)value; return 0;
 }
+/** @brief 缺少 RTC/缓存时仅提供显示用的编译时间，不写 RTC、不宣称已校时。 */
+static void display_defaults(struct meter_environment *p) {
+    struct sys_time t; const char *months = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    unsigned i;
+    memset(p, 0, sizeof(*p)); memset(&t, 0, sizeof(t));
+    p->timezone_minutes = 480; p->temperature_dc = 250; p->weather = METER_WEATHER_CLOUD;
+    t.year = atoi(__DATE__ + 7); t.month = 1; t.day = atoi(__DATE__ + 4);
+    for (i = 0; i < 12; i++) if (!strncmp(__DATE__, months + i * 3, 3)) t.month = i + 1;
+    t.hour = atoi(__TIME__); t.min = atoi(__TIME__ + 3); t.sec = atoi(__TIME__ + 6);
+    if (rtc_epoch(&t, p->timezone_minutes, &p->utc)) p->utc = MIN_UTC;
+}
 static void format(struct meter_environment *p) {
     static const char *week[] = {"周日","周一","周二","周三","周四","周五","周六"};
     struct sys_time t; unsigned w;
-    if (!p->clock_valid) { strcpy(p->clock, "--:--"); strcpy(p->date, "-- --"); return; }
     calendar((uint32_t)((int64_t)p->utc + p->timezone_minutes * 60), &t, &w);
     p->hour = t.hour;
     snprintf(p->clock, sizeof(p->clock), "%02u:%02u", t.hour, t.min);
@@ -69,8 +85,8 @@ static void tick(void *unused) {
     uint32_t elapsed = now - tick_ms;
     unsigned seconds = elapsed / 1000;
     tick_ms += seconds * 1000;
-    if (state.clock_valid && seconds) {
-        if (MAX_UTC - state.utc < seconds) state.clock_valid = 0;
+    if (seconds) {
+        if (MAX_UTC - state.utc < seconds) { state.utc = MAX_UTC; state.clock_valid = 0; }
         else state.utc += seconds;
     }
     if (state.weather_valid && ((uint32_t)(now - weather_age_ms) >= WEATHER_TTL * 1000u ||
@@ -81,10 +97,31 @@ static void tick(void *unused) {
 }
 void meter_environment_snapshot(struct meter_environment *out) {
     if (!out) return;
-    if (!ready) { memset(out, 0, sizeof(*out)); format(out); return; }
+    if (!ready) { display_defaults(out); format(out); return; }
     os_sem_pend(&gate, 0); *out = state; os_sem_post(&gate);
 }
 static uint32_t record_crc(const struct clock_record *p) { return p->magic ^ p->utc ^ (uint32_t)p->zone ^ 0x9e3779b9u; }
+static uint32_t weather_crc(const struct weather_record *p) {
+    return p->magic ^ p->utc ^ (uint32_t)p->temperature ^ p->weather ^ 0x9e3779b9u;
+}
+/** @brief 在 app_core 收到新天气后限频保存，不在 UI 刷新或升级期间擦写 Flash。 */
+static void save_weather(void) {
+    struct weather_record record;
+    uint32_t now = sys_timer_get_ms();
+    extern int ui_update_page_is_active(void);
+    if (ui_update_page_is_active() || (weather_saved_this_boot && (uint32_t)(now - weather_saved_ms) < 3600000u)) return;
+    os_sem_pend(&gate, 0);
+    record.magic = WEATHER_MAGIC; record.utc = state.observed_utc;
+    record.temperature = state.temperature_dc; record.weather = state.weather;
+    os_sem_post(&gate);
+    record.crc = weather_crc(&record);
+    if (!memcmp(&record, &saved_weather, sizeof(record))) return;
+    int written = syscfg_write(CFG_METER_WEATHER, &record, sizeof(record)), flushed = VM_ERR_NONE;
+    if (written == sizeof(record) && (get_vm_ram_storage_enable() || get_vm_ram_storage_in_irq_enable())) flushed = vm_flush2flash(0);
+    if (written == sizeof(record) && (flushed == VM_ERR_NONE || flushed == VM_RAM_FLUSH_NONE)) {
+        saved_weather = record; weather_saved_ms = now; weather_saved_this_boot = 1;
+    } else printf("[METER_ENV] weather cache write=%d flush=%d\n", written, flushed);
+}
 static int set_clock(uint32_t utc, int zone) {
     struct sys_time t, check; unsigned w; uint32_t actual;
     calendar((uint32_t)((int64_t)utc + zone * 60), &t, &w);
@@ -195,10 +232,14 @@ int meter_environment_receive(void *client, const char *topic, const char *json)
         os_sem_pend(&gate, 0);
         if (state.clock_valid && a <= (int64_t)state.utc + 300 && (int64_t)state.utc - a < WEATHER_TTL) {
             unsigned age = a < state.utc ? state.utc - (uint32_t)a : 0;
-            state.observed_utc = a; state.temperature_dc = b; state.weather = c; state.weather_valid = 1;
+            if (c != METER_WEATHER_UNKNOWN) {
+                state.observed_utc = a; state.temperature_dc = b; state.weather = c;
+                state.weather_valid = state.weather_cached = 1;
+            }
             weather_age_ms = sys_timer_get_ms() - age * 1000; code = ZXH_OK;
         }
         os_sem_post(&gate);
+        if (code == ZXH_OK && c != METER_WEATHER_UNKNOWN) save_weather();
     }
     i = reply_next++ % 8; strcpy(replies[i].id, id); replies[i].a = a; replies[i].b = b; replies[i].c = c; replies[i].action = action[0]; replies[i].code = code;
 done:
@@ -207,15 +248,26 @@ done:
 int meter_environment_init(void) {
     if (ready) return 0;
     if (strcmp(os_current_task(), "app_core") || os_sem_create(&gate, 1)) return -1;
-    memset(&state, 0, sizeof(state)); state.timezone_minutes = 480;
+    display_defaults(&state);
     struct sys_time rtc; uint32_t utc;
     if (syscfg_read(CFG_METER_CLOCK, &saved, sizeof(saved)) == sizeof(saved) && saved.magic == CLOCK_MAGIC &&
         saved.crc == record_crc(&saved) && saved.zone >= -720 && saved.zone <= 840 && saved.utc >= MIN_UTC && saved.utc <= MAX_UTC) {
-        memset(&rtc, 0, sizeof(rtc)); rtc_read_time(&rtc);
-        if (!rtc_epoch(&rtc, saved.zone, &utc) && utc >= saved.utc) {
-            state.utc = utc; state.timezone_minutes = saved.zone; state.clock_valid = 1;
-        }
+        state.utc = saved.utc; state.timezone_minutes = saved.zone;
     } else memset(&saved, 0, sizeof(saved));
+    /* RTC 有合法日历即可显示；缺少旧版校时标记不再把整个时钟清空。 */
+    memset(&rtc, 0, sizeof(rtc)); rtc_read_time(&rtc);
+    if (!rtc_epoch(&rtc, state.timezone_minutes, &utc) && (!saved.magic || utc >= saved.utc)) {
+        state.utc = utc; state.clock_valid = 1;
+    }
+    if (syscfg_read(CFG_METER_WEATHER, &saved_weather, sizeof(saved_weather)) == sizeof(saved_weather) &&
+        saved_weather.magic == WEATHER_MAGIC && saved_weather.crc == weather_crc(&saved_weather) &&
+        saved_weather.utc >= MIN_UTC && saved_weather.utc <= MAX_UTC &&
+        saved_weather.temperature >= -1000 && saved_weather.temperature <= 700 &&
+        saved_weather.weather >= METER_WEATHER_CLEAR && saved_weather.weather <= METER_WEATHER_DUST) {
+        state.observed_utc = saved_weather.utc; state.temperature_dc = saved_weather.temperature;
+        state.weather = saved_weather.weather; state.weather_cached = 1;
+        /* 重启后缓存只作上次显示，手机更新后才重新标为实时。 */
+    } else memset(&saved_weather, 0, sizeof(saved_weather));
     tick_ms = sys_timer_get_ms(); format(&state);
     if (!sys_timer_add(NULL, tick, 1000)) return -1;
     ready = 1; return 0;

@@ -12,6 +12,7 @@ struct meter_environment {
     uint32_t utc, observed_utc;
     int timezone_minutes, temperature_dc;
     unsigned clock_valid, weather_valid, weather, hour;
+    unsigned weather_cached; /**< 有上次天气；过期仍可显示，但不标为实时有效。 */
     char clock[6], date[24];
 };
 /** @brief 本地日期时间，按仪表当前时区解释；手动保存时秒数归零。 */

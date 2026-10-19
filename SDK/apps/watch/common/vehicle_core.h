@@ -12,7 +12,8 @@
 /** @brief 当前接入的车辆数据来源，不表示该来源具备车辆控制能力。 */
 enum vehicle_source {
     VEHICLE_SOURCE_NONE, /**< 尚未接入车辆数据源。 */
-    VEHICLE_SOURCE_YYB   /**< 优宜宝一线通，只接收控制器上报数据。 */
+    VEHICLE_SOURCE_YYB,  /**< 优宜宝一线通，只接收控制器上报数据。 */
+    VEHICLE_SOURCE_SHENLONG /**< 神龙锂电2号双向 UART。 */
 };
 
 /** @brief 控制器通信状态，区分首次等待与曾经在线后的掉线。 */
@@ -56,7 +57,15 @@ enum vehicle_status {
     VEHICLE_EKK = 1u << 9,          /**< EKK 状态标志，保留控制器协议含义。 */
     VEHICLE_REVERSE = 1u << 10,     /**< 倒车状态。 */
     VEHICLE_EBRAKE = 1u << 11,      /**< 电子刹车状态。 */
-    VEHICLE_SPEED_LIMIT = 1u << 12  /**< 控制器报告限速状态。 */
+    VEHICLE_SPEED_LIMIT = 1u << 12, /**< 控制器报告限速状态。 */
+    VEHICLE_HEADLIGHT = 1u << 13,   /**< 大灯状态，数据来源由适配层提供。 */
+    VEHICLE_POSITION_LIGHT = 1u << 14, /**< 示廓灯状态。 */
+    VEHICLE_LEFT_TURN = 1u << 15,   /**< 左转向开关，UI负责闪烁。 */
+    VEHICLE_RIGHT_TURN = 1u << 16,  /**< 右转向开关，UI负责闪烁。 */
+    VEHICLE_CHARGING = 1u << 17,    /**< 外部充电状态，独立于滑行回充。 */
+    VEHICLE_MODE_ECO = 1u << 18,
+    VEHICLE_MODE_CITY = 1u << 19,
+    VEHICLE_MODE_SPORT = 1u << 20
 };
 
 /** @brief 统一故障位；位值不是厂家故障码，不能直接作为 E 码显示。 */
@@ -106,6 +115,28 @@ struct vehicle_state {
     enum vehicle_motion motion;   /**< 运动判定，掉线时必须为未知。 */
     uint32_t received_at_ms;       /**< 最近一次接受的在线报文接收时间，单位 ms。 */
     uint64_t ride_time_ms;         /**< 本次核心初始化后累计的骑行时间，单位 ms，不写 Flash。 */
+    uint32_t auxiliary_status, physical_status; /**< 当前独立输入有效状态位；不代表控制器在线。 */
+    unsigned auxiliary_gear, physical_gear; /**< 档位来自独立输入/物理输入。 */
+};
+
+enum vehicle_aux_source { VEHICLE_AUX_TEST, VEHICLE_AUX_PHYSICAL, VEHICLE_AUX_COUNT };
+#define VEHICLE_RIDE_MODE_MASK (VEHICLE_MODE_ECO | VEHICLE_MODE_CITY | VEHICLE_MODE_SPORT)
+#define VEHICLE_AUX_STATUS_MASK (VEHICLE_HEADLIGHT | VEHICLE_POSITION_LIGHT | VEHICLE_LEFT_TURN | VEHICLE_RIGHT_TURN | VEHICLE_REVERSE | VEHICLE_CHARGING | VEHICLE_RIDE_MODE_MASK)
+/** @brief 已知且单选的骑行模式；未知返回-1。物理适配一次发布完整模式掩码。 */
+static inline int vehicle_values_ride_mode(const struct vehicle_values *v)
+{
+    if (!(v->valid & VEHICLE_STATUS_VALID) ||
+        (v->known_status & VEHICLE_RIDE_MODE_MASK) != VEHICLE_RIDE_MODE_MASK) return -1;
+    switch (v->status & VEHICLE_RIDE_MODE_MASK) {
+    case VEHICLE_MODE_ECO: return 0;
+    case VEHICLE_MODE_CITY: return 1;
+    case VEHICLE_MODE_SPORT: return 2;
+    default: return -1;
+    }
+}
+struct vehicle_aux_input {
+    uint32_t known, status, received_at_ms, timeout_ms;
+    int gear; /**< -1表示该来源不提供档位；否则0~15。 */
 };
 
 /** @brief 业务核心内部上下文，由所属执行线程维护。 */
@@ -114,7 +145,14 @@ struct vehicle_core {
     uint32_t timeout_ms,       /**< 当前报文有效期，单位 ms。 */
              clock_ms;          /**< 上次计时处理位置，单位 ms，避免重复累计时间。 */
     uint8_t received_once;       /**< 是否曾收到在线输入，用于区分首次等待与后续掉线。 */
+    struct vehicle_aux_input auxiliary[VEHICLE_AUX_COUNT];
 };
+
+/** @brief 统一发布测试或物理状态，串行调用；known包含明确关闭的位。物理输入逐字段优先。 */
+int vehicle_core_aux_publish(struct vehicle_core *core, enum vehicle_aux_source source,
+    uint32_t known, uint32_t status, int gear, uint32_t now_ms, uint32_t timeout_ms);
+/** @brief 将有效独立输入合并到输出副本，不修改原协议快照、通信在线、运动判定或里程。 */
+void vehicle_core_aux_apply(const struct vehicle_core *core, struct vehicle_state *out, uint32_t now_ms);
 
 /**
  * @brief 初始化车辆业务核心。

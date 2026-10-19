@@ -107,6 +107,13 @@ int camera_display_ui_init(int width, int height, int x, int y)
     /* ---- 3. 创建 LVGL 视频控件 (读 fb5 上屏) ----
      * 必须在 app_camera_display_start 之后创建, 否则 fb5 尚无 buffer 读不到帧 */
     g_cam_video_handle = lvgl_video_init(g_cam_w, g_cam_h, g_cam_x, g_cam_y, CAM_DISP_FB_NAME);
+    if (!g_cam_video_handle) {
+        printf("[CAM_DISP] video widget failed; release camera pipeline\n");
+        app_camera_display_stop(g_cam_handle);
+        app_camera_close(&g_cam_handle);
+        g_cam_handle = NULL;
+        return -5;
+    }
 
     g_cam_active = 1;
     printf("[CAM_DISP] init ok: %dx%d at (%d,%d)\n", g_cam_w, g_cam_h, g_cam_x, g_cam_y);

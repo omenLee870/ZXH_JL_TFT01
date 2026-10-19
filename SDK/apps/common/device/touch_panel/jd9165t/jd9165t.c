@@ -153,8 +153,14 @@ static struct touch_kinetic_energy tke[ENERGY_NUM]; // 惯性
 static volatile TP_RUN_STEP_E tp_step = TP_RUN_STEP_STOP;
 static u8 tp_last_staus = ELM_EVENT_TOUCH_UP;	// 状态记录
 static int tp_down_cnt = 0; // 长按计数
-static bool touch_flag = 0; // 触摸标记
+static volatile bool touch_flag = 0; // 中断与采集任务共享的触摸标记
 static OS_SEM touch_sem; // 触摸中断post
+#if CONFIG_LVGL_UI_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+static volatile unsigned touch_irq_count;
+static volatile unsigned touch_suspended;
+static unsigned touch_read_count, touch_read_errors, touch_bad_points;
+static unsigned touch_max_read_ms, touch_queue_retries;
+#endif
 
 static ft_param module_param = {
 #ifdef TCFG_TP_PIN_IIC_CH
@@ -210,6 +216,9 @@ static void tp_irq_callback(enum gpio_port port, u32 pin, enum gpio_irq_edge edg
     log_debug("port%d.%d:%d-cb1\n", port, pin, edge);
 
     touch_flag = 1;
+#if CONFIG_LVGL_UI_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    ++touch_irq_count;
+#endif
     os_sem_post(&touch_sem);
 }
 
@@ -586,6 +595,11 @@ static void jd9165t_reset()
 
 static void ctp_sleep_jd9165t(void)
 {
+#if CONFIG_LVGL_UI_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    /* 先停止兜底读取，等待正在进行的总线操作结束，再关闭 I2C。 */
+    touch_suspended = 1;
+    while (tp_step == TP_RUN_STEP_RUN) os_time_dly(1);
+#endif
     JD9165T_RESET_L();          // RESET 拉低
     ctp_delay_ms(10);
 
@@ -603,6 +617,10 @@ static void ctp_wakeup_jd9165t(void)
     jd9165t_reset();
     gpio_set_mode(IO_PORT_SPILT(TCFG_TP_INT_IO), PORT_INPUT_PULLUP_10K);
     system_iic_init(__this->iic_hdl, get_iic_config(__this->iic_hdl));
+#if CONFIG_LVGL_UI_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    touch_suspended = 0;
+    os_sem_post(&touch_sem);
+#endif
     /* #endif */
     /* #ifdef INT_PIN_WAKEUP */
     /*     bl_ts_int_wakeup(); */
@@ -853,10 +871,10 @@ void get_touch_x_y_status(int32_t *x, int32_t *y, uint8_t *status)
     *status = g_touch_data.state;
 }
 
-static bool jd9165t_lvgl_read(lv_touch_data_t *data)
+/** @return 0 为有效报点，-1 为读取失败；失败时不能发布未初始化坐标或伪造抬起。 */
+static int jd9165t_lvgl_read(lv_touch_data_t *data)
 {
-    unsigned char buf[8];
-    int update = 0;
+    unsigned char buf[8] = {0};
     static int x_last, y_last;
     u8 reg_addr[4];
     reg_addr[0] = 0x20;
@@ -864,7 +882,27 @@ static bool jd9165t_lvgl_read(lv_touch_data_t *data)
     reg_addr[2] = 0x11;
     reg_addr[3] = 0x20;
 
-    system_iic_read_nbytes(__this->iic_hdl, HYN_I2C_ADDR, &reg_addr[0], 4, &buf[0], 8);
+#if TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    unsigned read_started_ms = timer_get_ms();
+#endif
+    int ret = system_iic_read_nbytes(__this->iic_hdl, HYN_I2C_ADDR, &reg_addr[0], 4, &buf[0], 8);
+#if TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    unsigned read_elapsed_ms = timer_get_ms() - read_started_ms;
+    if(read_elapsed_ms > touch_max_read_ms) touch_max_read_ms = read_elapsed_ms;
+    ++touch_read_count;
+    if (ret != sizeof(buf)) {
+        static unsigned last_error_ms;
+        unsigned now = timer_get_ms();
+        ++touch_read_errors;
+        if (touch_read_errors == 1 || now - last_error_ms >= 1000) {
+            printf("[TOUCH] read_error=%d total=%u t=%u\n", ret, touch_read_errors, now);
+            last_error_ms = now;
+        }
+        return -1;
+    }
+#else
+    if (ret != sizeof(buf)) return -1;
+#endif
 
     data->state = (buf[0] != 0) ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
 
@@ -875,6 +913,13 @@ static bool jd9165t_lvgl_read(lv_touch_data_t *data)
 #else
         data->point.x = buf[4] | ((buf[3] & 0xF) << 8);
         data->point.y = buf[6] | ((buf[5] & 0xF) << 8);
+#endif
+#if TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+        if (data->point.x < 0 || data->point.x >= VK_X ||
+            data->point.y < 0 || data->point.y >= VK_Y) {
+            ++touch_bad_points;
+            return -1;
+        }
 #endif
         x_last = data->point.x;
         y_last = data->point.y;
@@ -889,22 +934,35 @@ static bool jd9165t_lvgl_read(lv_touch_data_t *data)
         //printf("vk %s\n", (vk_state == LV_INDEV_STATE_PR) ? "press" : "release");
     }
 
-    return false; /* no more data to read */
+    return 0;
 }
 
-static void JD9165T_get_touch_xy(void)
+/** @brief 中断立即读取；本板每 20 ms 兜底读取，避免丢失抬起后把两次点击并成一次长按。 */
+static int JD9165T_get_touch_xy(void)
 {
+#if !TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
     if (!touch_flag) {
-        return ;
+        return 0;
     }
+#endif
 
     touch_flag = 0;
 
     lv_touch_data_t touch_data;
-    jd9165t_lvgl_read(&touch_data);
+    if (jd9165t_lvgl_read(&touch_data)) return -1;
+#if TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    unsigned pressed = touch_data.state == LV_INDEV_STATE_PR;
+    if (pressed != g_touch_data.state) {
+        printf("[TOUCH] %s x=%d y=%d irq=%u reads=%u err=%u bad=%u t=%u\n",
+               pressed ? "down" : "up", touch_data.point.x, touch_data.point.y,
+               touch_irq_count, touch_read_count, touch_read_errors, touch_bad_points,
+               (unsigned)timer_get_ms());
+    }
+#endif
     g_touch_data.point.x = touch_data.point.x;
     g_touch_data.point.y = touch_data.point.y;
     g_touch_data.state = (touch_data.state == LV_INDEV_STATE_PR) ? 1 : 0;
+    return 0;
 }
 
 
@@ -966,14 +1024,37 @@ static void jd9165t_hw_init(void)
     //i2c_write_regs(I2C_MASTER_CI2C0, HYN_I2C_ADDR, 0xee, &buf[0], 1, 0);
 }
 
+#if CONFIG_LVGL_UI_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+/** @brief 低频统计用于区分没有中断、总线读取失败与 UI 队列堵塞，不在中断中打印。 */
+static void touch_trace_status(void)
+{
+    static unsigned last_report_ms;
+    unsigned now = timer_get_ms();
+    if(now - last_report_ms < 2000) return;
+    last_report_ms = now;
+    printf("[TOUCH_SCAN] irq=%u reads=%u err=%u bad=%u max_read_ms=%u retry=%u state=%d x=%d y=%d suspended=%u t=%u\n",
+           touch_irq_count, touch_read_count, touch_read_errors, touch_bad_points,
+           touch_max_read_ms, touch_queue_retries, g_touch_data.state,
+           g_touch_data.point.x, g_touch_data.point.y, touch_suspended, now);
+}
+#endif
+
 static void touch_interupt_task(void *p)
 {
     int sem_timeout = 0;
+    unsigned retry_pending = 0;
 
     jd9165t_hw_init();
 
     os_sem_create(&touch_sem, 0);
+#if CONFIG_LVGL_UI_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    touch_suspended = 0;
+    sem_timeout = 2;
+#endif
     tp_irq_init();
+#if CONFIG_LVGL_UI_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    printf("[TOUCH_DIAG] build=20261019-click250 click_limit_ms=250 timing=sample click_delta_lt=5\n");
+#endif
 
     while (1) {
         tp_step = TP_RUN_STEP_RUN_IDLE;
@@ -982,15 +1063,32 @@ static void touch_interupt_task(void *p)
 
 #if CONFIG_LVGL_UI_ENABLE
 
-        JD9165T_get_touch_xy(); //每次都读出触摸坐标，防止延迟读取读的是旧坐标
+        /* 队列满时先重试同一份边沿，不能在重试前读取新坐标覆盖未交付的按下/抬起。 */
+#if TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+        touch_trace_status();
+        if (touch_suspended) continue;
+#endif
+        if (!retry_pending && JD9165T_get_touch_xy()) {
+            sem_timeout = 2;
+            continue;
+        }
 
 
         if (lcd_touch_interrupt_event(TP_TASK_NAME, g_touch_data.point.x, g_touch_data.point.y, g_touch_data.state)) { //UI线程跑得慢，触摸事件处理不过来
+#if TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+            ++touch_queue_retries;
+#endif
+            retry_pending = 1;
             sem_timeout = 2; //按压坐标可丢失，抬起事件不可丢失，特意延后20ms再次读取坐标推送事件
             continue;
         }
 
+#if TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+        sem_timeout = 2; /* 中断仍然即时唤醒；无中断时 20 ms 后主动确认状态。 */
+#else
         sem_timeout = 0;
+#endif
+        retry_pending = 0;
 
 #else /* #if CONFIG_LVGL_UI_ENABLE */
 
@@ -1031,6 +1129,10 @@ void jd9165t_deinit()
 {
     jd9165t_wait_init();
 
+#if CONFIG_LVGL_UI_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    /* 停用中断前也要禁止定时兜底，避免退出过程中再次访问即将关闭的 I2C。 */
+    touch_suspended = 1;
+#endif
     tp_irq_deinit();
     while (tp_step == TP_RUN_STEP_RUN) {
         os_time_dly(1);

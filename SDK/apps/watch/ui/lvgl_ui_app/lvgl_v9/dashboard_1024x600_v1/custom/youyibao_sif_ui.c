@@ -28,13 +28,15 @@ static int meter_settings_miles(void) { return 0; }
 #include <stdio.h>
 #include <string.h>
 
-#if TCFG_YYB_SIF_ENABLE
+#if TCFG_YYB_SIF_ENABLE || TCFG_SHENLONG_UART_ENABLE
 static lv_timer_t *refresh_timer;       /**< UI 线程中的 100ms 刷新定时器。 */
 static lv_obj_t *auto_return_root;      /**< 自动倒车前的页面根对象，用于核对返回页是否仍有效。 */
 static int32_t auto_return_id;          /**< 自动倒车前的页面编号。 */
 static unsigned previous_reverse;      /**< 上次倒车状态，用于识别进入倒车的边沿。 */
 static struct vehicle_state latest;    /**< 本次刷新获取的独立业务状态副本。 */
 static lv_obj_t *pet_root;             /**< 已绑定的宠物页根对象，删除页面时清空。 */
+static lv_obj_t *pet_charge_badge, *meter_charge_badge;
+static lv_obj_t *meter_mode_label;
 /* 关闭页为独立屏幕根对象，无父对象；只用 lv_screen_load 切换，禁止设置或移除 HIDDEN。 */
 static lv_obj_t *meter_standby_cover, *meter_resume_root;
 static lv_timer_t *control_timer;
@@ -65,18 +67,50 @@ static void visible(lv_obj_t *o, unsigned show)
     else lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
 }
 
+static void charge_badge_deleted(lv_event_t *e)
+{
+    if (lv_event_get_target(e) == pet_charge_badge) pet_charge_badge = NULL;
+    if (lv_event_get_target(e) == meter_charge_badge) meter_charge_badge = NULL;
+    if (lv_event_get_target(e) == meter_mode_label) meter_mode_label = NULL;
+}
+
+/** @brief 电池右侧仅显示一个闪电，不增加底框或文字。 */
+static lv_obj_t *charge_badge_create(lv_obj_t *root)
+{
+    static const lv_point_precise_t bolt[] = {{12, 0}, {2, 12}, {9, 12}, {3, 24}};
+    lv_obj_t *badge = lv_line_create(root);
+    lv_obj_remove_style_all(badge);
+    lv_line_set_points(badge, bolt, 4);
+    lv_obj_set_size(badge, 16, 26);
+    lv_obj_remove_flag(badge, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_style_line_color(badge, lv_color_hex(0x65dbb6), 0);
+    lv_obj_set_style_line_width(badge, 3, 0); lv_obj_set_style_line_rounded(badge, 1, 0);
+    lv_obj_add_event_cb(badge, charge_badge_deleted, LV_EVENT_DELETE, NULL);
+    visible(badge, 0);
+    return badge;
+}
+
 /** @brief 刷新本机灯光和模式；一线通掉线也不清除 APP 对仪表的显示选择。 */
 static void pet_meter_refresh(lv_ui_chongwuyibiao *ui)
 {
     static const char *names[] = {"ECO", "CITY", "SPORT"};
     static const uint32_t colors[] = {0x31c48d, 0x36a9ff, 0xff9f43};
-    unsigned mode = meter_display.mode < 0 || meter_display.mode > 2 ? 1 : meter_display.mode;
+    int injected_mode = vehicle_values_ride_mode(&latest.values);
+    unsigned mode = injected_mode >= 0 ? (unsigned)injected_mode :
+        (meter_display.mode < 0 || meter_display.mode > 2 ? 1 : meter_display.mode);
     const struct vehicle_values *v = &latest.values;
     char gear[16];
-    visible(ui->chongwuyibiao_jinguangdengtubiao, meter_display.light_on);
+    unsigned headlight_known = (latest.link == VEHICLE_LINK_ONLINE || (latest.auxiliary_status & VEHICLE_HEADLIGHT)) &&
+        (v->valid & VEHICLE_STATUS_VALID) && (v->known_status & VEHICLE_HEADLIGHT);
+    visible(ui->chongwuyibiao_jinguangdengtubiao,
+        headlight_known ? !!(v->status & VEHICLE_HEADLIGHT) : meter_display.light_on);
+    visible(ui->chongwuyibiao_shikuodengtubiao, pet_status(VEHICLE_POSITION_LIGHT));
+    unsigned blink = (lv_tick_get() / 500u) % 2u == 0;
+    visible(ui->chongwuyibiao_zuozhuanxiang, blink && pet_status(VEHICLE_LEFT_TURN));
+    visible(ui->chongwuyibiao_youzhuanxiang, blink && pet_status(VEHICLE_RIGHT_TURN));
     if (pet_status(VEHICLE_PARK)) strcpy(gear, "P");
     else if (pet_status(VEHICLE_REVERSE)) strcpy(gear, "R");
-    else if (latest.link == VEHICLE_LINK_ONLINE && (v->valid & VEHICLE_GEAR_VALID)) snprintf(gear, sizeof(gear), "GEAR %u", (unsigned)v->gear);
+    else if ((latest.link == VEHICLE_LINK_ONLINE || latest.auxiliary_gear) && (v->valid & VEHICLE_GEAR_VALID)) snprintf(gear, sizeof(gear), "GEAR %u", (unsigned)v->gear);
     else strcpy(gear, "--");
     /* 复用原有底部信息控件，不在图片区域额外创建模式文字。 */
     lv_label_set_text_fmt(ui->chongwuyibiao_jiashimoshi, "%s / %s", names[mode], gear);
@@ -216,7 +250,7 @@ static const char *fault_name(uint32_t f, uint32_t tick)
         {VEHICLE_CONTROLLER_FAULT, "CONTROLLER"}, {VEHICLE_UNDERVOLTAGE, "LOW BATTERY"},
         {VEHICLE_PHASE_FAULT, "MOTOR PHASE"}, {VEHICLE_PROTECTION, "PROTECTION"},
         {VEHICLE_ANTI_RUNAWAY, "RUNAWAY"}, {VEHICLE_OVERCURRENT, "OVERCURRENT"},
-        {VEHICLE_STALL, "MOTOR STALL"}
+        {VEHICLE_STALL, "MOTOR STALL"}, {VEHICLE_COMMUNICATION_FAULT, "LINK FAULT"}
     };
     unsigned n = 0, i, selected;
     for (i = 0; i < sizeof(names) / sizeof(names[0]); ++i)
@@ -236,8 +270,8 @@ static const char *fault_name(uint32_t f, uint32_t tick)
 static unsigned pet_status(uint32_t flags)
 {
     const struct vehicle_values *v = &latest.values;
-    return latest.link == VEHICLE_LINK_ONLINE && (v->valid & VEHICLE_STATUS_VALID) &&
-        (v->known_status & v->status & flags);
+    return (v->valid & VEHICLE_STATUS_VALID) && (v->known_status & v->status & flags) &&
+        (latest.link == VEHICLE_LINK_ONLINE || (latest.auxiliary_status & v->status & flags));
 }
 
 /**
@@ -313,9 +347,10 @@ static void pet_refresh(lv_ui_chongwuyibiao *ui)
     lv_bar_set_value(ui->chongwuyibiao_dianliangtiao, online && (v->valid & VEHICLE_SOC_VALID) ? v->soc : 0, LV_ANIM_OFF);
     visible(ui->chongwuyibiao_guzhangxinxi, !online || ((v->valid & VEHICLE_FAULTS_VALID) && v->faults));
     lv_label_set_text(ui->chongwuyibiao_guzhangxinxi, latest.link == VEHICLE_LINK_WAITING ?
-        "SIF WAIT" : !online ? "SIF OFFLINE" : fault_name(v->faults, lv_tick_get()));
+        (latest.source == VEHICLE_SOURCE_SHENLONG ? "UART WAIT" : "SIF WAIT") : !online ? (latest.source == VEHICLE_SOURCE_SHENLONG ? "UART OFFLINE" : "SIF OFFLINE") : fault_name(v->faults, lv_tick_get()));
     visible(ui->chongwuyibiao_shachetubiao, pet_status(VEHICLE_BRAKE | VEHICLE_EBRAKE));
     visible(ui->chongwuyibiao_xunhangtubiao, pet_status(VEHICLE_CRUISE));
+    visible(pet_charge_badge, pet_status(VEHICLE_CHARGING));
     pet_distance_refresh(ui);
     pet_meter_refresh(ui);
 #ifndef YOUYIBAO_UI_TEST
@@ -371,7 +406,7 @@ static void auto_video_unload(lv_event_t *e)
  */
 static void reverse_update(gui_scr_t *screen)
 {
-    unsigned reverse = (latest.link == VEHICLE_LINK_ONLINE) && !!(latest.values.status & VEHICLE_REVERSE);
+    unsigned reverse = pet_status(VEHICLE_REVERSE);
     if (reverse && !previous_reverse && screen &&
         (screen->id == GUI_SCREEN_CHONGWUYIBIAO || screen->id == GUI_SCREEN_PAGE_METER) &&
         !ui_update_page_is_active()) {
@@ -426,10 +461,11 @@ static void refresh(lv_timer_t *timer)
     valid_speed = online && (v->valid & VEHICLE_SPEED_VALID);
     if (valid_speed) snprintf(speed, sizeof(speed), "%ld", (long)((v->speed_dkph + 5) / 10));
     else strcpy(speed, "--");
-    if (!online) strcpy(gear, "--");
+    if (!online && !latest.auxiliary_gear && !(latest.auxiliary_status & VEHICLE_REVERSE)) strcpy(gear, "--");
     else if (v->status & VEHICLE_PARK) strcpy(gear, "P");
     else if (v->status & VEHICLE_REVERSE) strcpy(gear, "R");
-    else snprintf(gear, sizeof(gear), "GEAR %u", v->gear);
+    else if (v->valid & VEHICLE_GEAR_VALID) snprintf(gear, sizeof(gear), "GEAR %u", v->gear);
+    else strcpy(gear, "--");
     if (screen->id == GUI_SCREEN_CHONGWUYIBIAO) {
         lv_ui_chongwuyibiao *ui = ui_get_scr_ptr(&guider_ui, screen->id);
         if (!ui) return;
@@ -441,6 +477,11 @@ static void refresh(lv_timer_t *timer)
         if (ui->page_meter_timer_1) lv_timer_pause(ui->page_meter_timer_1);
         if (ui->page_meter_timer_2) lv_timer_pause(ui->page_meter_timer_2);
         if (ui->page_meter_timer_3) lv_timer_pause(ui->page_meter_timer_3);
+        if (!meter_charge_badge || lv_obj_get_parent(meter_charge_badge) != ui->page_meter) {
+            meter_charge_badge = charge_badge_create(ui->page_meter);
+            lv_obj_align_to(meter_charge_badge, ui->page_meter_lbl_3, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
+        }
+        visible(meter_charge_badge, pet_status(VEHICLE_CHARGING));
         /* 一线通没有对应数据的示例灯光和警告图标保持隐藏，避免伪造车辆状态。 */
         lv_obj_t *sample_lamps[] = {ui->page_meter_img_1, ui->page_meter_img_2,
             ui->page_meter_img_3, ui->page_meter_img_4, ui->page_meter_img_5,
@@ -452,9 +493,24 @@ static void refresh(lv_timer_t *timer)
         unsigned i;
         for (i = 0; i < sizeof(sample_lamps) / sizeof(sample_lamps[0]); ++i)
             visible(sample_lamps[i], 0);
-        visible(ui->page_meter_img_left_turn, 0);
-        visible(ui->page_meter_img_right_turn, 0);
+        unsigned blink = (lv_tick_get() / 500u) % 2u == 0;
+        visible(ui->page_meter_img_left_turn, blink && pet_status(VEHICLE_LEFT_TURN));
+        visible(ui->page_meter_img_right_turn, blink && pet_status(VEHICLE_RIGHT_TURN));
+        int ride_mode = vehicle_values_ride_mode(v);
+        if (ride_mode < 0) ride_mode = meter_display.mode;
+        if (ride_mode < 0 || ride_mode > 2) ride_mode = 1;
         visible(ui->page_meter_imgList_gear_mode, 0);
+        if (!meter_mode_label) {
+            meter_mode_label = lv_label_create(ui->page_meter);
+            lv_obj_set_style_text_font(meter_mode_label, &lv_font_Lato_Regular_24, 0);
+            lv_obj_align_to(meter_mode_label, ui->page_meter_imgList_gear_mode, LV_ALIGN_CENTER, 0, 0);
+            lv_obj_add_event_cb(meter_mode_label, charge_badge_deleted, LV_EVENT_DELETE, NULL);
+        }
+        static const char *mode_names[] = {"ECO", "CITY", "SPORT"};
+        static const uint32_t mode_colors[] = {0x31c48d, 0x36a9ff, 0xff9f43};
+        lv_label_set_text(meter_mode_label, mode_names[ride_mode]);
+        lv_obj_align_to(meter_mode_label, ui->page_meter_imgList_gear_mode, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_set_style_text_color(meter_mode_label, lv_color_hex(mode_colors[ride_mode]), 0);
         visible(ui->page_meter_img_ready, 0); /* 当前一线通协议没有 READY 状态位。 */
         visible(ui->page_meter_imglist_speed_tens, valid_speed && v->speed_dkph < 995);
         visible(ui->page_meter_imglist_speed_ones, valid_speed && v->speed_dkph < 995);
@@ -474,7 +530,7 @@ static void refresh(lv_timer_t *timer)
         lv_obj_set_style_text_font(ui->page_meter_lbl_2, &lv_font_Lato_Regular_24, 0);
         lv_label_set_long_mode(ui->page_meter_lbl_2, LV_LABEL_LONG_MODE_CLIP);
         lv_label_set_text_fmt(ui->page_meter_lbl_2, "%s %s", speed,
-            !online ? "SIF OFF" : v->faults ? fault_name(v->faults, lv_tick_get()) : "km/h");
+            !online ? (latest.source == VEHICLE_SOURCE_SHENLONG ? "UART OFF" : "SIF OFF") : v->faults ? fault_name(v->faults, lv_tick_get()) : "km/h");
     }
 }
 #endif
@@ -487,20 +543,28 @@ static void refresh(lv_timer_t *timer)
  */
 void youyibao_sif_ui_bind_pet(lv_ui_chongwuyibiao *ui)
 {
-#if TCFG_YYB_SIF_ENABLE
+#if TCFG_YYB_SIF_ENABLE || TCFG_SHENLONG_UART_ENABLE
     if (!ui || !ui->chongwuyibiao || pet_root == ui->chongwuyibiao) return;
     pet_root = ui->chongwuyibiao;
+    pet_charge_badge = charge_badge_create(pet_root);
+    if (ui->chongwuyibiao_dianchirongqi)
+        lv_obj_align_to(pet_charge_badge, ui->chongwuyibiao_dianchirongqi, LV_ALIGN_OUT_RIGHT_MID, 6, 0);
+    else lv_obj_set_pos(pet_charge_badge, 406, 115);
     lv_obj_set_width(ui->chongwuyibiao_jiashimoshi, 270);
     lv_obj_add_event_cb(pet_root, pet_deleted, LV_EVENT_DELETE, NULL);
     lv_obj_t *unsupported[] = {ui->chongwuyibiao_zuozhuanxiang, ui->chongwuyibiao_youzhuanxiang,
         ui->chongwuyibiao_yuanguangdengtubiao,
-        ui->chongwuyibiao_shikuodengtubiao, ui->chongwuyibiao_tianqitubiao,
-        ui->chongwuyibiao_xinhaozhu_1, ui->chongwuyibiao_xinhaozhu_2,
-        ui->chongwuyibiao_xinhaozhu_3, ui->chongwuyibiao_xinhaozhu_4};
+        ui->chongwuyibiao_shikuodengtubiao, ui->chongwuyibiao_tianqitubiao};
     lv_obj_t *distance[] = {ui->chongwuyibiao_lichengbiaoti, ui->chongwuyibiao_lichengshuzi,
         ui->chongwuyibiao_lichengdanwei};
     unsigned i;
     for (i = 0; i < sizeof(unsupported) / sizeof(unsupported[0]); ++i) visible(unsupported[i], 0);
+    /* Network indicator belongs to the network UI, not the vehicle protocol.
+     * Restore the existing neutral bars without inventing an RSSI value. */
+    visible(ui->chongwuyibiao_xinhaozhu_1, 1);
+    visible(ui->chongwuyibiao_xinhaozhu_2, 1);
+    visible(ui->chongwuyibiao_xinhaozhu_3, 1);
+    visible(ui->chongwuyibiao_xinhaozhu_4, 1);
     for (i = 0; i < sizeof(distance) / sizeof(distance[0]); ++i) if (distance[i]) {
         lv_obj_add_flag(distance[i], LV_OBJ_FLAG_CLICKABLE);
         lv_obj_set_ext_click_area(distance[i], 10);
@@ -529,7 +593,7 @@ void youyibao_sif_ui_bind_pet(lv_ui_chongwuyibiao *ui)
  */
 void youyibao_sif_ui_init(void)
 {
-#if TCFG_YYB_SIF_ENABLE
+#if TCFG_YYB_SIF_ENABLE || TCFG_SHENLONG_UART_ENABLE
     if (!control_timer) control_timer = lv_timer_create(meter_control_bridge, 100, NULL);
     if (control_timer) meter_control_bridge(control_timer);
     if (!refresh_timer) refresh_timer = lv_timer_create(refresh, 100, NULL);

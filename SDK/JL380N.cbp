@@ -3141,6 +3141,11 @@
 <Unit filename="apps/watch/common/youyibao_sif.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/common/youyibao_sif_protocol.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/common/youyibao_sif.h" />
+<Unit filename="apps/watch/common/shenlong_protocol.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/shenlong_uart.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/shenlong_protocol.h" />
+<Unit filename="apps/watch/common/vehicle_test_control.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/watch/common/vehicle_test_control.h" />
 <Unit filename="apps/watch/data_storage/data_call_log_storage.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/watch/data_storage/data_call_log_storage.h" />
 <Unit filename="apps/watch/data_storage/data_message_storage.c"><Option compilerVer="CC"/></Unit>

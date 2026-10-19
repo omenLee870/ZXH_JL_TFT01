@@ -55,7 +55,13 @@ static void hidden(lv_obj_t *obj, int hide)
 }
 static void highlight(lv_obj_t *obj, int active)
 {
-    lv_obj_set_style_bg_color(obj, lv_color_hex(active ? 0x268bff : 0x0d1522), 0);
+    lv_color_t color=lv_color_hex(active ? 0x268bff : 0x0d1522);
+    if (!lv_color_eq(lv_obj_get_style_bg_color(obj,0),color)) lv_obj_set_style_bg_color(obj,color,0);
+}
+/** @brief 同样的文本不重新分配和排版，静止设置页不应持续触发重绘。 */
+static void text(lv_obj_t *obj,const char *value)
+{
+    if (strcmp(lv_label_get_text(obj),value)) lv_label_set_text(obj,value);
 }
 void ui_meter_settings_select(unsigned index)
 {
@@ -63,6 +69,9 @@ void ui_meter_settings_select(unsigned index)
     if (!ui || index > 6)
         return;
     selected = index;
+#if !LV_USE_GUIBUILDER_SIMULATOR
+    printf("[SETTINGS] select=%u t=%u\n",index,(unsigned)lv_tick_get());
+#endif
     lv_obj_t *panels[] = {W(panel_0), W(panel_1), W(panel_2), W(panel_3), W(panel_4), W(panel_5), W(panel_6)};
     lv_obj_t *menus[] = {W(menu_0), W(menu_1), W(menu_2), W(menu_3), W(menu_4), W(menu_5), W(menu_6)};
     for (unsigned i = 0; i < 7; i++)
@@ -119,7 +128,7 @@ static void slider(lv_obj_t *obj, lv_obj_t *label, unsigned value)
     /* 拖动期间及等待保存结果时保持手指选定值，避免 100ms 轮询把滑块拉回旧位置。 */
     if (!local_pending && !lv_slider_is_dragged(obj) && !lv_obj_has_state(obj, LV_STATE_PRESSED))
         lv_slider_set_value(obj, value, LV_ANIM_OFF);
-    lv_label_set_text_fmt(label, "%u%%", (unsigned)lv_slider_get_value(obj));
+    char buffer[12];snprintf(buffer,sizeof(buffer),"%u%%",(unsigned)lv_slider_get_value(obj));text(label,buffer);
 }
 static void mileage(lv_obj_t *label, uint64_t mm, unsigned miles)
 {
@@ -135,7 +144,7 @@ static void mileage(lv_obj_t *label, uint64_t mm, unsigned miles)
         tenth /= 10;
     }
     while (tenth);
-    lv_label_set_text_fmt(label, "%s.%u %s", end, decimal, miles ? "mi" : "km");
+    char result[32];snprintf(result,sizeof(result),"%s.%u %s",end,decimal,miles?"mi":"km");text(label,result);
 }
 static void refresh_page(void)
 {
@@ -144,9 +153,9 @@ static void refresh_page(void)
     if (!ui || lv_screen_active() != ui->meter_settings)
         return;
     meter_settings_snapshot(&p);
-    slider(W(brightness), W(brightness_value), p.brightness);
-    slider(W(music), W(music_value), p.music);
-    slider(W(tone), W(tone_value), p.tone);
+    if (selected==0) slider(W(brightness), W(brightness_value), p.brightness);
+    if (selected==1) {
+    slider(W(music), W(music_value), p.music);slider(W(tone), W(tone_value), p.tone);
     if (!local_pending)
     {
         if (p.key_tone)
@@ -154,27 +163,32 @@ static void refresh_page(void)
         else
             lv_obj_remove_state(W(key_tone), LV_STATE_CHECKED);
     }
+    }
+    if (selected==2) {
     highlight(W(unit_km), !p.unit);
     highlight(W(unit_mi), p.unit);
+    }
+    if (selected==3) {
     highlight(W(sleep_0), !p.sleep_minutes);
     highlight(W(sleep_1), p.sleep_minutes == 1);
     highlight(W(sleep_3), p.sleep_minutes == 3);
     highlight(W(sleep_5), p.sleep_minutes == 5);
+    }
+    if (selected==6) {
     lv_obj_t *time_controls[]={W(time_year),W(time_month),W(time_day),W(time_hour),W(time_minute),W(time_save)};
     for (unsigned i=0;i<sizeof(time_controls)/sizeof(time_controls[0]);i++) {
         if (time_pending) lv_obj_add_state(time_controls[i],LV_STATE_DISABLED);
         else lv_obj_remove_state(time_controls[i],LV_STATE_DISABLED);
     }
+    }
 #if !LV_USE_GUIBUILDER_SIMULATOR
     struct vehicle_state v;
     app_vehicle_snapshot(&v);
-    mileage(W(trip), v.values.trip_mm, p.unit);
-    mileage(W(odo), v.values.odometer_mm, p.unit);
-    lv_label_set_text(W(firmware), __DATE__ "\n" __TIME__);
+    if (selected==2) {mileage(W(trip), v.values.trip_mm, p.unit);mileage(W(odo), v.values.odometer_mm, p.unit);}
+    if (selected==4) text(W(firmware), __DATE__ "\n" __TIME__);
 #else
-    mileage(W(trip), 0, p.unit);
-    mileage(W(odo), 0, p.unit);
-    lv_label_set_text(W(firmware), "SIMULATOR");
+    if (selected==2) {mileage(W(trip),0,p.unit);mileage(W(odo),0,p.unit);}
+    if (selected==4) text(W(firmware), "SIMULATOR");
 #endif
 }
 /** @brief 仅失败时显示简短原因，不能把关机、忙等状态统称为保存失败。 */
@@ -205,6 +219,7 @@ void ui_meter_settings_time_save(void)
     int code;time_result_seen=meter_environment_time_result(&code);
     if (meter_environment_time_post(&value)) {show_error(1004);return;}
     time_pending=1;
+    printf("[SETTINGS] time save queued t=%u\n",(unsigned)lv_tick_get());
 #endif
     lv_display_trigger_activity(NULL);refresh_page();
 }
@@ -306,6 +321,7 @@ void ui_meter_settings_poll(void)
     result=meter_environment_time_result(&code);
     if (time_pending && result!=time_result_seen) {
         time_pending=0;time_result_seen=result;
+        printf("[SETTINGS] time save result=%d t=%u\n",code,(unsigned)lv_tick_get());
         if (code) show_error(code);
     }
     if (!app_meter_control_media_allowed())

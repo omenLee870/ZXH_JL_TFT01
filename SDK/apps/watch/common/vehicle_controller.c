@@ -1,14 +1,14 @@
 /**
  * @file vehicle_controller.c
  * @brief 将当前控制器协议接到统一车辆业务接口。
- * @note 当前只启用优宜宝接收；不会将一线通状态位当作可下发的控制命令。
- *       更换控制器协议时在本模块转换字段，业务服务及界面继续使用统一状态。
+ * @note 板级配置在神龙双向UART和优宜宝一线通之间选择；业务与界面使用统一状态。
  */
 #ifndef VEHICLE_CONTROLLER_TEST
 #include "app_config.h"
 #endif
 #include "vehicle_controller.h"
 #include "youyibao_sif.h"
+#include "shenlong_protocol.h"
 #include <string.h>
 
 /**
@@ -17,7 +17,7 @@
  */
 uint32_t vehicle_controller_capabilities(void)
 {
-#if TCFG_YYB_SIF_ENABLE
+#if TCFG_YYB_SIF_ENABLE || TCFG_SHENLONG_UART_ENABLE
     return VEHICLE_CONTROLLER_TELEMETRY | VEHICLE_CONTROLLER_RESET_TRIP;
 #else
     return 0;
@@ -87,7 +87,9 @@ void vehicle_controller_read(struct vehicle_input *input)
 {
     if (!input) return;
     memset(input, 0, sizeof(*input));
-#if TCFG_YYB_SIF_ENABLE
+#if TCFG_SHENLONG_UART_ENABLE
+    shenlong_uart_read(input);
+#elif TCFG_YYB_SIF_ENABLE
     read_youyibao(input);
 #endif
 }
@@ -98,7 +100,9 @@ void vehicle_controller_read(struct vehicle_input *input)
  */
 int vehicle_controller_reset_trip(void)
 {
-#if TCFG_YYB_SIF_ENABLE
+#if TCFG_SHENLONG_UART_ENABLE
+    return shenlong_uart_reset_trip() == 0 ? VEHICLE_CONTROLLER_OK : VEHICLE_CONTROLLER_FAILED;
+#elif TCFG_YYB_SIF_ENABLE
     return youyibao_sif_reset_trip() == 0 ? VEHICLE_CONTROLLER_OK : VEHICLE_CONTROLLER_FAILED;
 #else
     return VEHICLE_CONTROLLER_UNSUPPORTED;
@@ -111,7 +115,9 @@ int vehicle_controller_reset_trip(void)
  */
 int vehicle_controller_shutdown(void)
 {
-#if TCFG_YYB_SIF_ENABLE
+#if TCFG_SHENLONG_UART_ENABLE
+    return shenlong_uart_shutdown() == 0 ? VEHICLE_CONTROLLER_OK : VEHICLE_CONTROLLER_FAILED;
+#elif TCFG_YYB_SIF_ENABLE
     return youyibao_sif_shutdown() == 0 ? VEHICLE_CONTROLLER_OK : VEHICLE_CONTROLLER_FAILED;
 #else
     return VEHICLE_CONTROLLER_OK;
@@ -120,7 +126,9 @@ int vehicle_controller_shutdown(void)
 
 int vehicle_controller_start(void)
 {
-#if TCFG_YYB_SIF_ENABLE
+#if TCFG_SHENLONG_UART_ENABLE
+    return shenlong_uart_start() == 0 ? VEHICLE_CONTROLLER_OK : VEHICLE_CONTROLLER_FAILED;
+#elif TCFG_YYB_SIF_ENABLE
     return youyibao_sif_start() == 0 ? VEHICLE_CONTROLLER_OK : VEHICLE_CONTROLLER_FAILED;
 #else
     return VEHICLE_CONTROLLER_OK;

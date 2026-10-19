@@ -7,6 +7,7 @@
 #endif
 #endif
 
+#include "app_config.h"
 #include "lv_conf.h"
 #include "system/includes.h"
 #include "lvgl.h"
@@ -92,6 +93,33 @@ struct touch_event {
     uint8_t status;
 };
 #endif
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+#include "examples/porting/lv_port_touch_queue.h"
+static DEFINE_SPINLOCK(touch_queue_lock);
+static struct lv_touch_queue touch_queue;
+/** @brief UI 消费采集时的完整样本，不能把一次短按退化成“当前已经抬起”。 */
+void lv_port_read_queued_touch(int32_t *x,int32_t *y,uint8_t *status,uint8_t *more,uint32_t *timestamp)
+{
+    struct lv_touch_sample sample;
+    unsigned pending, fresh;
+    static uint8_t previous_pressed;
+    local_irq_disable();spin_lock(&touch_queue_lock);
+    fresh=touch_queue.count!=0;
+    lv_touch_queue_read(&touch_queue,&sample,more);
+    pending=touch_queue.count;
+    spin_unlock(&touch_queue_lock);local_irq_enable();
+    *x=sample.x;*y=sample.y;*status=sample.pressed;
+    /* 已缓存的报点使用采集时间；没有新报点时使用当前时间，让持续按住仍能触发长按。 */
+    *timestamp=fresh?sample.sampled_ms:timer_get_ms();
+    if (previous_pressed != sample.pressed) {
+        unsigned now=timer_get_ms();
+        printf("[TOUCH_UI] %s x=%d y=%d lag=%u q=%u t=%u\n",
+               sample.pressed?"down":"up",sample.x,sample.y,
+               now-sample.sampled_ms,pending,now);
+        previous_pressed=sample.pressed;
+    }
+}
+#endif
 
 enum LVGL_Q_USER_TYPE {
     LVGL_Q_USER_TYPE_TOUCH = 0x10000,//从这个立即数开始是为了删消息池使用,不可更改
@@ -103,7 +131,7 @@ static struct key_event s_last_key;
 static u16 lvgl_drop_key_hande_timeout_id;
 
 
-void lv_port_get_touch_x_y_status(void *user_data, u16 *x, u16 *y, u8 *status)
+void lv_port_get_touch_x_y_status(void *user_data, int32_t *x, int32_t *y, u8 *status)
 {
     struct touch_event *e = (struct touch_event *)user_data;
     *x = e->x;
@@ -253,6 +281,20 @@ int lcd_touch_interrupt_event(const char *tp_task_name, int32_t x, int32_t y, ui
     if (lvgl_suspend_flag) {
         return 0;
     }
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    unsigned sampled_ms=timer_get_ms();
+    local_irq_disable();spin_lock(&touch_queue_lock);
+    unsigned count_before=touch_queue.count, merged_before=touch_queue.merged;
+    err=lv_touch_queue_push(&touch_queue,x,y,status);
+    if (!err && (touch_queue.count!=count_before || touch_queue.merged!=merged_before)) {
+        touch_queue.items[(touch_queue.head+touch_queue.count-1)%LV_TOUCH_QUEUE_CAPACITY].sampled_ms=sampled_ms;
+    }
+    spin_unlock(&touch_queue_lock);local_irq_enable();
+    /* 本板保留 LVGL 输入定时器，避免“关闭定时器”与新触摸同时发生而丢掉唤醒。
+     * 定时器只读取缓存；不在 UI 线程轮询 I2C，也不会因此强制重绘屏幕。
+     */
+    return err;
+#endif
 
     //fixme:低功耗模式
     /*lv_ui_auto_shut_down_re_run();*/

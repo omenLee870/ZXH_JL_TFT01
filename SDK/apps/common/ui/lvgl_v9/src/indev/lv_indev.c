@@ -1,3 +1,6 @@
+#if !LV_USE_GUIBUILDER_SIMULATOR
+#include "app_config.h"
+#endif
 #include "lv_indev_private.h"
 #include "../misc/lv_event_private.h"
 #include "../misc/lv_area_private.h"
@@ -16,6 +19,7 @@
 #include "../display/lv_display_private.h"
 #include "../core/lv_global.h"
 #include "../core/lv_obj_private.h"
+#include "../core/lv_obj_class_private.h"
 #include "../core/lv_group.h"
 #include "../core/lv_refr.h"
 
@@ -24,12 +28,37 @@
 #include "../misc/lv_math.h"
 #include "../misc/lv_profiler.h"
 #include "../stdlib/lv_string.h"
+#include <stdio.h>
+
+/**
+ * @brief 仅记录本板触摸命中和取消原因，不修改事件、阈值、控件状态或滚动行为。
+ * @note 只在一次触摸的关键边沿调用，连续移动不打印，避免串口输出干扰采集。
+ */
+static void zxh_touch_event_trace(lv_indev_t *indev, const char *reason, lv_obj_t *obj)
+{
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+    printf("[TOUCH_EVT] %s obj=%p class=%s box=%d,%d,%d,%d point=%d,%d scroll=%p pressed=%u wait=%u t=%u\n",
+           reason, obj, obj && obj->class_p->name ? obj->class_p->name : "none",
+           obj ? (int)obj->coords.x1 : -1, obj ? (int)obj->coords.y1 : -1,
+           obj ? (int)obj->coords.x2 : -1, obj ? (int)obj->coords.y2 : -1,
+           (int)indev->pointer.act_point.x, (int)indev->pointer.act_point.y,
+           indev->pointer.scroll_obj, indev->pointer.pressed, indev->wait_until_release,
+           (unsigned)lv_tick_get());
+#endif
+}
 
 /*********************
  *      DEFINES
  *********************/
 /*Drag threshold in pixels*/
 #define LV_INDEV_DEF_SCROLL_LIMIT         10
+
+/* 本仪表短按上限为 250 ms（含边界），按采集时间计时；其他板保持原有 <150 ms。 */
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+#define LV_INDEV_CLICK_MAX_TIME_MS        250u
+#else
+#define LV_INDEV_CLICK_MAX_TIME_MS        149u
+#endif
 
 /*Drag throw slow-down in [%]. Greater value -> faster slow-down*/
 #define LV_INDEV_DEF_SCROLL_THROW         10
@@ -1420,6 +1449,10 @@ static void indev_proc_press(lv_indev_t *indev)
         new_obj_searched = true;
     }
 
+    if(indev->prev_state == LV_INDEV_STATE_RELEASED) {
+        zxh_touch_event_trace(indev, "hit", indev_obj_act);
+    }
+
     /*The scroll object might have scroll throw. Stop it manually*/
     if (new_obj_searched && indev->pointer.scroll_obj) {
         /*Attempt to stop scroll throw animation firstly*/
@@ -1462,6 +1495,7 @@ static void indev_proc_press(lv_indev_t *indev)
         if (indev->pointer.act_obj != NULL) {
             /*Save the obj because in special cases `act_obj` can change in the event */
             lv_obj_t *prev_act_obj = indev->pointer.act_obj;
+            zxh_touch_event_trace(indev, "press_lost", prev_act_obj);
             lv_obj_send_event(prev_act_obj, LV_EVENT_PRESS_LOST, indev_act);
             if (indev_reset_check(indev)) {
                 return;
@@ -1661,6 +1695,7 @@ static void indev_proc_release(lv_indev_t *indev)
     }
 
     if (indev->wait_until_release) {
+        zxh_touch_event_trace(indev, "wait_release", indev->pointer.act_obj);
         lv_obj_send_event(indev->pointer.act_obj, LV_EVENT_PRESS_LOST, indev_act);
         if (indev_reset_check(indev)) {
             indev->wait_until_release = 0;
@@ -1724,22 +1759,48 @@ static void indev_proc_release(lv_indev_t *indev)
 
                     uint8_t abs_x = LV_ABS(indev->pointer.act_point.x - indev->pointer.last_point.x); //按下到抬起的横坐标差值pixel
                     uint8_t abs_y = LV_ABS(indev->pointer.act_point.y - indev->pointer.last_point.y); //按下到抬起的纵坐标差值pixel
-                    if (!indev->longpr_rep_timestamp && lv_tick_get() - indev->pr_timestamp < 150 && abs_x < 5 && abs_y < 5) {
-                        LV_LOG_INFO("Short click: dx=%d, dy=%d, dt=%d", abs_x, abs_y, (int)(lv_tick_get() - indev->pr_timestamp));
+                    /* 报点带有采集时间，不能把 UI 绘制与排队时间算成用户按住的时间。
+                     * 保留长按重复与位移判断；滚动、禁用、等待抬起仍由外层处理。
+                     */
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+                    uint32_t click_elapsed = indev->timestamp - indev->pr_timestamp;
+#else
+                    uint32_t click_elapsed = lv_tick_get() - indev->pr_timestamp;
+#endif
+                    if (!indev->longpr_rep_timestamp && click_elapsed <= LV_INDEV_CLICK_MAX_TIME_MS && abs_x < 5 && abs_y < 5) {
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+                        printf("[TOUCH_CLICK] allow=1 dt=%u dx=%u dy=%u repeat=%u obj=%p t=%u\n",
+                               (unsigned)click_elapsed, abs_x, abs_y,
+                               (unsigned)indev->longpr_rep_timestamp, indev_obj_act, (unsigned)lv_tick_get());
+                        zxh_touch_event_trace(indev, "click_dispatch", indev_obj_act);
+#endif
+                        LV_LOG_INFO("Click: dx=%d, dy=%d, dt=%d", abs_x, abs_y, (int)click_elapsed);
                         if (send_event(LV_EVENT_CLICKED, indev_act) == LV_RESULT_INVALID) {
                             return;
                         }
                     } else {
-                        LV_LOG_INFO("Not short click: dx=%d, dy=%d, dt=%d, longpr_rep=%d", abs_x, abs_y, (int)(lv_tick_get() - indev->pr_timestamp), indev->longpr_rep_timestamp);
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+                        printf("[TOUCH_CLICK] allow=0 dt=%u dx=%u dy=%u repeat=%u obj=%p t=%u\n",
+                               (unsigned)click_elapsed, abs_x, abs_y,
+                               (unsigned)indev->longpr_rep_timestamp, indev_obj_act, (unsigned)lv_tick_get());
+                        zxh_touch_event_trace(indev, "click_rejected", indev_obj_act);
+#endif
+                        LV_LOG_INFO("Click rejected: dx=%d, dy=%d, dt=%d, longpr_rep=%d", abs_x, abs_y, (int)click_elapsed, indev->longpr_rep_timestamp);
                     }
+                } else {
+                    zxh_touch_event_trace(indev, "drag_target", indev_obj_act);
                 }
             } else {
+                zxh_touch_event_trace(indev, "scroll_release", scroll_obj);
                 lv_obj_send_event(scroll_obj, LV_EVENT_SCROLL_THROW_BEGIN, indev_act);
                 if (indev_reset_check(indev)) {
                     return;
                 }
             }
         }
+#if TCFG_TP_JD9165T_ENABLE && TCFG_LCD_MIPI_JD9165T_1024x600_ENABLE
+        if(!is_enabled) zxh_touch_event_trace(indev, "disabled", indev_obj_act);
+#endif
         indev->pointer.act_obj = NULL;
         indev->pr_timestamp          = 0;
         indev->longpr_rep_timestamp  = 0;

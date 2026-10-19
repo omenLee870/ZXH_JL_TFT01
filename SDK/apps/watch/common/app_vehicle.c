@@ -26,6 +26,17 @@ static int shutdown_result; /**< 最近一次关机收尾结果，失败时允�
 static unsigned final_shutdown; /**< SDK 最终断电后禁止再次申请业务资源。 */
 static unsigned vehicle_generation; /**< 关机递增，丢弃上一电源周期排队的操作。 */
 
+int app_vehicle_aux_publish(enum vehicle_aux_source source, uint32_t known, uint32_t status,
+    int gear, uint32_t timeout_ms)
+{
+    int result;
+    if (!initialized || shutdown_state || strcmp(os_current_task(), "app_core")) return -1;
+    if (os_sem_pend(&vehicle_gate, 0)) return -1;
+    result = vehicle_core_aux_publish(&vehicle, source, known, status, gear, sys_timer_get_ms(), timeout_ms);
+    os_sem_post(&vehicle_gate);
+    return result;
+}
+
 /**
  * @brief 周期读取车辆数据并更新业务状态。
  * @param[in] priv 定时器私有参数，本模块未使用。
@@ -127,6 +138,11 @@ int app_vehicle_suspend(void)
     if (strcmp(os_current_task(), "app_core")) return -1;
     if (!shutdown_state) ++vehicle_generation;
     shutdown_state = 1;
+    if (initialized) {
+        os_sem_pend(&vehicle_gate, 0);
+        memset(vehicle.auxiliary, 0, sizeof(vehicle.auxiliary));
+        os_sem_post(&vehicle_gate);
+    }
     if (vehicle_timer) {
         sys_timer_del(vehicle_timer);
         vehicle_timer = 0;
@@ -195,6 +211,7 @@ void app_vehicle_snapshot(struct vehicle_state *state)
         vehicle_core_poll(&copy, sys_timer_get_ms());
     }
     *state = copy.state;
+    vehicle_core_aux_apply(&copy, state, sys_timer_get_ms());
 }
 
 /**
@@ -213,5 +230,6 @@ int app_vehicle_try_snapshot(struct vehicle_state *state)
     os_sem_post(&vehicle_gate);
     vehicle_core_poll(&copy, sys_timer_get_ms());
     *state = copy.state;
+    vehicle_core_aux_apply(&copy, state, sys_timer_get_ms());
     return 0;
 }

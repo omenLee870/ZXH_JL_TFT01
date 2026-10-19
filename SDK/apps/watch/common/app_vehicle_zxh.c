@@ -101,6 +101,8 @@ int zxh_vehicle_read_state(struct zxh_state *state)
         state->trip_m = count_value(v->trip_mm, 1000);
     }
     if (local_result == ZXH_OK && !local.power_on) return ZXH_OK;
+    int ride_mode = vehicle_values_ride_mode(v);
+    if (ride_mode >= 0) state->mode = ride_mode;
     if (v->valid & VEHICLE_FAULTS_VALID) state->faults = (int)v->faults;
     if (vehicle_state.link == VEHICLE_LINK_ONLINE) {
         if (v->valid & VEHICLE_SPEED_VALID) state->speed_dkph = v->speed_dkph;
@@ -109,6 +111,11 @@ int zxh_vehicle_read_state(struct zxh_state *state)
             state->status = (int)v->status;
             state->known_status = (int)v->known_status;
         }
+    }
+    if (vehicle_state.auxiliary_gear && (v->valid & VEHICLE_GEAR_VALID)) state->gear = v->gear;
+    if (vehicle_state.link != VEHICLE_LINK_ONLINE && vehicle_state.auxiliary_status && (v->valid & VEHICLE_STATUS_VALID)) {
+        state->status = (int)(v->status & vehicle_state.auxiliary_status);
+        state->known_status = (int)(v->known_status & vehicle_state.auxiliary_status);
     }
     return ZXH_OK;
 }
@@ -137,6 +144,9 @@ int zxh_vehicle_read_bms(struct zxh_bms *bms)
     }
     result = read_snapshot(&state);
     if (result != ZXH_OK) return result;
+    if ((v->valid & VEHICLE_STATUS_VALID) && (v->known_status & VEHICLE_CHARGING) &&
+        (state.link == VEHICLE_LINK_ONLINE || (state.auxiliary_status & VEHICLE_CHARGING)))
+        bms->charging = !!(v->status & VEHICLE_CHARGING);
     if (state.link == VEHICLE_LINK_ONLINE) {
         if (v->valid & VEHICLE_SOC_VALID) bms->soc = v->soc;
         if (v->valid & VEHICLE_CURRENT_VALID) bms->current_ma = v->current_ma;
