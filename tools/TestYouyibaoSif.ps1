@@ -30,6 +30,7 @@ try {
         -I "$uiRoot/custom" -I "$taskRoot/SDK/apps/watch/common" `
         -I "$taskRoot/SDK/apps/watch/wifi/ctp" `
         "$taskRoot/tests/youyibao_sif/ui_test.c" "$taskRoot/SDK/apps/watch/common/vehicle_core.c" `
+        "$taskRoot/SDK/apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_pet_hero.c" `
         "$taskRoot/SDK/apps/watch/common/shenlong_protocol.c" `
         "$taskRoot/SDK/apps/watch/common/vehicle_test_control.c" `
         "$taskRoot/SDK/apps/watch/common/vehicle_controller.c" "@$link" -o $uiExe

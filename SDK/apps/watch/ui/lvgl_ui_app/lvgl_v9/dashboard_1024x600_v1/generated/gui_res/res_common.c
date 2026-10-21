@@ -489,6 +489,8 @@ char * gui_get_res_path(int32_t id)
 		case GUI_RES__10_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\music\\bluetooth_connected.png";
 		case GUI_RES__11_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\settings_gear.png";
 		case GUI_RES__12_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_clear.png";
+		case GUI_RES__13_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_forward.png";
+		case GUI_RES__14_PNG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_cape.png";
 		case xiaogou_biyan: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png";
 		case xiaogou_paobu_1: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png";
 		case xiaogou_paobu_2: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png";
@@ -502,6 +504,11 @@ char * gui_get_res_path(int32_t id)
 		case ENV_WEATHER_FOG: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_fog.png";
 		case ENV_WEATHER_DUST: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_dust.png";
 		case ENV_WEATHER_MOON: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_moon.png";
+		case PET_HERO_FORWARD: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_forward.png";
+		case PET_HERO_LEFT: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_left.png";
+		case PET_HERO_RIGHT: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_right.png";
+		case PET_HERO_CAPE: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_cape.png";
+		case PET_HERO_BRAKE: return "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_brake.png";
 		default: return NULL;
 	}
 #else

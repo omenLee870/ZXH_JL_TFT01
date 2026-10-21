@@ -1287,6 +1287,91 @@ lv_obj_t * setup_scr_chongwuyibiao(lv_ui *ui)
 	lv_obj_add_flag(ui_scr->chongwuyibiao_weather_icon, LV_OBJ_FLAG_HIDDEN);
 	ui_style_set(ui_scr->chongwuyibiao_weather_icon, GUI_CTRL_IMG);
 
+	//Write codes chongwuyibiao_hero_scene
+	ui_scr->chongwuyibiao_hero_scene = lv_obj_create(ui_scr->chongwuyibiao);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_hero_scene, 332, 170);
+	lv_obj_set_size(ui_scr->chongwuyibiao_hero_scene, 360, 280);
+	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_hero_scene, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_hero_scene, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
+
+	//Hidden for widget chongwuyibiao_hero_scene
+	lv_obj_add_flag(ui_scr->chongwuyibiao_hero_scene, LV_OBJ_FLAG_HIDDEN);
+	ui_style_set(ui_scr->chongwuyibiao_hero_scene, GUI_CTRL_CONT);
+
+	//Set style for chongwuyibiao_hero_scene. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_opa(ui_scr->chongwuyibiao_hero_scene, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes chongwuyibiao_hero_body
+	ui_scr->chongwuyibiao_hero_body = lv_image_create(ui_scr->chongwuyibiao_hero_scene);
+	lv_image_set_src(ui_scr->chongwuyibiao_hero_body, gui_get_res_path(GUI_RES__13_PNG));
+	lv_image_set_pivot(ui_scr->chongwuyibiao_hero_body, 0, 0);
+	lv_image_set_rotation(ui_scr->chongwuyibiao_hero_body, 0);
+	lv_image_set_scale(ui_scr->chongwuyibiao_hero_body, 256);
+	lv_image_set_inner_align(ui_scr->chongwuyibiao_hero_body, LV_IMAGE_ALIGN_TOP_LEFT);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_hero_body, 65, 30);
+	lv_obj_set_size(ui_scr->chongwuyibiao_hero_body, 230, 230);
+	lv_obj_add_flag(ui_scr->chongwuyibiao_hero_body, LV_OBJ_FLAG_CLICKABLE);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_hero_body, LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_hero_body, GUI_CTRL_IMG);
+
+	//Write codes chongwuyibiao_hero_cape
+	ui_scr->chongwuyibiao_hero_cape = lv_image_create(ui_scr->chongwuyibiao_hero_scene);
+	lv_image_set_src(ui_scr->chongwuyibiao_hero_cape, gui_get_res_path(GUI_RES__14_PNG));
+	lv_image_set_pivot(ui_scr->chongwuyibiao_hero_cape, 0, 0);
+	lv_image_set_rotation(ui_scr->chongwuyibiao_hero_cape, 0);
+	lv_image_set_scale(ui_scr->chongwuyibiao_hero_cape, 256);
+	lv_image_set_inner_align(ui_scr->chongwuyibiao_hero_cape, LV_IMAGE_ALIGN_TOP_LEFT);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_hero_cape, 0, 80);
+	lv_obj_set_size(ui_scr->chongwuyibiao_hero_cape, 360, 150);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_hero_cape, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_hero_cape, GUI_CTRL_IMG);
+
+	//Write codes chongwuyibiao_hero_boot
+	ui_scr->chongwuyibiao_hero_boot = lv_obj_create(ui_scr->chongwuyibiao);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_hero_boot, 0, 0);
+	lv_obj_set_size(ui_scr->chongwuyibiao_hero_boot, 1024, 600);
+	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_hero_boot, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_hero_boot, LV_OBJ_FLAG_SCROLLABLE);
+
+	//Hidden for widget chongwuyibiao_hero_boot
+	lv_obj_add_flag(ui_scr->chongwuyibiao_hero_boot, LV_OBJ_FLAG_HIDDEN);
+	ui_style_set(ui_scr->chongwuyibiao_hero_boot, GUI_CTRL_CONT);
+
+	//Write codes chongwuyibiao_boot_hero_scene
+	ui_scr->chongwuyibiao_boot_hero_scene = lv_obj_create(ui_scr->chongwuyibiao_hero_boot);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_boot_hero_scene, 332, 170);
+	lv_obj_set_size(ui_scr->chongwuyibiao_boot_hero_scene, 360, 280);
+	lv_obj_set_scrollbar_mode(ui_scr->chongwuyibiao_boot_hero_scene, LV_SCROLLBAR_MODE_OFF);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_boot_hero_scene, LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
+	ui_style_set(ui_scr->chongwuyibiao_boot_hero_scene, GUI_CTRL_CONT);
+
+	//Set style for chongwuyibiao_boot_hero_scene. Part: LV_PART_MAIN, State: LV_STATE_DEFAULT
+	lv_obj_set_style_bg_opa(ui_scr->chongwuyibiao_boot_hero_scene, 0, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+	//Write codes chongwuyibiao_boot_hero_body
+	ui_scr->chongwuyibiao_boot_hero_body = lv_image_create(ui_scr->chongwuyibiao_boot_hero_scene);
+	lv_image_set_src(ui_scr->chongwuyibiao_boot_hero_body, gui_get_res_path(GUI_RES__13_PNG));
+	lv_image_set_pivot(ui_scr->chongwuyibiao_boot_hero_body, 0, 0);
+	lv_image_set_rotation(ui_scr->chongwuyibiao_boot_hero_body, 0);
+	lv_image_set_scale(ui_scr->chongwuyibiao_boot_hero_body, 256);
+	lv_image_set_inner_align(ui_scr->chongwuyibiao_boot_hero_body, LV_IMAGE_ALIGN_TOP_LEFT);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_boot_hero_body, 65, 30);
+	lv_obj_set_size(ui_scr->chongwuyibiao_boot_hero_body, 230, 230);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_boot_hero_body, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_boot_hero_body, GUI_CTRL_IMG);
+
+	//Write codes chongwuyibiao_boot_hero_cape
+	ui_scr->chongwuyibiao_boot_hero_cape = lv_image_create(ui_scr->chongwuyibiao_boot_hero_scene);
+	lv_image_set_src(ui_scr->chongwuyibiao_boot_hero_cape, gui_get_res_path(GUI_RES__14_PNG));
+	lv_image_set_pivot(ui_scr->chongwuyibiao_boot_hero_cape, 0, 0);
+	lv_image_set_rotation(ui_scr->chongwuyibiao_boot_hero_cape, 0);
+	lv_image_set_scale(ui_scr->chongwuyibiao_boot_hero_cape, 256);
+	lv_image_set_inner_align(ui_scr->chongwuyibiao_boot_hero_cape, LV_IMAGE_ALIGN_TOP_LEFT);
+	lv_obj_set_pos(ui_scr->chongwuyibiao_boot_hero_cape, 0, 80);
+	lv_obj_set_size(ui_scr->chongwuyibiao_boot_hero_cape, 360, 150);
+	lv_obj_remove_flag(ui_scr->chongwuyibiao_boot_hero_cape, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+	ui_style_set(ui_scr->chongwuyibiao_boot_hero_cape, GUI_CTRL_IMG);
+
 	lv_obj_update_layout(ui_scr->chongwuyibiao);
 	ui_scr->chongwuyibiao_del = false;
 

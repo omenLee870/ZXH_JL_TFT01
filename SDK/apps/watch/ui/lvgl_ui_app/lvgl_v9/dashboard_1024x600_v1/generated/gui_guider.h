@@ -340,6 +340,13 @@ typedef struct {
 	lv_obj_t *chongwuyibiao_settings_entry;
 	lv_obj_t *chongwuyibiao_settings_entry_label;
 	lv_obj_t *chongwuyibiao_weather_icon;
+	lv_obj_t *chongwuyibiao_hero_scene;
+	lv_obj_t *chongwuyibiao_hero_body;
+	lv_obj_t *chongwuyibiao_hero_cape;
+	lv_obj_t *chongwuyibiao_hero_boot;
+	lv_obj_t *chongwuyibiao_boot_hero_scene;
+	lv_obj_t *chongwuyibiao_boot_hero_body;
+	lv_obj_t *chongwuyibiao_boot_hero_cape;
 } lv_ui_chongwuyibiao;
 
 typedef struct {

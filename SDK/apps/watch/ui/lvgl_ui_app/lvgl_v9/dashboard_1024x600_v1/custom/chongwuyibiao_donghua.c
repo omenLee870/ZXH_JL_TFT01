@@ -1,5 +1,6 @@
 #include "chongwuyibiao_donghua.h"
 #include "neicun_zhuizong.h"
+#include "ui_pet_hero.h"
 #if !LV_USE_GUIBUILDER_SIMULATOR || defined(YOUYIBAO_UI_TEST)
 #include "youyibao_sif_ui.h"
 #endif
@@ -10,8 +11,6 @@
 #define YUN_DANRU 120
 #define YUN_DANCHU 620
 #define YUN_YOU 640
-#define PAOBU_ZHEN_SHULIANG 3
-#define PAOBU_ZHEN_MS 200U
 
 typedef enum {
     ZHAYAN_DENGDAI,
@@ -31,11 +30,9 @@ typedef struct {
     lv_obj_t *chesushuzi;
     lv_timer_t *yun_dingshiqi;
     lv_timer_t *zhayan_dingshiqi;
-    lv_timer_t *paobu_dingshiqi;
     yun_zhuangtai_t yun[YUN_SHULIANG];
     uint32_t yun_shijian;
     uint16_t chesu;
-    uint8_t paobu_zhen;
     uint8_t zhayan_cishu;
     zhayan_jieduan_t zhayan_jieduan;
     bool yunxing;
@@ -44,11 +41,6 @@ typedef struct {
 } donghua_zhuangtai_t;
 
 static donghua_zhuangtai_t zhuangtai;
-static const uint32_t paobu_ziyuan[PAOBU_ZHEN_SHULIANG] = {
-    xiaogou_paobu_1,
-    xiaogou_paobu_2,
-    xiaogou_paobu_3
-};
 
 static void huxi_suofang(void *tupian, int32_t bili)
 {
@@ -82,25 +74,27 @@ static uint16_t chesu_duqu(void)
     return (uint16_t)chesu;
 }
 
-static void xiaogou_qiehuan(bool paobu, bool qiangzhi)
+/** @brief 特殊动作显示时隐藏坐姿，恢复静止时沿用原图、眨眼和呼吸参数。 */
+static void xiaogou_qiehuan(bool qiangzhi)
 {
+    bool paobu = ui_pet_hero_active();
     lv_obj_t *xiaogou = zhuangtai.xiaogou;
+    /* 音乐模块也会切换原图显隐，每次恢复时先修复互斥，避免两只狗重叠。 */
+    if (paobu) lv_obj_add_flag(xiaogou, LV_OBJ_FLAG_HIDDEN);
+    else if (!zhuangtai.zanting) lv_obj_remove_flag(xiaogou, LV_OBJ_FLAG_HIDDEN);
     if (!qiangzhi && zhuangtai.paobu == paobu) return;
 
     zhuangtai.paobu = paobu;
-    zhuangtai.paobu_zhen = 0;
     zhuangtai.zhayan_cishu = 0;
     zhuangtai.zhayan_jieduan = ZHAYAN_DENGDAI;
     lv_timer_pause(zhuangtai.zhayan_dingshiqi);
-    lv_timer_pause(zhuangtai.paobu_dingshiqi);
     lv_anim_delete(xiaogou, huxi_suofang);
     lv_image_set_scale(xiaogou, 256);
 
     if (paobu) {
-        lv_image_set_src(xiaogou, gui_get_res_path(paobu_ziyuan[0]));
-        lv_timer_reset(zhuangtai.paobu_dingshiqi);
-        lv_timer_resume(zhuangtai.paobu_dingshiqi);
+        lv_obj_add_flag(xiaogou, LV_OBJ_FLAG_HIDDEN);
     } else {
+        lv_obj_remove_flag(xiaogou, LV_OBJ_FLAG_HIDDEN);
         lv_image_set_src(xiaogou, gui_get_res_path(GUI_RES_DOG_OPEN_PNG));
         lv_timer_set_period(zhuangtai.zhayan_dingshiqi, lv_rand(4000, 7000));
         lv_timer_reset(zhuangtai.zhayan_dingshiqi);
@@ -114,15 +108,15 @@ void chongwuyibiao_chesu_gengxin(uint16_t chesu)
     if (zhuangtai.chesushuzi == NULL) return;
     zhuangtai.chesu = chesu;
     lv_label_set_text_fmt(zhuangtai.chesushuzi, "%u", (unsigned int)chesu);
-    if (zhuangtai.yunxing) xiaogou_qiehuan(chesu > 0, false);
+    ui_pet_hero_speed((uint16_t)LV_MIN((uint32_t)chesu * 10u, 65535u));
+    if (zhuangtai.yunxing) xiaogou_qiehuan(false);
 }
 
-static void paobu_gengxin(lv_timer_t *dingshiqi)
+/** @brief 使用原始有效车速与已校验状态，显示单位变化不改变动作判定。 */
+void chongwuyibiao_cheliang_gengxin(uint16_t speed_dkph, bool valid, uint32_t flags)
 {
-    LV_UNUSED(dingshiqi);
-    zhuangtai.paobu_zhen = (uint8_t)((zhuangtai.paobu_zhen + 1U) % PAOBU_ZHEN_SHULIANG);
-    lv_image_set_src(zhuangtai.xiaogou,
-                     gui_get_res_path(paobu_ziyuan[zhuangtai.paobu_zhen]));
+    ui_pet_hero_update(speed_dkph, valid, flags);
+    if (zhuangtai.yunxing) xiaogou_qiehuan(false);
 }
 
 static void zhayan_gengxin(lv_timer_t *dingshiqi)
@@ -159,7 +153,11 @@ static void yun_gengxin(lv_timer_t *dingshiqi)
 
     /* 跟随车速标签的更新，工具绑定消息更新标签时也能同步动作。 */
     zhuangtai.chesu = chesu_duqu();
-    xiaogou_qiehuan(zhuangtai.chesu > 0, false);
+#if LV_USE_GUIBUILDER_SIMULATOR && !defined(YOUYIBAO_UI_TEST) && !defined(PET_HERO_TEST)
+    ui_pet_hero_speed((uint16_t)LV_MIN((uint32_t)zhuangtai.chesu * 10u, 65535u));
+#endif
+    ui_pet_hero_tick();
+    xiaogou_qiehuan(false);
     if (bu == 0) return;
     zhuangtai.yun_shijian += bu * YUN_BUJIN_MS;
 
@@ -184,10 +182,9 @@ static void donghua_tingzhi(void)
     bool zhiqian_yunxing = zhuangtai.yunxing;
     if (zhuangtai.yun_dingshiqi != NULL) lv_timer_delete(zhuangtai.yun_dingshiqi);
     if (zhuangtai.zhayan_dingshiqi != NULL) lv_timer_delete(zhuangtai.zhayan_dingshiqi);
-    if (zhuangtai.paobu_dingshiqi != NULL) lv_timer_delete(zhuangtai.paobu_dingshiqi);
     zhuangtai.yun_dingshiqi = NULL;
     zhuangtai.zhayan_dingshiqi = NULL;
-    zhuangtai.paobu_dingshiqi = NULL;
+    ui_pet_hero_visible(false);
     if (zhuangtai.xiaogou != NULL) {
         lv_anim_delete(zhuangtai.xiaogou, huxi_suofang);
     }
@@ -210,15 +207,15 @@ static void donghua_kaishi(void)
     zhuangtai.yun_shijian = lv_tick_get();
     zhuangtai.yun_dingshiqi = lv_timer_create(yun_gengxin, YUN_BUJIN_MS, NULL);
     zhuangtai.zhayan_dingshiqi = lv_timer_create(zhayan_gengxin, lv_rand(4000, 7000), NULL);
-    zhuangtai.paobu_dingshiqi = lv_timer_create(paobu_gengxin, PAOBU_ZHEN_MS, NULL);
-    if (zhuangtai.yun_dingshiqi == NULL || zhuangtai.zhayan_dingshiqi == NULL ||
-        zhuangtai.paobu_dingshiqi == NULL) {
+    if (zhuangtai.yun_dingshiqi == NULL || zhuangtai.zhayan_dingshiqi == NULL) {
         donghua_tingzhi();
         return;
     }
     zhuangtai.yunxing = true;
     zhuangtai.chesu = chesu_duqu();
-    xiaogou_qiehuan(zhuangtai.chesu > 0, true);
+    ui_pet_hero_visible(true);
+    ui_pet_hero_tick();
+    xiaogou_qiehuan(true);
     neicun_zhuizong_jieduan("donghua_kaishi");
 }
 
@@ -251,7 +248,10 @@ void chongwuyibiao_donghua_yunxu(bool yunxu)
 {
     zhuangtai.zanting = !yunxu;
     if (!yunxu) donghua_tingzhi();
-    else if (zhuangtai.pingmu != NULL && lv_screen_active() == zhuangtai.pingmu) donghua_kaishi();
+    else if (zhuangtai.pingmu != NULL && lv_screen_active() == zhuangtai.pingmu) {
+        donghua_kaishi();
+        if (zhuangtai.yunxing) xiaogou_qiehuan(false);
+    }
 }
 
 /**
@@ -269,6 +269,7 @@ void chongwuyibiao_donghua_bangding(lv_ui_chongwuyibiao *jiemian)
     zhuangtai.pingmu = jiemian->chongwuyibiao;
     zhuangtai.xiaogou = jiemian->chongwuyibiao_xiaogou;
     zhuangtai.chesushuzi = jiemian->chongwuyibiao_chesushuzi;
+    ui_pet_hero_bind(jiemian);
     zhuangtai.yun[0].tupian = jiemian->chongwuyibiao_yun1;
     zhuangtai.yun[1].tupian = jiemian->chongwuyibiao_yun2;
     zhuangtai.yun[2].tupian = jiemian->chongwuyibiao_yun3;

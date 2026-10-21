@@ -1,7 +1,7 @@
 {
-  "size": 23106660,
-  "compressSize": 4707122,
-  "compressRate": "79.63%",
+  "size": 23357804,
+  "compressSize": 4995139,
+  "compressRate": "78.61%",
   "data": [
     {
       "name": "GUI_RES_SPORT_PNG",
@@ -6097,9 +6097,33 @@
       "colorFormat": "ARGB8888"
     },
     {
+      "name": "GUI_RES__13_PNG",
+      "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_forward.png",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\4b0001d1.zip",
+      "size": 33512,
+      "compressSize": 40171,
+      "compressRate": "-19.87%",
+      "compressType": "压缩等级1",
+      "colorFormat": "ARGB8565",
+      "block": "8x8",
+      "clut": "ARGB8565"
+    },
+    {
+      "name": "GUI_RES__14_PNG",
+      "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_cape.png",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\4b0001d2.zip",
+      "size": 22005,
+      "compressSize": 28865,
+      "compressRate": "-31.17%",
+      "compressType": "压缩等级1",
+      "colorFormat": "ARGB8565",
+      "block": "64x1",
+      "clut": "ARGB8565"
+    },
+    {
       "name": "xiaogou_biyan",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d1.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d3.zip",
       "size": 31835,
       "compressSize": 33259,
       "compressRate": "-4.47%",
@@ -6111,7 +6135,7 @@
     {
       "name": "xiaogou_paobu_1",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d2.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d4.zip",
       "size": 19477,
       "compressSize": 32126,
       "compressRate": "-64.94%",
@@ -6123,7 +6147,7 @@
     {
       "name": "xiaogou_paobu_2",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d3.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d5.zip",
       "size": 22868,
       "compressSize": 35399,
       "compressRate": "-54.80%",
@@ -6135,7 +6159,7 @@
     {
       "name": "xiaogou_paobu_3",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_3.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d4.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d6.zip",
       "size": 23718,
       "compressSize": 37729,
       "compressRate": "-59.07%",
@@ -6147,7 +6171,7 @@
     {
       "name": "ENV_WEATHER_CLEAR",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_clear.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d5.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d7.zip",
       "size": 1299,
       "compressSize": 1668,
       "compressRate": "-28.41%",
@@ -6157,7 +6181,7 @@
     {
       "name": "ENV_WEATHER_CLOUD",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_cloud.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d6.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d8.zip",
       "size": 1059,
       "compressSize": 1668,
       "compressRate": "-57.51%",
@@ -6167,7 +6191,7 @@
     {
       "name": "ENV_WEATHER_OVERCAST",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_overcast.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d7.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d9.zip",
       "size": 1125,
       "compressSize": 1668,
       "compressRate": "-48.27%",
@@ -6177,7 +6201,7 @@
     {
       "name": "ENV_WEATHER_RAIN",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_rain.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d8.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001da.zip",
       "size": 1541,
       "compressSize": 1668,
       "compressRate": "-8.24%",
@@ -6187,7 +6211,7 @@
     {
       "name": "ENV_WEATHER_SNOW",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_snow.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001d9.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001db.zip",
       "size": 1418,
       "compressSize": 1668,
       "compressRate": "-17.63%",
@@ -6197,7 +6221,7 @@
     {
       "name": "ENV_WEATHER_STORM",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_storm.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001da.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001dc.zip",
       "size": 1627,
       "compressSize": 1668,
       "compressRate": "-2.52%",
@@ -6207,7 +6231,7 @@
     {
       "name": "ENV_WEATHER_FOG",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_fog.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001db.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001dd.zip",
       "size": 272,
       "compressSize": 760,
       "compressRate": "-179.41%",
@@ -6218,7 +6242,7 @@
     {
       "name": "ENV_WEATHER_DUST",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_dust.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001dc.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001de.zip",
       "size": 291,
       "compressSize": 760,
       "compressRate": "-161.17%",
@@ -6229,12 +6253,72 @@
     {
       "name": "ENV_WEATHER_MOON",
       "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_moon.png",
-      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001dd.zip",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001df.zip",
       "size": 1209,
       "compressSize": 1668,
       "compressRate": "-37.97%",
       "compressType": "压缩等级2",
       "colorFormat": "ARGB8888"
+    },
+    {
+      "name": "PET_HERO_FORWARD",
+      "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_forward.png",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001e0.zip",
+      "size": 33512,
+      "compressSize": 40171,
+      "compressRate": "-19.87%",
+      "compressType": "压缩等级1",
+      "colorFormat": "ARGB8565",
+      "block": "8x8",
+      "clut": "ARGB8565"
+    },
+    {
+      "name": "PET_HERO_LEFT",
+      "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_left.png",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001e1.zip",
+      "size": 29093,
+      "compressSize": 35604,
+      "compressRate": "-22.38%",
+      "compressType": "压缩等级1",
+      "colorFormat": "ARGB8565",
+      "block": "8x8",
+      "clut": "ARGB8565"
+    },
+    {
+      "name": "PET_HERO_RIGHT",
+      "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_right.png",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001e2.zip",
+      "size": 29529,
+      "compressSize": 35931,
+      "compressRate": "-21.68%",
+      "compressType": "压缩等级1",
+      "colorFormat": "ARGB8565",
+      "block": "8x8",
+      "clut": "ARGB8565"
+    },
+    {
+      "name": "PET_HERO_CAPE",
+      "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_cape.png",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001e3.zip",
+      "size": 22005,
+      "compressSize": 28865,
+      "compressRate": "-31.17%",
+      "compressType": "压缩等级1",
+      "colorFormat": "ARGB8565",
+      "block": "64x1",
+      "clut": "ARGB8565"
+    },
+    {
+      "name": "PET_HERO_BRAKE",
+      "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_brake.png",
+      "dstPath": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\sdk\\ui_res\\flash\\best_space_size\\image\\740001e4.zip",
+      "size": 81488,
+      "compressSize": 78410,
+      "compressRate": "3.78%",
+      "compressType": "压缩等级1",
+      "colorFormat": "ARGB8565",
+      "block": "8x8",
+      "clut": "ARGB8565"
     }
   ]
 }

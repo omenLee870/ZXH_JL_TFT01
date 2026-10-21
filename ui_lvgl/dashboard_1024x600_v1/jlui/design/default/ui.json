@@ -20930,6 +20930,609 @@
             ]
           },
           "img_align": "LV_IMAGE_ALIGN_TOP_LEFT"
+        },
+        {
+          "id": "#vSdINmz1Vcu1d9f3",
+          "type": "cont",
+          "name": "chongwuyibiao_hero_scene",
+          "pos": [
+            332,
+            170
+          ],
+          "size": [
+            360,
+            280
+          ],
+          "user_data": "",
+          "guibuilder": "all",
+          "state": "LV_STATE_DEFAULT",
+          "flag_enable": false,
+          "flag": [],
+          "clear_flag_enable": true,
+          "clear_flag": [
+            "LV_OBJ_FLAG_SCROLLABLE",
+            "LV_OBJ_FLAG_CLICKABLE"
+          ],
+          "visible": false,
+          "focus": false,
+          "is_move_animation": false,
+          "path_type": "linear",
+          "move_animation": {
+            "des_pos": [
+              0,
+              0
+            ],
+            "duration": 1000,
+            "delay": 0,
+            "repeat_count": 0,
+            "repeat_delay": 0,
+            "playback_time": 0,
+            "playback_delay": 0,
+            "start_cb_inc": "",
+            "start_cb_code": "",
+            "ready_cb_inc": "",
+            "ready_cb_code": "",
+            "deleted_cb_inc": "",
+            "deleted_cb_code": ""
+          },
+          "scrollbar_mode": "OFF",
+          "default_style": false,
+          "child": [
+            {
+              "id": "#krySR7w3eV4uBo5u",
+              "type": "img",
+              "name": "chongwuyibiao_hero_body",
+              "pos": [
+                65,
+                30
+              ],
+              "size": [
+                230,
+                230
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": true,
+              "flag": [
+                "LV_OBJ_FLAG_CLICKABLE"
+              ],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_SCROLLABLE"
+              ],
+              "visible": true,
+              "focus": false,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "is_effects": false,
+              "effects": {
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "default_style": false,
+              "img_path": "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_forward.png",
+              "color_format": "true-color-alpha",
+              "rotate": 0,
+              "pivot": [
+                0,
+                0
+              ],
+              "zoom": 256,
+              "use_fs": true,
+              "fs_type": "flash",
+              "img_flash_path": "storage/res_nor_mode/C/lvgl/4b0001d1.zip",
+              "img_sd_path": "storage/res_nor_mode/C/lvgl/4b0001d1.zip",
+              "mask_path": "",
+              "mask_flash_path": "",
+              "mask_sd_path": "",
+              "mask_pivot": [
+                0,
+                0
+              ],
+              "mask_rotate": 0,
+              "mask_zoom": 256,
+              "mask_offset_x": 0,
+              "mask_offset_y": 0,
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "name": "gui_img_main_default_style"
+                }
+              ],
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ],
+                "pivot": [
+                  {},
+                  {}
+                ]
+              },
+              "img_align": "LV_IMAGE_ALIGN_TOP_LEFT"
+            },
+            {
+              "id": "#T89ArfnidVY7qZSQ",
+              "type": "img",
+              "name": "chongwuyibiao_hero_cape",
+              "pos": [
+                0,
+                80
+              ],
+              "size": [
+                360,
+                150
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": false,
+              "flag": [],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_CLICKABLE",
+                "LV_OBJ_FLAG_SCROLLABLE"
+              ],
+              "visible": true,
+              "focus": false,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "is_effects": false,
+              "effects": {
+                "type": "attention",
+                "value": "attention_flash",
+                "duration": 1500,
+                "delay": 0
+              },
+              "default_style": false,
+              "img_path": "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_cape.png",
+              "color_format": "true-color-alpha",
+              "rotate": 0,
+              "pivot": [
+                0,
+                0
+              ],
+              "zoom": 256,
+              "use_fs": true,
+              "fs_type": "flash",
+              "img_flash_path": "storage/res_nor_mode/C/lvgl/4b0001d2.zip",
+              "img_sd_path": "storage/res_nor_mode/C/lvgl/4b0001d2.zip",
+              "mask_path": "",
+              "mask_flash_path": "",
+              "mask_sd_path": "",
+              "mask_pivot": [
+                0,
+                0
+              ],
+              "mask_rotate": 0,
+              "mask_zoom": 256,
+              "mask_offset_x": 0,
+              "mask_offset_y": 0,
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "name": "gui_img_main_default_style"
+                }
+              ],
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ],
+                "pivot": [
+                  {},
+                  {}
+                ]
+              },
+              "img_align": "LV_IMAGE_ALIGN_TOP_LEFT"
+            }
+          ],
+          "style": [
+            {
+              "part": "LV_PART_MAIN",
+              "state": "LV_STATE_DEFAULT",
+              "disable": false,
+              "bg_opa": 0,
+              "name": "gui_cont_main_default_style"
+            }
+          ],
+          "bindMsg": {
+            "pos": [
+              {},
+              {}
+            ],
+            "size": [
+              {},
+              {}
+            ]
+          }
+        },
+        {
+          "id": "#ljJg3EtA8LLsRRdy",
+          "type": "cont",
+          "name": "chongwuyibiao_hero_boot",
+          "pos": [
+            0,
+            0
+          ],
+          "size": [
+            1024,
+            600
+          ],
+          "user_data": "",
+          "guibuilder": "all",
+          "state": "LV_STATE_DEFAULT",
+          "flag_enable": false,
+          "flag": [],
+          "clear_flag_enable": true,
+          "clear_flag": [
+            "LV_OBJ_FLAG_SCROLLABLE"
+          ],
+          "visible": false,
+          "focus": false,
+          "is_move_animation": false,
+          "path_type": "linear",
+          "move_animation": {
+            "des_pos": [
+              0,
+              0
+            ],
+            "duration": 1000,
+            "delay": 0,
+            "repeat_count": 0,
+            "repeat_delay": 0,
+            "playback_time": 0,
+            "playback_delay": 0,
+            "start_cb_inc": "",
+            "start_cb_code": "",
+            "ready_cb_inc": "",
+            "ready_cb_code": "",
+            "deleted_cb_inc": "",
+            "deleted_cb_code": ""
+          },
+          "scrollbar_mode": "OFF",
+          "default_style": false,
+          "child": [
+            {
+              "id": "#0pU8EXTvivUU8tgm",
+              "type": "cont",
+              "name": "chongwuyibiao_boot_hero_scene",
+              "pos": [
+                332,
+                170
+              ],
+              "size": [
+                360,
+                280
+              ],
+              "user_data": "",
+              "guibuilder": "all",
+              "state": "LV_STATE_DEFAULT",
+              "flag_enable": false,
+              "flag": [],
+              "clear_flag_enable": true,
+              "clear_flag": [
+                "LV_OBJ_FLAG_SCROLLABLE",
+                "LV_OBJ_FLAG_CLICKABLE"
+              ],
+              "visible": true,
+              "focus": false,
+              "is_move_animation": false,
+              "path_type": "linear",
+              "move_animation": {
+                "des_pos": [
+                  0,
+                  0
+                ],
+                "duration": 1000,
+                "delay": 0,
+                "repeat_count": 0,
+                "repeat_delay": 0,
+                "playback_time": 0,
+                "playback_delay": 0,
+                "start_cb_inc": "",
+                "start_cb_code": "",
+                "ready_cb_inc": "",
+                "ready_cb_code": "",
+                "deleted_cb_inc": "",
+                "deleted_cb_code": ""
+              },
+              "scrollbar_mode": "OFF",
+              "default_style": false,
+              "child": [
+                {
+                  "id": "#ycxiNWtSRzLGakb4",
+                  "type": "img",
+                  "name": "chongwuyibiao_boot_hero_body",
+                  "pos": [
+                    65,
+                    30
+                  ],
+                  "size": [
+                    230,
+                    230
+                  ],
+                  "user_data": "",
+                  "guibuilder": "all",
+                  "state": "LV_STATE_DEFAULT",
+                  "flag_enable": false,
+                  "flag": [],
+                  "clear_flag_enable": true,
+                  "clear_flag": [
+                    "LV_OBJ_FLAG_CLICKABLE",
+                    "LV_OBJ_FLAG_SCROLLABLE"
+                  ],
+                  "visible": true,
+                  "focus": false,
+                  "is_move_animation": false,
+                  "path_type": "linear",
+                  "move_animation": {
+                    "des_pos": [
+                      0,
+                      0
+                    ],
+                    "duration": 1000,
+                    "delay": 0,
+                    "repeat_count": 0,
+                    "repeat_delay": 0,
+                    "playback_time": 0,
+                    "playback_delay": 0,
+                    "start_cb_inc": "",
+                    "start_cb_code": "",
+                    "ready_cb_inc": "",
+                    "ready_cb_code": "",
+                    "deleted_cb_inc": "",
+                    "deleted_cb_code": ""
+                  },
+                  "scrollbar_mode": "OFF",
+                  "is_effects": false,
+                  "effects": {
+                    "type": "attention",
+                    "value": "attention_flash",
+                    "duration": 1500,
+                    "delay": 0
+                  },
+                  "default_style": false,
+                  "img_path": "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_forward.png",
+                  "color_format": "true-color-alpha",
+                  "rotate": 0,
+                  "pivot": [
+                    0,
+                    0
+                  ],
+                  "zoom": 256,
+                  "use_fs": true,
+                  "fs_type": "flash",
+                  "img_flash_path": "storage/res_nor_mode/C/lvgl/4b0001d1.zip",
+                  "img_sd_path": "storage/res_nor_mode/C/lvgl/4b0001d1.zip",
+                  "mask_path": "",
+                  "mask_flash_path": "",
+                  "mask_sd_path": "",
+                  "mask_pivot": [
+                    0,
+                    0
+                  ],
+                  "mask_rotate": 0,
+                  "mask_zoom": 256,
+                  "mask_offset_x": 0,
+                  "mask_offset_y": 0,
+                  "style": [
+                    {
+                      "part": "LV_PART_MAIN",
+                      "state": "LV_STATE_DEFAULT",
+                      "disable": false,
+                      "name": "gui_img_main_default_style"
+                    }
+                  ],
+                  "bindMsg": {
+                    "pos": [
+                      {},
+                      {}
+                    ],
+                    "size": [
+                      {},
+                      {}
+                    ],
+                    "pivot": [
+                      {},
+                      {}
+                    ]
+                  },
+                  "img_align": "LV_IMAGE_ALIGN_TOP_LEFT"
+                },
+                {
+                  "id": "#lM8XerMtbsX9KLgh",
+                  "type": "img",
+                  "name": "chongwuyibiao_boot_hero_cape",
+                  "pos": [
+                    0,
+                    80
+                  ],
+                  "size": [
+                    360,
+                    150
+                  ],
+                  "user_data": "",
+                  "guibuilder": "all",
+                  "state": "LV_STATE_DEFAULT",
+                  "flag_enable": false,
+                  "flag": [],
+                  "clear_flag_enable": true,
+                  "clear_flag": [
+                    "LV_OBJ_FLAG_CLICKABLE",
+                    "LV_OBJ_FLAG_SCROLLABLE"
+                  ],
+                  "visible": true,
+                  "focus": false,
+                  "is_move_animation": false,
+                  "path_type": "linear",
+                  "move_animation": {
+                    "des_pos": [
+                      0,
+                      0
+                    ],
+                    "duration": 1000,
+                    "delay": 0,
+                    "repeat_count": 0,
+                    "repeat_delay": 0,
+                    "playback_time": 0,
+                    "playback_delay": 0,
+                    "start_cb_inc": "",
+                    "start_cb_code": "",
+                    "ready_cb_inc": "",
+                    "ready_cb_code": "",
+                    "deleted_cb_inc": "",
+                    "deleted_cb_code": ""
+                  },
+                  "scrollbar_mode": "OFF",
+                  "is_effects": false,
+                  "effects": {
+                    "type": "attention",
+                    "value": "attention_flash",
+                    "duration": 1500,
+                    "delay": 0
+                  },
+                  "default_style": false,
+                  "img_path": "A:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_cape.png",
+                  "color_format": "true-color-alpha",
+                  "rotate": 0,
+                  "pivot": [
+                    0,
+                    0
+                  ],
+                  "zoom": 256,
+                  "use_fs": true,
+                  "fs_type": "flash",
+                  "img_flash_path": "storage/res_nor_mode/C/lvgl/4b0001d2.zip",
+                  "img_sd_path": "storage/res_nor_mode/C/lvgl/4b0001d2.zip",
+                  "mask_path": "",
+                  "mask_flash_path": "",
+                  "mask_sd_path": "",
+                  "mask_pivot": [
+                    0,
+                    0
+                  ],
+                  "mask_rotate": 0,
+                  "mask_zoom": 256,
+                  "mask_offset_x": 0,
+                  "mask_offset_y": 0,
+                  "style": [
+                    {
+                      "part": "LV_PART_MAIN",
+                      "state": "LV_STATE_DEFAULT",
+                      "disable": false,
+                      "name": "gui_img_main_default_style"
+                    }
+                  ],
+                  "bindMsg": {
+                    "pos": [
+                      {},
+                      {}
+                    ],
+                    "size": [
+                      {},
+                      {}
+                    ],
+                    "pivot": [
+                      {},
+                      {}
+                    ]
+                  },
+                  "img_align": "LV_IMAGE_ALIGN_TOP_LEFT"
+                }
+              ],
+              "style": [
+                {
+                  "part": "LV_PART_MAIN",
+                  "state": "LV_STATE_DEFAULT",
+                  "disable": false,
+                  "bg_opa": 0,
+                  "name": "gui_cont_main_default_style"
+                }
+              ],
+              "bindMsg": {
+                "pos": [
+                  {},
+                  {}
+                ],
+                "size": [
+                  {},
+                  {}
+                ]
+              }
+            }
+          ],
+          "style": [
+            {
+              "part": "LV_PART_MAIN",
+              "state": "LV_STATE_DEFAULT",
+              "disable": false,
+              "name": "gui_cont_main_default_style"
+            }
+          ],
+          "bindMsg": {
+            "pos": [
+              {},
+              {}
+            ],
+            "size": [
+              {},
+              {}
+            ]
+          }
         }
       ],
       "bindMsg": {},
@@ -27343,32 +27946,8 @@
       "data": [
         {
           "name": "xiaogou_biyan",
-          "id": 1946157521,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png",
-          "dstPath": ".\\flash\\best_space_size\\image\\740001d1.zip",
-          "type": "zip",
-          "width": 230,
-          "height": 230,
-          "is_copy": false,
-          "fs_type": "flash",
-          "storage_medium": "default"
-        },
-        {
-          "name": "xiaogou_paobu_1",
-          "id": 1946157522,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png",
-          "dstPath": ".\\flash\\best_space_size\\image\\740001d2.zip",
-          "type": "zip",
-          "width": 230,
-          "height": 230,
-          "is_copy": false,
-          "fs_type": "flash",
-          "storage_medium": "default"
-        },
-        {
-          "name": "xiaogou_paobu_2",
           "id": 1946157523,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_blink.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d3.zip",
           "type": "zip",
           "width": 230,
@@ -27378,9 +27957,9 @@
           "storage_medium": "default"
         },
         {
-          "name": "xiaogou_paobu_3",
+          "name": "xiaogou_paobu_1",
           "id": 1946157524,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_3.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_1.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d4.zip",
           "type": "zip",
           "width": 230,
@@ -27390,33 +27969,33 @@
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_CLEAR",
+          "name": "xiaogou_paobu_2",
           "id": 1946157525,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_clear.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_2.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d5.zip",
           "type": "zip",
-          "width": 36,
-          "height": 36,
+          "width": 230,
+          "height": 230,
           "is_copy": false,
           "fs_type": "flash",
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_CLOUD",
+          "name": "xiaogou_paobu_3",
           "id": 1946157526,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_cloud.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\main\\dog_run_3.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d6.zip",
           "type": "zip",
-          "width": 36,
-          "height": 36,
+          "width": 230,
+          "height": 230,
           "is_copy": false,
           "fs_type": "flash",
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_OVERCAST",
+          "name": "ENV_WEATHER_CLEAR",
           "id": 1946157527,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_overcast.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_clear.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d7.zip",
           "type": "zip",
           "width": 36,
@@ -27426,9 +28005,9 @@
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_RAIN",
+          "name": "ENV_WEATHER_CLOUD",
           "id": 1946157528,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_rain.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_cloud.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d8.zip",
           "type": "zip",
           "width": 36,
@@ -27438,9 +28017,9 @@
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_SNOW",
+          "name": "ENV_WEATHER_OVERCAST",
           "id": 1946157529,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_snow.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_overcast.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001d9.zip",
           "type": "zip",
           "width": 36,
@@ -27450,9 +28029,9 @@
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_STORM",
+          "name": "ENV_WEATHER_RAIN",
           "id": 1946157530,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_storm.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_rain.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001da.zip",
           "type": "zip",
           "width": 36,
@@ -27462,9 +28041,9 @@
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_FOG",
+          "name": "ENV_WEATHER_SNOW",
           "id": 1946157531,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_fog.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_snow.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001db.zip",
           "type": "zip",
           "width": 36,
@@ -27474,9 +28053,9 @@
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_DUST",
+          "name": "ENV_WEATHER_STORM",
           "id": 1946157532,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_dust.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_storm.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001dc.zip",
           "type": "zip",
           "width": 36,
@@ -27486,13 +28065,97 @@
           "storage_medium": "default"
         },
         {
-          "name": "ENV_WEATHER_MOON",
+          "name": "ENV_WEATHER_FOG",
           "id": 1946157533,
-          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_moon.png",
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_fog.png",
           "dstPath": ".\\flash\\best_space_size\\image\\740001dd.zip",
           "type": "zip",
           "width": 36,
           "height": 36,
+          "is_copy": false,
+          "fs_type": "flash",
+          "storage_medium": "default"
+        },
+        {
+          "name": "ENV_WEATHER_DUST",
+          "id": 1946157534,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_dust.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\740001de.zip",
+          "type": "zip",
+          "width": 36,
+          "height": 36,
+          "is_copy": false,
+          "fs_type": "flash",
+          "storage_medium": "default"
+        },
+        {
+          "name": "ENV_WEATHER_MOON",
+          "id": 1946157535,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_moon.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\740001df.zip",
+          "type": "zip",
+          "width": 36,
+          "height": 36,
+          "is_copy": false,
+          "fs_type": "flash",
+          "storage_medium": "default"
+        },
+        {
+          "name": "PET_HERO_FORWARD",
+          "id": 1946157536,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_forward.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\740001e0.zip",
+          "type": "zip",
+          "width": 230,
+          "height": 230,
+          "is_copy": false,
+          "fs_type": "flash",
+          "storage_medium": "default"
+        },
+        {
+          "name": "PET_HERO_LEFT",
+          "id": 1946157537,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_left.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\740001e1.zip",
+          "type": "zip",
+          "width": 230,
+          "height": 230,
+          "is_copy": false,
+          "fs_type": "flash",
+          "storage_medium": "default"
+        },
+        {
+          "name": "PET_HERO_RIGHT",
+          "id": 1946157538,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_right.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\740001e2.zip",
+          "type": "zip",
+          "width": 230,
+          "height": 230,
+          "is_copy": false,
+          "fs_type": "flash",
+          "storage_medium": "default"
+        },
+        {
+          "name": "PET_HERO_CAPE",
+          "id": 1946157539,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_cape.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\740001e3.zip",
+          "type": "zip",
+          "width": 360,
+          "height": 150,
+          "is_copy": false,
+          "fs_type": "flash",
+          "storage_medium": "default"
+        },
+        {
+          "name": "PET_HERO_BRAKE",
+          "id": 1946157540,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_brake.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\740001e4.zip",
+          "type": "zip",
+          "width": 360,
+          "height": 280,
           "is_copy": false,
           "fs_type": "flash",
           "storage_medium": "default"
@@ -32383,6 +33046,26 @@
           "id": 1258291664,
           "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\env_weather_clear.png",
           "dstPath": ".\\flash\\best_space_size\\image\\4b0001d0.zip",
+          "type": "zip",
+          "is_copy": false
+        },
+        {
+          "fs_type": "flash",
+          "storage_medium": "default",
+          "name": "GUI_RES__13_PNG",
+          "id": 1258291665,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_forward.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\4b0001d1.zip",
+          "type": "zip",
+          "is_copy": false
+        },
+        {
+          "fs_type": "flash",
+          "storage_medium": "default",
+          "name": "GUI_RES__14_PNG",
+          "id": 1258291666,
+          "path": "D:\\omenLee_project\\ZXH-TFT\\380tft_1\\tft\\ui_lvgl\\dashboard_1024x600_v1\\import\\image\\hero\\hero_cape.png",
+          "dstPath": ".\\flash\\best_space_size\\image\\4b0001d2.zip",
           "type": "zip",
           "is_copy": false
         }

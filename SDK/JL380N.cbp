@@ -4832,5 +4832,7 @@
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_cast_page.c" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_environment.c" />
 		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_environment.h" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_pet_hero.c" />
+		<Unit filename="apps/watch/ui/lvgl_ui_app/lvgl_v9/dashboard_1024x600_v1/custom/ui_pet_hero.h" />
 </Project>
 </CodeBlocks_project_file>

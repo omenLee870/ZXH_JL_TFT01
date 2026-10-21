@@ -337,6 +337,14 @@ static void create_pet_widgets(void)
     memset(&pet, 0, sizeof(pet));
     pet.chongwuyibiao=lv_obj_create(NULL);
     pet.chongwuyibiao_xiaogou=lv_image_create(pet.chongwuyibiao);
+    /* 模拟 JLUI 创建的动作层，验证实际车辆数据与动画互斥。 */
+    pet.chongwuyibiao_hero_scene=lv_obj_create(pet.chongwuyibiao);
+    pet.chongwuyibiao_hero_body=lv_image_create(pet.chongwuyibiao_hero_scene);
+    pet.chongwuyibiao_hero_cape=lv_image_create(pet.chongwuyibiao_hero_scene);
+    pet.chongwuyibiao_hero_boot=lv_obj_create(pet.chongwuyibiao);
+    pet.chongwuyibiao_boot_hero_scene=lv_obj_create(pet.chongwuyibiao_hero_boot);
+    pet.chongwuyibiao_boot_hero_body=lv_image_create(pet.chongwuyibiao_boot_hero_scene);
+    pet.chongwuyibiao_boot_hero_cape=lv_image_create(pet.chongwuyibiao_boot_hero_scene);
     pet.chongwuyibiao_yun1=lv_image_create(pet.chongwuyibiao);
     pet.chongwuyibiao_yun2=lv_image_create(pet.chongwuyibiao);
     pet.chongwuyibiao_yun3=lv_image_create(pet.chongwuyibiao);
@@ -446,7 +454,7 @@ static void meter_display_test(void)
     assert(strstr(lv_label_get_text(pet.chongwuyibiao_jiashimoshi),"SPORT / ")==lv_label_get_text(pet.chongwuyibiao_jiashimoshi));
     assert(!youyibao_sif_ui_meter_apply(0,0,2));mock_meter.power_on=0;mock_meter.light_on=0;
     assert(!mock_backlight_on&&!lv_obj_has_flag(meter_standby_cover,LV_OBJ_FLAG_HIDDEN));
-    assert(lv_screen_active()==meter_standby_cover&&!zhuangtai.yunxing&&!zhuangtai.yun_dingshiqi&&!zhuangtai.paobu_dingshiqi);
+    assert(lv_screen_active()==meter_standby_cover&&!zhuangtai.yunxing&&!zhuangtai.yun_dingshiqi&&!zhuangtai.zhayan_dingshiqi);
     if(refresh_timer)assert(lv_timer_get_paused(refresh_timer));
     mock_backlight_failure=1;
     assert(youyibao_sif_ui_meter_apply(1,0,2)==-1&&!meter_display.power_on);
@@ -467,7 +475,7 @@ static void meter_display_test(void)
         assert(!youyibao_sif_ui_meter_apply(0,0,1));mock_meter.power_on=0;
         assert(meter_standby_cover==off_screen&&lv_screen_active()==off_screen);
         assert(!lv_obj_get_parent(off_screen)&&!lv_obj_has_flag(off_screen,LV_OBJ_FLAG_HIDDEN));
-        assert(!mock_backlight_on&&!zhuangtai.yunxing&&!zhuangtai.yun_dingshiqi&&!zhuangtai.paobu_dingshiqi);
+        assert(!mock_backlight_on&&!zhuangtai.yunxing&&!zhuangtai.yun_dingshiqi&&!zhuangtai.zhayan_dingshiqi);
         lv_tick_inc(100);lv_timer_handler();
         assert(!youyibao_sif_ui_meter_apply(1,0,1));mock_meter.power_on=1;
         assert(lv_screen_active()==pet.chongwuyibiao&&mock_backlight_on&&zhuangtai.yunxing);

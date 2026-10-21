@@ -78,6 +78,7 @@ try {
         SDK/apps/watch/common/pet_dashboard_music.c SDK/apps/watch/common/tests/pet_dashboard_music_ui_test.c `
         "$petUi/custom/chongwuyibiao_yinyue.c" "$petUi/custom/chongwuyibiao_donghua.c" `
         "$petUi/custom/chongwuyibiao_yinyue_donghua.c" `
+        "$petUi/custom/ui_pet_hero.c" `
         "@$petLink" -o "$petOutput/ui-test.exe"
     if ($LASTEXITCODE -ne 0) { throw 'LVGL 联动测试编译失败。' }
     & "$petOutput/ui-test.exe"

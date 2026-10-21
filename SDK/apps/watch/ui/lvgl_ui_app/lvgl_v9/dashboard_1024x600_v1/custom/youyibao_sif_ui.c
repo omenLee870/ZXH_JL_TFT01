@@ -23,6 +23,7 @@ static int meter_settings_miles(void) { return 0; }
 #include "../generated/gui_guider.h"
 #include "../generated/gui_fonts/gui_fonts.h"
 #include "chongwuyibiao_donghua.h"
+#include "ui_pet_hero.h"
 #include "pet_reverse_notice.h"
 #include "ui_update_page.h"
 #include <stdio.h>
@@ -189,6 +190,7 @@ int youyibao_sif_ui_meter_apply(int power_on, int light_on, int mode)
             lv_ui_chongwuyibiao *ui = ui_get_scr_ptr(&guider_ui, GUI_SCREEN_CHONGWUYIBIAO);
             if (ui && ui->chongwuyibiao == pet_root) pet_refresh(ui);
         }
+        if (meter_resume_root == pet_root) ui_pet_hero_boot_request();
         lv_screen_load(meter_resume_root);
 #if !LV_USE_GUIBUILDER_SIMULATOR
         extern void set_default_group_cb(void);
@@ -351,6 +353,12 @@ static void pet_refresh(lv_ui_chongwuyibiao *ui)
     visible(ui->chongwuyibiao_shachetubiao, pet_status(VEHICLE_BRAKE | VEHICLE_EBRAKE));
     visible(ui->chongwuyibiao_xunhangtubiao, pet_status(VEHICLE_CRUISE));
     visible(pet_charge_badge, pet_status(VEHICLE_CHARGING));
+    /* 动作只使用在线/辅助接口已经确认的状态，不能从图标闪烁反推转向。 */
+    uint32_t hero_flags = 0;
+    if (pet_status(VEHICLE_BRAKE | VEHICLE_EBRAKE)) hero_flags |= UI_PET_HERO_BRAKE;
+    if (pet_status(VEHICLE_LEFT_TURN)) hero_flags |= UI_PET_HERO_LEFT;
+    if (pet_status(VEHICLE_RIGHT_TURN)) hero_flags |= UI_PET_HERO_RIGHT;
+    chongwuyibiao_cheliang_gengxin(valid_speed ? v->speed_dkph : 0, valid_speed, hero_flags);
     pet_distance_refresh(ui);
     pet_meter_refresh(ui);
 #ifndef YOUYIBAO_UI_TEST

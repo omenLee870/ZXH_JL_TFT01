@@ -483,22 +483,29 @@ typedef enum {
 	GUI_RES__10_PNG = 0x4B0001CE,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\music\bluetooth_connected.png
 	GUI_RES__11_PNG = 0x4B0001CF,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\settings_gear.png
 	GUI_RES__12_PNG = 0x4B0001D0,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_clear.png
+	GUI_RES__13_PNG = 0x4B0001D1,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\hero\hero_forward.png
+	GUI_RES__14_PNG = 0x4B0001D2,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\hero\hero_cape.png
 } GUI_RES_ID;
 
 typedef enum {
-	xiaogou_biyan = 0x740001D1,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_blink.png 230x230
-	xiaogou_paobu_1 = 0x740001D2,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_1.png 230x230
-	xiaogou_paobu_2 = 0x740001D3,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_2.png 230x230
-	xiaogou_paobu_3 = 0x740001D4,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_3.png 230x230
-	ENV_WEATHER_CLEAR = 0x740001D5,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_clear.png 36x36
-	ENV_WEATHER_CLOUD = 0x740001D6,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_cloud.png 36x36
-	ENV_WEATHER_OVERCAST = 0x740001D7,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_overcast.png 36x36
-	ENV_WEATHER_RAIN = 0x740001D8,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_rain.png 36x36
-	ENV_WEATHER_SNOW = 0x740001D9,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_snow.png 36x36
-	ENV_WEATHER_STORM = 0x740001DA,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_storm.png 36x36
-	ENV_WEATHER_FOG = 0x740001DB,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_fog.png 36x36
-	ENV_WEATHER_DUST = 0x740001DC,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_dust.png 36x36
-	ENV_WEATHER_MOON = 0x740001DD,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_moon.png 36x36
+	xiaogou_biyan = 0x740001D3,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_blink.png 230x230
+	xiaogou_paobu_1 = 0x740001D4,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_1.png 230x230
+	xiaogou_paobu_2 = 0x740001D5,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_2.png 230x230
+	xiaogou_paobu_3 = 0x740001D6,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\main\dog_run_3.png 230x230
+	ENV_WEATHER_CLEAR = 0x740001D7,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_clear.png 36x36
+	ENV_WEATHER_CLOUD = 0x740001D8,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_cloud.png 36x36
+	ENV_WEATHER_OVERCAST = 0x740001D9,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_overcast.png 36x36
+	ENV_WEATHER_RAIN = 0x740001DA,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_rain.png 36x36
+	ENV_WEATHER_SNOW = 0x740001DB,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_snow.png 36x36
+	ENV_WEATHER_STORM = 0x740001DC,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_storm.png 36x36
+	ENV_WEATHER_FOG = 0x740001DD,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_fog.png 36x36
+	ENV_WEATHER_DUST = 0x740001DE,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_dust.png 36x36
+	ENV_WEATHER_MOON = 0x740001DF,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\env_weather_moon.png 36x36
+	PET_HERO_FORWARD = 0x740001E0,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\hero\hero_forward.png 230x230
+	PET_HERO_LEFT = 0x740001E1,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\hero\hero_left.png 230x230
+	PET_HERO_RIGHT = 0x740001E2,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\hero\hero_right.png 230x230
+	PET_HERO_CAPE = 0x740001E3,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\hero\hero_cape.png 360x150
+	PET_HERO_BRAKE = 0x740001E4,   //D:\omenLee_project\ZXH-TFT\380tft_1\tft\ui_lvgl\dashboard_1024x600_v1\import\image\hero\hero_brake.png 360x280
 } RES_ID;
 
 typedef enum {
